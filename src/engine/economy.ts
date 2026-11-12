@@ -212,11 +212,8 @@ export function computeLegacyBracket(lifetimeEarned: number, legacyPoints: numbe
   return { pendingGain, currentFloor, nextThreshold, progress }
 }
 
-export function trustFundStartingCash(rank: number): number {
-  if (rank <= 0) {
-    return 0
-  }
-  return 25_000 * Math.pow(5, rank - 1)
+export function maxHustleMultiplier(rank: number): number {
+  return 3 + Math.max(0, rank)
 }
 
 export interface EconomySnapshotInput {

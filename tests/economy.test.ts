@@ -15,7 +15,7 @@ import {
   selectAutoBuyTarget,
   seriesCost,
   socialClassInfo,
-  trustFundStartingCash
+  maxHustleMultiplier
 } from '../src/engine/economy'
 
 describe('economy engine', () => {
@@ -182,7 +182,7 @@ describe('economy engine', () => {
     expect(withLegacy?.id).toBe('1')
   })
 
-  it('uses Triangular Legacy curve (£450B * P(P+1)/2), trust fund, and offline catch-up', () => {
+  it('uses Triangular Legacy curve (£450B * P(P+1)/2), +1x/rank Hustle cap, and offline catch-up', () => {
     expect(FIRST_LEGACY_LIFETIME).toBe(4.5e11)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 0.99, 0)).toBe(0)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME, 0)).toBe(1)
@@ -190,8 +190,9 @@ describe('economy engine', () => {
     expect(computeLegacyGain(1.44e12, 1)).toBe(1)
     // P=3 threshold is 6 * 450B = £2.70T
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 6, 1)).toBe(2)
-    expect(trustFundStartingCash(0)).toBe(0)
-    expect(trustFundStartingCash(2)).toBe(125_000)
+    expect(maxHustleMultiplier(0)).toBe(3)
+    expect(maxHustleMultiplier(1)).toBe(4)
+    expect(maxHustleMultiplier(5)).toBe(8)
 
     expect(computeOfflineCatchUp(30_000, 1000, 0)).toBeNull()
     const catchUp = computeOfflineCatchUp(2 * 3600 * 1000, 1000, 2)

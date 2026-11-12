@@ -212,6 +212,11 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     for (const key of Object.keys(EMPTY_PERKS) as PerkId[]) {
       perks[key] = Math.floor(readNonNegativeNumber(pRaw[key], 0))
     }
+    const migratedHustle = Math.max(
+      readNonNegativeNumber(pRaw.hustleCap, 0),
+      readNonNegativeNumber(pRaw.trustFund, 0)
+    )
+    perks.hustleCap = Math.min(5, Math.floor(migratedHustle))
   } else {
     perks.autoClicker = Math.floor(readNonNegativeNumber(s.autoClickers, 0))
   }

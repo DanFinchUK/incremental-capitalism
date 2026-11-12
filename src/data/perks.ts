@@ -1,6 +1,6 @@
 export type PerkId =
   | 'autoClicker'
-  | 'trustFund'
+  | 'hustleCap'
   | 'offshore'
   | 'nepotism'
   | 'deregulation'
@@ -19,7 +19,7 @@ export interface LegacyPerkDef {
 
 export const EMPTY_PERKS: Readonly<PerkRanks> = {
   autoClicker: 0,
-  trustFund: 0,
+  hustleCap: 0,
   offshore: 0,
   nepotism: 0,
   deregulation: 0,
@@ -36,12 +36,12 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     effectSummary: (r) => `${r} auto-click${r === 1 ? '' : 's'}/sec`
   },
   {
-    id: 'trustFund',
-    label: 'Family Trust Fund',
-    description: 'Start every retirement with tax-efficient seed capital so you skip early manual graft.',
-    maxRank: 10,
-    costForRank: (r) => 1 + r,
-    effectSummary: (r) => (r === 0 ? '£0 starting cash' : `Start runs with £${(25_000 * Math.pow(5, r - 1)).toLocaleString('en-GB')}`)
+    id: 'hustleCap',
+    label: 'Grindset Coaching',
+    description: 'Raises max Hustle click multiplier by +1x per rank (3x up to 8x) and scales streak build-up—boosting both manual clicks and Unpaid Interns.',
+    maxRank: 5,
+    costForRank: (r) => 1 + (r * (r + 1)) / 2,
+    effectSummary: (r) => `${3 + r}x max Hustle`
   },
   {
     id: 'offshore',

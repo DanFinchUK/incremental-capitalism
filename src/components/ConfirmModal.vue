@@ -42,8 +42,8 @@
           </div>
         </div>
         <div class="scn-StatBox">
-          <div class="scn-DataTitle">Trust Fund seed</div>
-          <div class="scn-DataValue">{{ formatCurrency(seedCash) }}</div>
+          <div class="scn-DataTitle">Ready auto-buys</div>
+          <div class="scn-DataValue">{{ readyAutoBuyCount }} / {{ totalCatalogueCount }} items</div>
         </div>
       </div>
 
@@ -143,7 +143,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { legacyMultiplier, trustFundStartingCash } from '../engine/economy'
+import { BUSINESSES, JOBS } from '../data/items'
+import { legacyMultiplier } from '../engine/economy'
 import { STORAGE_KEY } from '../engine/migration'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
@@ -177,7 +178,21 @@ const gain = computed(() => store.legacyGain)
 const nextPoints = computed(() => store.legacyPoints + gain.value)
 const currMult = computed(() => formatMult(store.legacyMultiplier))
 const nextMult = computed(() => formatMult(legacyMultiplier(nextPoints.value)))
-const seedCash = computed(() => trustFundStartingCash(store.perks.trustFund))
+const totalCatalogueCount = JOBS.length + BUSINESSES.length
+const readyAutoBuyCount = computed(() => {
+  let ready = 0
+  for (const j of JOBS) {
+    if ((store.lifetimePurchases.jobs[j.id] ?? 0) >= store.itemAutoBuyThreshold('jobs', j.id)) {
+      ready += 1
+    }
+  }
+  for (const b of BUSINESSES) {
+    if ((store.lifetimePurchases.businesses[b.id] ?? 0) >= store.itemAutoBuyThreshold('businesses', b.id)) {
+      ready += 1
+    }
+  }
+  return ready
+})
 const bracketPct = computed(() => Math.round(store.legacyBracket.progress * 100))
 const remainingToNext = computed(() => Math.max(0, store.legacyBracket.nextThreshold - store.lifetimeEarned))
 

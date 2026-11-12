@@ -38,7 +38,7 @@ describe('v1/v2/v3 -> v4 save migration', () => {
     expect(state.legacyPoints).toBe(34)
     expect(state.legacySpent).toBe(34)
     expect(state.perks.autoClicker).toBe(17)
-    expect(state.perks.trustFund).toBe(0)
+    expect(state.perks.hustleCap).toBe(0)
     expect(state.compactAutoBuy).toBe(false)
     expect(state.lifetimeEarned).toBe(legacyLifetimeThreshold(34))
     expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(0)
@@ -48,7 +48,7 @@ describe('v1/v2/v3 -> v4 save migration', () => {
     expect(state.seenItems.businesses['19']).toBeFalsy()
   })
 
-  it('preserves 1-Legacy v3 £1.44T lifetimeEarned unscaled so it immediately unlocks Retire for +1', () => {
+  it('preserves 1-Legacy v3 £1.44T lifetimeEarned unscaled and migrates old trustFund ranks into hustleCap', () => {
     const v3OneLegacy = JSON.stringify({
       schemaVersion: 3,
       scene: {
@@ -57,11 +57,20 @@ describe('v1/v2/v3 -> v4 save migration', () => {
         spentThisRun: 247_845_175_636,
         lifetimeEarned: 1_440_000_000_000,
         legacyPoints: 1,
-        legacySpent: 1
+        legacySpent: 1,
+        perks: {
+          autoClicker: 0,
+          trustFund: 1,
+          offshore: 0,
+          nepotism: 0,
+          deregulation: 0,
+          insider: 0
+        }
       }
     })
     const state = parseSavedState(v3OneLegacy)
     expect(state.lifetimeEarned).toBe(1_440_000_000_000)
+    expect(state.perks.hustleCap).toBe(1)
     expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(1)
   })
 

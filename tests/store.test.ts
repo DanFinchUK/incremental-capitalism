@@ -40,7 +40,7 @@ describe('useGameStore', () => {
     expect(store.hustleMultiplier).toBeLessThan(1.5)
   })
 
-  it('supports Retire with Trust Fund seed cash, free 1st Intern (gated on 1+ Legacy), and stepped Intern costs', () => {
+  it('supports Retire, free 1st Intern, stepped Intern costs, and +1x/rank Grindset Hustle cap', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
     // Cannot claim free 0-cost Intern before earning at least 1 Legacy
@@ -52,7 +52,7 @@ describe('useGameStore', () => {
     expect(store.legacyPoints).toBe(3)
     expect(store.legacyAvailable).toBe(3)
 
-    // 1st Intern costs 0, 2nd Intern costs 1, Trust Fund I costs 1
+    // 1st Intern costs 0, 2nd Intern costs 1, Grindset Coaching I ('hustleCap') costs 1
     expect(store.buyPerk('autoClicker')).toBe(true)
     expect(store.perks.autoClicker).toBe(1)
     expect(store.legacyAvailable).toBe(3)
@@ -61,13 +61,14 @@ describe('useGameStore', () => {
     expect(store.perks.autoClicker).toBe(2)
     expect(store.legacyAvailable).toBe(2)
 
-    expect(store.buyPerk('trustFund')).toBe(true) // costs 1
-    expect(store.perks.trustFund).toBe(1)
+    expect(store.buyPerk('hustleCap')).toBe(true) // costs 1 -> raises max Hustle to 4x!
+    expect(store.perks.hustleCap).toBe(1)
     expect(store.legacyAvailable).toBe(1)
 
-    store.addDebugMoney(FIRST_LEGACY_LIFETIME * 10, 3000) // Triangular P=4: 4*5/2 = 10 * 450B
-    store.retire(4000)
-    expect(store.money).toBe(25_000) // Trust Fund rank 1 starting cash
+    for (let i = 0; i < 25; i++) {
+      store.manualClick(2100 + i * 40)
+    }
+    expect(store.hustleMultiplier).toBeCloseTo(4.0, 5)
   })
 
   it('resolves Golden Opportunities and 50/50 Shady Deals without ever taking player cash', () => {

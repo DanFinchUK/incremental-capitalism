@@ -24,11 +24,11 @@ import {
   isItemAutoBuyUnlocked,
   itemMilestones,
   legacyMultiplier as calcLegacyMultiplier,
+  maxHustleMultiplier,
   nextLegacyLifetimeThreshold,
   quoteIncomeDelta,
   selectAutoBuyTarget,
   socialClassInfo,
-  trustFundStartingCash,
   type AutoBuySelectionInput,
   type BulkBuyMode,
   type EconomySnapshotInput,
@@ -122,6 +122,7 @@ export const useGameStore = defineStore('game', () => {
   const nextLegacyAt = computed(() => nextLegacyLifetimeThreshold(legacyPoints.value))
   const legacyBracket = computed(() => computeLegacyBracket(lifetimeEarned.value, legacyPoints.value))
   const autoClickers = computed(() => perks.value.autoClicker)
+  const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
   const hustleMultiplier = computed(() => 1 + hustleBonus.value)
 
   const isBullRunActive = computed(() => nowMs.value < bullRunUntil.value)
@@ -436,7 +437,9 @@ export const useGameStore = defineStore('game', () => {
 
   function manualClick(ts = Date.now()): number {
     nowMs.value = ts
-    hustleBonus.value = Math.min(2.0, Number((hustleBonus.value + 0.1).toFixed(2)))
+    const maxBonus = maxHustle.value - 1
+    const step = maxBonus / 20
+    hustleBonus.value = Math.min(maxBonus, Number((hustleBonus.value + step).toFixed(2)))
     lastManualClickAt.value = ts
     const prevClass = classStatus.value.current.level
     const amount = moneyPerClick.value
@@ -556,7 +559,8 @@ export const useGameStore = defineStore('game', () => {
     } else {
       const deltaSec = Math.min(5, elapsedMs / 1000)
       if (hustleBonus.value > 0 && ts - lastManualClickAt.value > 1500) {
-        hustleBonus.value = Math.max(0, Number((hustleBonus.value - deltaSec).toFixed(3)))
+        const decayRate = Math.max(1, (maxHustle.value - 1) / 2.5)
+        hustleBonus.value = Math.max(0, Number((hustleBonus.value - deltaSec * decayRate).toFixed(3)))
       }
       const prevClass = classStatus.value.current.level
       creditMoney(moneyPerSecond.value * deltaSec, 'passive', ts)
@@ -639,7 +643,7 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
     legacyPoints.value += gain
-    money.value = trustFundStartingCash(perks.value.trustFund)
+    money.value = 0
     spentThisRun.value = 0
     jobsPurchased.value = {}
     businessesOwned.value = {}

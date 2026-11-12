@@ -428,7 +428,12 @@ export const useGameStore = defineStore('game', () => {
     }
     const target = autoBuyTarget.value
     if (target && money.value >= target.cost) {
-      const res = buyItem(target.kind, target.id, 1)
+      // Honour the bulk-buy setting so late-game cash gets spent at a useful
+      // pace; drop to a single unit when the bulk amount isn't affordable yet.
+      let res = buyItem(target.kind, target.id)
+      if (res.bought === 0) {
+        res = buyItem(target.kind, target.id, 1)
+      }
       if (res.bought > 0) {
         lastAutoBuyAt.value = ts
       }

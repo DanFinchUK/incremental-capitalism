@@ -169,7 +169,7 @@ describe('useGameStore', () => {
     expect(store.itemQuote('businesses', '7').count).toBe(10)
   })
 
-  it('enforces a 1-second cooldown per auto-buy purchase and supports master autoBuyPaused toggle', () => {
+  it('enforces a 1-second auto-buy cooldown, follows the bulk-buy mode, and supports master autoBuyPaused toggle', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
     store.legacyPoints = 1
@@ -188,18 +188,38 @@ describe('useGameStore', () => {
     store.tick(2100)
     expect(store.businessesOwned['1']).toBe(2)
 
+    // Auto-buy follows the bulk-buy mode: x10 buys a batch per cooldown
+    store.setBulkBuyMode(10)
+    store.tick(3100)
+    expect(store.businessesOwned['1']).toBe(12)
+
+    // ...and falls back to a single unit when the batch isn't affordable
+    store.money = store.itemQuote('businesses', '1', 1).cost
+    store.tick(4100)
+    expect(store.businessesOwned['1']).toBe(13)
+
+    // Max spends everything it can on the chosen target in one purchase
+    store.setBulkBuyMode('max')
+    store.money = 1e12
+    store.tick(5100)
+    expect(store.businessesOwned['1']).toBeGreaterThan(50)
+    expect(store.money).toBeLessThan(store.itemQuote('businesses', '1', 1).cost)
+    const ownedAfterMax = store.businessesOwned['1']
+    store.setBulkBuyMode(1)
+    store.money = 1e13
+
     // Master pause halts auto-buying while preserving individual item checkbox state
     store.toggleAutoBuyPaused()
     expect(store.autoBuyPaused).toBe(true)
     expect(store.isAutoBuyEnabled('businesses', '1')).toBe(true)
     expect(store.isAutoBuyActive('businesses', '1')).toBe(false)
 
-    store.tick(4000)
-    expect(store.businessesOwned['1']).toBe(2)
+    store.tick(7000)
+    expect(store.businessesOwned['1']).toBe(ownedAfterMax)
 
     store.toggleAutoBuyPaused()
     expect(store.autoBuyPaused).toBe(false)
-    store.tick(5000)
-    expect(store.businessesOwned['1']).toBe(3)
+    store.tick(8000)
+    expect(store.businessesOwned['1']).toBe(ownedAfterMax + 1)
   })
 })

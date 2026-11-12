@@ -7,7 +7,12 @@
     </div>
 
     <div class="scn-OverviewControls">
-      <div class="scn-BulkGroup" role="group" aria-label="Bulk purchase amount">
+      <div
+        class="scn-BulkGroup"
+        role="group"
+        aria-label="Bulk purchase amount"
+        title="Buy amount for clicks and auto-buy. Auto-buy drops to x1 when the batch isn't affordable."
+      >
         <button
           v-for="opt in bulkOptions"
           :key="String(opt.mode)"

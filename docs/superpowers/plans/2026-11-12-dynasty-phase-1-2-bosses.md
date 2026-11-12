@@ -60,7 +60,7 @@ const COPY_FILES = [
 describe('copy rules', () => {
   it('uses no em dashes in player-facing copy', () => {
     for (const file of COPY_FILES) {
-      expect(readFileSync(file, 'utf8').includes('—'), file).toBe(false)
+      expect(readFileSync(file, 'utf8').includes('\u2014'), file).toBe(false)
     }
   })
 })

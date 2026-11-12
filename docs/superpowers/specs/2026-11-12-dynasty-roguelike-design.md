@@ -1,6 +1,6 @@
 # Dynasty roguelike redesign
 
-Status: draft for Dan's approval. Date: 2026-11-12.
+Status: approved by Dan. Date: 2026-11-12.
 
 ## Intent
 
@@ -60,7 +60,7 @@ Automation:
 ### A generation
 
 1. On retirement the player drafts one of three heirs. Each heir has a trait that bends the rules for that generation. The first generation of a new save has no trait.
-2. The heir starts with the trust fund (cash worth 5% of the previous estate's net worth, as the game already does today) and an empty family office.
+2. The heir starts with the trust fund (cash worth 5% of the previous estate's net worth, as the game already does today) and the family office: the Personal Assistant chair carries over, and the other seats start empty.
 3. The player climbs. Each class gate is a boss.
 4. After each boss win, a headhunter offers advisors.
 5. The player retires whenever they choose. Legacy is paid by depth.
@@ -112,21 +112,33 @@ If the tab closes or reloads during a boss attempt, the attempt is abandoned wit
 
 ### The family office (advisors)
 
-- The office has 3 slots. A Legacy perk adds slots, up to 5.
+Fewer rules, more stacking. As in Balatro, where stacking copies of one joker is half the fun, the office limits the player through seat count and costs, never through rules about who may sit where.
+
+- Open seats. Any advisor can sit in any seat, and duplicates are allowed and intended. Three Stockbrokers means triple the effect and triple the commission. Costs that stack are what keep stacking in check.
+- The office starts with 3 open seats plus the Personal Assistant chair. Legacy perks add open seats. Seat count is the main limit, like Balatro's joker slots.
 - After each boss win, the headhunter offers three advisors rolled by rarity (Common 60%, Rare 30%, Legendary 10%, the same tiers as Market Opportunities). The player may hire one or skip.
-- Advisors last for the generation and leave on retirement, like jokers in a Balatro run.
-- Firing is free and permanent.
 - Each advisor has a positive effect and one or two costs: a one-off hiring fee in cash; a retainer (a flat cost per second that scales with class); or a commission (a percentage of the income or purchases they touch).
 - Effects change rules and never recommend purchases.
+- Firing is free and permanent.
 
-Examples to anchor the list (the builder fills it out to about 15 to 20):
+Roles are tags, not restrictions. Every advisor has a role tag (for example Buyer, Finance, Fixer, Property, Hospitality). Tags exist so advisors can care about each other: "Head of Finance: +10% income for each Finance advisor in the office" rewards going all in on one role.
 
-- Stockbroker (Rare): milestones are worth 3x instead of 2x. Commission: 2% of business income.
-- Property Guy (Common): Buy-to-let portfolio pays 3x. Retainer.
-- Accountant (Common): Tax Rebate windfalls are twice as large. Hiring fee.
-- Wealth Manager (Rare): the heir's trust fund share rises to 10%. Commission: 1% of every purchase.
-- Lobbyist (Rare): bosses' twists are 25% weaker. Retainer.
-- Proxy with Power of Attorney (Legendary): the automation line moves much closer to the frontier (see below). Commission: 3% of all income.
+The Personal Assistant chair is the family's continuity. On retirement, open-seat advisors leave with the outgoing generation, like jokers at the end of a Balatro run. Whoever sits in the PA chair stays with the family. Any advisor can be promoted into the chair at any time (the previous occupant moves to an open seat, or leaves if none is free). A PA gains loyalty for each generation served: a payrise (their costs rise) and seniority (their effect grows). A replacement PA starts junior, so the player weighs an expensive long-serving PA against a cheap new hire.
+
+Campaigns. Some Legendary advisors, mostly lobbyists, run campaigns whose effect builds the longer they serve. For example, Flour Duty Relief: food-sector items get 1% cheaper for each minute in office, up to 50%. Campaigns build up within a generation; a campaigner in the PA chair keeps their progress across generations. Two campaigners on the same cause build twice as fast.
+
+Sector tags. Every Job and Business gets a sector tag (for example food, property, finance, infrastructure, media) so advisors and campaigns can target sectors and generations can lean into a sector build. The builder assigns the tags.
+
+Examples to anchor the list (the builder fills it out to about 20 to 25):
+
+- Stockbroker (Rare, Finance): milestones are worth 1x more each. Commission: 2% of business income.
+- Property Guy (Common, Property): Buy-to-let portfolio and Construction firm pay 2x. Retainer.
+- Accountant (Common, Finance): Tax Rebate windfalls are twice as large. Hiring fee.
+- Head of Finance (Rare, Finance): +10% income for each Finance advisor. Retainer.
+- Wealth Manager (Rare, Finance): the heir's trust fund share rises by 5 points. Commission: 1% of every purchase.
+- Lobbyist (Rare, Fixer): bosses' twists are 25% weaker. Retainer.
+- Flour Duty Campaigner (Legendary, Fixer, Hospitality): the Flour Duty Relief campaign above. Retainer.
+- Proxy with Power of Attorney (Legendary, Buyer): the automation line moves much closer to the frontier (see below). Commission: 3% of all income.
 
 ### Mastery automation
 
@@ -168,7 +180,7 @@ About 15 achievements, each granting a small permanent income bonus (+2% each, a
 
 ### Peerage (endgame)
 
-After beating the Royal Garden Party at least once, the player can be elevated to the Lords. This resets Legacy, perks and the family tree's current line in exchange for Titles, a new permanent currency for large multipliers and unlocks (for example an extra office slot, rarer heirs, or starting a class higher). This phase gets its own short design pass once phases 1 to 6 have been played, because its numbers depend on them.
+After beating the Royal Garden Party at least once, the player can be elevated to the Lords. This resets Legacy, perks and the family tree's current line in exchange for Titles, a new permanent currency for large multipliers and unlocks (for example an extra office seat, rarer heirs, or starting a class higher). This phase gets its own short design pass once phases 1 to 6 have been played, because its numbers depend on them.
 
 ### Tone audit
 

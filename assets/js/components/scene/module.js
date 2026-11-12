@@ -1,5 +1,8 @@
 import Vue from 'vue'
 
+// Lifetime earnings needed for the first legacy point; later points need n² times this.
+const FIRST_LEGACY_LIFETIME = 3.8e12
+
 const state = {
   money: 0,
   jobsPurchased: {},
@@ -9,6 +12,7 @@ const state = {
   autoClickers: 0,
   lifetimePurchases: { jobs: {}, businesses: {} },
   autoBuyDisabled: { jobs: {}, businesses: {} },
+  lifetimeEarned: 0,
   lastUpdate: null
 }
 
@@ -30,6 +34,7 @@ function bump (counts, id) {
 const mutations = {
   ADD_MONEY (state, amount) {
     state.money += amount
+    state.lifetimeEarned += amount
   },
 
   SUBTRACT_MONEY (state, amount) {
@@ -53,6 +58,7 @@ const mutations = {
     state.autoClickers = 0
     state.lifetimePurchases = { jobs: {}, businesses: {} }
     state.autoBuyDisabled = { jobs: {}, businesses: {} }
+    state.lifetimeEarned = 0
   },
 
   RETIRE (state, gain) {
@@ -77,6 +83,11 @@ const mutations = {
         if (blacklist.indexOf(key) === -1) {
           state[key] = storageObject.scene[key]
         }
+      }
+
+      // Saves from before lifetime earnings were tracked keep their legacy points on the new curve.
+      if (undefined === storageObject.scene.lifetimeEarned) {
+        state.lifetimeEarned = FIRST_LEGACY_LIFETIME * state.legacyPoints * state.legacyPoints
       }
     }
   }
@@ -138,9 +149,12 @@ const getters = {
     return (kind, id) => !!getters.autoBuyTarget && getters.autoBuyTarget.kind === kind && getters.autoBuyTarget.id === id
   },
 
-  // One legacy point per order of magnitude of net worth above £1M.
-  legacyGain (state, getters) {
-    return Math.max(0, Math.floor(Math.log10(getters.netWorth)) - 5)
+  lifetimeEarned: (state) => state.lifetimeEarned,
+  nextLegacyAt: (state) => FIRST_LEGACY_LIFETIME * Math.pow(state.legacyPoints + 1, 2),
+
+  // Total points earned so far follow the square root of lifetime earnings.
+  legacyGain (state) {
+    return Math.max(0, Math.floor(Math.sqrt(state.lifetimeEarned / FIRST_LEGACY_LIFETIME)) - state.legacyPoints)
   },
 
   // Complex values

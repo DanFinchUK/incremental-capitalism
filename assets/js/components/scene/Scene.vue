@@ -162,7 +162,7 @@
       retireTitle () {
         const gain = store.getters.legacyGain
         if (gain < 1) {
-          return 'Reach £1M net worth to earn legacy points'
+          return `Earn £${store.getters.nextLegacyAt.toLocaleString('en-GB', { maximumFractionDigits: 0 })} in lifetime earnings for your next legacy point`
         }
         return `Reset money, jobs and businesses. You keep your legacy, lifetime purchases and auto-clickers, and gain ${gain} point${gain === 1 ? '' : 's'}, each adding 25% income.`
       }

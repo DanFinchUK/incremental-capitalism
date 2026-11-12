@@ -70,6 +70,10 @@ describe('economy engine', () => {
     const nextElite = bulkBuyQuote(2_600_000_000_000, 1.98, 1, 1, 'next', 1e16)
     expect(nextElite.count).toBe(2)
 
+    // Buy-to-let (sf 1.50, milestones [10,20,...]) at 10 owned with 5 buys left to hit 15 auto-buy unlock targets x5
+    const nextAutoUnlock = bulkBuyQuote(115_000_000, 1.5, 10, 1, 'next', 1e15, 5)
+    expect(nextAutoUnlock.count).toBe(5)
+
     const budget = seriesCost(20_000, 1.2, 0, 6, 1) + 50
     const maxAffordable = bulkBuyQuote(20_000, 1.2, 0, 1, 'max', budget)
     expect(maxAffordable.count).toBe(6)

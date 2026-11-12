@@ -99,7 +99,8 @@ export function bulkBuyQuote(
   owned: number,
   costDiscount: number,
   mode: BulkBuyMode,
-  availableMoney: number
+  availableMoney: number,
+  autoBuyRemaining?: number
 ): BulkBuyQuote {
   if (mode === 1 || mode === 10) {
     const cost = seriesCost(baseCost, scaleFactor, owned, mode, costDiscount)
@@ -107,7 +108,14 @@ export function bulkBuyQuote(
   }
   if (mode === 'next') {
     const { nextMilestone } = milestoneProgress(owned, scaleFactor)
-    const count = nextMilestone !== null ? Math.max(1, nextMilestone - owned) : 1
+    const candidates: number[] = []
+    if (nextMilestone !== null && nextMilestone > owned) {
+      candidates.push(nextMilestone - owned)
+    }
+    if (autoBuyRemaining !== undefined && autoBuyRemaining > 0) {
+      candidates.push(autoBuyRemaining)
+    }
+    const count = candidates.length > 0 ? Math.min(...candidates) : 1
     const cost = seriesCost(baseCost, scaleFactor, owned, count, costDiscount)
     return { count, cost, canAfford: availableMoney >= cost }
   }

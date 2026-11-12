@@ -147,7 +147,7 @@ import { BUSINESSES, JOBS } from '../data/items'
 import { legacyMultiplier } from '../engine/economy'
 import { STORAGE_KEY } from '../engine/migration'
 import { useGameStore } from '../stores/game'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, formatMultiplier } from '../utils/format'
 
 export type ConfirmDialogMode = 'retire' | 'reset' | null
 
@@ -176,8 +176,8 @@ watch(
 
 const gain = computed(() => store.legacyGain)
 const nextPoints = computed(() => store.legacyPoints + gain.value)
-const currMult = computed(() => formatMult(store.legacyMultiplier))
-const nextMult = computed(() => formatMult(legacyMultiplier(nextPoints.value)))
+const currMult = computed(() => formatMultiplier(store.legacyMultiplier))
+const nextMult = computed(() => formatMultiplier(legacyMultiplier(nextPoints.value)))
 const totalCatalogueCount = JOBS.length + BUSINESSES.length
 const readyAutoBuyCount = computed(() => {
   let ready = 0
@@ -195,10 +195,6 @@ const readyAutoBuyCount = computed(() => {
 })
 const bracketPct = computed(() => Math.round(store.legacyBracket.progress * 100))
 const remainingToNext = computed(() => Math.max(0, store.legacyBracket.nextThreshold - store.lifetimeEarned))
-
-function formatMult(val: number): string {
-  return val.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
-}
 
 async function copySaveBackup(): Promise<void> {
   store.flushSave(Date.now())

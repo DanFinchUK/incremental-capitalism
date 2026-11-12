@@ -7,6 +7,12 @@ const MILESTONES_STEEP: ReadonlyArray<number> = [5, 10, 25, 50, 75]
 const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35]
 
 export const FIRST_LEGACY_LIFETIME = 4.5e11
+// Each Legacy point multiplies income by LEGACY_INCOME_RATIO, and each point
+// needs LEGACY_THRESHOLD_RATIO times more lifetime earnings than the last.
+// Tuned by simulation so retiring at +1..+3 is near-optimal and waiting
+// for +4 or more loses ground.
+export const LEGACY_INCOME_RATIO = 1.5
+export const LEGACY_THRESHOLD_RATIO = 2.7
 export const BASE_CLICK_VALUE = 30
 
 export type BulkBuyMode = 1 | 10 | 'next' | 'max'
@@ -165,21 +171,24 @@ export function socialClassInfo(netWorth: number): SocialClassStatus {
 }
 
 export function legacyMultiplier(legacyPoints: number): number {
-  return 1 + 0.75 * legacyPoints
+  return Math.pow(LEGACY_INCOME_RATIO, Math.max(0, legacyPoints))
 }
 
 export function legacyLifetimeThreshold(points: number): number {
   if (points <= 0) {
     return 0
   }
-  return FIRST_LEGACY_LIFETIME * points * points * points
+  const r = LEGACY_THRESHOLD_RATIO
+  return (FIRST_LEGACY_LIFETIME * (Math.pow(r, points) - 1)) / (r - 1)
 }
 
 export function computeLegacyGain(lifetimeEarned: number, legacyPoints: number): number {
   const safe = Math.max(0, lifetimeEarned)
   let totalEarnedPoints = Math.max(
     0,
-    Math.floor(Math.cbrt(safe / FIRST_LEGACY_LIFETIME))
+    Math.floor(
+      Math.log(1 + (safe * (LEGACY_THRESHOLD_RATIO - 1)) / FIRST_LEGACY_LIFETIME) / Math.log(LEGACY_THRESHOLD_RATIO)
+    )
   )
   while (legacyLifetimeThreshold(totalEarnedPoints + 1) <= safe) {
     totalEarnedPoints += 1

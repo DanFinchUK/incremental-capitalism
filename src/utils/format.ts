@@ -47,3 +47,27 @@ export function formatDuration(seconds: number): string {
   const mins = Math.floor((s % 3600) / 60)
   return mins === 0 ? `${hours}h` : `${hours}h ${mins}m`
 }
+
+const MULTIPLIER_TIERS: ReadonlyArray<{ threshold: number; suffix: string }> = [
+  { threshold: 1e12, suffix: 'T' },
+  { threshold: 1e9, suffix: 'B' },
+  { threshold: 1e6, suffix: 'M' }
+]
+
+export function formatMultiplier(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '0'
+  }
+  if (value >= 1e15) {
+    return value.toExponential(2)
+  }
+  for (const tier of MULTIPLIER_TIERS) {
+    if (value >= tier.threshold) {
+      return `${(value / tier.threshold).toFixed(2)}${tier.suffix}`
+    }
+  }
+  if (value >= 1000) {
+    return Math.round(value).toLocaleString('en-GB')
+  }
+  return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
+}

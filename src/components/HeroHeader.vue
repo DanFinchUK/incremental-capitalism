@@ -116,7 +116,7 @@
 import { computed, ref } from 'vue'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { useGameStore } from '../stores/game'
-import { formatCurrency } from '../utils/format'
+import { formatCurrency, formatMultiplier } from '../utils/format'
 
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
@@ -125,9 +125,7 @@ const emit = defineEmits<{
 const store = useGameStore()
 const payButtonRef = ref<HTMLButtonElement | null>(null)
 
-const legacyMultLabel = computed(() =>
-  store.legacyMultiplier.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
-)
+const legacyMultLabel = computed(() => formatMultiplier(store.legacyMultiplier))
 
 defineExpose({ payButtonRef })
 </script>

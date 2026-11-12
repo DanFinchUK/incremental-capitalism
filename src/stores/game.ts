@@ -54,6 +54,7 @@ import {
   type IncomeSource,
   type TelemetryState
 } from '../engine/telemetry'
+import { formatMultiplier } from '../utils/format'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -660,7 +661,7 @@ export const useGameStore = defineStore('game', () => {
     activeEvent.value = null
     resetTelemetry(telemetry.value, ts, money.value)
     refreshSeenItems()
-    announce(`Retired with +${gain} Legacy! Income multiplier is now x${legacyMultiplier.value.toFixed(2)}.`)
+    announce(`Retired with +${gain} Legacy! Income multiplier is now x${formatMultiplier(legacyMultiplier.value)}.`)
     flushSave(ts)
     return true
   }

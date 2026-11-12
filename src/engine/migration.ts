@@ -45,7 +45,7 @@ export interface PersistedSceneState {
 }
 
 export interface PersistedEnvelope {
-  schemaVersion: 5
+  schemaVersion: 6
   scene: PersistedSceneState
 }
 
@@ -130,6 +130,10 @@ function quadraticCurve(base: number): LegacyCurve {
 
 function triangularCurve(points: number): number {
   return FIRST_LEGACY_LIFETIME * ((points * (points + 1)) / 2)
+}
+
+function cubicCurve(points: number): number {
+  return FIRST_LEGACY_LIFETIME * points * points * points
 }
 
 // Re-express lifetimeEarned on the current Legacy curve, keeping the same
@@ -274,6 +278,16 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     } else {
       lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun)
     }
+  } else if (schemaVersion === 5) {
+    if (legacyPoints > 0) {
+      lifetimeEarned = Math.max(
+        minLifetimeForLegacy,
+        money + spentThisRun,
+        remapLegacyLifetime(rawLifetime, legacyPoints, cubicCurve)
+      )
+    } else {
+      lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun)
+    }
   } else {
     lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun, minLifetimeForLegacy)
   }
@@ -342,7 +356,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
 
 export function serializeState(scene: PersistedSceneState): string {
   const envelope: PersistedEnvelope = {
-    schemaVersion: 5,
+    schemaVersion: 6,
     scene
   }
   return JSON.stringify(envelope)

@@ -13,7 +13,7 @@
           <span class="scn-ModalKicker scn-ModalKicker-purple">Private Members' Club</span>
           <h2 id="legacy-modal-title">Old Boys' Network — {{ store.legacyAvailable }} unspent Legacy</h2>
           <p class="scn-AutoLine">
-            Spending Legacy on perks never lowers your global x{{ store.legacyMultiplier.toFixed(2).replace(/\.00$/, '') }} income multiplier.
+            Spending Legacy on perks never lowers your global x{{ formatMultiplier(store.legacyMultiplier) }} income multiplier.
           </p>
         </div>
         <button type="button" class="scn-Action scn-Action-outline" @click="store.legacyDrawerOpen = false">
@@ -54,6 +54,7 @@
 import { onMounted, onUnmounted } from 'vue'
 import { LEGACY_PERKS, perkNextCost, type PerkId } from '../data/perks'
 import { useGameStore } from '../stores/game'
+import { formatMultiplier } from '../utils/format'
 
 const emit = defineEmits<{
   (e: 'buy-perk', id: PerkId): void

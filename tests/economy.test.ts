@@ -6,6 +6,8 @@ import {
   bulkBuyQuote,
   computeClickIncome,
   computeLegacyGain,
+  legacyLifetimeThreshold,
+  legacyMultiplier,
   computeOfflineCatchUp,
   computePassivePerSecond,
   itemMilestones,
@@ -109,11 +111,11 @@ describe('economy engine', () => {
     expect(reptilian.bracketProgress).toBe(1)
   })
 
-  it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, +75% legacy, and intern hustle benefit', () => {
+  it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, compounding legacy, and intern hustle benefit', () => {
     const base = {
       jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 2x milestone + +10% to Etsy store ('1')
       businessesOwned: { '1': 9 }, // Etsy store x9 -> £2,600/s * 1.10 = £2,860/s each
-      legacyPoints: 4, // 1 + 0.75 * 4 = 4.0x legacy
+      legacyPoints: 2, // 1.5^2 = 2.25x legacy
       classLevel: 0,
       deregulationRank: 0,
       autoClickers: 0,
@@ -121,25 +123,25 @@ describe('economy engine', () => {
       clickBuffMultiplier: 1,
       hustleMultiplier: 2
     }
-    // Base click 30 + (10 * 1450 * 2 milestone) = 29,030; * 4 legacy = 116,120; * 2 hustle = 232,240
-    expect(computeClickIncome(base, false)).toBe(116_120)
-    expect(computeClickIncome(base, true)).toBe(232_240)
-    // 9 * 2600 * 1.10 * 4 legacy = 102,960/s
-    expect(computePassivePerSecond(base)).toBeCloseTo(102_960, 5)
+    // Base click 30 + (10 * 1450 * 2 milestone) = 29,030; * 2.25 legacy = 65,317.5; * 2 hustle = 130,635
+    expect(computeClickIncome(base, false)).toBeCloseTo(65_317.5, 5)
+    expect(computeClickIncome(base, true)).toBeCloseTo(130_635, 5)
+    // 9 * 2600 * 1.10 * 2.25 legacy = 57,915/s
+    expect(computePassivePerSecond(base)).toBeCloseTo(57_915, 5)
 
-    // With 2 Unpaid Interns: when idle (hustle=1) adds 2 * 116,120; when manually hustling (hustle=2) adds 2 * 232,240!
+    // With 2 Unpaid Interns: when idle (hustle=1) adds 2 * 65,317.5; when manually hustling (hustle=2) adds 2 * 130,635!
     expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 1 })).toBeCloseTo(
-      102_960 + 2 * 116_120,
+      57_915 + 2 * 65_317.5,
       5
     )
     expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 2 })).toBeCloseTo(
-      102_960 + 2 * 232_240,
+      57_915 + 2 * 130_635,
       5
     )
 
-    // Buying 10th Etsy crosses milestone 10 (doubles all 10 units -> 10 * 2600 * 2 * 1.10 * 4 = 228,800 -> +125,840/s!)
+    // Buying 10th Etsy crosses milestone 10 (doubles all 10 units -> 10 * 2600 * 2 * 1.10 * 2.25 = 128,700 -> +70,785/s!)
     const deltaBiz = quoteIncomeDelta('businesses', '1', 1, base)
-    expect(deltaBiz.deltaPerSec).toBeCloseTo(125_840, 5)
+    expect(deltaBiz.deltaPerSec).toBeCloseTo(70_785, 5)
 
     // Buying 1 more Teaching assistant boosts both click income AND Etsy passive synergy!
     const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)
@@ -182,20 +184,26 @@ describe('economy engine', () => {
     expect(withLegacy?.id).toBe('1')
   })
 
-  it('uses Cubic Legacy curve (£450B * P^3), +1x/rank Hustle cap, and offline catch-up', () => {
+  it('uses a geometric Legacy curve (each point x2.7 lifetime, x1.5 income), +1x/rank Hustle cap, and offline catch-up', () => {
     expect(FIRST_LEGACY_LIFETIME).toBe(4.5e11)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 0.99, 0)).toBe(0)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME, 0)).toBe(1)
-    // P=2 threshold is 8 * 450B = £3.6T
-    expect(computeLegacyGain(1.44e12, 1)).toBe(0)
-    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 8, 1)).toBe(1)
-    // P=3 threshold is 27 * 450B = £12.15T
-    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 27 - 1, 1)).toBe(1)
-    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 27, 1)).toBe(2)
-    // Float cube roots must not drop a point at large exact thresholds
-    for (const p of [10, 64, 125, 1000]) {
-      expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * p * p * p, 0)).toBe(p)
+    // P=2 needs another 2.7 * £450B: £450B * 3.7 = £1.665T
+    expect(computeLegacyGain(1.66e12, 1)).toBe(0)
+    expect(computeLegacyGain(1.665e12, 1)).toBe(1)
+    // P=3 needs another 2.7^2 * £450B: £450B * 10.99 = £4.9455T
+    expect(computeLegacyGain(4.94e12, 1)).toBe(1)
+    expect(legacyLifetimeThreshold(3)).toBeCloseTo(4.9455e12, -3)
+    expect(computeLegacyGain(legacyLifetimeThreshold(3), 1)).toBe(2)
+    // Float logs must not drop or add a point at exact thresholds
+    for (const p of [5, 10, 30, 60]) {
+      const at = legacyLifetimeThreshold(p)
+      expect(computeLegacyGain(at, 0)).toBe(p)
+      expect(computeLegacyGain(at * (1 - 1e-9), 0)).toBe(p - 1)
     }
+    expect(legacyMultiplier(0)).toBe(1)
+    expect(legacyMultiplier(1)).toBe(1.5)
+    expect(legacyMultiplier(4)).toBeCloseTo(5.0625, 10)
     expect(maxHustleMultiplier(0)).toBe(3)
     expect(maxHustleMultiplier(1)).toBe(4)
     expect(maxHustleMultiplier(5)).toBe(8)

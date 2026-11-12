@@ -277,10 +277,10 @@ const autoStatusText = computed(() => {
     return `Auto-buy unlocks after ${threshold} lifetime buys (${lifetime}/${threshold})`
   }
   if (props.kind === 'businesses' && store.legacyPoints < 1) {
-    return `Purchase goal met (${lifetime}/${threshold}) — Retire once to activate Business auto-buy`
+    return `Purchase goal met (${lifetime}/${threshold}). Retire once to activate Business auto-buy`
   }
   if (props.kind === 'jobs' && store.autoClickers < 1) {
-    return 'Purchase goal met — hire Unpaid Interns in Old Boys\' Network to auto-buy Jobs'
+    return 'Purchase goal met: hire Unpaid Interns in Old Boys\' Network to auto-buy Jobs'
   }
   if (store.autoBuyPaused) {
     return 'Auto-buy paused globally (resume in top bar)'

@@ -5,7 +5,7 @@ const GENERAL_HEADLINES: ReadonlyArray<string> = [
   'Think-tank funded by billionaires recommends abolishing weekends.',
   'Artisanal sourdough bakery overtakes North Sea oil giant after introducing £9.80 loaf.',
   'Offshore retail REIT subdivides former department store into 47 phone-case kiosks.',
-  'Chippy introduces Klarna 3-instalment plan for large cod and mushy peas.',
+  'Buy-now-pay-later firm offers 3-instalment plan on cod and chips, calls it "financial empowerment".',
   'HMRC helpline hold music nominated for Mercury Prize after 9-hour set.'
 ]
 
@@ -16,14 +16,14 @@ const CLASS_HEADLINES: Readonly<Record<number, ReadonlyArray<string>>> = {
   ],
   1: [
     'Shared Zone 4 flat advertised as "cosy live-work mezzanine cupboard".',
-    'Artisanal sourdough toast blamed for entire generation missing property ladder.'
+    'Columnist with three houses blames sourdough toast for a generation missing the property ladder.'
   ],
   2: [
     'Man who bought 4-bed semi for £11,000 in 1978 urges youth to "just graft".',
     'High street betting shop and vape store announce historic merger.'
   ],
   3: [
-    'Couple celebrate promotion by upgrading from own-brand humous to Waitrose Essential.',
+    'Supermarket launches "Promotion Humous": 40p dearer, identical recipe, gold lid.',
     'Kitchen island installation unlocks automatic invitation to neighbourhood WhatsApp.'
   ],
   4: [
@@ -54,8 +54,8 @@ const CLASS_HEADLINES: Readonly<Record<number, ReadonlyArray<string>>> = {
 }
 
 const BUFF_HEADLINES: Readonly<Record<string, string>> = {
-  businessBuff: 'BREAKING: Threadneedle Street turns money printer up to "Brisk" — valuations soaring!',
-  clickBuff: 'BREAKING: HR replaces chairs with motivational posters — click output through the roof!'
+  businessBuff: 'BREAKING: Threadneedle Street turns money printer up to "Brisk". Valuations soaring!',
+  clickBuff: 'BREAKING: HR replaces chairs with motivational posters. Click output through the roof!'
 }
 
 export function pickHeadline(classLevel: number, activeBuffKind: string | null, rng: () => number = Math.random): string {

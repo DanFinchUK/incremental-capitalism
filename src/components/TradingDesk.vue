@@ -166,7 +166,7 @@
       <div class="scn-SectorStrip">
         <div class="scn-SectorTitle">PORTFOLIO REVENUE MIX</div>
         <div v-if="store.sectorSlices.length === 0" class="scn-SectorEmpty">
-          Awaiting active revenue streams — click Get Paid or acquire your first venture.
+          Awaiting active revenue streams: click Get Paid or acquire your first venture.
         </div>
         <template v-else>
           <div class="scn-SectorBar">

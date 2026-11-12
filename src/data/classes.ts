@@ -22,7 +22,7 @@ export const SOCIAL_CLASSES: ReadonlyArray<SocialClassDef> = [
     label: 'Emergent service worker',
     description: 'A new, young, urban group which is relatively poor but has high social and cultural capital.',
     perkSummary: '+15% income, -2% purchase costs',
-    initiationNote: 'Welcome pack: Zone 4 flatshare box-room, tote bag collection, and oat-milk stamp card.'
+    initiationNote: 'Welcome pack: Zone 4 box-room the letting agent calls a "double", a deposit you will never see again, and an oat-milk stamp card.'
   },
   {
     level: 2,

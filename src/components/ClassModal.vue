@@ -74,7 +74,7 @@
               </div>
               <span class="scn-PyramidReq">Requires {{ thresholdLabel(cls.threshold) }} net worth</span>
             </div>
-            <p class="scn-AutoLine">Privilege: ??? — climb higher on the social ladder to reveal this tier.</p>
+            <p class="scn-AutoLine">Privilege: ???. Climb higher on the social ladder to reveal this tier.</p>
           </template>
         </div>
       </div>

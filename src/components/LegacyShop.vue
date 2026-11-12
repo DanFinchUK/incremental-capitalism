@@ -11,7 +11,7 @@
       <div class="scn-DrawerHeader">
         <div>
           <span class="scn-ModalKicker scn-ModalKicker-purple">Private Members' Club</span>
-          <h2 id="legacy-modal-title">Old Boys' Network — {{ store.legacyAvailable }} unspent Legacy</h2>
+          <h2 id="legacy-modal-title">Old Boys' Network: {{ store.legacyAvailable }} unspent Legacy</h2>
           <p class="scn-AutoLine">
             Spending Legacy on perks never lowers your global x{{ formatMultiplier(store.legacyMultiplier) }} income multiplier.
           </p>

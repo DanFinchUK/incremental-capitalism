@@ -38,7 +38,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'hustleCap',
     label: 'Grindset Coaching',
-    description: 'Raises max Hustle click multiplier by +1x per rank (3x up to 8x) and scales streak build-up—boosting both manual clicks and Unpaid Interns.',
+    description: 'Raises max Hustle click multiplier by +1x per rank (3x up to 8x) and scales streak build-up, boosting both manual clicks and Unpaid Interns.',
     maxRank: 5,
     costForRank: (r) => [1, 1, 1, 2, 2][r],
     effectSummary: (r) => `${3 + r}x max Hustle`

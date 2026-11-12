@@ -222,8 +222,9 @@
 
       showAutoFloats () {
         const amount = store.getters.moneyPerClick
+        const rect = this.$el.querySelector('.scn-PrimaryAction').getBoundingClientRect()
         for (let i = 0; i < store.getters.autoClickers; i++) {
-          this.showFloat(Math.random() * window.innerWidth, Math.random() * window.innerHeight, amount)
+          this.showFloat(rect.left + Math.random() * rect.width, rect.top + Math.random() * rect.height, amount)
         }
       },
 

@@ -4,7 +4,15 @@ const state = {
   money: 0,
   jobsPurchased: {},
   businessesOwned: {},
+  legacyPoints: 0,
   lastUpdate: null
+}
+
+function resetRun (state) {
+  state.money = 0
+  state.jobsPurchased = {}
+  state.businessesOwned = {}
+  state.lastUpdate = null
 }
 
 const mutations = {
@@ -33,10 +41,13 @@ const mutations = {
   },
 
   RESET (state) {
-    state.money = 0
-    state.jobsPurchased = {}
-    state.businessesOwned = {}
-    state.lastUpdate = null
+    resetRun(state)
+    state.legacyPoints = 0
+  },
+
+  RETIRE (state, gain) {
+    state.legacyPoints += gain
+    resetRun(state)
   },
 
   LOAD_FROM_STORAGE_OBJECT (state, storageObject) {
@@ -61,6 +72,10 @@ const actions = {
   addBusiness: ({ state, getters, rootState, commit }, businessID) => {
     commit('SUBTRACT_MONEY', getters.businessCost(businessID))
     commit('ADD_BUSINESS', businessID)
+  },
+
+  retire: ({ getters, commit }) => {
+    commit('RETIRE', getters.legacyGain)
   }
 }
 
@@ -69,6 +84,13 @@ const getters = {
   money: (state) => state.money,
   jobsPurchased: (state) => state.jobsPurchased,
   businessesOwned: (state) => state.businessesOwned,
+  legacyPoints: (state) => state.legacyPoints,
+  legacyMultiplier: (state) => 1 + 0.25 * state.legacyPoints,
+
+  // One legacy point per order of magnitude of net worth above £1M.
+  legacyGain (state, getters) {
+    return Math.max(0, Math.floor(Math.log10(getters.netWorth)) - 5)
+  },
 
   // Complex values
   moneyPerSecond (state, getters) {
@@ -79,7 +101,7 @@ const getters = {
       amount += getters.businesses[id].moneyPerSecond * state.businessesOwned[id]
     }
 
-    return amount
+    return amount * getters.legacyMultiplier
   },
 
   moneyPerClick (state, getters) {
@@ -90,7 +112,7 @@ const getters = {
       amount += getters.jobs[id].moneyPerClick * state.jobsPurchased[id]
     }
 
-    return amount
+    return amount * getters.legacyMultiplier
   },
 
   // How much will this job cost the next time it's purchased?
@@ -156,9 +178,9 @@ const getters = {
   businessCompoundCost (state, getters, rootState) {
     return (id) => {
       let total = 0
-      const iterations = state.businessesOwned[id]
+      const numOwned = state.businessesOwned[id]
 
-      for (let x = 0; x <= iterations; x++) {
+      for (let x = 0; x < numOwned; x++) {
         total += getters.businesses[id].baseCost * Math.pow(getters.businesses[id].scaleFactor, x)
       }
 

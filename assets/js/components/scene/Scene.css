@@ -67,3 +67,62 @@
   display: inline-block;
   flex: 1;
 }
+
+.scn-PrimaryAction:active {
+  transform: scale(0.97);
+}
+
+.scn-Float {
+  position: fixed;
+  z-index: 10;
+  pointer-events: none;
+  color: #6b8f2e;
+  font-weight: 600;
+  text-shadow: 0 1px 0 #fff;
+  transform: translate(-50%, -100%);
+  animation: scn-float 0.9s ease-out forwards;
+}
+
+@keyframes scn-float {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -220%);
+  }
+}
+
+.scn-Milestone {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 20;
+  padding: 12px 24px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, #cdeb8e 0%, #a5c956 100%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  animation: scn-milestone 4s ease forwards;
+}
+
+@keyframes scn-milestone {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+
+  10%, 85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+}

@@ -1,5 +1,7 @@
 <template>
   <div class="lyt-Content">
+    <div v-if="milestone" class="scn-Milestone">{{ milestone }}</div>
+    <div v-for="f in floats" track-by="id" class="scn-Float" :style="{ left: f.x + 'px', top: f.y + 'px' }">+{{ f.amount | currency }}</div>
     <div class="lyt-Header">
       <div class="lyt-Columns">
         <div class="lyt-Column">
@@ -8,11 +10,11 @@
               <h1>Your current social class: {{ $store.getters.socialClass.label }}</h1>
               <p>{{ $store.getters.socialClass.description }}</p>
               <progress class="scn-Progress" :value="$store.getters.netWorth" :max="$store.getters.nextSocialClass"></progress>
-              <p>Next social class in {{ ($store.getters.nextSocialClass - $store.getters.money) | currency }}</p>
+              <p v-if="$store.getters.nextSocialClass">Next social class in {{ ($store.getters.nextSocialClass - $store.getters.netWorth) | currency }}</p>
             </div>
 
             <div class="lyt-Item">
-              <a class="scn-PrimaryAction" @click.prevent="getMoney" href="#">Get paid</a>
+              <a class="scn-PrimaryAction" @click.prevent="getMoney($event)" href="#">Get paid</a>
             </div>
           </div>
         </div>
@@ -34,6 +36,10 @@
             <div class="lyt-Item">
               <div class="scn-DataTitle">Money per click:</div>
               <div class="scn-DataValue">{{ $store.getters.moneyPerClick | currency }}</div>
+            </div>
+            <div class="lyt-Item">
+              <div class="scn-DataTitle">Legacy:</div>
+              <div class="scn-DataValue">{{ $store.getters.legacyPoints }} (x{{ $store.getters.legacyMultiplier }})</div>
             </div>
           </div>
         </div>
@@ -102,6 +108,11 @@
     <div class="lyt-Item">
       <a href="#" class="scn-Action" @click.prevent="reset">Reset game</a>
     </div>
+    <div class="lyt-Item">
+      <a href="#" class="scn-Action" @click.prevent="retire" :class="{
+        'scn-Action-disabled': $store.getters.legacyGain < 1
+      }">Retire for +{{ $store.getters.legacyGain }} legacy</a>
+    </div>
   </div>
 </template>
 
@@ -116,18 +127,26 @@
       window.requestAnimationFrame(this.nextGameTick)
     },
 
-    computed: {
-      socialClass () {
-        let level = 0
-        this.socialClassLevels.forEach((level, index) => {
-          if (store.getters.money > level) {
-            level = index
-          } else {
-            return true
-          }
-        })
+    data () {
+      return {
+        floats: [],
+        floatID: 0,
+        milestone: null,
+        milestoneTimer: null
+      }
+    },
 
-        return this.socialClasses[level]
+    computed: {
+      classLevel () {
+        return store.getters.socialClassLevel
+      }
+    },
+
+    watch: {
+      classLevel (newLevel, oldLevel) {
+        if (newLevel > oldLevel) {
+          this.celebrate(`You are now ${store.getters.socialClass.label}!`)
+        }
       }
     },
 
@@ -149,8 +168,26 @@
         window.requestAnimationFrame(this.nextGameTick)
       },
 
-      getMoney () {
-        store.commit('ADD_MONEY', store.getters.moneyPerClick)
+      getMoney (event) {
+        const amount = store.getters.moneyPerClick
+        store.commit('ADD_MONEY', amount)
+        this.showFloat(event, amount)
+      },
+
+      showFloat (event, amount) {
+        const id = ++this.floatID
+        this.floats.push({ id, amount, x: event.clientX, y: event.clientY })
+        setTimeout(() => {
+          this.floats = this.floats.filter((f) => f.id !== id)
+        }, 900)
+      },
+
+      celebrate (message) {
+        clearTimeout(this.milestoneTimer)
+        this.milestone = message
+        this.milestoneTimer = setTimeout(() => {
+          this.milestone = null
+        }, 4000)
       },
 
       getJob (jobID) {
@@ -176,7 +213,19 @@
       },
 
       reset () {
-        store.commit('RESET')
+        if (window.confirm('Reset everything, including legacy points?')) {
+          store.commit('RESET')
+        }
+      },
+
+      retire () {
+        const gain = store.getters.legacyGain
+        if (gain < 1) {
+          return false
+        }
+        if (window.confirm(`Retire for +${gain} legacy? Your money, jobs and businesses will be reset.`)) {
+          store.dispatch('retire')
+        }
       }
     }
   }

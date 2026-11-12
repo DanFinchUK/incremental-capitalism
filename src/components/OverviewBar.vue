@@ -38,7 +38,6 @@
       >
         Retire for +{{ store.legacyGain }}
       </button>
-      <span class="scn-Help" :title="retireHelpText">?</span>
 
       <button
         type="button"
@@ -52,7 +51,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { BulkBuyMode } from '../engine/economy'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
@@ -69,12 +67,4 @@ const bulkOptions: ReadonlyArray<{ mode: BulkBuyMode; label: string }> = [
   { mode: 'next', label: 'Next' },
   { mode: 'max', label: 'Max' }
 ]
-
-const retireHelpText = computed(() => {
-  const gain = store.legacyGain
-  if (gain < 1) {
-    return `Next legacy point at ${formatCurrency(store.nextLegacyAt)} lifetime earnings (currently ${formatCurrency(store.lifetimeEarned)}).`
-  }
-  return `Reset cash, jobs and businesses. Keep Legacy, perks and lifetime counts, and gain +${gain} Legacy (+25% income each).`
-})
 </script>

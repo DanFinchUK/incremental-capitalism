@@ -71,6 +71,22 @@
           <div class="scn-StatBox">
             <div class="scn-DataTitle">Lifetime earnings</div>
             <div class="scn-DataValue">{{ formatCurrency(store.lifetimeEarned) }}</div>
+            <div
+              class="scn-MiniProgressTrack"
+              role="progressbar"
+              data-testid="legacy-progress-bar"
+              :aria-valuenow="Math.round(store.legacyBracket.progress * 100)"
+              aria-valuemin="0"
+              aria-valuemax="100"
+            >
+              <div
+                class="scn-MiniProgressFill"
+                :style="{ width: `${(store.legacyBracket.progress * 100).toFixed(1)}%` }"
+              ></div>
+            </div>
+            <div class="scn-StatHint">
+              Next Legacy (+{{ store.legacyGain + 1 }}) at {{ formatCurrency(store.legacyBracket.nextThreshold) }}
+            </div>
           </div>
           <div class="scn-StatBox">
             <div class="scn-DataTitle">Legacy &amp; Interns</div>

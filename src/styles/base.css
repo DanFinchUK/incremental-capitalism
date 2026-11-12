@@ -1,23 +1,91 @@
 :root {
+  color-scheme: light dark;
   --color-bg: #efefef;
   --color-surface: #f8f8f8;
   --color-card: #ffffff;
+  --color-card-subtle: #f3f3f3;
   --color-body: #111111;
+  --color-body-secondary: #222222;
   --color-muted: #555555;
   --color-border: #cccccc;
+  --color-border-subtle: #e2e2e2;
+  --color-strong-line: #111111;
+  --color-btn-bg: #111111;
+  --color-btn-fg: #ffffff;
+  --color-btn-hover: #333333;
+  --color-btn-outline-bg: #ffffff;
+  --color-btn-outline-fg: #111111;
+  --color-btn-outline-hover: #e6e6e6;
   --color-purple: #8300da;
   --color-purple-hover: #6d00b5;
+  --color-perk-pill-bg: #f1e6fa;
+  --color-perk-pill-fg: #4f0084;
+  --color-streak-bg: #efe0ff;
+  --color-streak-fg: #53008c;
+  --color-synergy: #4f0084;
   --color-green-top: #cdeb8e;
   --color-green-bottom: #a5c956;
   --color-green-text: #4e6e1d;
+  --color-track: #dddddd;
+  --color-pip-bg: #e8e8e8;
+  --color-pip-fg: #666666;
   --color-next-row: #e4f2c2;
+  --color-next-row-border: #8ab33e;
+  --color-milestone-badge-bg: #e4f2c2;
+  --color-milestone-badge-fg: #36530d;
+  --color-float-shadow: #ffffff;
   --color-gold: #d99b00;
   --color-gold-bg: #fff6d6;
+  --color-gold-fg: #6b4c00;
   --color-shady: #b54708;
   --color-shady-bg: #ffeed9;
+  --color-shady-fg: #b54708;
   --font-mono: 'Inconsolata', Monaco, 'Lucida Console', monospace;
   --radius: 3px;
   --gutter: 15px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0c0f14;
+    --color-surface: #141922;
+    --color-card: #1a212d;
+    --color-card-subtle: #121720;
+    --color-body: #e8edf4;
+    --color-body-secondary: #cbd5e1;
+    --color-muted: #94a3b8;
+    --color-border: #2c3647;
+    --color-border-subtle: #242e3d;
+    --color-strong-line: #475569;
+    --color-btn-bg: #e8edf4;
+    --color-btn-fg: #0c0f14;
+    --color-btn-hover: #ffffff;
+    --color-btn-outline-bg: #1a212d;
+    --color-btn-outline-fg: #e8edf4;
+    --color-btn-outline-hover: #273244;
+    --color-purple: #9333ea;
+    --color-purple-hover: #a855f7;
+    --color-perk-pill-bg: #2e1549;
+    --color-perk-pill-fg: #e9d5ff;
+    --color-streak-bg: #321652;
+    --color-streak-fg: #f3e8ff;
+    --color-synergy: #d8b4fe;
+    --color-green-text: #b7df69;
+    --color-track: #293445;
+    --color-pip-bg: #263040;
+    --color-pip-fg: #94a3b8;
+    --color-next-row: #1c3118;
+    --color-next-row-border: #7cb532;
+    --color-milestone-badge-bg: #243b1c;
+    --color-milestone-badge-fg: #cdeb8e;
+    --color-float-shadow: #05070a;
+    --color-gold: #f59e0b;
+    --color-gold-bg: #332506;
+    --color-gold-fg: #fde68a;
+    --color-shady: #fb923c;
+    --color-shady-bg: #361907;
+    --color-shady-fg: #fed7aa;
+  }
 }
 
 *,

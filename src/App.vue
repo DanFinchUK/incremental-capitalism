@@ -14,6 +14,7 @@
       <OverviewBar @retire="handleRetire" />
       <LegacyShop @buy-perk="handleBuyPerk" />
       <HeroHeader ref="heroRef" @paid="handleManualClick" />
+      <TradingDesk />
 
       <div class="lyt-Columns">
         <section class="lyt-Column" aria-label="Jobs">
@@ -66,6 +67,7 @@ import LegacyShop from './components/LegacyShop.vue'
 import MarketEvent from './components/MarketEvent.vue'
 import NewsTicker from './components/NewsTicker.vue'
 import OverviewBar from './components/OverviewBar.vue'
+import TradingDesk from './components/TradingDesk.vue'
 import WelcomeModal from './components/WelcomeModal.vue'
 
 const MAX_ACTIVE_FLOATS = 60

@@ -7,7 +7,7 @@
         your portfolio extracted passive returns at
         <strong>{{ Math.round(store.offlineReport.efficiency * 100) }}%</strong> offshore efficiency:
       </p>
-      <div class="scn-DataValue" style="font-size: 26px; color: #4e6e1d">
+      <div class="scn-DataValue" style="font-size: 26px; color: var(--color-green-text)">
         +{{ formatCurrency(store.offlineReport.moneyEarned) }}
       </div>
       <p class="scn-AutoLine">

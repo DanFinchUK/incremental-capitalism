@@ -1,11 +1,28 @@
 import { BUSINESSES, JOBS, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
 import { SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
 
-export const MILESTONES: ReadonlyArray<number> = [10, 25, 50, 100, 200]
-export const FIRST_LEGACY_LIFETIME = 3.0e12
+const MILESTONES_GENTLE: ReadonlyArray<number> = [10, 25, 50, 100, 200]
+const MILESTONES_MODERATE: ReadonlyArray<number> = [10, 20, 40, 75, 125]
+const MILESTONES_STEEP: ReadonlyArray<number> = [5, 10, 25, 50, 75]
+const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35]
+
+export const FIRST_LEGACY_LIFETIME = 5.0e11
 export const BASE_CLICK_VALUE = 30
 
 export type BulkBuyMode = 1 | 10 | 'next' | 'max'
+
+export function itemMilestones(scaleFactor: number): ReadonlyArray<number> {
+  if (scaleFactor <= 1.3) {
+    return MILESTONES_GENTLE
+  }
+  if (scaleFactor <= 1.5) {
+    return MILESTONES_MODERATE
+  }
+  if (scaleFactor <= 1.75) {
+    return MILESTONES_STEEP
+  }
+  return MILESTONES_ELITE
+}
 
 export interface MilestoneStatus {
   reachedCount: number
@@ -14,12 +31,12 @@ export interface MilestoneStatus {
   progress: number
 }
 
-export function milestoneProgress(owned: number): MilestoneStatus {
+export function milestoneProgress(owned: number, scaleFactor: number): MilestoneStatus {
   let reachedCount = 0
   let prevMilestone = 0
   let nextMilestone: number | null = null
 
-  for (const m of MILESTONES) {
+  for (const m of itemMilestones(scaleFactor)) {
     if (owned >= m) {
       reachedCount += 1
       prevMilestone = m
@@ -36,8 +53,8 @@ export function milestoneProgress(owned: number): MilestoneStatus {
   return { reachedCount, prevMilestone, nextMilestone, progress }
 }
 
-export function milestoneMultiplier(owned: number, deregulationRank: number): number {
-  const { reachedCount } = milestoneProgress(owned)
+export function milestoneMultiplier(owned: number, scaleFactor: number, deregulationRank: number): number {
+  const { reachedCount } = milestoneProgress(owned, scaleFactor)
   if (reachedCount === 0) {
     return 1
   }
@@ -89,7 +106,7 @@ export function bulkBuyQuote(
     return { count: mode, cost, canAfford: availableMoney >= cost }
   }
   if (mode === 'next') {
-    const { nextMilestone } = milestoneProgress(owned)
+    const { nextMilestone } = milestoneProgress(owned, scaleFactor)
     const count = nextMilestone !== null ? Math.max(1, nextMilestone - owned) : 1
     const cost = seriesCost(baseCost, scaleFactor, owned, count, costDiscount)
     return { count, cost, canAfford: availableMoney >= cost }
@@ -190,13 +207,13 @@ export interface EconomySnapshotInput {
 }
 
 export function jobUnitClickIncome(job: JobDef, owned: number, input: EconomySnapshotInput): number {
-  const mMult = milestoneMultiplier(Math.max(1, owned), input.deregulationRank)
+  const mMult = milestoneMultiplier(Math.max(1, owned), job.scaleFactor, input.deregulationRank)
   const classMult = 1 + 0.15 * input.classLevel
   return job.moneyPerClick * mMult * classMult * legacyMultiplier(input.legacyPoints) * input.clickBuffMultiplier
 }
 
 export function businessUnitPerSecond(biz: BusinessDef, owned: number, input: EconomySnapshotInput): number {
-  const mMult = milestoneMultiplier(Math.max(1, owned), input.deregulationRank)
+  const mMult = milestoneMultiplier(Math.max(1, owned), biz.scaleFactor, input.deregulationRank)
   const synJob = SYNERGY_JOB_FOR_BUSINESS[biz.id]
   const synOwned = synJob ? (input.jobsPurchased[synJob.id] ?? 0) : 0
   const synMult = 1 + 0.01 * synOwned
@@ -209,7 +226,7 @@ export function computeClickIncome(input: EconomySnapshotInput, includeHustle: b
   for (const job of JOBS) {
     const n = input.jobsPurchased[job.id] ?? 0
     if (n > 0) {
-      raw += job.moneyPerClick * milestoneMultiplier(n, input.deregulationRank) * n
+      raw += job.moneyPerClick * milestoneMultiplier(n, job.scaleFactor, input.deregulationRank) * n
     }
   }
   const classMult = 1 + 0.15 * input.classLevel
@@ -224,7 +241,7 @@ export function computePassivePerSecond(input: EconomySnapshotInput): number {
     if (n > 0) {
       const synJob = SYNERGY_JOB_FOR_BUSINESS[biz.id]
       const synOwned = synJob ? (input.jobsPurchased[synJob.id] ?? 0) : 0
-      rawBusinesses += biz.moneyPerSecond * milestoneMultiplier(n, input.deregulationRank) * (1 + 0.01 * synOwned) * n
+      rawBusinesses += biz.moneyPerSecond * milestoneMultiplier(n, biz.scaleFactor, input.deregulationRank) * (1 + 0.01 * synOwned) * n
     }
   }
   const classMult = 1 + 0.15 * input.classLevel
@@ -232,6 +249,42 @@ export function computePassivePerSecond(input: EconomySnapshotInput): number {
     rawBusinesses * classMult * legacyMultiplier(input.legacyPoints) * input.businessBuffMultiplier
   const autoClickIncome = input.autoClickers * computeClickIncome(input, false)
   return bizIncome + autoClickIncome
+}
+
+export interface IncomeDeltaQuote {
+  deltaPerSec: number
+  deltaPerClick: number
+}
+
+export function quoteIncomeDelta(
+  kind: ItemKind,
+  id: string,
+  count: number,
+  input: EconomySnapshotInput
+): IncomeDeltaQuote {
+  if (count <= 0) {
+    return { deltaPerSec: 0, deltaPerClick: 0 }
+  }
+  if (kind === 'businesses') {
+    const nextOwned = (input.businessesOwned[id] ?? 0) + count
+    const nextInput: EconomySnapshotInput = {
+      ...input,
+      businessesOwned: { ...input.businessesOwned, [id]: nextOwned }
+    }
+    return {
+      deltaPerSec: Math.max(0, computePassivePerSecond(nextInput) - computePassivePerSecond(input)),
+      deltaPerClick: 0
+    }
+  }
+  const nextOwned = (input.jobsPurchased[id] ?? 0) + count
+  const nextInput: EconomySnapshotInput = {
+    ...input,
+    jobsPurchased: { ...input.jobsPurchased, [id]: nextOwned }
+  }
+  return {
+    deltaPerSec: Math.max(0, computePassivePerSecond(nextInput) - computePassivePerSecond(input)),
+    deltaPerClick: Math.max(0, computeClickIncome(nextInput, true) - computeClickIncome(input, true))
+  }
 }
 
 export interface AutoBuySelectionInput extends EconomySnapshotInput {

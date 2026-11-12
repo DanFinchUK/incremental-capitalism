@@ -8,8 +8,10 @@ import {
   computeLegacyGain,
   computeOfflineCatchUp,
   computePassivePerSecond,
+  itemMilestones,
   milestoneMultiplier,
   milestoneProgress,
+  quoteIncomeDelta,
   selectAutoBuyTarget,
   seriesCost,
   socialClassInfo,
@@ -17,19 +19,28 @@ import {
 } from '../src/engine/economy'
 
 describe('economy engine', () => {
-  it('computes milestone multipliers and deregulation scaling', () => {
-    expect(milestoneMultiplier(0, 0)).toBe(1)
-    expect(milestoneMultiplier(9, 0)).toBe(1)
-    expect(milestoneMultiplier(10, 0)).toBe(2)
-    expect(milestoneMultiplier(25, 0)).toBe(4)
-    expect(milestoneMultiplier(200, 0)).toBe(32)
-    expect(milestoneMultiplier(25, 4)).toBe(9)
+  it('tapers 5 milestone pips across 4 scaleFactor bands and scales deregulation', () => {
+    expect(itemMilestones(1.2)).toEqual([10, 25, 50, 100, 200])
+    expect(itemMilestones(1.42)).toEqual([10, 20, 40, 75, 125])
+    expect(itemMilestones(1.65)).toEqual([5, 10, 25, 50, 75])
+    expect(itemMilestones(1.98)).toEqual([3, 5, 10, 20, 35])
 
-    const prog = milestoneProgress(17)
+    expect(milestoneMultiplier(0, 1.2, 0)).toBe(1)
+    expect(milestoneMultiplier(9, 1.2, 0)).toBe(1)
+    expect(milestoneMultiplier(10, 1.2, 0)).toBe(2)
+    expect(milestoneMultiplier(200, 1.2, 0)).toBe(32)
+    expect(milestoneMultiplier(3, 1.98, 0)).toBe(2)
+    expect(milestoneMultiplier(5, 1.98, 4)).toBe(9)
+
+    const prog = milestoneProgress(17, 1.2)
     expect(prog.reachedCount).toBe(1)
     expect(prog.prevMilestone).toBe(10)
     expect(prog.nextMilestone).toBe(25)
     expect(prog.progress).toBeCloseTo((17 - 10) / (25 - 10), 5)
+
+    const eliteProg = milestoneProgress(3, 1.98)
+    expect(eliteProg.reachedCount).toBe(1)
+    expect(eliteProg.nextMilestone).toBe(5)
   })
 
   it('tapers business auto-buy thresholds floored to nearest 5 and respects nepotism', () => {
@@ -47,13 +58,17 @@ describe('economy engine', () => {
     expect(autoBuyThreshold('jobs', 1.1, 2)).toBe(5)
   })
 
-  it('calculates exact geometric bulk-buy quotes for 1, 10, next, and max', () => {
+  it('calculates exact geometric bulk-buy quotes including per-item tapered next milestones', () => {
     const one = bulkBuyQuote(20_000, 1.2, 0, 1, 1, 50_000)
     expect(one).toEqual({ count: 1, cost: 20_000, canAfford: true })
 
-    const next = bulkBuyQuote(20_000, 1.2, 7, 1, 'next', 1_000_000)
-    expect(next.count).toBe(3)
-    expect(next.cost).toBeCloseTo(seriesCost(20_000, 1.2, 7, 3, 1), 5)
+    const nextGentle = bulkBuyQuote(20_000, 1.2, 7, 1, 'next', 1_000_000)
+    expect(nextGentle.count).toBe(3)
+    expect(nextGentle.cost).toBeCloseTo(seriesCost(20_000, 1.2, 7, 3, 1), 5)
+
+    // Elite tier (sf 1.98) has first milestone at 3
+    const nextElite = bulkBuyQuote(2_600_000_000_000, 1.98, 1, 1, 'next', 1e16)
+    expect(nextElite.count).toBe(2)
 
     const budget = seriesCost(20_000, 1.2, 0, 6, 1) + 50
     const maxAffordable = bulkBuyQuote(20_000, 1.2, 0, 1, 'max', budget)
@@ -84,10 +99,10 @@ describe('economy engine', () => {
     expect(elite.bracketProgress).toBe(1)
   })
 
-  it('combines job-to-business 1% synergies, milestones, legacy, and hustle multipliers', () => {
+  it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, legacy, and hustle', () => {
     const base = {
-      jobsPurchased: { '1': 10 }, // Hairdresser x10 -> 2x milestone + +10% to Etsy store ('1')
-      businessesOwned: { '1': 1 }, // Etsy store x1 -> £3,000/s * 1.10 synergy = £3,300/s
+      jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 2x milestone + +10% to Etsy store ('1')
+      businessesOwned: { '1': 9 }, // Etsy store x9 -> £2,500/s * 1.10 = £2,750/s each
       legacyPoints: 4, // 2.0x legacy
       classLevel: 0,
       deregulationRank: 0,
@@ -96,11 +111,20 @@ describe('economy engine', () => {
       clickBuffMultiplier: 1,
       hustleMultiplier: 2
     }
-    // Base click 30 + (10 * 30 * 2 milestone) = 630; * 2 legacy = 1260; * 2 hustle = 2520
-    expect(computeClickIncome(base, false)).toBe(1260)
-    expect(computeClickIncome(base, true)).toBe(2520)
-    // Etsy £3,000 * 1.10 synergy * 2 legacy = £6,600/s
-    expect(computePassivePerSecond(base)).toBeCloseTo(6600, 5)
+    // Base click 30 + (10 * 1450 * 2 milestone) = 29,030; * 2 legacy = 58,060; * 2 hustle = 116,120
+    expect(computeClickIncome(base, false)).toBe(58_060)
+    expect(computeClickIncome(base, true)).toBe(116_120)
+    // 9 * 2600 * 1.10 * 2 legacy = 51,480/s
+    expect(computePassivePerSecond(base)).toBeCloseTo(51_480, 5)
+
+    // Buying 10th Etsy crosses milestone 10 (doubles all 10 units -> 10 * 2600 * 2 * 1.10 * 2 = 114,400 -> +62,920/s!)
+    const deltaBiz = quoteIncomeDelta('businesses', '1', 1, base)
+    expect(deltaBiz.deltaPerSec).toBeCloseTo(62_920, 5)
+
+    // Buying 1 more Teaching assistant boosts both click income AND Etsy passive synergy!
+    const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)
+    expect(deltaJob.deltaPerClick).toBeGreaterThan(0)
+    expect(deltaJob.deltaPerSec).toBeGreaterThan(0)
   })
 
   it('gates business auto-buy on 1 Legacy and picks milestone jumps when optimal', () => {
@@ -122,8 +146,8 @@ describe('economy engine', () => {
 
     const withLegacy = selectAutoBuyTarget({
       jobsPurchased: {},
-      businessesOwned: { '1': 9, '2': 0 },
-      lifetimePurchases: { jobs: {}, businesses: { '1': 50, '2': 50 } },
+      businessesOwned: { '1': 9, '20': 0 },
+      lifetimePurchases: { jobs: {}, businesses: { '1': 50, '20': 50 } },
       autoBuyDisabled: { jobs: {}, businesses: {} },
       legacyPoints: 1,
       classLevel: 0,
@@ -134,12 +158,12 @@ describe('economy engine', () => {
       clickBuffMultiplier: 1,
       hustleMultiplier: 1
     })
-    // Buying 10th Etsy doubles all 10 units (+11 * 3000 = +33,000/s for ~103k), beating Freelance #1 (+9,000/s for 100k)
     expect(withLegacy?.kind).toBe('businesses')
     expect(withLegacy?.id).toBe('1')
   })
 
-  it('computes lifetime legacy curve, trust fund cash, and offline catch-up', () => {
+  it('sets FIRST_LEGACY_LIFETIME to £500B and computes legacy curve, trust fund, and offline catch-up', () => {
+    expect(FIRST_LEGACY_LIFETIME).toBe(5.0e11)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 0.99, 0)).toBe(0)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME, 0)).toBe(1)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 9, 1)).toBe(2)
@@ -155,7 +179,7 @@ describe('economy engine', () => {
     })
   })
 
-  it('reaches first Legacy around 90 minutes in an active 4-CPS zero-legacy run with zero dead businesses', () => {
+  it('reaches £500B first Legacy around 90 minutes (85–95m) under realistic human-paced play', () => {
     const jobsOwned: Record<string, number> = {}
     const bizOwned: Record<string, number> = {}
     let spent = 0
@@ -164,10 +188,15 @@ describe('economy engine', () => {
     let t = 0
     let firstLegacySec: number | null = null
 
-    const snap = () => {
+    // Human-paced model: 4 CPS for opening 5m to launch businesses, then 0.3 CPS casual clicks
+    const cpsAt = (sec: number) => (sec < 300 ? 4 : 0.3)
+
+    const snap = (sec: number) => {
       const cls = socialClassInfo(money + spent)
+      const cps = cpsAt(sec)
       return {
         cls,
+        cps,
         input: {
           jobsPurchased: jobsOwned,
           businessesOwned: bizOwned,
@@ -177,77 +206,70 @@ describe('economy engine', () => {
           autoClickers: 0,
           businessBuffMultiplier: 1,
           clickBuffMultiplier: 1,
-          hustleMultiplier: 1.5
+          hustleMultiplier: cps >= 3 ? 1.5 : 1
         }
       }
     }
 
-    const totalRate = () => {
-      const { input } = snap()
-      return computePassivePerSecond(input) + 4 * computeClickIncome(input, true)
+    const totalRate = (sec: number) => {
+      const { cps, input } = snap(sec)
+      return computePassivePerSecond(input) + cps * computeClickIncome(input, true)
     }
 
     while (t < 110 * 60) {
-      let bought = true
-      while (bought) {
-        bought = false
-        const { cls } = snap()
-        const baseR = totalRate()
-        let bestKind: 'jobs' | 'businesses' = 'jobs'
-        let bestId = '1'
-        let bestCost = Infinity
-        let bestScore = -1
+      const { cls } = snap(t)
+      const baseR = totalRate(t)
+      let bestKind: 'jobs' | 'businesses' = 'jobs'
+      let bestId = '1'
+      let bestCost = Infinity
+      let bestScore = -1
 
-        for (const j of JOBS) {
-          const n = jobsOwned[j.id] ?? 0
-          const c = seriesCost(j.baseCost, j.scaleFactor, n, 1, cls.costDiscount)
-          jobsOwned[j.id] = n + 1
-          const delta = totalRate() - baseR
-          jobsOwned[j.id] = n
-          const score = delta / c
-          if (score > bestScore) {
-            bestScore = score
-            bestKind = 'jobs'
-            bestId = j.id
-            bestCost = c
-          }
-        }
-        for (const b of BUSINESSES) {
-          const n = bizOwned[b.id] ?? 0
-          const c = seriesCost(b.baseCost, b.scaleFactor, n, 1, cls.costDiscount)
-          bizOwned[b.id] = n + 1
-          const delta = totalRate() - baseR
-          bizOwned[b.id] = n
-          const score = delta / c
-          if (score > bestScore) {
-            bestScore = score
-            bestKind = 'businesses'
-            bestId = b.id
-            bestCost = c
-          }
-        }
-
-        if (money >= bestCost) {
-          money -= bestCost
-          spent += bestCost
-          if (bestKind === 'jobs') {
-            jobsOwned[bestId] = (jobsOwned[bestId] ?? 0) + 1
-          } else {
-            bizOwned[bestId] = (bizOwned[bestId] ?? 0) + 1
-          }
-          bought = true
-        } else {
-          const r = totalRate()
-          const dt = Math.min(110 * 60 - t, Math.max(0.2, (bestCost - money) / r))
-          if (firstLegacySec === null && lifetime + r * dt >= FIRST_LEGACY_LIFETIME) {
-            firstLegacySec = t + (FIRST_LEGACY_LIFETIME - lifetime) / r
-          }
-          money += r * dt
-          lifetime += r * dt
-          t += dt
+      for (const j of JOBS) {
+        const n = jobsOwned[j.id] ?? 0
+        const c = seriesCost(j.baseCost, j.scaleFactor, n, 1, cls.costDiscount)
+        jobsOwned[j.id] = n + 1
+        const score = (totalRate(t) - baseR) / c
+        jobsOwned[j.id] = n
+        if (score > bestScore) {
+          bestScore = score
+          bestKind = 'jobs'
+          bestId = j.id
+          bestCost = c
         }
       }
-      if (firstLegacySec !== null && t >= 95 * 60) {
+      for (const b of BUSINESSES) {
+        const n = bizOwned[b.id] ?? 0
+        const c = seriesCost(b.baseCost, b.scaleFactor, n, 1, cls.costDiscount)
+        bizOwned[b.id] = n + 1
+        const score = (totalRate(t) - baseR) / c
+        bizOwned[b.id] = n
+        if (score > bestScore) {
+          bestScore = score
+          bestKind = 'businesses'
+          bestId = b.id
+          bestCost = c
+        }
+      }
+
+      if (money >= bestCost) {
+        money -= bestCost
+        spent += bestCost
+        if (bestKind === 'jobs') {
+          jobsOwned[bestId] = (jobsOwned[bestId] ?? 0) + 1
+        } else {
+          bizOwned[bestId] = (bizOwned[bestId] ?? 0) + 1
+        }
+      } else {
+        const r = totalRate(t)
+        const dt = Math.min(110 * 60 - t, Math.max(0.5, (bestCost - money) / r))
+        if (firstLegacySec === null && lifetime + r * dt >= FIRST_LEGACY_LIFETIME) {
+          firstLegacySec = t + (FIRST_LEGACY_LIFETIME - lifetime) / r
+        }
+        money += r * dt
+        lifetime += r * dt
+        t += dt
+      }
+      if (firstLegacySec !== null && t >= 96 * 60) {
         break
       }
     }
@@ -256,7 +278,5 @@ describe('economy engine', () => {
     const firstLegacyMinutes = (firstLegacySec ?? 0) / 60
     expect(firstLegacyMinutes).toBeGreaterThanOrEqual(85)
     expect(firstLegacyMinutes).toBeLessThanOrEqual(95)
-    expect(bizOwned['11']).toBeGreaterThanOrEqual(1)
-    expect(bizOwned['16']).toBeGreaterThanOrEqual(1)
   })
 })

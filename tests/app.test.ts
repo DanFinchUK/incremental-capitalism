@@ -72,7 +72,7 @@ describe('App UI integration', () => {
     wrapper.unmount()
   })
 
-  it('shows stack share, buy delta, cross-column synergy highlight, and compact auto-buy rows', async () => {
+  it('shows stack share, buy delta, and compact auto-buy rows', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
 
@@ -87,13 +87,6 @@ describe('App UI integration', () => {
     const pageText = wrapper.text()
     expect(pageText).toContain('total (')
     expect(pageText).toContain('(+£')
-
-    // Hovering Teaching assistant ('5') highlights its synergy partner Etsy store ('1')
-    const teachingCard = wrapper.find('[data-item-key="jobs-5"]')
-    expect(teachingCard.exists()).toBe(true)
-    await teachingCard.trigger('mouseenter')
-    const etsyCard = wrapper.find('[data-item-key="businesses-1"]')
-    expect(etsyCard.classes()).toContain('scn-SynergyPartner')
 
     // Compact auto-buy collapses active auto-bought Etsy store into a compact row, click expands
     const compactBtn = wrapper.find('[data-testid="toggle-compact-autobuy"]')

@@ -98,21 +98,9 @@ describe('useGameStore', () => {
     expect(localStorage.getItem('state')).not.toBe(savedBefore)
   })
 
-  it('tracks cross-column synergy partner hover and persists compactAutoBuy toggle', () => {
+  it('persists compactAutoBuy toggle across reloads', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
-
-    // Barista ('4') boosts Artisanal sourdough bakery ('22')
-    store.setHoveredItem({ kind: 'jobs', id: '4' })
-    expect(store.isSynergyPartner('businesses', '22')).toBe(true)
-    expect(store.isSynergyPartner('businesses', '1')).toBe(false)
-
-    store.setHoveredItem({ kind: 'businesses', id: '22' })
-    expect(store.isSynergyPartner('jobs', '4')).toBe(true)
-    expect(store.isSynergyPartner('jobs', '1')).toBe(false)
-
-    store.setHoveredItem(null)
-    expect(store.isSynergyPartner('jobs', '4')).toBe(false)
 
     expect(store.compactAutoBuy).toBe(false)
     store.toggleCompactAutoBuy()

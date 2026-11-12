@@ -16,13 +16,8 @@
     :data-item-key="`${kind}-${row.item.id}`"
     :class="{
       'scn-NextAutoBuy': store.isNextAutoBuy(kind, row.item.id),
-      'scn-SynergyPartner': store.isSynergyPartner(kind, row.item.id),
       'scn-Card-compact': isCompact
     }"
-    @mouseenter="store.setHoveredItem({ kind, id: row.item.id })"
-    @mouseleave="store.setHoveredItem(null)"
-    @focusin="store.setHoveredItem({ kind, id: row.item.id })"
-    @focusout="store.setHoveredItem(null)"
     @click="handleCardClick"
   >
     <template v-if="isCompact">

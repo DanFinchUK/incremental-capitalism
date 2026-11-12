@@ -326,12 +326,6 @@
   border-color: var(--color-next-row-border);
 }
 
-.scn-Card.scn-SynergyPartner {
-  background-color: var(--color-partner-bg);
-  border-color: var(--color-partner-border);
-  box-shadow: 0 0 0 1px var(--color-partner-border);
-}
-
 .scn-Card.scn-Card-compact {
   padding: 6px 10px;
   gap: 10px;

@@ -5,7 +5,6 @@ import {
   BUSINESSES_BY_ID,
   JOBS,
   JOBS_BY_ID,
-  SYNERGY_JOB_FOR_BUSINESS,
   type BusinessDef,
   type ItemKind,
   type JobDef
@@ -94,7 +93,6 @@ export const useGameStore = defineStore('game', () => {
 
   // Runtime state
   const nowMs = ref<number>(Date.now())
-  const hoveredItem = ref<{ kind: ItemKind; id: string } | null>(null)
   const telemetry = ref<TelemetryState>(createTelemetryState(nowMs.value, initial.money))
   const lastTickMs = ref<number | null>(null)
   const lastSavedMs = ref<number>(0)
@@ -273,7 +271,6 @@ export const useGameStore = defineStore('game', () => {
     lastUpdate.value = loaded.lastUpdate
     nowMs.value = ts
     lastTickMs.value = ts
-    hoveredItem.value = null
     hustleBonus.value = 0
     bullRunUntil.value = 0
     overtimeUntil.value = 0
@@ -637,24 +634,6 @@ export const useGameStore = defineStore('game', () => {
     flushSave(nowMs.value)
   }
 
-  function setHoveredItem(target: { kind: ItemKind; id: string } | null): void {
-    hoveredItem.value = target
-  }
-
-  function isSynergyPartner(kind: ItemKind, id: string): boolean {
-    const h = hoveredItem.value
-    if (!h) {
-      return false
-    }
-    if (h.kind === 'jobs' && kind === 'businesses') {
-      return JOBS_BY_ID[h.id]?.synergyBusinessId === id
-    }
-    if (h.kind === 'businesses' && kind === 'jobs') {
-      return SYNERGY_JOB_FOR_BUSINESS[h.id]?.id === id
-    }
-    return false
-  }
-
   function itemIncomeDelta(kind: ItemKind, id: string, count: number): IncomeDeltaQuote {
     return quoteIncomeDelta(kind, id, count, economyInput.value)
   }
@@ -682,7 +661,6 @@ export const useGameStore = defineStore('game', () => {
     tradingDeskCollapsed,
     lastUpdate,
     nowMs,
-    hoveredItem,
     telemetry,
     hustleBonus,
     activeEvent,
@@ -737,8 +715,6 @@ export const useGameStore = defineStore('game', () => {
     toggleMute,
     setBulkBuyMode,
     toggleCompactAutoBuy,
-    setHoveredItem,
-    isSynergyPartner,
     toggleTradingDesk
   }
 })

@@ -3,22 +3,21 @@
     <div class="lyt-Columns">
       <div class="lyt-Column">
         <div class="lyt-Items">
-          <div class="scn-ClassCard">
+          <div
+            class="scn-ClassCard scn-ClassCard-clickable"
+            role="button"
+            tabindex="0"
+            data-testid="open-class-pyramid"
+            :aria-label="`View British Class Pyramid (${store.highestClassReached + 1} of 7 unlocked)`"
+            @click="store.openClassPyramid()"
+            @keydown.enter.prevent="store.openClassPyramid()"
+            @keydown.space.prevent="store.openClassPyramid()"
+          >
             <h1 class="scn-ClassTitle">
               Your current social class: {{ store.classStatus.current.label }}
             </h1>
             <p class="scn-ClassDesc">{{ store.classStatus.current.description }}</p>
-            <div class="scn-ClassPerkRow">
-              <span class="scn-ClassPerk">Privilege: {{ store.classStatus.current.perkSummary }}</span>
-              <button
-                type="button"
-                class="scn-CompactRefold"
-                data-testid="open-class-pyramid"
-                @click="store.openClassPyramid()"
-              >
-                Class pyramid ({{ store.highestClassReached + 1 }}/7)
-              </button>
-            </div>
+            <span class="scn-ClassPerk">Privilege: {{ store.classStatus.current.perkSummary }}</span>
 
             <div class="scn-ProgressTrack" role="progressbar" :aria-valuenow="Math.round(store.classStatus.bracketProgress * 100)" aria-valuemin="0" aria-valuemax="100">
               <div
@@ -32,6 +31,9 @@
               {{ formatCurrency(Math.max(0, store.classStatus.next.threshold - store.netWorth)) }}
             </p>
             <p v-else>Top of the British class pyramid reached.</p>
+            <span class="scn-StatHint">
+              {{ store.highestClassReached + 1 }}/7 classes unlocked · Click to view pyramid
+            </span>
           </div>
 
           <div class="scn-HustleRow">

@@ -8,9 +8,11 @@ import {
   autoBuyThreshold,
   bulkBuyQuote,
   computeClickIncome,
+  computeLegacyBracket,
   computeLegacyGain,
   computeOfflineCatchUp,
   computePassivePerSecond,
+  computeSectorSlices,
   isItemAutoBuyActive,
   isItemAutoBuyUnlocked,
   legacyMultiplier as calcLegacyMultiplier,
@@ -30,6 +32,18 @@ import {
   serializeState,
   type PersistedSceneState
 } from '../engine/migration'
+import {
+  createTelemetryState,
+  currentManualPerSec,
+  currentRealisedPerSec,
+  markTelemetryEvent,
+  observeBalance,
+  recordIncome,
+  resetTelemetry,
+  sampleTelemetry,
+  type IncomeSource,
+  type TelemetryState
+} from '../engine/telemetry'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -63,10 +77,12 @@ export const useGameStore = defineStore('game', () => {
   const lifetimeEarned = ref<number>(initial.lifetimeEarned)
   const bulkBuyMode = ref<BulkBuyMode>(initial.bulkBuyMode)
   const muted = ref<boolean>(initial.muted)
+  const tradingDeskCollapsed = ref<boolean>(initial.tradingDeskCollapsed)
   const lastUpdate = ref<number | null>(initial.lastUpdate)
 
   // Runtime state
   const nowMs = ref<number>(Date.now())
+  const telemetry = ref<TelemetryState>(createTelemetryState(nowMs.value, initial.money))
   const lastTickMs = ref<number | null>(null)
   const lastSavedMs = ref<number>(0)
   const hustleBonus = ref<number>(0)
@@ -87,6 +103,7 @@ export const useGameStore = defineStore('game', () => {
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
   const legacyGain = computed(() => computeLegacyGain(lifetimeEarned.value, legacyPoints.value))
   const nextLegacyAt = computed(() => nextLegacyLifetimeThreshold(legacyPoints.value))
+  const legacyBracket = computed(() => computeLegacyBracket(lifetimeEarned.value, legacyPoints.value))
   const autoClickers = computed(() => perks.value.autoClicker)
   const hustleMultiplier = computed(() => 1 + hustleBonus.value)
 
@@ -123,6 +140,9 @@ export const useGameStore = defineStore('game', () => {
   const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
   const moneyPerSecond = computed(() => computePassivePerSecond(economyInput.value))
   const autoBuyTarget = computed(() => selectAutoBuyTarget(selectionInput.value))
+  const realisedPerSecond = computed(() => currentRealisedPerSec(telemetry.value, nowMs.value))
+  const manualRealisedPerSecond = computed(() => currentManualPerSec(telemetry.value, nowMs.value))
+  const sectorSlices = computed(() => computeSectorSlices(economyInput.value, manualRealisedPerSecond.value))
 
   function refreshSeenItems(): void {
     for (let i = 0; i < JOBS.length; i++) {
@@ -200,6 +220,7 @@ export const useGameStore = defineStore('game', () => {
       lifetimeEarned: lifetimeEarned.value,
       bulkBuyMode: bulkBuyMode.value,
       muted: muted.value,
+      tradingDeskCollapsed: tradingDeskCollapsed.value,
       lastUpdate: ts
     }
   }
@@ -233,6 +254,7 @@ export const useGameStore = defineStore('game', () => {
     lifetimeEarned.value = loaded.lifetimeEarned
     bulkBuyMode.value = loaded.bulkBuyMode
     muted.value = loaded.muted
+    tradingDeskCollapsed.value = loaded.tradingDeskCollapsed
     lastUpdate.value = loaded.lastUpdate
     nowMs.value = ts
     lastTickMs.value = ts
@@ -241,6 +263,7 @@ export const useGameStore = defineStore('game', () => {
     overtimeUntil.value = 0
     autoBuyFrozenUntil.value = 0
     activeEvent.value = null
+    resetTelemetry(telemetry.value, ts, loaded.money)
     refreshSeenItems()
     scheduleNextEvent(ts)
   }
@@ -261,18 +284,23 @@ export const useGameStore = defineStore('game', () => {
         money.value += catchUp.moneyEarned
         lifetimeEarned.value += catchUp.moneyEarned
         offlineReport.value = catchUp
+        resetTelemetry(telemetry.value, ts, money.value)
         refreshSeenItems()
       }
     }
     flushSave(ts)
   }
 
-  function creditMoney(amount: number): void {
+  function creditMoney(amount: number, source?: IncomeSource, ts = nowMs.value): void {
     if (amount <= 0) {
       return
     }
     money.value += amount
     lifetimeEarned.value += amount
+    if (source) {
+      recordIncome(telemetry.value, ts, amount, source)
+    }
+    observeBalance(telemetry.value, ts, money.value)
   }
 
   function addDebugMoney(amount: number, ts = nowMs.value): void {
@@ -315,14 +343,17 @@ export const useGameStore = defineStore('game', () => {
     spentThisRun.value += quote.cost
     map[id] = nextOwned
     lifeMap[id] = (lifeMap[id] ?? 0) + quote.count
+    observeBalance(telemetry.value, nowMs.value, money.value)
 
     refreshSeenItems()
 
     const crossedMilestone = MILESTONES.filter((m) => prevOwned < m && nextOwned >= m).pop() ?? null
     const newClass = classStatus.value.current.level
     if (newClass > prevClass) {
+      markTelemetryEvent(telemetry.value, 'M')
       announce(`Promoted to ${classStatus.value.current.label}! (${classStatus.value.current.perkSummary})`)
     } else if (crossedMilestone !== null) {
+      markTelemetryEvent(telemetry.value, 'M')
       const step = (2 + 0.25 * perks.value.deregulation).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned — ${step}x output milestone!`)
     }
@@ -354,9 +385,10 @@ export const useGameStore = defineStore('game', () => {
     lastManualClickAt.value = ts
     const prevClass = classStatus.value.current.level
     const amount = moneyPerClick.value
-    creditMoney(amount)
+    creditMoney(amount, 'manual', ts)
     refreshSeenItems()
     if (classStatus.value.current.level > prevClass) {
+      markTelemetryEvent(telemetry.value, 'M')
       announce(`Promoted to ${classStatus.value.current.label}! (${classStatus.value.current.perkSummary})`)
     }
     return amount
@@ -408,6 +440,7 @@ export const useGameStore = defineStore('game', () => {
     if (ev.def.kind === 'bullRun') {
       const dur = Math.round(ev.def.baseDurationSec * durationMult)
       bullRunUntil.value = ts + dur * 1000
+      markTelemetryEvent(telemetry.value, '★')
       announce(`Quantitative Easing! 5x Business income for ${dur}s!`)
       flushSave(ts)
       return 'golden'
@@ -415,13 +448,15 @@ export const useGameStore = defineStore('game', () => {
     if (ev.def.kind === 'overtimeFrenzy') {
       const dur = Math.round(ev.def.baseDurationSec * durationMult)
       overtimeUntil.value = ts + dur * 1000
+      markTelemetryEvent(telemetry.value, '★')
       announce(`Mandatory Unpaid Overtime! 7x Click income for ${dur}s!`)
       flushSave(ts)
       return 'golden'
     }
     if (ev.def.kind === 'taxRebate') {
       const windfall = Math.max(500, moneyPerSecond.value * 60)
-      creditMoney(windfall)
+      markTelemetryEvent(telemetry.value, '★')
+      creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       announce('Non-Dom Tax Rebate! 60s of passive income wired offshore!')
       flushSave(ts)
@@ -430,7 +465,8 @@ export const useGameStore = defineStore('game', () => {
     // Shady Deal: 50/50 windfall vs 15s auto-buy freeze
     if (rng() < 0.5) {
       const windfall = Math.max(1500, moneyPerSecond.value * 180)
-      creditMoney(windfall)
+      markTelemetryEvent(telemetry.value, '★')
+      creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       announce('VIP-Lane Contract Approved! 180s passive windfall!')
       flushSave(ts)
@@ -454,8 +490,9 @@ export const useGameStore = defineStore('game', () => {
     if (elapsedMs >= 60_000) {
       const catchUp = computeOfflineCatchUp(elapsedMs, moneyPerSecond.value, perks.value.offshore)
       if (catchUp) {
-        creditMoney(catchUp.moneyEarned)
+        creditMoney(catchUp.moneyEarned, undefined, ts)
         offlineReport.value = catchUp
+        resetTelemetry(telemetry.value, ts, money.value)
       }
     } else {
       const deltaSec = Math.min(5, elapsedMs / 1000)
@@ -463,14 +500,19 @@ export const useGameStore = defineStore('game', () => {
         hustleBonus.value = Math.max(0, Number((hustleBonus.value - deltaSec).toFixed(3)))
       }
       const prevClass = classStatus.value.current.level
-      creditMoney(moneyPerSecond.value * deltaSec)
+      creditMoney(moneyPerSecond.value * deltaSec, 'passive', ts)
       if (classStatus.value.current.level > prevClass) {
+        markTelemetryEvent(telemetry.value, 'M')
         announce(`Promoted to ${classStatus.value.current.label}! (${classStatus.value.current.perkSummary})`)
       }
     }
 
     refreshSeenItems()
     runAutoBuy()
+    observeBalance(telemetry.value, ts, money.value)
+    if (ts - telemetry.value.lastSampleTs >= 250) {
+      sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value)
+    }
     maybeSpawnRandomEvent(ts)
 
     if (ts - lastSavedMs.value >= SAVE_THROTTLE_MS) {
@@ -544,6 +586,7 @@ export const useGameStore = defineStore('game', () => {
     overtimeUntil.value = 0
     autoBuyFrozenUntil.value = 0
     activeEvent.value = null
+    resetTelemetry(telemetry.value, ts, money.value)
     refreshSeenItems()
     announce(`Retired with +${gain} Legacy! Income multiplier is now x${legacyMultiplier.value.toFixed(2)}.`)
     flushSave(ts)
@@ -573,6 +616,11 @@ export const useGameStore = defineStore('game', () => {
     flushSave(nowMs.value)
   }
 
+  function toggleTradingDesk(): void {
+    tradingDeskCollapsed.value = !tradingDeskCollapsed.value
+    flushSave(nowMs.value)
+  }
+
   return {
     money,
     spentThisRun,
@@ -587,8 +635,10 @@ export const useGameStore = defineStore('game', () => {
     lifetimeEarned,
     bulkBuyMode,
     muted,
+    tradingDeskCollapsed,
     lastUpdate,
     nowMs,
+    telemetry,
     hustleBonus,
     activeEvent,
     offlineReport,
@@ -600,6 +650,7 @@ export const useGameStore = defineStore('game', () => {
     legacyAvailable,
     legacyGain,
     nextLegacyAt,
+    legacyBracket,
     autoClickers,
     hustleMultiplier,
     isBullRunActive,
@@ -612,6 +663,9 @@ export const useGameStore = defineStore('game', () => {
     moneyPerClick,
     baseMoneyPerClick,
     moneyPerSecond,
+    realisedPerSecond,
+    manualRealisedPerSecond,
+    sectorSlices,
     autoBuyTarget,
     visibleJobs,
     visibleBusinesses,
@@ -635,6 +689,7 @@ export const useGameStore = defineStore('game', () => {
     hardReset,
     dismissOfflineReport,
     toggleMute,
-    setBulkBuyMode
+    setBulkBuyMode,
+    toggleTradingDesk
   }
 })

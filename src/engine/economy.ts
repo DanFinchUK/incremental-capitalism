@@ -152,6 +152,24 @@ export function nextLegacyLifetimeThreshold(legacyPoints: number): number {
   return FIRST_LEGACY_LIFETIME * Math.pow(legacyPoints + 1, 2)
 }
 
+export interface LegacyBracketProgress {
+  pendingGain: number
+  currentFloor: number
+  nextThreshold: number
+  progress: number
+}
+
+export function computeLegacyBracket(lifetimeEarned: number, legacyPoints: number): LegacyBracketProgress {
+  const safeLifetime = Math.max(0, lifetimeEarned)
+  const pendingGain = computeLegacyGain(safeLifetime, legacyPoints)
+  const totalPointsReached = legacyPoints + pendingGain
+  const currentFloor = FIRST_LEGACY_LIFETIME * totalPointsReached * totalPointsReached
+  const nextThreshold = FIRST_LEGACY_LIFETIME * Math.pow(totalPointsReached + 1, 2)
+  const span = Math.max(1, nextThreshold - currentFloor)
+  const progress = Math.min(1, Math.max(0, (safeLifetime - currentFloor) / span))
+  return { pendingGain, currentFloor, nextThreshold, progress }
+}
+
 export function trustFundStartingCash(rank: number): number {
   if (rank <= 0) {
     return 0
@@ -326,4 +344,70 @@ export function computeOfflineCatchUp(
   const efficiency = Math.min(1, 0.5 + 0.1 * offshoreRank)
   const moneyEarned = passivePerSecond * secondsCredited * efficiency
   return { secondsCredited, efficiency, moneyEarned }
+}
+
+export interface SectorSlice {
+  id: string
+  label: string
+  perSec: number
+  pct: number
+  color: string
+}
+
+const SECTOR_PALETTE: ReadonlyArray<string> = [
+  '#a5c956',
+  '#b366ff',
+  '#38bdf8',
+  '#f59e0b',
+  '#fb7185',
+  '#94a3b8'
+]
+
+export function computeSectorSlices(
+  input: EconomySnapshotInput,
+  manualClickPerSec: number
+): SectorSlice[] {
+  const rawEntries: Array<{ id: string; label: string; perSec: number }> = []
+
+  for (const biz of BUSINESSES) {
+    const owned = input.businessesOwned[biz.id] ?? 0
+    if (owned > 0) {
+      const perSec = businessUnitPerSecond(biz, owned, input) * owned
+      if (perSec > 0) {
+        rawEntries.push({ id: `biz-${biz.id}`, label: biz.label, perSec })
+      }
+    }
+  }
+
+  if (input.autoClickers > 0) {
+    const internPerSec = input.autoClickers * computeClickIncome(input, false)
+    if (internPerSec > 0) {
+      rawEntries.push({ id: 'interns', label: 'Unpaid Interns', perSec: internPerSec })
+    }
+  }
+
+  if (manualClickPerSec > 0) {
+    rawEntries.push({ id: 'manual', label: 'Manual Hustle', perSec: manualClickPerSec })
+  }
+
+  const total = rawEntries.reduce((acc, e) => acc + e.perSec, 0)
+  if (total <= 0) {
+    return []
+  }
+
+  rawEntries.sort((a, b) => b.perSec - a.perSec)
+  const top = rawEntries.slice(0, 5)
+  const rest = rawEntries.slice(5)
+  if (rest.length > 0) {
+    const otherPerSec = rest.reduce((acc, e) => acc + e.perSec, 0)
+    top.push({ id: 'other', label: 'Other Ventures', perSec: otherPerSec })
+  }
+
+  return top.map((entry, index) => ({
+    id: entry.id,
+    label: entry.label,
+    perSec: entry.perSec,
+    pct: (entry.perSec / total) * 100,
+    color: SECTOR_PALETTE[index % SECTOR_PALETTE.length]
+  }))
 }

@@ -28,6 +28,7 @@ export interface PersistedSceneState {
   lifetimeEarned: number
   bulkBuyMode: BulkBuyMode
   muted: boolean
+  tradingDeskCollapsed: boolean
   lastUpdate: number | null
 }
 
@@ -51,6 +52,7 @@ export function createInitialSceneState(): PersistedSceneState {
     lifetimeEarned: 0,
     bulkBuyMode: 1,
     muted: false,
+    tradingDeskCollapsed: false,
     lastUpdate: null
   }
 }
@@ -228,6 +230,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     lifetimeEarned,
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     muted: Boolean(s.muted),
+    tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),
     lastUpdate
   }
 }

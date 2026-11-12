@@ -32,7 +32,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Unpaid Interns (Auto-Clicker)',
     description: 'Each rank clicks Get Paid once per second (riding your manual Hustle streak!) and enables Job auto-buying. First intern is literally unpaid!',
     maxRank: null,
-    costForRank: (r) => r,
+    costForRank: (r) => Math.floor(Math.sqrt(r)),
     effectSummary: (r) => `${r} auto-click${r === 1 ? '' : 's'}/sec`
   },
   {
@@ -40,7 +40,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Grindset Coaching',
     description: 'Raises max Hustle click multiplier by +1x per rank (3x up to 8x) and scales streak build-up—boosting both manual clicks and Unpaid Interns.',
     maxRank: 5,
-    costForRank: (r) => 1 + (r * (r + 1)) / 2,
+    costForRank: (r) => [1, 1, 1, 2, 2][r],
     effectSummary: (r) => `${3 + r}x max Hustle`
   },
   {
@@ -48,7 +48,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Cayman Shell Company',
     description: 'Raises offline catch-up efficiency by +10% and extends offline cap by +12h per rank.',
     maxRank: 5,
-    costForRank: (r) => 2 + r,
+    costForRank: () => 1,
     effectSummary: (r) => `${50 + 10 * r}% offline rate (${24 + 12 * r}h cap)`
   },
   {
@@ -56,7 +56,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Old School Tie',
     description: 'Lowers every Job & Business auto-buy unlock requirement by 5 lifetime purchases (min 5).',
     maxRank: 4,
-    costForRank: (r) => 3 + 2 * r,
+    costForRank: (r) => [1, 1, 2, 2][r],
     effectSummary: (r) => `-${5 * r} lifetime purchases needed`
   },
   {
@@ -64,7 +64,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Light-Touch Regulation',
     description: 'Boosts each ownership milestone multiplier by +0.25x per rank.',
     maxRank: 4,
-    costForRank: (r) => 4 + 3 * r,
+    costForRank: (r) => [1, 2, 2, 3][r],
     effectSummary: (r) => `${(2 + 0.25 * r).toFixed(2)}x per milestone`
   },
   {
@@ -72,7 +72,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Chancellor on Speed Dial',
     description: 'Market Opportunities spawn 15% faster and active frenzies last 25% longer per rank.',
     maxRank: 4,
-    costForRank: (r) => 3 + 2 * r,
+    costForRank: (r) => [1, 1, 1, 2][r],
     effectSummary: (r) => `+${25 * r}% buff duration`
   }
 ]
@@ -87,4 +87,15 @@ export function perkNextCost(id: PerkId, currentRank: number): number | null {
     return null
   }
   return perk.costForRank(currentRank)
+}
+
+// Total Legacy it costs to reach these ranks at current prices.
+export function perkSpend(ranks: Readonly<PerkRanks>): number {
+  let total = 0
+  for (const perk of LEGACY_PERKS) {
+    for (let r = 0; r < ranks[perk.id]; r++) {
+      total += perk.costForRank(r)
+    }
+  }
+  return total
 }

@@ -1,6 +1,6 @@
 import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
-import { EMPTY_PERKS, type PerkId, type PerkRanks } from '../data/perks'
+import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } from '../data/perks'
 import {
   FIRST_LEGACY_LIFETIME,
   legacyLifetimeThreshold,
@@ -191,7 +191,6 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   const jobsPurchased = readNumberMap(s.jobsPurchased)
   const businessesOwned = readNumberMap(s.businessesOwned)
   const legacyPoints = Math.floor(readNonNegativeNumber(s.legacyPoints, 0))
-  const legacySpent = Math.min(legacyPoints, Math.floor(readNonNegativeNumber(s.legacySpent, 0)))
 
   const lpRaw = s.lifetimePurchases && typeof s.lifetimePurchases === 'object'
     ? (s.lifetimePurchases as Record<string, unknown>)
@@ -227,6 +226,14 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   } else {
     perks.autoClicker = Math.floor(readNonNegativeNumber(s.autoClickers, 0))
   }
+  for (const perk of LEGACY_PERKS) {
+    if (perk.maxRank !== null) {
+      perks[perk.id] = Math.min(perk.maxRank, perks[perk.id])
+    }
+  }
+  // Recomputed from owned ranks so perk price changes refund (or never
+  // overcharge) existing saves.
+  const legacySpent = Math.min(legacyPoints, perkSpend(perks))
 
   const spentThisRun =
     isV2Plus && typeof s.spentThisRun === 'number'

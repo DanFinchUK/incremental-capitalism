@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BUSINESSES, JOBS, itemImageUrl } from '../src/data/items'
 import { SOCIAL_CLASSES } from '../src/data/classes'
-import { LEGACY_PERKS, perkNextCost } from '../src/data/perks'
+import { EMPTY_PERKS, LEGACY_PERKS, perkNextCost, perkSpend } from '../src/data/perks'
 import { MARKET_EVENTS } from '../src/data/events'
 import { pickHeadline } from '../src/data/headlines'
 
@@ -85,15 +85,16 @@ describe('catalogue & static data', () => {
     expect(LEGACY_PERKS).toHaveLength(6)
     expect(perkNextCost('autoClicker', 0)).toBe(0)
     expect(perkNextCost('autoClicker', 1)).toBe(1)
-    expect(perkNextCost('autoClicker', 2)).toBe(2)
-    expect(perkNextCost('autoClicker', 17)).toBe(17)
+    expect(perkNextCost('autoClicker', 3)).toBe(1)
+    expect(perkNextCost('autoClicker', 4)).toBe(2)
+    expect(perkNextCost('autoClicker', 16)).toBe(4)
     expect(perkNextCost('hustleCap', 0)).toBe(1)
-    expect(perkNextCost('hustleCap', 1)).toBe(2)
-    expect(perkNextCost('hustleCap', 2)).toBe(4)
-    expect(perkNextCost('hustleCap', 3)).toBe(7)
-    expect(perkNextCost('hustleCap', 4)).toBe(11)
+    expect(perkNextCost('hustleCap', 3)).toBe(2)
     expect(perkNextCost('hustleCap', 5)).toBeNull()
     expect(perkNextCost('nepotism', 4)).toBeNull()
+    // The whole finite tree costs 31 Legacy; Interns are the open-ended sink
+    expect(perkSpend({ autoClicker: 0, hustleCap: 5, offshore: 5, nepotism: 4, deregulation: 4, insider: 4 })).toBe(31)
+    expect(perkSpend({ ...EMPTY_PERKS, autoClicker: 10 })).toBe(16)
     expect(MARKET_EVENTS.some((e) => e.shady)).toBe(true)
     expect(MARKET_EVENTS.some((e) => !e.shady)).toBe(true)
     expect(pickHeadline(0, null).length).toBeGreaterThan(10)

@@ -52,6 +52,39 @@ describe('App UI integration', () => {
     wrapper.unmount()
   })
 
+  it('shows the new-player intro on a fresh game, steps through it, and reopens from How to play', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.hydrateFromStorage(Date.now())
+    await wrapper.vm.$nextTick()
+
+    const intro = () => wrapper.find('[data-testid="intro-modal"]')
+    expect(intro().exists()).toBe(true)
+    expect(intro().text()).toContain('Welcome to Incremental Capitalism')
+
+    // Market Opportunities hold off while the intro is open
+    const t0 = Date.now()
+    store.tick(t0)
+    store.tick(t0 + 3_600_000)
+    expect(store.activeEvent).toBeNull()
+
+    for (let i = 0; i < 3; i++) {
+      await wrapper.find('[data-testid="intro-next"]').trigger('click')
+    }
+    expect(intro().text()).toContain('Retire, then do it all again richer')
+    expect(wrapper.find('[data-testid="intro-skip"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="intro-next"]').trigger('click')
+    expect(intro().exists()).toBe(false)
+    expect(store.introSeen).toBe(true)
+    expect(JSON.parse(localStorage.getItem('state')!).scene.introSeen).toBe(true)
+
+    await wrapper.find('[data-testid="open-intro"]').trigger('click')
+    expect(intro().text()).toContain('Welcome to Incremental Capitalism')
+    await wrapper.find('[data-testid="intro-skip"]').trigger('click')
+    expect(intro().exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('renders clickable Market Opportunities and WelcomeModal when offline catch-up exists', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
@@ -64,6 +97,7 @@ describe('App UI integration', () => {
     await toast.trigger('click')
     expect(store.activeEvent).toBeNull()
 
+    store.closeIntro()
     store.offlineReport = { secondsCredited: 3600, efficiency: 0.5, moneyEarned: 500_000 }
     await wrapper.vm.$nextTick()
     expect(wrapper.find('.scn-Modal').exists()).toBe(true)

@@ -112,6 +112,8 @@ export const useGameStore = defineStore('game', () => {
   const autoBuyPaused = ref<boolean>(initial.autoBuyPaused)
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
   const muted = ref<boolean>(initial.muted)
+  const introSeen = ref<boolean>(initial.introSeen)
+  const introOpen = ref<boolean>(!initial.introSeen)
   const tradingDeskCollapsed = ref<boolean>(initial.tradingDeskCollapsed)
   const lastUpdate = ref<number | null>(initial.lastUpdate)
 
@@ -278,6 +280,7 @@ export const useGameStore = defineStore('game', () => {
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
       muted: muted.value,
+      introSeen: introSeen.value,
       tradingDeskCollapsed: tradingDeskCollapsed.value,
       lastUpdate: ts
     }
@@ -315,6 +318,8 @@ export const useGameStore = defineStore('game', () => {
     autoBuyPaused.value = loaded.autoBuyPaused
     compactAutoBuy.value = loaded.compactAutoBuy
     muted.value = loaded.muted
+    introSeen.value = loaded.introSeen
+    introOpen.value = !loaded.introSeen
     tradingDeskCollapsed.value = loaded.tradingDeskCollapsed
     lastUpdate.value = loaded.lastUpdate
     nowMs.value = ts
@@ -508,7 +513,7 @@ export const useGameStore = defineStore('game', () => {
     if (activeEvent.value && ts >= activeEvent.value.expiresAt) {
       activeEvent.value = null
     }
-    if (!activeEvent.value && nextEventAt.value > 0 && ts >= nextEventAt.value) {
+    if (!activeEvent.value && !introOpen.value && nextEventAt.value > 0 && ts >= nextEventAt.value) {
       showMarketEvent(pickMarketEvent(rng), ts, rng)
       scheduleNextEvent(ts, rng)
     }
@@ -696,6 +701,20 @@ export const useGameStore = defineStore('game', () => {
     return true
   }
 
+  function openIntro(): void {
+    introOpen.value = true
+  }
+
+  function closeIntro(ts = Date.now()): void {
+    introOpen.value = false
+    if (!introSeen.value) {
+      introSeen.value = true
+      // Market Opportunities start their countdown once the player is playing
+      scheduleNextEvent(ts)
+      flushSave(ts)
+    }
+  }
+
   function hardReset(ts = Date.now()): void {
     const fresh = createInitialSceneState()
     applyLoadedState(fresh, ts)
@@ -765,6 +784,10 @@ export const useGameStore = defineStore('game', () => {
     autoBuyPaused,
     compactAutoBuy,
     muted,
+    introSeen,
+    introOpen,
+    openIntro,
+    closeIntro,
     tradingDeskCollapsed,
     lastUpdate,
     nowMs,

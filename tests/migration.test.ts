@@ -126,6 +126,14 @@ describe('v1-v5 -> v6 save migration', () => {
     expect(bracket.progress).toBeCloseTo(0.5, 5)
   })
 
+  it('skips the new-player intro for saves that predate it but already have progress', () => {
+    const withProgress = JSON.stringify({ schemaVersion: 6, scene: { ...createInitialSceneState(), introSeen: undefined, lifetimeEarned: 5000 } })
+    expect(parseSavedState(withProgress).introSeen).toBe(true)
+    const fresh = JSON.stringify({ schemaVersion: 6, scene: { ...createInitialSceneState(), introSeen: undefined } })
+    expect(parseSavedState(fresh).introSeen).toBe(false)
+    expect(parseSavedState(null).introSeen).toBe(false)
+  })
+
   it('round-trips v4 state including compactAutoBuy without double-scaling and recovers from corrupt JSON', () => {
     const migrated = parseSavedState(REAL_V1_SAVE)
     migrated.bulkBuyMode = 'next'

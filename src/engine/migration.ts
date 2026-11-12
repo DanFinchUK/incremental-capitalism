@@ -40,6 +40,7 @@ export interface PersistedSceneState {
   autoBuyPaused: boolean
   compactAutoBuy: boolean
   muted: boolean
+  introSeen: boolean
   tradingDeskCollapsed: boolean
   lastUpdate: number | null
 }
@@ -67,6 +68,7 @@ export function createInitialSceneState(): PersistedSceneState {
     autoBuyPaused: false,
     compactAutoBuy: false,
     muted: false,
+    introSeen: false,
     tradingDeskCollapsed: false,
     lastUpdate: null
   }
@@ -356,6 +358,8 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     autoBuyPaused: Boolean(s.autoBuyPaused),
     compactAutoBuy: Boolean(s.compactAutoBuy),
     muted: Boolean(s.muted),
+    // Saves from before the intro existed skip it once they have any progress
+    introSeen: typeof s.introSeen === 'boolean' ? s.introSeen : lifetimeEarned > 0 || legacyPoints > 0,
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),
     lastUpdate
   }

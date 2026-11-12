@@ -1204,3 +1204,27 @@
   border-radius: 50%;
   display: inline-block;
 }
+
+/* New-player intro */
+.scn-IntroDots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.scn-IntroDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-track);
+}
+
+.scn-IntroDot-active {
+  background: var(--color-purple);
+}
+
+.lyt-FooterActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

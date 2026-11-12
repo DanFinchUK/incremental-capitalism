@@ -9,7 +9,8 @@
 
       <FloatingPayouts :floats="floats" />
       <MarketEvent @claim="handleClaimEvent" />
-      <WelcomeModal />
+      <IntroModal />
+      <WelcomeModal v-if="!store.introOpen" />
       <ClassModal />
       <LegacyShop @buy-perk="handleBuyPerk" />
       <ConfirmModal
@@ -54,9 +55,14 @@
 
     <footer class="lyt-Footer">
       <span>Incremental Capitalism · Empire &amp; Privilege Edition</span>
-      <button type="button" class="scn-Action" @click="handleHardReset">
-        Reset game
-      </button>
+      <div class="lyt-FooterActions">
+        <button type="button" class="scn-Action scn-Action-outline" data-testid="open-intro" @click="store.openIntro()">
+          How to play
+        </button>
+        <button type="button" class="scn-Action" @click="handleHardReset">
+          Reset game
+        </button>
+      </div>
     </footer>
   </div>
 </template>
@@ -69,6 +75,7 @@ import { playSfx } from './engine/audio'
 import { useGameStore } from './stores/game'
 import ClassModal from './components/ClassModal.vue'
 import ConfirmModal, { type ConfirmDialogMode } from './components/ConfirmModal.vue'
+import IntroModal from './components/IntroModal.vue'
 import FloatingPayouts, { type FloatParticle } from './components/FloatingPayouts.vue'
 import HeroHeader from './components/HeroHeader.vue'
 import ItemCard from './components/ItemCard.vue'

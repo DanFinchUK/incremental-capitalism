@@ -39,10 +39,17 @@
             </div>
             <div class="lyt-Item">
               <div class="scn-DataTitle">Legacy:</div>
-              <div class="scn-DataValue">{{ $store.getters.legacyPoints }} (x{{ $store.getters.legacyMultiplier }})</div>
+              <div class="scn-DataValue">{{ $store.getters.legacyPoints }} (x{{ $store.getters.legacyMultiplier }}), {{ $store.getters.legacyAvailable }} unspent</div>
               <a href="#" class="scn-Action" @click.prevent="retire" :title="retireTitle" :class="{
                 'scn-Action-disabled': $store.getters.legacyGain < 1
               }">Retire for +{{ $store.getters.legacyGain }}</a>
+            </div>
+            <div class="lyt-Item">
+              <div class="scn-DataTitle">Auto-clickers:</div>
+              <div class="scn-DataValue">{{ $store.getters.autoClickers }}</div>
+              <a href="#" class="scn-Action" @click.prevent="buyAutoClicker" title="Each auto-clicker pays out your click income once a second." :class="{
+                'scn-Action-disabled': $store.getters.legacyAvailable < $store.getters.autoClickerCost
+              }">Buy for {{ $store.getters.autoClickerCost }} legacy</a>
             </div>
           </div>
         </div>
@@ -66,6 +73,7 @@
                 <h4>{{ job.label }} ({{ $store.getters.jobsPurchased[id] | default 0 }})</h4>
                 <p>Cost to apply: {{ $store.getters.jobCost(id) | currency }}</p>
                 <p>Income: {{ job.moneyPerClick | currency }} / click</p>
+                <p>{{ autoStatus('jobs', id) }}</p>
               </div>
 
               <div class="lyt-ItemColumn lyt-ItemColumn-action">
@@ -94,6 +102,7 @@
                 <h4>{{ business.label }} ({{ $store.getters.businessesOwned[id] | default 0 }})</h4>
                 <p>Cost to start: {{ $store.getters.businessCost(id) | currency }}</p>
                 <p>Income: {{ business.moneyPerSecond | currency }} / second</p>
+                <p>{{ autoStatus('businesses', id) }}</p>
               </div>
 
               <div class="lyt-ItemColumn lyt-ItemColumn-action">
@@ -144,7 +153,7 @@
         if (gain < 1) {
           return 'Reach £1M net worth to earn legacy points'
         }
-        return `Reset money, jobs and businesses. You keep your legacy and gain ${gain} point${gain === 1 ? '' : 's'}, each adding 25% income.`
+        return `Reset money, jobs and businesses. You keep your legacy, lifetime purchases and auto-clickers, and gain ${gain} point${gain === 1 ? '' : 's'}, each adding 25% income.`
       }
     },
 
@@ -170,8 +179,28 @@
         }
 
         store.commit('ADD_MONEY', store.getters.moneyPerSecond / (1000 / delta))
+        store.dispatch('autoBuy')
 
         window.requestAnimationFrame(this.nextGameTick)
+      },
+
+      autoStatus (kind, id) {
+        const purchases = store.getters.lifetimePurchases[kind][id] || 0
+        const threshold = store.getters.autoBuyThreshold
+        if (purchases < threshold) {
+          return `Auto-buy unlocks after ${threshold} purchases (${purchases} so far)`
+        }
+        if (kind === 'jobs' && store.getters.autoClickers < 1) {
+          return 'Auto-buy unlocked. Jobs only pay out via auto-clickers.'
+        }
+        return 'Auto-buy unlocked'
+      },
+
+      buyAutoClicker () {
+        if (store.getters.legacyAvailable < store.getters.autoClickerCost) {
+          return false
+        }
+        store.commit('BUY_AUTO_CLICKER')
       },
 
       getMoney (event) {

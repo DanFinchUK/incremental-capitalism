@@ -5,6 +5,9 @@ const state = {
   jobsPurchased: {},
   businessesOwned: {},
   legacyPoints: 0,
+  legacySpent: 0,
+  autoClickers: 0,
+  lifetimePurchases: { jobs: {}, businesses: {} },
   lastUpdate: null
 }
 
@@ -13,6 +16,14 @@ function resetRun (state) {
   state.jobsPurchased = {}
   state.businessesOwned = {}
   state.lastUpdate = null
+}
+
+function bump (counts, id) {
+  if (undefined === counts[id]) {
+    Vue.set(counts, id, 1)
+  } else {
+    counts[id] += 1
+  }
 }
 
 const mutations = {
@@ -25,29 +36,31 @@ const mutations = {
   },
 
   ADD_JOB (state, jobID) {
-    if (undefined === state.jobsPurchased[jobID]) {
-      Vue.set(state.jobsPurchased, jobID, 1)
-    } else {
-      state.jobsPurchased[jobID] += 1
-    }
+    bump(state.jobsPurchased, jobID)
+    bump(state.lifetimePurchases.jobs, jobID)
   },
 
   ADD_BUSINESS (state, businessID) {
-    if (undefined === state.businessesOwned[businessID]) {
-      Vue.set(state.businessesOwned, businessID, 1)
-    } else {
-      state.businessesOwned[businessID] += 1
-    }
+    bump(state.businessesOwned, businessID)
+    bump(state.lifetimePurchases.businesses, businessID)
   },
 
   RESET (state) {
     resetRun(state)
     state.legacyPoints = 0
+    state.legacySpent = 0
+    state.autoClickers = 0
+    state.lifetimePurchases = { jobs: {}, businesses: {} }
   },
 
   RETIRE (state, gain) {
     state.legacyPoints += gain
     resetRun(state)
+  },
+
+  BUY_AUTO_CLICKER (state) {
+    state.legacySpent += 2
+    state.autoClickers += 1
   },
 
   LOAD_FROM_STORAGE_OBJECT (state, storageObject) {
@@ -76,6 +89,15 @@ const actions = {
 
   retire: ({ getters, commit }) => {
     commit('RETIRE', getters.legacyGain)
+  },
+
+  autoBuy: ({ getters, dispatch }) => {
+    let target = getters.autoBuyTarget
+
+    while (target && getters.money >= target.cost) {
+      dispatch(target.action, target.id)
+      target = getters.autoBuyTarget
+    }
   }
 }
 
@@ -85,7 +107,12 @@ const getters = {
   jobsPurchased: (state) => state.jobsPurchased,
   businessesOwned: (state) => state.businessesOwned,
   legacyPoints: (state) => state.legacyPoints,
+  legacyAvailable: (state) => state.legacyPoints - state.legacySpent,
   legacyMultiplier: (state) => 1 + 0.25 * state.legacyPoints,
+  autoClickers: (state) => state.autoClickers,
+  autoClickerCost: () => 2,
+  lifetimePurchases: (state) => state.lifetimePurchases,
+  autoBuyThreshold: () => 10,
 
   // One legacy point per order of magnitude of net worth above £1M.
   legacyGain (state, getters) {
@@ -101,7 +128,45 @@ const getters = {
       amount += getters.businesses[id].moneyPerSecond * state.businessesOwned[id]
     }
 
-    return amount * getters.legacyMultiplier
+    return amount * getters.legacyMultiplier + state.autoClickers * getters.moneyPerClick
+  },
+
+  // The unlocked item with the best income per £ of its next unit, or null.
+  autoBuyTarget (state, getters) {
+    const candidates = []
+
+    for (const id of Object.keys(getters.jobs)) {
+      candidates.push({
+        action: 'addJob',
+        id,
+        purchases: state.lifetimePurchases.jobs[id] || 0,
+        cost: getters.jobCost(id),
+        income: state.autoClickers * getters.jobs[id].moneyPerClick * getters.legacyMultiplier
+      })
+    }
+
+    for (const id of Object.keys(getters.businesses)) {
+      candidates.push({
+        action: 'addBusiness',
+        id,
+        purchases: state.lifetimePurchases.businesses[id] || 0,
+        cost: getters.businessCost(id),
+        income: getters.businesses[id].moneyPerSecond * getters.legacyMultiplier
+      })
+    }
+
+    let best = null
+
+    for (const candidate of candidates) {
+      if (candidate.purchases < getters.autoBuyThreshold || candidate.income <= 0) {
+        continue
+      }
+      if (!best || candidate.income / candidate.cost > best.income / best.cost) {
+        best = candidate
+      }
+    }
+
+    return best
   },
 
   moneyPerClick (state, getters) {

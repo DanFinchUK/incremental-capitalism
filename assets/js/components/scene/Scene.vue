@@ -7,9 +7,10 @@
       <span>{{ $store.getters.moneyPerSecond | currency }} / second</span>
       <span>{{ $store.getters.moneyPerClick | currency }} / click</span>
       <span>Legacy: {{ $store.getters.legacyAvailable }} unspent</span>
-      <a href="#" class="scn-Action" @click.prevent="retire" :title="retireTitle" :class="{
+            <a href="#" class="scn-Action" @click.prevent="retire" :class="{
         'scn-Action-disabled': $store.getters.legacyGain < 1
       }">Retire for +{{ $store.getters.legacyGain }}</a>
+            <span class="scn-Help" :title="retireTitle">?</span>
     </div>
     <div class="lyt-Header">
       <div class="lyt-Columns">
@@ -47,11 +48,16 @@
               <div class="scn-DataValue">{{ $store.getters.moneyPerClick | currency }}</div>
             </div>
             <div class="lyt-Item">
+              <div class="scn-DataTitle">Lifetime earnings:</div>
+              <div class="scn-DataValue">{{ $store.getters.lifetimeEarned | currency }}</div>
+            </div>
+            <div class="lyt-Item">
               <div class="scn-DataTitle">Legacy:</div>
               <div class="scn-DataValue">{{ $store.getters.legacyPoints }} (x{{ $store.getters.legacyMultiplier }}), {{ $store.getters.legacyAvailable }} unspent</div>
-              <a href="#" class="scn-Action" @click.prevent="retire" :title="retireTitle" :class="{
+                            <a href="#" class="scn-Action" @click.prevent="retire" :class="{
                 'scn-Action-disabled': $store.getters.legacyGain < 1
               }">Retire for +{{ $store.getters.legacyGain }}</a>
+                            <span class="scn-Help" :title="retireTitle">?</span>
             </div>
             <div class="lyt-Item">
               <div class="scn-DataTitle">Auto-clickers:</div>
@@ -90,7 +96,7 @@
                 <a v-if="!$store.getters.autoBuyActive('jobs', id)" href="#" class="scn-Action" @click.prevent="getJob(id)" :class="{
                   'scn-Action-disabled': $store.getters.money < $store.getters.jobCost(id)
                 }">Get hired</a>
-                                <label v-if="$store.getters.autoBuyUnlocked('jobs', id)" class="scn-AutoBuy">
+                                <label v-if="$store.getters.autoBuyUnlocked('jobs', id) && $store.getters.autoClickers > 0" class="scn-AutoBuy">
                                   <input type="checkbox" :checked="$store.getters.autoBuyEnabled('jobs', id)" @change="toggleAutoBuy('jobs', id)"> Auto-buy
                                 </label>
                                 </div>
@@ -171,7 +177,7 @@
       retireTitle () {
         const gain = store.getters.legacyGain
         if (gain < 1) {
-          return `Earn £${store.getters.nextLegacyAt.toLocaleString('en-GB', { maximumFractionDigits: 0 })} in lifetime earnings for your next legacy point`
+          return `Next legacy point at £${store.getters.nextLegacyAt.toLocaleString('en-GB', { maximumFractionDigits: 0 })} lifetime earnings.`
         }
         return `Reset money, jobs and businesses. You keep your legacy, lifetime purchases and auto-clickers, and gain ${gain} point${gain === 1 ? '' : 's'}, each adding 25% income.`
       }

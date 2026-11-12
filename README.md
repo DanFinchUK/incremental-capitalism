@@ -1,3 +1,3 @@
 # incremental-capitalism
 
-Available at http://danielsamuels.co.uk/incremental-capitalism/
+Available at https://danfinchuk.github.io/incremental-capitalism/

@@ -40,6 +40,10 @@
   --color-shady: #b54708;
   --color-shady-bg: #ffeed9;
   --color-shady-fg: #b54708;
+  --color-danger: #c81e1e;
+  --color-danger-hover: #9b1c1c;
+  --color-danger-bg: #fde8e8;
+  --color-danger-fg: #9b1c1c;
   --font-mono: 'Inconsolata', Monaco, 'Lucida Console', monospace;
   --radius: 3px;
   --gutter: 15px;
@@ -85,6 +89,10 @@
     --color-shady: #fb923c;
     --color-shady-bg: #361907;
     --color-shady-fg: #fed7aa;
+    --color-danger: #dc2626;
+    --color-danger-hover: #ef4444;
+    --color-danger-bg: #351316;
+    --color-danger-fg: #fecaca;
   }
 }
 

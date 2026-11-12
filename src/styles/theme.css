@@ -70,6 +70,12 @@
   border-color: var(--color-purple);
 }
 
+.scn-Action-pausedToggle {
+  background-color: var(--color-gold-bg);
+  color: var(--color-gold-fg);
+  border-color: var(--color-gold);
+}
+
 /* News Ticker */
 .scn-Ticker {
   background-color: #161616;
@@ -190,9 +196,16 @@
   font-size: 15px;
 }
 
+.scn-ClassPerkRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .scn-ClassPerk {
   display: inline-block;
-  align-self: center;
   padding: 3px 10px;
   background: var(--color-perk-pill-bg);
   color: var(--color-perk-pill-fg);
@@ -658,6 +671,209 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+}
+
+.scn-Modal-wide {
+  max-width: 520px;
+}
+
+.scn-Modal-xl {
+  max-width: 880px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.scn-PyramidList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scn-PyramidRung {
+  padding: 10px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.scn-PyramidRung-current {
+  border-color: var(--color-next-row-border);
+  background: var(--color-next-row);
+}
+
+.scn-PyramidRung-celebrated {
+  border-color: var(--color-purple);
+  box-shadow: 0 0 0 1px var(--color-purple);
+}
+
+.scn-PyramidRung-mystery {
+  opacity: 0.68;
+  border-style: dashed;
+}
+
+.scn-PyramidHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.scn-PyramidTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.scn-PyramidTier {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--color-pip-bg);
+  color: var(--color-pip-fg);
+}
+
+.scn-PyramidName {
+  font-size: 16px;
+}
+
+.scn-PyramidReq {
+  font-size: 12px;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.scn-PyramidPerk {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-synergy);
+}
+
+.scn-PyramidGift {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--color-body-secondary);
+}
+
+.scn-Modal-danger {
+  border-color: var(--color-danger);
+}
+
+.scn-ModalTop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scn-ModalKicker {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 2px;
+}
+
+.scn-ModalKicker-purple {
+  background: var(--color-perk-pill-bg);
+  color: var(--color-perk-pill-fg);
+}
+
+.scn-ModalKicker-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-fg);
+}
+
+.scn-ModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .scn-ModalGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.scn-ModalCallout {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scn-ModalCallout-perk {
+  background: var(--color-perk-pill-bg);
+  color: var(--color-perk-pill-fg);
+  border: 1px solid var(--color-purple);
+}
+
+.scn-ModalCallout-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-fg);
+  border: 1px solid var(--color-danger);
+}
+
+.scn-BackupRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius);
+}
+
+.scn-DangerAck {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scn-ModalFooter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.scn-Action-purple {
+  background-color: var(--color-purple);
+  border-color: var(--color-purple);
+  color: #ffffff;
+}
+
+.scn-Action-purple:hover:not(:disabled) {
+  background-color: var(--color-purple-hover);
+  border-color: var(--color-purple-hover);
+}
+
+.scn-Action-danger {
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #ffffff;
+}
+
+.scn-Action-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
 }
 
 /* City Trading Desk (Terminal Panel) */

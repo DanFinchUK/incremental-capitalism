@@ -47,7 +47,7 @@ describe('App UI integration', () => {
 
     const networkBtn = wrapper.find('[data-testid="toggle-legacy-shop"]')
     await networkBtn.trigger('click')
-    expect(wrapper.find('.scn-Drawer').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="legacy-modal"]').exists()).toBe(true)
     expect(wrapper.findAll('.scn-PerkCard')).toHaveLength(6)
     wrapper.unmount()
   })
@@ -97,6 +97,87 @@ describe('App UI integration', () => {
 
     await wrapper.find('[data-item-key="businesses-1"]').trigger('click')
     expect(wrapper.find('[data-item-key="businesses-1"]').classes()).not.toContain('scn-Card-compact')
+
+    // Master Auto-buy pause reveals manual buy button on ticked cards without unchecking Auto-buy
+    const pauseBtn = wrapper.find('[data-testid="toggle-autobuy-pause"]')
+    expect(pauseBtn.exists()).toBe(true)
+    expect(pauseBtn.text()).toContain('Auto-buy: On')
+    await pauseBtn.trigger('click')
+    expect(pauseBtn.text()).toContain('Auto-buy: Paused')
+    expect(wrapper.find('[data-item-key="businesses-1"]').text()).toContain('Get Businessed')
+    wrapper.unmount()
+  })
+
+  it('opens Golden Parachute retire modal with Before -> After stats and opens Old Boys Network on confirm', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+
+    store.addDebugMoney(600_000_000_000, 1000) // > £500B -> +1 Legacy
+    await wrapper.vm.$nextTick()
+
+    const retireTrigger = wrapper.findAll('button').find((b) => b.text().includes('Retire for +1'))
+    expect(retireTrigger).toBeDefined()
+    await retireTrigger!.trigger('click')
+
+    const modal = wrapper.find('[data-testid="retire-modal"]')
+    expect(modal.exists()).toBe(true)
+    expect(modal.text()).toContain('x1 → x1.25')
+    expect(modal.text()).toContain('Business Auto-buy')
+
+    await wrapper.find('[data-testid="confirm-retire-btn"]').trigger('click')
+    expect(wrapper.find('[data-testid="retire-modal"]').exists()).toBe(false)
+    expect(store.legacyPoints).toBe(1)
+    expect(store.legacyDrawerOpen).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('gates Reset modal destructive action behind confirmation checkbox before wiping state', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+
+    store.legacyPoints = 5
+    store.money = 123_456
+    await wrapper.vm.$nextTick()
+
+    const resetTrigger = wrapper.findAll('button').find((b) => b.text() === 'Reset game')
+    expect(resetTrigger).toBeDefined()
+    await resetTrigger!.trigger('click')
+
+    const modal = wrapper.find('[data-testid="reset-modal"]')
+    expect(modal.exists()).toBe(true)
+    const confirmBtn = wrapper.find('[data-testid="confirm-reset-btn"]')
+    expect((confirmBtn.element as HTMLButtonElement).disabled).toBe(true)
+
+    await confirmBtn.trigger('click')
+    expect(store.legacyPoints).toBe(5)
+
+    const checkbox = wrapper.find('[data-testid="confirm-reset-checkbox"]')
+    await checkbox.setValue(true)
+    expect((confirmBtn.element as HTMLButtonElement).disabled).toBe(false)
+
+    await confirmBtn.trigger('click')
+    expect(wrapper.find('[data-testid="reset-modal"]').exists()).toBe(false)
+    expect(store.legacyPoints).toBe(0)
+    expect(store.money).toBe(0)
+    wrapper.unmount()
+  })
+
+  it('opens the 7-tier Class Pyramid modal with fog-of-war ??? above the next target class', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    expect(store.highestClassReached).toBe(0)
+
+    await wrapper.find('[data-testid="open-class-pyramid"]').trigger('click')
+    const modal = wrapper.find('[data-testid="class-modal"]')
+    expect(modal.exists()).toBe(true)
+
+    const text = modal.text()
+    // Reached (0: Precarious proletariat) + Next (1: Emergent service worker) visible; higher veiled as ???
+    expect(text).toContain('Precarious proletariat')
+    expect(text).toContain('Emergent service worker')
+    expect(text).toContain('???')
+    expect(text).not.toContain('Established middle class')
+    expect(text).not.toContain('Hereditary peerage')
     wrapper.unmount()
   })
 })

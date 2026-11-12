@@ -8,7 +8,17 @@
               Your current social class: {{ store.classStatus.current.label }}
             </h1>
             <p class="scn-ClassDesc">{{ store.classStatus.current.description }}</p>
-            <span class="scn-ClassPerk">Privilege: {{ store.classStatus.current.perkSummary }}</span>
+            <div class="scn-ClassPerkRow">
+              <span class="scn-ClassPerk">Privilege: {{ store.classStatus.current.perkSummary }}</span>
+              <button
+                type="button"
+                class="scn-CompactRefold"
+                data-testid="open-class-pyramid"
+                @click="store.openClassPyramid()"
+              >
+                Class pyramid ({{ store.highestClassReached + 1 }}/7)
+              </button>
+            </div>
 
             <div class="scn-ProgressTrack" role="progressbar" :aria-valuenow="Math.round(store.classStatus.bracketProgress * 100)" aria-valuemin="0" aria-valuemax="100">
               <div

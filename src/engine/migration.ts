@@ -1,6 +1,6 @@
 import { BUSINESSES, JOBS } from '../data/items'
 import { EMPTY_PERKS, type PerkId, type PerkRanks } from '../data/perks'
-import { FIRST_LEGACY_LIFETIME, seriesCost, type BulkBuyMode } from './economy'
+import { FIRST_LEGACY_LIFETIME, seriesCost, socialClassInfo, type BulkBuyMode } from './economy'
 
 export const STORAGE_KEY = 'state'
 const LEGACY_V1_THRESHOLD = 2.17e11
@@ -27,7 +27,9 @@ export interface PersistedSceneState {
     businesses: Record<string, boolean>
   }
   lifetimeEarned: number
+  highestClassReached: number
   bulkBuyMode: BulkBuyMode
+  autoBuyPaused: boolean
   compactAutoBuy: boolean
   muted: boolean
   tradingDeskCollapsed: boolean
@@ -52,7 +54,9 @@ export function createInitialSceneState(): PersistedSceneState {
     autoBuyDisabled: { jobs: {}, businesses: {} },
     seenItems: { jobs: { '1': true }, businesses: { '1': true } },
     lifetimeEarned: 0,
+    highestClassReached: 0,
     bulkBuyMode: 1,
+    autoBuyPaused: false,
     compactAutoBuy: false,
     muted: false,
     tradingDeskCollapsed: false,
@@ -223,6 +227,17 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     }
   }
 
+  const inferredPeakWorth = Math.max(
+    money + spentThisRun,
+    legacyPoints > 0 ? FIRST_LEGACY_LIFETIME : 0
+  )
+  const inferredClass = socialClassInfo(inferredPeakWorth).current.level
+  const savedHighestClass =
+    typeof s.highestClassReached === 'number' && Number.isFinite(s.highestClassReached)
+      ? Math.min(6, Math.max(0, Math.floor(s.highestClassReached)))
+      : 0
+  const highestClassReached = Math.max(inferredClass, savedHighestClass)
+
   const lastUpdate =
     typeof s.lastUpdate === 'number' && Number.isFinite(s.lastUpdate) && s.lastUpdate > 0
       ? s.lastUpdate
@@ -246,7 +261,9 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       businesses: seenBusinesses
     },
     lifetimeEarned,
+    highestClassReached,
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
+    autoBuyPaused: Boolean(s.autoBuyPaused),
     compactAutoBuy: Boolean(s.compactAutoBuy),
     muted: Boolean(s.muted),
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),

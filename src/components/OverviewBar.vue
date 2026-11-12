@@ -21,6 +21,17 @@
       </div>
 
       <button
+        v-if="store.legacyPoints >= 1 || store.autoClickers >= 1"
+        type="button"
+        class="scn-Action scn-Action-outline"
+        :class="{ 'scn-Action-pausedToggle': store.autoBuyPaused }"
+        data-testid="toggle-autobuy-pause"
+        @click="store.toggleAutoBuyPaused()"
+      >
+        Auto-buy: {{ store.autoBuyPaused ? 'Paused' : 'On' }}
+      </button>
+
+      <button
         type="button"
         class="scn-Action scn-Action-outline"
         :class="{ 'scn-Action-activeToggle': store.compactAutoBuy }"

@@ -111,4 +111,82 @@ describe('useGameStore', () => {
     reloaded.hydrateFromStorage(2000)
     expect(reloaded.compactAutoBuy).toBe(true)
   })
+
+  it('triggers ClassModal once per class per save and uses banner on repeat runs', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    expect(store.highestClassReached).toBe(0)
+    expect(store.classModalOpen).toBe(false)
+
+    // Earning £6,000 crosses Class 1 (Emergent service worker, threshold £4,999) for the first time
+    store.businessesOwned['1'] = 3 // >£7,800/s
+    store.tick(1000)
+    store.tick(2000)
+    expect(store.highestClassReached).toBe(1)
+    expect(store.classModalOpen).toBe(true)
+    expect(store.celebratedClassLevel).toBe(1)
+
+    store.closeClassModal()
+    expect(store.classModalOpen).toBe(false)
+
+    // Simulate retiring and climbing past Class 1 again: no repeat modal, only banner
+    store.addDebugMoney(600_000_000_000, 3000) // reaches Class 5 on debug credit (not tick), let's reset money & test Class 1 repeat
+    store.retire(4000)
+    store.closeClassModal()
+    // highestClassReached is now >= 1; crossing Class 1 again on Run #2 does NOT re-open modal
+    store.businessesOwned['1'] = 3
+    store.tick(4000)
+    store.tick(5000)
+    expect(store.classStatus.current.level).toBeGreaterThanOrEqual(1)
+    expect(store.classModalOpen).toBe(false)
+  })
+
+  it('includes business auto-buy unlock threshold as a stop in Next bulk-buy mode', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    store.setBulkBuyMode('next')
+
+    // Buy-to-let ('7', sf 1.50) has milestones [10, 20, 40, 75, 125] and auto-buy threshold 15
+    store.businessesOwned['7'] = 10
+    store.lifetimePurchases.businesses['7'] = 10
+    expect(store.itemQuote('businesses', '7').count).toBe(5)
+
+    // Once auto-buy threshold (15) is already met, Next targets milestone 20 (+10 from 10 owned)
+    store.lifetimePurchases.businesses['7'] = 15
+    expect(store.itemQuote('businesses', '7').count).toBe(10)
+  })
+
+  it('enforces a 1-second cooldown per auto-buy purchase and supports master autoBuyPaused toggle', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    store.legacyPoints = 1
+    store.lifetimePurchases.businesses = { '1': 50 }
+    store.money = 10_000_000
+
+    // First tick after hydration buys exactly 1 unit instead of draining cash in a tight loop
+    store.tick(1100)
+    expect(store.businessesOwned['1']).toBe(1)
+
+    // Tick within 1s cooldown (<1000ms) does not buy another unit
+    store.tick(1700)
+    expect(store.businessesOwned['1']).toBe(1)
+
+    // Tick after >=1000ms buys the 2nd unit
+    store.tick(2100)
+    expect(store.businessesOwned['1']).toBe(2)
+
+    // Master pause halts auto-buying while preserving individual item checkbox state
+    store.toggleAutoBuyPaused()
+    expect(store.autoBuyPaused).toBe(true)
+    expect(store.isAutoBuyEnabled('businesses', '1')).toBe(true)
+    expect(store.isAutoBuyActive('businesses', '1')).toBe(false)
+
+    store.tick(4000)
+    expect(store.businessesOwned['1']).toBe(2)
+
+    store.toggleAutoBuyPaused()
+    expect(store.autoBuyPaused).toBe(false)
+    store.tick(5000)
+    expect(store.businessesOwned['1']).toBe(3)
+  })
 })

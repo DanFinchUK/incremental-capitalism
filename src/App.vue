@@ -10,9 +10,16 @@
       <FloatingPayouts :floats="floats" />
       <MarketEvent @claim="handleClaimEvent" />
       <WelcomeModal />
+      <ClassModal />
+      <LegacyShop @buy-perk="handleBuyPerk" />
+      <ConfirmModal
+        :mode="activeDialog"
+        @close="activeDialog = null"
+        @confirm-retire="confirmRetire"
+        @confirm-reset="confirmHardReset"
+      />
 
       <OverviewBar @retire="handleRetire" />
-      <LegacyShop @buy-perk="handleBuyPerk" />
       <HeroHeader ref="heroRef" @paid="handleManualClick" />
       <TradingDesk />
 
@@ -60,6 +67,8 @@ import type { ItemKind } from './data/items'
 import type { PerkId } from './data/perks'
 import { playSfx } from './engine/audio'
 import { useGameStore } from './stores/game'
+import ClassModal from './components/ClassModal.vue'
+import ConfirmModal, { type ConfirmDialogMode } from './components/ConfirmModal.vue'
 import FloatingPayouts, { type FloatParticle } from './components/FloatingPayouts.vue'
 import HeroHeader from './components/HeroHeader.vue'
 import ItemCard from './components/ItemCard.vue'
@@ -78,12 +87,22 @@ store.hydrateFromStorage(Date.now())
 const heroRef = ref<InstanceType<typeof HeroHeader> | null>(null)
 const floats = ref<FloatParticle[]>([])
 const visibleBanner = ref<string | null>(null)
+const activeDialog = ref<ConfirmDialogMode>(null)
 
 let floatSeq = 0
 let rafId: number | null = null
 let autoFloatTimer: ReturnType<typeof setInterval> | null = null
 let bannerTimer: ReturnType<typeof setTimeout> | null = null
 const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>()
+
+watch(
+  () => store.celebratedClassLevel,
+  (lvl) => {
+    if (lvl !== null) {
+      playSfx('milestone', store.muted)
+    }
+  }
+)
 
 watch(
   () => store.bannerMessage,
@@ -166,19 +185,27 @@ function handleClaimEvent(): void {
 }
 
 function handleRetire(): void {
-  const gain = store.legacyGain
-  if (gain < 1) return
-  if (window.confirm(`Retire for +${gain} Legacy? Your cash, jobs and businesses will reset, keeping Legacy, perks and lifetime counts.`)) {
-    if (store.retire(Date.now())) {
-      playSfx('milestone', store.muted)
+  if (store.legacyGain < 1) return
+  activeDialog.value = 'retire'
+}
+
+function confirmRetire(): void {
+  activeDialog.value = null
+  if (store.retire(Date.now())) {
+    if (store.legacyAvailable > 0) {
+      store.legacyDrawerOpen = true
     }
+    playSfx('milestone', store.muted)
   }
 }
 
 function handleHardReset(): void {
-  if (window.confirm('Reset everything, including Legacy points, perks and lifetime counts?')) {
-    store.hardReset(Date.now())
-  }
+  activeDialog.value = 'reset'
+}
+
+function confirmHardReset(): void {
+  activeDialog.value = null
+  store.hardReset(Date.now())
 }
 
 function onBeforeUnload(): void {

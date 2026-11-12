@@ -282,6 +282,9 @@ const autoStatusText = computed(() => {
   if (props.kind === 'jobs' && store.autoClickers < 1) {
     return 'Purchase goal met — hire Unpaid Interns in Old Boys\' Network to auto-buy Jobs'
   }
+  if (store.autoBuyPaused) {
+    return 'Auto-buy paused globally (resume in top bar)'
+  }
   return store.isNextAutoBuy(props.kind, id) ? 'Auto-buy active · Next purchase target' : 'Auto-buy unlocked'
 })
 

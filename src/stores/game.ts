@@ -70,6 +70,7 @@ export interface ActiveMarketEvent {
 export type ClaimEventOutcome = 'golden' | 'shadyWin' | 'shadyFreeze' | null
 
 const SAVE_THROTTLE_MS = 2000
+const AUTO_BUY_COOLDOWN_MS = 1000
 
 export const useGameStore = defineStore('game', () => {
   const initial = createInitialSceneState()
@@ -85,7 +86,9 @@ export const useGameStore = defineStore('game', () => {
   const autoBuyDisabled = ref(initial.autoBuyDisabled)
   const seenItems = ref(initial.seenItems)
   const lifetimeEarned = ref<number>(initial.lifetimeEarned)
+  const highestClassReached = ref<number>(initial.highestClassReached)
   const bulkBuyMode = ref<BulkBuyMode>(initial.bulkBuyMode)
+  const autoBuyPaused = ref<boolean>(initial.autoBuyPaused)
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
   const muted = ref<boolean>(initial.muted)
   const tradingDeskCollapsed = ref<boolean>(initial.tradingDeskCollapsed)
@@ -96,6 +99,7 @@ export const useGameStore = defineStore('game', () => {
   const telemetry = ref<TelemetryState>(createTelemetryState(nowMs.value, initial.money))
   const lastTickMs = ref<number | null>(null)
   const lastSavedMs = ref<number>(0)
+  const lastAutoBuyAt = ref<number>(0)
   const hustleBonus = ref<number>(0)
   const lastManualClickAt = ref<number>(0)
   const bullRunUntil = ref<number>(0)
@@ -107,6 +111,8 @@ export const useGameStore = defineStore('game', () => {
   const offlineReport = ref<OfflineCatchUpResult | null>(null)
   const bannerMessage = ref<string | null>(null)
   const legacyDrawerOpen = ref<boolean>(false)
+  const classModalOpen = ref<boolean>(false)
+  const celebratedClassLevel = ref<number | null>(null)
 
   const netWorth = computed(() => money.value + spentThisRun.value)
   const classStatus = computed(() => socialClassInfo(netWorth.value))
@@ -150,7 +156,9 @@ export const useGameStore = defineStore('game', () => {
   const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
   const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
   const moneyPerSecond = computed(() => computePassivePerSecond(economyInput.value))
-  const autoBuyTarget = computed(() => selectAutoBuyTarget(selectionInput.value))
+  const autoBuyTarget = computed(() =>
+    autoBuyPaused.value ? null : selectAutoBuyTarget(selectionInput.value)
+  )
   const realisedPerSecond = computed(() => currentRealisedPerSec(telemetry.value, nowMs.value))
   const manualRealisedPerSecond = computed(() => currentManualPerSec(telemetry.value, nowMs.value))
   const sectorSlices = computed(() => computeSectorSlices(economyInput.value, manualRealisedPerSecond.value))
@@ -229,7 +237,9 @@ export const useGameStore = defineStore('game', () => {
       autoBuyDisabled: autoBuyDisabled.value,
       seenItems: seenItems.value,
       lifetimeEarned: lifetimeEarned.value,
+      highestClassReached: highestClassReached.value,
       bulkBuyMode: bulkBuyMode.value,
+      autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
       muted: muted.value,
       tradingDeskCollapsed: tradingDeskCollapsed.value,
@@ -264,18 +274,23 @@ export const useGameStore = defineStore('game', () => {
     autoBuyDisabled.value = loaded.autoBuyDisabled
     seenItems.value = loaded.seenItems
     lifetimeEarned.value = loaded.lifetimeEarned
+    highestClassReached.value = loaded.highestClassReached
     bulkBuyMode.value = loaded.bulkBuyMode
+    autoBuyPaused.value = loaded.autoBuyPaused
     compactAutoBuy.value = loaded.compactAutoBuy
     muted.value = loaded.muted
     tradingDeskCollapsed.value = loaded.tradingDeskCollapsed
     lastUpdate.value = loaded.lastUpdate
     nowMs.value = ts
     lastTickMs.value = ts
+    lastAutoBuyAt.value = 0
     hustleBonus.value = 0
     bullRunUntil.value = 0
     overtimeUntil.value = 0
     autoBuyFrozenUntil.value = 0
     activeEvent.value = null
+    classModalOpen.value = false
+    celebratedClassLevel.value = null
     resetTelemetry(telemetry.value, ts, loaded.money)
     refreshSeenItems()
     scheduleNextEvent(ts)
@@ -296,6 +311,7 @@ export const useGameStore = defineStore('game', () => {
       if (catchUp) {
         money.value += catchUp.moneyEarned
         lifetimeEarned.value += catchUp.moneyEarned
+        highestClassReached.value = Math.max(highestClassReached.value, classStatus.value.current.level)
         offlineReport.value = catchUp
         resetTelemetry(telemetry.value, ts, money.value)
         refreshSeenItems()
@@ -319,6 +335,7 @@ export const useGameStore = defineStore('game', () => {
   function addDebugMoney(amount: number, ts = nowMs.value): void {
     nowMs.value = ts
     creditMoney(amount)
+    highestClassReached.value = Math.max(highestClassReached.value, classStatus.value.current.level)
     refreshSeenItems()
   }
 
@@ -326,16 +343,41 @@ export const useGameStore = defineStore('game', () => {
     bannerMessage.value = msg
   }
 
+  function handleClassPromotion(prevClass: number): boolean {
+    const newClass = classStatus.value.current.level
+    if (newClass <= prevClass) {
+      return false
+    }
+    markTelemetryEvent(telemetry.value, 'M')
+    if (newClass > highestClassReached.value) {
+      highestClassReached.value = newClass
+      celebratedClassLevel.value = newClass
+      classModalOpen.value = true
+    } else {
+      announce(`Promoted to ${classStatus.value.current.label}! (${classStatus.value.current.perkSummary})`)
+    }
+    return true
+  }
+
   function itemQuote(kind: ItemKind, id: string, modeOverride?: BulkBuyMode) {
     const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
     const owned = kind === 'jobs' ? (jobsPurchased.value[id] ?? 0) : (businessesOwned.value[id] ?? 0)
+    let autoBuyRemaining: number | undefined
+    if (kind === 'businesses') {
+      const threshold = autoBuyThreshold('businesses', def.scaleFactor, perks.value.nepotism)
+      const lifetime = lifetimePurchases.value.businesses[id] ?? 0
+      if (lifetime < threshold) {
+        autoBuyRemaining = threshold - lifetime
+      }
+    }
     return bulkBuyQuote(
       def.baseCost,
       def.scaleFactor,
       owned,
       classStatus.value.costDiscount,
       modeOverride ?? bulkBuyMode.value,
-      money.value
+      money.value,
+      autoBuyRemaining
     )
   }
 
@@ -361,11 +403,8 @@ export const useGameStore = defineStore('game', () => {
     refreshSeenItems()
 
     const crossedMilestone = itemMilestones(def.scaleFactor).filter((m) => prevOwned < m && nextOwned >= m).pop() ?? null
-    const newClass = classStatus.value.current.level
-    if (newClass > prevClass) {
-      markTelemetryEvent(telemetry.value, 'M')
-      announce(`Promoted to ${classStatus.value.current.label}! (${classStatus.value.current.perkSummary})`)
-    } else if (crossedMilestone !== null) {
+    const promoted = handleClassPromotion(prevClass)
+    if (!promoted && crossedMilestone !== null) {
       markTelemetryEvent(telemetry.value, 'M')
       const step = (2 + 0.25 * perks.value.deregulation).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned — ${step}x output milestone!`)
@@ -375,20 +414,23 @@ export const useGameStore = defineStore('game', () => {
     return {
       bought: quote.count,
       hitMilestone: crossedMilestone !== null,
-      promotedClass: newClass > prevClass
+      promotedClass: promoted
     }
   }
 
-  function runAutoBuy(): void {
-    if (isAutoBuyFrozen.value) {
+  function runAutoBuy(ts: number): void {
+    if (isAutoBuyFrozen.value || autoBuyPaused.value) {
       return
     }
-    let safety = 0
-    let target = autoBuyTarget.value
-    while (target && money.value >= target.cost && safety < 200) {
-      buyItem(target.kind, target.id, 1)
-      target = autoBuyTarget.value
-      safety += 1
+    if (lastAutoBuyAt.value > 0 && ts - lastAutoBuyAt.value < AUTO_BUY_COOLDOWN_MS) {
+      return
+    }
+    const target = autoBuyTarget.value
+    if (target && money.value >= target.cost) {
+      const res = buyItem(target.kind, target.id, 1)
+      if (res.bought > 0) {
+        lastAutoBuyAt.value = ts
+      }
     }
   }
 
@@ -400,10 +442,7 @@ export const useGameStore = defineStore('game', () => {
     const amount = moneyPerClick.value
     creditMoney(amount, 'manual', ts)
     refreshSeenItems()
-    if (classStatus.value.current.level > prevClass) {
-      markTelemetryEvent(telemetry.value, 'M')
-      announce(`Promoted to ${classStatus.value.current.label}! (${classStatus.value.current.perkSummary})`)
-    }
+    handleClassPromotion(prevClass)
     return amount
   }
 
@@ -467,21 +506,27 @@ export const useGameStore = defineStore('game', () => {
       return 'golden'
     }
     if (ev.def.kind === 'taxRebate') {
+      const prevClass = classStatus.value.current.level
       const windfall = Math.max(500, moneyPerSecond.value * 60)
       markTelemetryEvent(telemetry.value, '★')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
-      announce('Non-Dom Tax Rebate! 60s of passive income wired offshore!')
+      if (!handleClassPromotion(prevClass)) {
+        announce('Non-Dom Tax Rebate! 60s of passive income wired offshore!')
+      }
       flushSave(ts)
       return 'golden'
     }
     // Shady Deal: 50/50 windfall vs 15s auto-buy freeze
     if (rng() < 0.5) {
+      const prevClass = classStatus.value.current.level
       const windfall = Math.max(1500, moneyPerSecond.value * 180)
       markTelemetryEvent(telemetry.value, '★')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
-      announce('VIP-Lane Contract Approved! 180s passive windfall!')
+      if (!handleClassPromotion(prevClass)) {
+        announce('VIP-Lane Contract Approved! 180s passive windfall!')
+      }
       flushSave(ts)
       return 'shadyWin'
     }
@@ -504,6 +549,7 @@ export const useGameStore = defineStore('game', () => {
       const catchUp = computeOfflineCatchUp(elapsedMs, moneyPerSecond.value, perks.value.offshore)
       if (catchUp) {
         creditMoney(catchUp.moneyEarned, undefined, ts)
+        highestClassReached.value = Math.max(highestClassReached.value, classStatus.value.current.level)
         offlineReport.value = catchUp
         resetTelemetry(telemetry.value, ts, money.value)
       }
@@ -514,14 +560,11 @@ export const useGameStore = defineStore('game', () => {
       }
       const prevClass = classStatus.value.current.level
       creditMoney(moneyPerSecond.value * deltaSec, 'passive', ts)
-      if (classStatus.value.current.level > prevClass) {
-        markTelemetryEvent(telemetry.value, 'M')
-        announce(`Promoted to ${classStatus.value.current.label}! (${classStatus.value.current.perkSummary})`)
-      }
+      handleClassPromotion(prevClass)
     }
 
     refreshSeenItems()
-    runAutoBuy()
+    runAutoBuy(ts)
     observeBalance(telemetry.value, ts, money.value)
     if (ts - telemetry.value.lastSampleTs >= 250) {
       sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value)
@@ -555,6 +598,9 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function isAutoBuyActive(kind: ItemKind, id: string): boolean {
+    if (autoBuyPaused.value) {
+      return false
+    }
     const scale = kind === 'jobs' ? JOBS_BY_ID[id].scaleFactor : BUSINESSES_BY_ID[id].scaleFactor
     return isItemAutoBuyActive(kind, id, scale, selectionInput.value)
   }
@@ -598,6 +644,7 @@ export const useGameStore = defineStore('game', () => {
     bullRunUntil.value = 0
     overtimeUntil.value = 0
     autoBuyFrozenUntil.value = 0
+    lastAutoBuyAt.value = 0
     activeEvent.value = null
     resetTelemetry(telemetry.value, ts, money.value)
     refreshSeenItems()
@@ -634,6 +681,11 @@ export const useGameStore = defineStore('game', () => {
     flushSave(nowMs.value)
   }
 
+  function toggleAutoBuyPaused(): void {
+    autoBuyPaused.value = !autoBuyPaused.value
+    flushSave(nowMs.value)
+  }
+
   function itemIncomeDelta(kind: ItemKind, id: string, count: number): IncomeDeltaQuote {
     return quoteIncomeDelta(kind, id, count, economyInput.value)
   }
@@ -641,6 +693,16 @@ export const useGameStore = defineStore('game', () => {
   function toggleTradingDesk(): void {
     tradingDeskCollapsed.value = !tradingDeskCollapsed.value
     flushSave(nowMs.value)
+  }
+
+  function openClassPyramid(): void {
+    celebratedClassLevel.value = null
+    classModalOpen.value = true
+  }
+
+  function closeClassModal(): void {
+    classModalOpen.value = false
+    celebratedClassLevel.value = null
   }
 
   return {
@@ -655,7 +717,9 @@ export const useGameStore = defineStore('game', () => {
     autoBuyDisabled,
     seenItems,
     lifetimeEarned,
+    highestClassReached,
     bulkBuyMode,
+    autoBuyPaused,
     compactAutoBuy,
     muted,
     tradingDeskCollapsed,
@@ -667,6 +731,8 @@ export const useGameStore = defineStore('game', () => {
     offlineReport,
     bannerMessage,
     legacyDrawerOpen,
+    classModalOpen,
+    celebratedClassLevel,
     netWorth,
     classStatus,
     legacyMultiplier,
@@ -715,6 +781,9 @@ export const useGameStore = defineStore('game', () => {
     toggleMute,
     setBulkBuyMode,
     toggleCompactAutoBuy,
-    toggleTradingDesk
+    toggleAutoBuyPaused,
+    toggleTradingDesk,
+    openClassPyramid,
+    closeClassModal
   }
 })

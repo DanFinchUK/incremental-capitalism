@@ -136,7 +136,7 @@ function spawnFloat(x: number, y: number, amount: number): void {
 function scheduleAutoFloats(): void {
   const count = Math.min(store.autoClickers, 30)
   if (count <= 0) return
-  const amount = store.baseMoneyPerClick
+  const amount = store.moneyPerClick
   for (let i = 0; i < count; i++) {
     const handle = setTimeout(() => {
       pendingTimeouts.delete(handle)

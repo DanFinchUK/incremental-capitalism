@@ -48,7 +48,7 @@
         @click="store.legacyDrawerOpen = !store.legacyDrawerOpen"
       >
         Old Boys' Network
-        <span class="scn-BadgeCount">{{ store.legacyAvailable }}</span>
+        <span class="scn-BadgeCount">{{ networkBadgeText }}</span>
       </button>
 
       <button
@@ -72,6 +72,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { BulkBuyMode } from '../engine/economy'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
@@ -81,6 +82,13 @@ const emit = defineEmits<{
 }>()
 
 const store = useGameStore()
+
+const networkBadgeText = computed(() => {
+  if (store.legacyAvailable === 0 && store.legacyPoints >= 1 && store.perks.autoClicker === 0) {
+    return 'FREE'
+  }
+  return String(store.legacyAvailable)
+})
 
 const bulkOptions: ReadonlyArray<{ mode: BulkBuyMode; label: string }> = [
   { mode: 1, label: 'x1' },

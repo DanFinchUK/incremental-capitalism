@@ -14,7 +14,7 @@
             {{ celebratedDef ? 'New Lifetime Milestone' : 'The Great British Class Survey' }}
           </span>
           <h2 id="class-modal-title">
-            {{ celebratedDef ? `Welcome to the ${celebratedDef.label}` : `British Class Pyramid (${store.highestClassReached + 1}/7 unlocked)` }}
+            {{ celebratedDef ? `Welcome to the ${celebratedDef.label}` : `British Class Pyramid (${store.highestClassReached + 1}/${SOCIAL_CLASSES.length} unlocked)` }}
           </h2>
         </div>
         <button type="button" class="scn-Action scn-Action-outline" @click="store.closeClassModal()">

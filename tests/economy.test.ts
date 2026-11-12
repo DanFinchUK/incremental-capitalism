@@ -97,17 +97,23 @@ describe('economy engine', () => {
 
     const elite = socialClassInfo(9e12)
     expect(elite.current.level).toBe(6)
-    expect(elite.next).toBeNull()
+    expect(elite.next?.label).toBe('Davos Regular')
     expect(elite.incomeMultiplier).toBeCloseTo(1.9, 5)
     expect(elite.costDiscount).toBeCloseTo(0.88, 5)
-    expect(elite.bracketProgress).toBe(1)
+
+    const reptilian = socialClassInfo(5e18)
+    expect(reptilian.current.level).toBe(9)
+    expect(reptilian.next).toBeNull()
+    expect(reptilian.incomeMultiplier).toBeCloseTo(2.35, 5)
+    expect(reptilian.costDiscount).toBeCloseTo(0.82, 5)
+    expect(reptilian.bracketProgress).toBe(1)
   })
 
-  it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, legacy, and hustle', () => {
+  it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, +75% legacy, and intern hustle benefit', () => {
     const base = {
       jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 2x milestone + +10% to Etsy store ('1')
-      businessesOwned: { '1': 9 }, // Etsy store x9 -> £2,500/s * 1.10 = £2,750/s each
-      legacyPoints: 4, // 2.0x legacy
+      businessesOwned: { '1': 9 }, // Etsy store x9 -> £2,600/s * 1.10 = £2,860/s each
+      legacyPoints: 4, // 1 + 0.75 * 4 = 4.0x legacy
       classLevel: 0,
       deregulationRank: 0,
       autoClickers: 0,
@@ -115,15 +121,25 @@ describe('economy engine', () => {
       clickBuffMultiplier: 1,
       hustleMultiplier: 2
     }
-    // Base click 30 + (10 * 1450 * 2 milestone) = 29,030; * 2 legacy = 58,060; * 2 hustle = 116,120
-    expect(computeClickIncome(base, false)).toBe(58_060)
-    expect(computeClickIncome(base, true)).toBe(116_120)
-    // 9 * 2600 * 1.10 * 2 legacy = 51,480/s
-    expect(computePassivePerSecond(base)).toBeCloseTo(51_480, 5)
+    // Base click 30 + (10 * 1450 * 2 milestone) = 29,030; * 4 legacy = 116,120; * 2 hustle = 232,240
+    expect(computeClickIncome(base, false)).toBe(116_120)
+    expect(computeClickIncome(base, true)).toBe(232_240)
+    // 9 * 2600 * 1.10 * 4 legacy = 102,960/s
+    expect(computePassivePerSecond(base)).toBeCloseTo(102_960, 5)
 
-    // Buying 10th Etsy crosses milestone 10 (doubles all 10 units -> 10 * 2600 * 2 * 1.10 * 2 = 114,400 -> +62,920/s!)
+    // With 2 Unpaid Interns: when idle (hustle=1) adds 2 * 116,120; when manually hustling (hustle=2) adds 2 * 232,240!
+    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 1 })).toBeCloseTo(
+      102_960 + 2 * 116_120,
+      5
+    )
+    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 2 })).toBeCloseTo(
+      102_960 + 2 * 232_240,
+      5
+    )
+
+    // Buying 10th Etsy crosses milestone 10 (doubles all 10 units -> 10 * 2600 * 2 * 1.10 * 4 = 228,800 -> +125,840/s!)
     const deltaBiz = quoteIncomeDelta('businesses', '1', 1, base)
-    expect(deltaBiz.deltaPerSec).toBeCloseTo(62_920, 5)
+    expect(deltaBiz.deltaPerSec).toBeCloseTo(125_840, 5)
 
     // Buying 1 more Teaching assistant boosts both click income AND Etsy passive synergy!
     const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)
@@ -166,11 +182,14 @@ describe('economy engine', () => {
     expect(withLegacy?.id).toBe('1')
   })
 
-  it('sets FIRST_LEGACY_LIFETIME to £500B and computes legacy curve, trust fund, and offline catch-up', () => {
-    expect(FIRST_LEGACY_LIFETIME).toBe(5.0e11)
+  it('uses Triangular Legacy curve (£450B * P(P+1)/2), trust fund, and offline catch-up', () => {
+    expect(FIRST_LEGACY_LIFETIME).toBe(4.5e11)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 0.99, 0)).toBe(0)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME, 0)).toBe(1)
-    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 9, 1)).toBe(2)
+    // P=2 threshold is 3 * 450B = £1.35T; £1.44T with 1 Legacy immediately awards +1!
+    expect(computeLegacyGain(1.44e12, 1)).toBe(1)
+    // P=3 threshold is 6 * 450B = £2.70T
+    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 6, 1)).toBe(2)
     expect(trustFundStartingCash(0)).toBe(0)
     expect(trustFundStartingCash(2)).toBe(125_000)
 
@@ -183,7 +202,7 @@ describe('economy engine', () => {
     })
   })
 
-  it('reaches £500B first Legacy around 90 minutes (85–95m) under realistic human-paced play', () => {
+  it('reaches £450B first Legacy around 70–85 minutes under realistic human-paced play', () => {
     const jobsOwned: Record<string, number> = {}
     const bizOwned: Record<string, number> = {}
     let spent = 0
@@ -280,7 +299,7 @@ describe('economy engine', () => {
 
     expect(firstLegacySec).not.toBeNull()
     const firstLegacyMinutes = (firstLegacySec ?? 0) / 60
-    expect(firstLegacyMinutes).toBeGreaterThanOrEqual(85)
-    expect(firstLegacyMinutes).toBeLessThanOrEqual(95)
+    expect(firstLegacyMinutes).toBeGreaterThanOrEqual(70)
+    expect(firstLegacyMinutes).toBeLessThanOrEqual(85)
   })
 })

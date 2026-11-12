@@ -63,5 +63,29 @@ export const SOCIAL_CLASSES: ReadonlyArray<SocialClassDef> = [
     description: 'The most privileged group in the UK, distinct from the other six classes through its wealth and highest levels of all three capitals.',
     perkSummary: '+90% income, -12% purchase costs ("Mates\' Rates")',
     initiationNote: 'Welcome pack: Hereditary peerage nod, Cayman family office, and Kensington helipad clearance.'
+  },
+  {
+    level: 7,
+    threshold: Math.pow(5000, 4.0) - 1,
+    label: 'Davos Regular',
+    description: 'Beyond the official ONS survey: private alpine airstrips, bilateral tax treaties, and first-name terms with central bankers.',
+    perkSummary: '+105% income, -14% purchase costs',
+    initiationNote: 'Welcome pack: Monogrammed cashmere gilet, G650 flight transponder, and diplomatic pouch.'
+  },
+  {
+    level: 8,
+    threshold: Math.pow(5000, 4.5) - 1,
+    label: 'Shadow Cabinet',
+    description: 'You no longer lobby governments; prospective prime ministers audition at your Oxfordshire orangery before manifesto launch.',
+    perkSummary: '+120% income, -16% purchase costs',
+    initiationNote: 'Welcome pack: Unlisted Whitehall pass, three newspaper editors, and sovereign debt veto.'
+  },
+  {
+    level: 9,
+    threshold: Math.pow(5000, 5.0) - 1,
+    label: 'Reptilian Dynasty',
+    description: 'Old money predating the Magna Carta, quietly compounding from a heated subterranean vault beneath Threadneedle Street.',
+    perkSummary: '+135% income, -18% purchase costs ("Royal Charter")',
+    initiationNote: 'Welcome pack: Heated basking rock, Crown Estate ground-rent ledger, and eternal non-dom status.'
   }
 ]

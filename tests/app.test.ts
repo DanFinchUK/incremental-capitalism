@@ -121,7 +121,7 @@ describe('App UI integration', () => {
 
     const modal = wrapper.find('[data-testid="retire-modal"]')
     expect(modal.exists()).toBe(true)
-    expect(modal.text()).toContain('x1 → x1.25')
+    expect(modal.text()).toContain('x1 → x1.75')
     expect(modal.text()).toContain('Business Auto-buy')
 
     await wrapper.find('[data-testid="confirm-retire-btn"]').trigger('click')

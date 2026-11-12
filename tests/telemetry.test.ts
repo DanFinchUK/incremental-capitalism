@@ -87,9 +87,9 @@ describe('telemetry engine & sector breakdown', () => {
     expect(bracketHalf.progress).toBeCloseTo(0.5, 4)
 
     const bracketNext = computeLegacyBracket(FIRST_LEGACY_LIFETIME * 2.5, 0)
-    // pendingGain = 1 (floor 1*B, next 4*B, span 3*B -> (2.5 - 1)/3 = 0.5)
+    // Triangular: pendingGain = 1 (floor 1*B, next 3*B, span 2*B -> (2.5 - 1)/2 = 0.75)
     expect(bracketNext.pendingGain).toBe(1)
-    expect(bracketNext.progress).toBeCloseTo(0.5, 4)
+    expect(bracketNext.progress).toBeCloseTo(0.75, 4)
   })
 
   describe('store telemetry integration', () => {

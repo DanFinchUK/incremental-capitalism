@@ -40,20 +40,32 @@ describe('useGameStore', () => {
     expect(store.hustleMultiplier).toBeLessThan(1.5)
   })
 
-  it('supports Retire with Trust Fund seed cash and Old Boys Network perk purchases', () => {
+  it('supports Retire with Trust Fund seed cash, free 1st Intern (gated on 1+ Legacy), and stepped Intern costs', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
-    store.addDebugMoney(FIRST_LEGACY_LIFETIME * 9, 1000) // enough for 3 legacy points
+    // Cannot claim free 0-cost Intern before earning at least 1 Legacy
+    expect(store.buyPerk('autoClicker')).toBe(false)
+
+    store.addDebugMoney(FIRST_LEGACY_LIFETIME * 6, 1000) // Triangular P=3: 3*4/2 = 6 * 450B
     expect(store.legacyGain).toBe(3)
     store.retire(2000)
     expect(store.legacyPoints).toBe(3)
     expect(store.legacyAvailable).toBe(3)
 
-    expect(store.buyPerk('trustFund')).toBe(true) // costs 1
-    expect(store.perks.trustFund).toBe(1)
+    // 1st Intern costs 0, 2nd Intern costs 1, Trust Fund I costs 1
+    expect(store.buyPerk('autoClicker')).toBe(true)
+    expect(store.perks.autoClicker).toBe(1)
+    expect(store.legacyAvailable).toBe(3)
+
+    expect(store.buyPerk('autoClicker')).toBe(true)
+    expect(store.perks.autoClicker).toBe(2)
     expect(store.legacyAvailable).toBe(2)
 
-    store.addDebugMoney(FIRST_LEGACY_LIFETIME * 16, 3000)
+    expect(store.buyPerk('trustFund')).toBe(true) // costs 1
+    expect(store.perks.trustFund).toBe(1)
+    expect(store.legacyAvailable).toBe(1)
+
+    store.addDebugMoney(FIRST_LEGACY_LIFETIME * 10, 3000) // Triangular P=4: 4*5/2 = 10 * 450B
     store.retire(4000)
     expect(store.money).toBe(25_000) // Trust Fund rank 1 starting cash
   })

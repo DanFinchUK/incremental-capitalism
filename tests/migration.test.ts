@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FIRST_LEGACY_LIFETIME, computeLegacyBracket, computeLegacyGain } from '../src/engine/economy'
+import { computeLegacyBracket, computeLegacyGain, legacyLifetimeThreshold } from '../src/engine/economy'
 import { createInitialSceneState, parseSavedState, serializeState } from '../src/engine/migration'
 
 const REAL_V1_SAVE = JSON.stringify({
@@ -32,7 +32,7 @@ const REAL_V1_SAVE = JSON.stringify({
   }
 })
 
-describe('v1/v2 -> v3 save migration', () => {
+describe('v1/v2/v3 -> v4 save migration', () => {
   it('migrates real 34-Legacy v1 Vuex save seamlessly without point loss or free points', () => {
     const state = parseSavedState(REAL_V1_SAVE)
     expect(state.legacyPoints).toBe(34)
@@ -40,7 +40,7 @@ describe('v1/v2 -> v3 save migration', () => {
     expect(state.perks.autoClicker).toBe(17)
     expect(state.perks.trustFund).toBe(0)
     expect(state.compactAutoBuy).toBe(false)
-    expect(state.lifetimeEarned).toBe(FIRST_LEGACY_LIFETIME * 34 * 34)
+    expect(state.lifetimeEarned).toBe(legacyLifetimeThreshold(34))
     expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(0)
     expect(state.spentThisRun).toBeGreaterThan(2_000_000_000)
     expect(state.seenItems.jobs['15']).toBe(true)
@@ -48,30 +48,31 @@ describe('v1/v2 -> v3 save migration', () => {
     expect(state.seenItems.businesses['19']).toBeFalsy()
   })
 
-  it('preserves 0-Legacy v2 lifetimeEarned unscaled so a £500B run immediately unlocks +1 Legacy', () => {
-    const v2ZeroLegacy = JSON.stringify({
-      schemaVersion: 2,
+  it('preserves 1-Legacy v3 £1.44T lifetimeEarned unscaled so it immediately unlocks Retire for +1', () => {
+    const v3OneLegacy = JSON.stringify({
+      schemaVersion: 3,
       scene: {
         ...createInitialSceneState(),
-        money: 40_000_000_000,
-        spentThisRun: 460_000_000_000,
-        lifetimeEarned: 500_000_000_000,
-        legacyPoints: 0
+        money: 8_023_025_787,
+        spentThisRun: 247_845_175_636,
+        lifetimeEarned: 1_440_000_000_000,
+        legacyPoints: 1,
+        legacySpent: 1
       }
     })
-    const state = parseSavedState(v2ZeroLegacy)
-    expect(state.lifetimeEarned).toBe(500_000_000_000)
+    const state = parseSavedState(v3OneLegacy)
+    expect(state.lifetimeEarned).toBe(1_440_000_000_000)
     expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(1)
   })
 
-  it('rescales >0-Legacy v2 saves from £3T curve to £500B curve preserving bracket % with zero free Legacy', () => {
-    const oldBase = 3.0e12
-    const floor34 = oldBase * 34 * 34
-    const next35 = oldBase * 35 * 35
+  it('remaps >1-Legacy v2/v3 saves onto the Triangular curve preserving bracket % with zero free Legacy', () => {
+    const oldV3Base = 5.0e11
+    const floor34 = oldV3Base * 34 * 34
+    const next35 = oldV3Base * 35 * 35
     const halfway = floor34 + 0.5 * (next35 - floor34)
 
-    const v2WithLegacy = JSON.stringify({
-      schemaVersion: 2,
+    const v3WithLegacy = JSON.stringify({
+      schemaVersion: 3,
       scene: {
         ...createInitialSceneState(),
         money: 1_000_000,
@@ -81,19 +82,19 @@ describe('v1/v2 -> v3 save migration', () => {
         legacySpent: 10
       }
     })
-    const state = parseSavedState(v2WithLegacy)
+    const state = parseSavedState(v3WithLegacy)
     expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(0)
     const bracket = computeLegacyBracket(state.lifetimeEarned, state.legacyPoints)
     expect(bracket.progress).toBeCloseTo(0.5, 5)
   })
 
-  it('round-trips v3 state including compactAutoBuy without double-scaling and recovers from corrupt JSON', () => {
+  it('round-trips v4 state including compactAutoBuy without double-scaling and recovers from corrupt JSON', () => {
     const migrated = parseSavedState(REAL_V1_SAVE)
     migrated.bulkBuyMode = 'next'
     migrated.muted = true
     migrated.compactAutoBuy = true
     const encoded = serializeState(migrated)
-    expect(JSON.parse(encoded).schemaVersion).toBe(3)
+    expect(JSON.parse(encoded).schemaVersion).toBe(4)
 
     const reloaded = parseSavedState(encoded)
     expect(reloaded.bulkBuyMode).toBe('next')

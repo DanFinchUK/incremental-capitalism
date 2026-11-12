@@ -50,7 +50,7 @@
       <div v-if="store.legacyPoints === 0" class="scn-ModalCallout scn-ModalCallout-perk">
         <p>
           <strong>First retirement unlock:</strong> Activates <strong>Business Auto-buy</strong> on every
-          venture that has reached its lifetime purchase goal, and opens the Old Boys' Network.
+          venture at its purchase goal, grants <strong>1 Free Unpaid Intern</strong>, and opens the Old Boys' Network.
         </p>
       </div>
 

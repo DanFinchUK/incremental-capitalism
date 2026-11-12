@@ -1,10 +1,18 @@
+import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
 import { EMPTY_PERKS, type PerkId, type PerkRanks } from '../data/perks'
-import { FIRST_LEGACY_LIFETIME, seriesCost, socialClassInfo, type BulkBuyMode } from './economy'
+import {
+  FIRST_LEGACY_LIFETIME,
+  legacyLifetimeThreshold,
+  seriesCost,
+  socialClassInfo,
+  type BulkBuyMode
+} from './economy'
 
 export const STORAGE_KEY = 'state'
 const LEGACY_V1_THRESHOLD = 2.17e11
 const LEGACY_V2_THRESHOLD = 3.0e12
+const LEGACY_V3_THRESHOLD = 5.0e11
 
 export interface PersistedSceneState {
   money: number
@@ -37,7 +45,7 @@ export interface PersistedSceneState {
 }
 
 export interface PersistedEnvelope {
-  schemaVersion: 3
+  schemaVersion: 4
   scene: PersistedSceneState
 }
 
@@ -114,6 +122,31 @@ function computeHistoricalRunSpent(
   return total
 }
 
+function remapQuadraticToTriangular(rawLifetime: number, legacyPoints: number, oldBase: number): number {
+  const oldFloor = oldBase * legacyPoints * legacyPoints
+  const oldNext = oldBase * (legacyPoints + 1) * (legacyPoints + 1)
+  const newFloor = legacyLifetimeThreshold(legacyPoints)
+  const newNext = legacyLifetimeThreshold(legacyPoints + 1)
+  if (rawLifetime <= oldFloor) {
+    return newFloor
+  }
+  if (rawLifetime < oldNext) {
+    const frac = (rawLifetime - oldFloor) / Math.max(1, oldNext - oldFloor)
+    return newFloor + frac * (newNext - newFloor)
+  }
+  const extraPoints = Math.max(0, Math.floor(Math.sqrt(rawLifetime / oldBase)) - legacyPoints)
+  const targetPts = legacyPoints + extraPoints
+  const targetOldFloor = oldBase * targetPts * targetPts
+  const targetOldNext = oldBase * (targetPts + 1) * (targetPts + 1)
+  const frac = Math.min(
+    1,
+    Math.max(0, (rawLifetime - targetOldFloor) / Math.max(1, targetOldNext - targetOldFloor))
+  )
+  const targetNewFloor = legacyLifetimeThreshold(targetPts)
+  const targetNewNext = legacyLifetimeThreshold(targetPts + 1)
+  return targetNewFloor + frac * (targetNewNext - targetNewFloor)
+}
+
 function parseBulkMode(raw: unknown): BulkBuyMode {
   if (raw === 1 || raw === 10 || raw === 'next' || raw === 'max') {
     return raw
@@ -188,7 +221,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       ? readNonNegativeNumber(s.spentThisRun, 0)
       : computeHistoricalRunSpent(jobsPurchased, businessesOwned)
 
-  const minLifetimeForLegacy = FIRST_LEGACY_LIFETIME * legacyPoints * legacyPoints
+  const minLifetimeForLegacy = legacyLifetimeThreshold(legacyPoints)
   const rawLifetime = readNonNegativeNumber(s.lifetimeEarned, 0)
   let lifetimeEarned = rawLifetime
   if (schemaVersion === 1) {
@@ -201,10 +234,20 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       lifetimeEarned = Math.max(
         minLifetimeForLegacy,
         money + spentThisRun,
-        lifetimeEarned * (FIRST_LEGACY_LIFETIME / LEGACY_V2_THRESHOLD)
+        remapQuadraticToTriangular(rawLifetime, legacyPoints, LEGACY_V2_THRESHOLD)
       )
     } else {
       lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun)
+    }
+  } else if (schemaVersion === 3) {
+    if (legacyPoints > 1) {
+      lifetimeEarned = Math.max(
+        minLifetimeForLegacy,
+        money + spentThisRun,
+        remapQuadraticToTriangular(rawLifetime, legacyPoints, LEGACY_V3_THRESHOLD)
+      )
+    } else {
+      lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun, minLifetimeForLegacy)
     }
   } else {
     lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun, minLifetimeForLegacy)
@@ -232,9 +275,10 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     legacyPoints > 0 ? FIRST_LEGACY_LIFETIME : 0
   )
   const inferredClass = socialClassInfo(inferredPeakWorth).current.level
+  const maxClassIdx = SOCIAL_CLASSES.length - 1
   const savedHighestClass =
     typeof s.highestClassReached === 'number' && Number.isFinite(s.highestClassReached)
-      ? Math.min(6, Math.max(0, Math.floor(s.highestClassReached)))
+      ? Math.min(maxClassIdx, Math.max(0, Math.floor(s.highestClassReached)))
       : 0
   const highestClassReached = Math.max(inferredClass, savedHighestClass)
 
@@ -273,7 +317,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
 
 export function serializeState(scene: PersistedSceneState): string {
   const envelope: PersistedEnvelope = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     scene
   }
   return JSON.stringify(envelope)

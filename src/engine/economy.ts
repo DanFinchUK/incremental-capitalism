@@ -6,7 +6,7 @@ const MILESTONES_MODERATE: ReadonlyArray<number> = [10, 20, 40, 75, 125]
 const MILESTONES_STEEP: ReadonlyArray<number> = [5, 10, 25, 50, 75]
 const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35]
 
-export const FIRST_LEGACY_LIFETIME = 5.0e11
+export const FIRST_LEGACY_LIFETIME = 4.5e11
 export const BASE_CLICK_VALUE = 30
 
 export type BulkBuyMode = 1 | 10 | 'next' | 'max'
@@ -165,16 +165,33 @@ export function socialClassInfo(netWorth: number): SocialClassStatus {
 }
 
 export function legacyMultiplier(legacyPoints: number): number {
-  return 1 + 0.25 * legacyPoints
+  return 1 + 0.75 * legacyPoints
+}
+
+export function legacyLifetimeThreshold(points: number): number {
+  if (points <= 0) {
+    return 0
+  }
+  return FIRST_LEGACY_LIFETIME * ((points * (points + 1)) / 2)
 }
 
 export function computeLegacyGain(lifetimeEarned: number, legacyPoints: number): number {
-  const totalEarnedPoints = Math.floor(Math.sqrt(Math.max(0, lifetimeEarned) / FIRST_LEGACY_LIFETIME))
+  const safe = Math.max(0, lifetimeEarned)
+  let totalEarnedPoints = Math.max(
+    0,
+    Math.floor((Math.sqrt(1 + (8 * safe) / FIRST_LEGACY_LIFETIME) - 1) / 2)
+  )
+  while (legacyLifetimeThreshold(totalEarnedPoints + 1) <= safe) {
+    totalEarnedPoints += 1
+  }
+  while (totalEarnedPoints > 0 && legacyLifetimeThreshold(totalEarnedPoints) > safe) {
+    totalEarnedPoints -= 1
+  }
   return Math.max(0, totalEarnedPoints - legacyPoints)
 }
 
 export function nextLegacyLifetimeThreshold(legacyPoints: number): number {
-  return FIRST_LEGACY_LIFETIME * Math.pow(legacyPoints + 1, 2)
+  return legacyLifetimeThreshold(legacyPoints + 1)
 }
 
 export interface LegacyBracketProgress {
@@ -188,8 +205,8 @@ export function computeLegacyBracket(lifetimeEarned: number, legacyPoints: numbe
   const safeLifetime = Math.max(0, lifetimeEarned)
   const pendingGain = computeLegacyGain(safeLifetime, legacyPoints)
   const totalPointsReached = legacyPoints + pendingGain
-  const currentFloor = FIRST_LEGACY_LIFETIME * totalPointsReached * totalPointsReached
-  const nextThreshold = FIRST_LEGACY_LIFETIME * Math.pow(totalPointsReached + 1, 2)
+  const currentFloor = legacyLifetimeThreshold(totalPointsReached)
+  const nextThreshold = legacyLifetimeThreshold(totalPointsReached + 1)
   const span = Math.max(1, nextThreshold - currentFloor)
   const progress = Math.min(1, Math.max(0, (safeLifetime - currentFloor) / span))
   return { pendingGain, currentFloor, nextThreshold, progress }
@@ -255,7 +272,7 @@ export function computePassivePerSecond(input: EconomySnapshotInput): number {
   const classMult = 1 + 0.15 * input.classLevel
   const bizIncome =
     rawBusinesses * classMult * legacyMultiplier(input.legacyPoints) * input.businessBuffMultiplier
-  const autoClickIncome = input.autoClickers * computeClickIncome(input, false)
+  const autoClickIncome = input.autoClickers * computeClickIncome(input, true)
   return bizIncome + autoClickIncome
 }
 
@@ -441,7 +458,7 @@ export function computeSectorSlices(
   }
 
   if (input.autoClickers > 0) {
-    const internPerSec = input.autoClickers * computeClickIncome(input, false)
+    const internPerSec = input.autoClickers * computeClickIncome(input, true)
     if (internPerSec > 0) {
       rawEntries.push({ id: 'interns', label: 'Unpaid Interns', perSec: internPerSec })
     }

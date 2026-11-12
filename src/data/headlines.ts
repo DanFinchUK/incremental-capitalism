@@ -38,6 +38,18 @@ const CLASS_HEADLINES: Readonly<Record<number, ReadonlyArray<string>>> = {
     'Peerage approved after entirely coincidental donation to heritage wallpaper trust.',
     'Private helicopters asked to idle quietly over Kensington before 10am.',
     'Multi-national conglomerate pays £42.50 corporation tax "as a gesture of goodwill".'
+  ],
+  7: [
+    'Davos panel on wealth inequality delayed by 40-jet traffic jam at Zurich airport.',
+    'Central bank governor asks your family office for a quick Vibes Check before rate call.'
+  ],
+  8: [
+    'Both major parties submit draft Budgets to your Oxfordshire orangery for red-penning.',
+    'Treasury quietly renames gilts auction "whatever suits your Cayman trust".'
+  ],
+  9: [
+    'Threadneedle Street vault thermostat raised to 34°C for your afternoon basking session.',
+    'Historians discover Magna Carta Clause 64 granting your bloodline 2% of all chippy sales.'
   ]
 }
 

@@ -619,6 +619,9 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function buyPerk(id: PerkId): boolean {
+    if (legacyPoints.value < 1) {
+      return false
+    }
     const cost = perkNextCost(id, perks.value[id])
     if (cost === null || legacyAvailable.value < cost) {
       return false

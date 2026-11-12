@@ -62,13 +62,22 @@ const emit = defineEmits<{
 const store = useGameStore()
 
 function canBuy(id: PerkId): boolean {
+  if (store.legacyPoints < 1) {
+    return false
+  }
   const cost = perkNextCost(id, store.perks[id])
   return cost !== null && store.legacyAvailable >= cost
 }
 
 function buttonText(id: PerkId): string {
   const cost = perkNextCost(id, store.perks[id])
-  return cost === null ? 'Maxed out' : `Buy for ${cost} Legacy`
+  if (cost === null) {
+    return 'Maxed out'
+  }
+  if (cost === 0) {
+    return store.legacyPoints >= 1 ? 'Claim free intern' : 'Needs 1 Legacy'
+  }
+  return `Buy for ${cost} Legacy`
 }
 
 function onKeyDown(ev: KeyboardEvent): void {

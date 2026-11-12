@@ -8,7 +8,7 @@
             role="button"
             tabindex="0"
             data-testid="open-class-pyramid"
-            :aria-label="`View British Class Pyramid (${store.highestClassReached + 1} of 7 unlocked)`"
+            :aria-label="`View British Class Pyramid (${store.highestClassReached + 1} of ${SOCIAL_CLASSES.length} unlocked)`"
             @click="store.openClassPyramid()"
             @keydown.enter.prevent="store.openClassPyramid()"
             @keydown.space.prevent="store.openClassPyramid()"
@@ -32,7 +32,7 @@
             </p>
             <p v-else>Top of the British class pyramid reached.</p>
             <span class="scn-StatHint">
-              {{ store.highestClassReached + 1 }}/7 classes unlocked · Click to view pyramid
+              {{ store.highestClassReached + 1 }}/{{ SOCIAL_CLASSES.length }} classes unlocked · Click to view pyramid
             </span>
           </div>
 
@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { SOCIAL_CLASSES } from '../data/classes'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
 

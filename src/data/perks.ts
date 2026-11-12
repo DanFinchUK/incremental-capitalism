@@ -30,9 +30,9 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'autoClicker',
     label: 'Unpaid Interns (Auto-Clicker)',
-    description: 'Each rank clicks Get Paid once per second automatically and enables Job auto-buying.',
+    description: 'Each rank clicks Get Paid once per second (riding your manual Hustle streak!) and enables Job auto-buying. First intern is literally unpaid!',
     maxRank: null,
-    costForRank: () => 2,
+    costForRank: (r) => r,
     effectSummary: (r) => `${r} auto-click${r === 1 ? '' : 's'}/sec`
   },
   {
@@ -62,7 +62,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'deregulation',
     label: 'Light-Touch Regulation',
-    description: 'Boosts each ownership milestone multiplier (10/25/50/100/200) by +0.25x per rank.',
+    description: 'Boosts each ownership milestone multiplier by +0.25x per rank.',
     maxRank: 4,
     costForRank: (r) => 4 + 3 * r,
     effectSummary: (r) => `${(2 + 0.25 * r).toFixed(2)}x per milestone`

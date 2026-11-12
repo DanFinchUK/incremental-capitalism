@@ -54,8 +54,8 @@ const CLASS_HEADLINES: Readonly<Record<number, ReadonlyArray<string>>> = {
 }
 
 const BUFF_HEADLINES: Readonly<Record<string, string>> = {
-  bullRun: 'BREAKING: Threadneedle Street turns money printer up to "Brisk" — valuations soaring!',
-  overtimeFrenzy: 'BREAKING: HR replaces chairs with motivational posters — click output through the roof!'
+  businessBuff: 'BREAKING: Threadneedle Street turns money printer up to "Brisk" — valuations soaring!',
+  clickBuff: 'BREAKING: HR replaces chairs with motivational posters — click output through the roof!'
 }
 
 export function pickHeadline(classLevel: number, activeBuffKind: string | null, rng: () => number = Math.random): string {

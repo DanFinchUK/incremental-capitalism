@@ -2,8 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { BUSINESSES, JOBS, itemImageUrl } from '../src/data/items'
 import { SOCIAL_CLASSES } from '../src/data/classes'
 import { EMPTY_PERKS, LEGACY_PERKS, perkNextCost, perkSpend } from '../src/data/perks'
-import { MARKET_EVENTS } from '../src/data/events'
+import { MARKET_EVENTS, pickEventRarity, pickMarketEvent } from '../src/data/events'
 import { pickHeadline } from '../src/data/headlines'
+
+function seq(values: number[]): () => number {
+  let i = 0
+  return () => values[i++ % values.length]
+}
 
 const JOB_IMAGE_FILES = Object.keys(import.meta.glob('../public/img/jobs/*.png'))
 const BUSINESS_IMAGE_FILES = Object.keys(import.meta.glob('../public/img/businesses/*.png'))
@@ -96,8 +101,26 @@ describe('catalogue & static data', () => {
     expect(perkSpend({ autoClicker: 0, hustleCap: 5, offshore: 5, nepotism: 4, deregulation: 4, insider: 4 })).toBe(31)
     expect(perkSpend({ ...EMPTY_PERKS, autoClicker: 10 })).toBe(16)
     expect(MARKET_EVENTS.some((e) => e.shady)).toBe(true)
+    // Rarity tiers: 60/30/10, and the 7x Overtime only in Legendary
+    expect(pickEventRarity(0)).toBe('common')
+    expect(pickEventRarity(0.59)).toBe('common')
+    expect(pickEventRarity(0.6)).toBe('rare')
+    expect(pickEventRarity(0.89)).toBe('rare')
+    expect(pickEventRarity(0.9)).toBe('legendary')
+    expect(pickEventRarity(0.999)).toBe('legendary')
+    for (const rarity of ['common', 'rare', 'legendary'] as const) {
+      expect(MARKET_EVENTS.some((e) => e.rarity === rarity)).toBe(true)
+    }
+    const strongestClick = MARKET_EVENTS.filter((e) => e.effect.type === 'clickBuff').sort(
+      (a, b) => (b.effect as { mult: number }).mult - (a.effect as { mult: number }).mult
+    )[0]
+    expect(strongestClick.kind).toBe('unpaidOvertime')
+    expect(strongestClick.rarity).toBe('legendary')
+    // pickMarketEvent: first roll picks rarity, second picks within tier
+    expect(pickMarketEvent(seq([0.95, 0])).rarity).toBe('legendary')
+    expect(pickMarketEvent(seq([0.1, 0.99])).rarity).toBe('common')
     expect(MARKET_EVENTS.some((e) => !e.shady)).toBe(true)
     expect(pickHeadline(0, null).length).toBeGreaterThan(10)
-    expect(pickHeadline(9, 'bullRun').length).toBeGreaterThan(10)
+    expect(pickHeadline(9, 'businessBuff').length).toBeGreaterThan(10)
   })
 })

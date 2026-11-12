@@ -9,7 +9,13 @@ import {
   type ItemKind,
   type JobDef
 } from '../data/items'
-import { MARKET_EVENTS, type MarketEventDef, type MarketEventKind } from '../data/events'
+import {
+  MARKET_EVENTS_BY_KIND,
+  RARITY_LABELS,
+  pickMarketEvent,
+  type MarketEventDef,
+  type MarketEventKind
+} from '../data/events'
 import { perkNextCost, type PerkId, type PerkRanks } from '../data/perks'
 import {
   autoBuyThreshold,
@@ -54,7 +60,7 @@ import {
   type IncomeSource,
   type TelemetryState
 } from '../engine/telemetry'
-import { formatMultiplier } from '../utils/format'
+import { formatDuration, formatMultiplier } from '../utils/format'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -69,6 +75,20 @@ export interface ActiveMarketEvent {
 }
 
 export type ClaimEventOutcome = 'golden' | 'shadyWin' | 'shadyFreeze' | null
+
+export interface TimedBuff {
+  kind: MarketEventKind
+  label: string
+  mult: number
+  until: number
+}
+
+export interface ActiveBuffView {
+  kind: MarketEventKind
+  label: string
+  mult: number
+  remainingSec: number
+}
 
 const SAVE_THROTTLE_MS = 2000
 const AUTO_BUY_COOLDOWN_MS = 1000
@@ -103,8 +123,8 @@ export const useGameStore = defineStore('game', () => {
   const lastAutoBuyAt = ref<number>(0)
   const hustleBonus = ref<number>(0)
   const lastManualClickAt = ref<number>(0)
-  const bullRunUntil = ref<number>(0)
-  const overtimeUntil = ref<number>(0)
+  const clickBuff = ref<TimedBuff | null>(null)
+  const businessBuff = ref<TimedBuff | null>(null)
   const autoBuyFrozenUntil = ref<number>(0)
   const activeEvent = ref<ActiveMarketEvent | null>(null)
   const nextEventAt = ref<number>(0)
@@ -126,12 +146,22 @@ export const useGameStore = defineStore('game', () => {
   const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
   const hustleMultiplier = computed(() => 1 + hustleBonus.value)
 
-  const isBullRunActive = computed(() => nowMs.value < bullRunUntil.value)
-  const isOvertimeActive = computed(() => nowMs.value < overtimeUntil.value)
+  function buffView(buff: TimedBuff | null): ActiveBuffView | null {
+    if (!buff || nowMs.value >= buff.until) {
+      return null
+    }
+    return {
+      kind: buff.kind,
+      label: buff.label,
+      mult: buff.mult,
+      remainingSec: Math.max(0, Math.ceil((buff.until - nowMs.value) / 1000))
+    }
+  }
+
+  const activeClickBuff = computed(() => buffView(clickBuff.value))
+  const activeBusinessBuff = computed(() => buffView(businessBuff.value))
   const isAutoBuyFrozen = computed(() => nowMs.value < autoBuyFrozenUntil.value)
 
-  const bullRunRemainingSec = computed(() => Math.max(0, Math.ceil((bullRunUntil.value - nowMs.value) / 1000)))
-  const overtimeRemainingSec = computed(() => Math.max(0, Math.ceil((overtimeUntil.value - nowMs.value) / 1000)))
   const autoBuyFreezeRemainingSec = computed(() =>
     Math.max(0, Math.ceil((autoBuyFrozenUntil.value - nowMs.value) / 1000))
   )
@@ -143,8 +173,8 @@ export const useGameStore = defineStore('game', () => {
     classLevel: classStatus.value.current.level,
     deregulationRank: perks.value.deregulation,
     autoClickers: autoClickers.value,
-    businessBuffMultiplier: isBullRunActive.value ? 5 : 1,
-    clickBuffMultiplier: isOvertimeActive.value ? 7 : 1,
+    businessBuffMultiplier: activeBusinessBuff.value?.mult ?? 1,
+    clickBuffMultiplier: activeClickBuff.value?.mult ?? 1,
     hustleMultiplier: hustleMultiplier.value
   }))
 
@@ -158,6 +188,10 @@ export const useGameStore = defineStore('game', () => {
   const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
   const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
   const moneyPerSecond = computed(() => computePassivePerSecond(economyInput.value))
+  // Income ignoring Market Opportunity buffs, so windfalls can't stack on them
+  const unbuffedMoneyPerSecond = computed(() =>
+    computePassivePerSecond({ ...economyInput.value, businessBuffMultiplier: 1, clickBuffMultiplier: 1 })
+  )
   const autoBuyTarget = computed(() =>
     autoBuyPaused.value ? null : selectAutoBuyTarget(selectionInput.value)
   )
@@ -287,8 +321,8 @@ export const useGameStore = defineStore('game', () => {
     lastTickMs.value = ts
     lastAutoBuyAt.value = 0
     hustleBonus.value = 0
-    bullRunUntil.value = 0
-    overtimeUntil.value = 0
+    clickBuff.value = null
+    businessBuff.value = null
     autoBuyFrozenUntil.value = 0
     activeEvent.value = null
     classModalOpen.value = false
@@ -456,7 +490,10 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function spawnSpecificEvent(kind: MarketEventKind, ts = nowMs.value, rng: () => number = Math.random): void {
-    const def = MARKET_EVENTS.find((e) => e.kind === kind) ?? MARKET_EVENTS[0]
+    showMarketEvent(MARKET_EVENTS_BY_KIND[kind], ts, rng)
+  }
+
+  function showMarketEvent(def: MarketEventDef, ts: number, rng: () => number): void {
     nextEventSeq.value += 1
     activeEvent.value = {
       id: nextEventSeq.value,
@@ -472,18 +509,7 @@ export const useGameStore = defineStore('game', () => {
       activeEvent.value = null
     }
     if (!activeEvent.value && nextEventAt.value > 0 && ts >= nextEventAt.value) {
-      const roll = rng()
-      let kind: MarketEventKind
-      if (roll < 0.25) {
-        kind = 'shadyDeal'
-      } else if (roll < 0.5) {
-        kind = 'bullRun'
-      } else if (roll < 0.75) {
-        kind = 'overtimeFrenzy'
-      } else {
-        kind = 'taxRebate'
-      }
-      spawnSpecificEvent(kind, ts, rng)
+      showMarketEvent(pickMarketEvent(rng), ts, rng)
       scheduleNextEvent(ts, rng)
     }
   }
@@ -497,50 +523,54 @@ export const useGameStore = defineStore('game', () => {
     activeEvent.value = null
     scheduleNextEvent(ts, rng)
     const durationMult = 1 + 0.25 * perks.value.insider
+    const def = ev.def
+    const effect = def.effect
+    const rarityPrefix = def.rarity === 'common' ? '' : `${RARITY_LABELS[def.rarity]}! `
+    const name = def.title.replace(/!$/, '')
 
-    if (ev.def.kind === 'bullRun') {
-      const dur = Math.round(ev.def.baseDurationSec * durationMult)
-      bullRunUntil.value = ts + dur * 1000
+    if (effect.type === 'clickBuff' || effect.type === 'businessBuff') {
+      const dur = Math.round(effect.durationSec * durationMult)
+      const slot = effect.type === 'clickBuff' ? clickBuff : businessBuff
+      const current = buffView(slot.value)
+      const target = effect.type === 'clickBuff' ? 'Click' : 'Business'
       markTelemetryEvent(telemetry.value, '★')
-      announce(`Quantitative Easing! 5x Business income for ${dur}s!`)
-      flushSave(ts)
-      return 'golden'
-    }
-    if (ev.def.kind === 'overtimeFrenzy') {
-      const dur = Math.round(ev.def.baseDurationSec * durationMult)
-      overtimeUntil.value = ts + dur * 1000
-      markTelemetryEvent(telemetry.value, '★')
-      announce(`Mandatory Unpaid Overtime! 7x Click income for ${dur}s!`)
-      flushSave(ts)
-      return 'golden'
-    }
-    if (ev.def.kind === 'taxRebate') {
-      const prevClass = classStatus.value.current.level
-      const windfall = Math.max(500, moneyPerSecond.value * 60)
-      markTelemetryEvent(telemetry.value, '★')
-      creditMoney(windfall, 'windfall', ts)
-      refreshSeenItems()
-      if (!handleClassPromotion(prevClass)) {
-        announce('Non-Dom Tax Rebate! 60s of passive income wired offshore!')
+      if (current && current.mult > effect.mult) {
+        // Never downgrade a stronger buff that is still running
+        announce(`${name}: your ${current.mult}x ${current.label} is stronger, so it keeps running.`)
+      } else {
+        slot.value = { kind: def.kind, label: def.buffLabel, mult: effect.mult, until: ts + dur * 1000 }
+        announce(`${rarityPrefix}${name}: ${effect.mult}x ${target} income for ${dur}s!`)
       }
       flushSave(ts)
       return 'golden'
     }
-    // Shady Deal: 50/50 windfall vs 15s auto-buy freeze
-    if (rng() < 0.5) {
+    if (effect.type === 'windfall') {
       const prevClass = classStatus.value.current.level
-      const windfall = Math.max(1500, moneyPerSecond.value * 180)
+      const windfall = Math.max(500, unbuffedMoneyPerSecond.value * effect.seconds)
       markTelemetryEvent(telemetry.value, '★')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       if (!handleClassPromotion(prevClass)) {
-        announce('VIP-Lane Contract Approved! 180s passive windfall!')
+        announce(`${rarityPrefix}${name}: ${formatDuration(effect.seconds)} of passive income wired offshore!`)
+      }
+      flushSave(ts)
+      return 'golden'
+    }
+    // Shady Deal: 50/50 windfall vs auto-buy freeze
+    if (rng() < 0.5) {
+      const prevClass = classStatus.value.current.level
+      const windfall = Math.max(1500, unbuffedMoneyPerSecond.value * effect.winSeconds)
+      markTelemetryEvent(telemetry.value, '★')
+      creditMoney(windfall, 'windfall', ts)
+      refreshSeenItems()
+      if (!handleClassPromotion(prevClass)) {
+        announce(`VIP-Lane Contract Approved! ${formatDuration(effect.winSeconds)} passive windfall!`)
       }
       flushSave(ts)
       return 'shadyWin'
     }
-    autoBuyFrozenUntil.value = ts + 15_000
-    announce('Select Committee Inquiry! Auto-buying paused for 15s (cash untouched).')
+    autoBuyFrozenUntil.value = ts + effect.freezeSec * 1000
+    announce(`Select Committee Inquiry! Auto-buying paused for ${effect.freezeSec}s (cash untouched).`)
     flushSave(ts)
     return 'shadyFreeze'
   }
@@ -654,8 +684,8 @@ export const useGameStore = defineStore('game', () => {
     jobsPurchased.value = {}
     businessesOwned.value = {}
     hustleBonus.value = 0
-    bullRunUntil.value = 0
-    overtimeUntil.value = 0
+    clickBuff.value = null
+    businessBuff.value = null
     autoBuyFrozenUntil.value = 0
     lastAutoBuyAt.value = 0
     activeEvent.value = null
@@ -755,11 +785,9 @@ export const useGameStore = defineStore('game', () => {
     legacyBracket,
     autoClickers,
     hustleMultiplier,
-    isBullRunActive,
-    isOvertimeActive,
+    activeClickBuff,
+    activeBusinessBuff,
     isAutoBuyFrozen,
-    bullRunRemainingSec,
-    overtimeRemainingSec,
     autoBuyFreezeRemainingSec,
     economyInput,
     moneyPerClick,

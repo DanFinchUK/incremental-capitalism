@@ -584,6 +584,31 @@
   animation: scn-pulse 1.1s ease-in-out infinite alternate;
 }
 
+.scn-MarketEvent-common {
+  background: var(--color-card);
+  border-color: var(--color-border);
+}
+
+.scn-MarketEvent-common .scn-MarketEventTag {
+  background: var(--color-pip-bg);
+  color: var(--color-body);
+}
+
+.scn-MarketEvent-rare {
+  background: var(--color-perk-pill-bg);
+  border-color: var(--color-purple);
+}
+
+.scn-MarketEvent-rare .scn-MarketEventTag {
+  background: var(--color-purple);
+  color: #ffffff;
+}
+
+.scn-MarketEvent-legendary {
+  border-width: 3px;
+  box-shadow: 0 0 0 3px var(--color-gold-bg), 0 0 22px var(--color-gold), 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
 .scn-MarketEvent-shady {
   background: var(--color-shady-bg);
   border-color: var(--color-shady);

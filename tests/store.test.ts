@@ -77,10 +77,10 @@ describe('useGameStore', () => {
     store.businessesOwned['1'] = 2
     store.money = 10_000
 
-    store.spawnSpecificEvent('bullRun', 2000)
+    store.spawnSpecificEvent('quantitativeEasing', 2000)
     const res1 = store.claimMarketEvent(2100, () => 0.2)
     expect(res1).toBe('golden')
-    expect(store.isBullRunActive).toBe(true)
+    expect(store.activeBusinessBuff).toMatchObject({ mult: 5, label: 'QE', remainingSec: 20 })
 
     // Losing 50/50 shady roll freezes auto-buy for 15s, zero cash lost
     store.spawnSpecificEvent('shadyDeal', 3000)
@@ -88,6 +88,35 @@ describe('useGameStore', () => {
     expect(res2).toBe('shadyFreeze')
     expect(store.money).toBe(10_000)
     expect(store.isAutoBuyFrozen).toBe(true)
+  })
+
+  it('pays windfalls from unbuffed income and never downgrades a stronger running buff', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    store.businessesOwned['1'] = 1 // £2,600/s
+    store.money = 0
+
+    store.spawnSpecificEvent('quantitativeEasing', 2000)
+    store.claimMarketEvent(2000)
+    expect(store.moneyPerSecond).toBeCloseTo(2600 * 5, 5)
+
+    // Tax Rebate during 5x QE still pays 60s of *unbuffed* income
+    store.spawnSpecificEvent('taxRebate', 3000)
+    store.claimMarketEvent(3000)
+    expect(store.money).toBeCloseTo(2600 * 60, 5)
+
+    // A weaker 3x Stimulus doesn't replace the running 5x QE
+    store.spawnSpecificEvent('stimulusCheque', 4000)
+    store.claimMarketEvent(4000)
+    expect(store.activeBusinessBuff).toMatchObject({ mult: 5, label: 'QE' })
+
+    // Legendary Unpaid Overtime replaces a weaker click buff
+    store.spawnSpecificEvent('paidOvertime', 5000)
+    store.claimMarketEvent(5000)
+    expect(store.activeClickBuff?.mult).toBe(2)
+    store.spawnSpecificEvent('unpaidOvertime', 6000)
+    store.claimMarketEvent(6000)
+    expect(store.activeClickBuff).toMatchObject({ mult: 7, label: 'Unpaid Overtime' })
   })
 
   it('credits offline catch-up when returning after >=60s and throttles tick saves', () => {

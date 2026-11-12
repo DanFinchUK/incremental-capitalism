@@ -40,11 +40,11 @@
             <span v-if="store.hustleMultiplier > 1.01" class="scn-BuffPill scn-BuffPill-streak">
               {{ store.hustleMultiplier.toFixed(1) }}x Hustle
             </span>
-            <span v-if="store.isBullRunActive" class="scn-BuffPill">
-              5x Bull Run ({{ store.bullRunRemainingSec }}s)
+            <span v-if="store.activeBusinessBuff" class="scn-BuffPill">
+              {{ store.activeBusinessBuff.mult }}x {{ store.activeBusinessBuff.label }} ({{ store.activeBusinessBuff.remainingSec }}s)
             </span>
-            <span v-if="store.isOvertimeActive" class="scn-BuffPill">
-              7x Overtime ({{ store.overtimeRemainingSec }}s)
+            <span v-if="store.activeClickBuff" class="scn-BuffPill">
+              {{ store.activeClickBuff.mult }}x {{ store.activeClickBuff.label }} ({{ store.activeClickBuff.remainingSec }}s)
             </span>
             <span v-if="store.isAutoBuyFrozen" class="scn-BuffPill scn-BuffPill-freeze">
               Inquiry: Auto-buy paused ({{ store.autoBuyFreezeRemainingSec }}s)

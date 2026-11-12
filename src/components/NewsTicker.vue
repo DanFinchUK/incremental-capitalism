@@ -13,8 +13,8 @@ import { useGameStore } from '../stores/game'
 const store = useGameStore()
 
 const activeBuffKind = computed<string | null>(() => {
-  if (store.isBullRunActive) return 'bullRun'
-  if (store.isOvertimeActive) return 'overtimeFrenzy'
+  if (store.activeBusinessBuff) return 'businessBuff'
+  if (store.activeClickBuff) return 'clickBuff'
   return null
 })
 

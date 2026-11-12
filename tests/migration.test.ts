@@ -32,7 +32,7 @@ const REAL_V1_SAVE = JSON.stringify({
   }
 })
 
-describe('v1/v2/v3 -> v4 save migration', () => {
+describe('v1-v4 -> v5 save migration', () => {
   it('migrates real 34-Legacy v1 Vuex save seamlessly without point loss or free points', () => {
     const state = parseSavedState(REAL_V1_SAVE)
     expect(state.legacyPoints).toBe(34)
@@ -48,7 +48,7 @@ describe('v1/v2/v3 -> v4 save migration', () => {
     expect(state.seenItems.businesses['19']).toBeFalsy()
   })
 
-  it('preserves 1-Legacy v3 £1.44T lifetimeEarned unscaled and migrates old trustFund ranks into hustleCap', () => {
+  it('keeps the pending +1 for a 1-Legacy v3 £1.44T save and migrates old trustFund ranks into hustleCap', () => {
     const v3OneLegacy = JSON.stringify({
       schemaVersion: 3,
       scene: {
@@ -69,9 +69,27 @@ describe('v1/v2/v3 -> v4 save migration', () => {
       }
     })
     const state = parseSavedState(v3OneLegacy)
-    expect(state.lifetimeEarned).toBe(1_440_000_000_000)
     expect(state.perks.hustleCap).toBe(1)
     expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(1)
+    // £1.44T was 1/15 of the way from P=2 (£1.35T) to P=3 (£2.7T) on the Triangular curve
+    expect(computeLegacyBracket(state.lifetimeEarned, state.legacyPoints).progress).toBeCloseTo(1 / 15, 5)
+  })
+
+  it('remaps v4 Triangular saves onto the Cubic curve keeping earned points and bracket %', () => {
+    const triangular = (p: number) => 4.5e11 * ((p * (p + 1)) / 2)
+    const lifetime = triangular(7) + 0.4 * (triangular(8) - triangular(7))
+    const v4 = JSON.stringify({
+      schemaVersion: 4,
+      scene: {
+        ...createInitialSceneState(),
+        lifetimeEarned: lifetime,
+        legacyPoints: 5,
+        legacySpent: 2
+      }
+    })
+    const state = parseSavedState(v4)
+    expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(2)
+    expect(computeLegacyBracket(state.lifetimeEarned, state.legacyPoints).progress).toBeCloseTo(0.4, 5)
   })
 
   it('remaps >1-Legacy v2/v3 saves onto the Triangular curve preserving bracket % with zero free Legacy', () => {
@@ -103,7 +121,7 @@ describe('v1/v2/v3 -> v4 save migration', () => {
     migrated.muted = true
     migrated.compactAutoBuy = true
     const encoded = serializeState(migrated)
-    expect(JSON.parse(encoded).schemaVersion).toBe(4)
+    expect(JSON.parse(encoded).schemaVersion).toBe(5)
 
     const reloaded = parseSavedState(encoded)
     expect(reloaded.bulkBuyMode).toBe('next')

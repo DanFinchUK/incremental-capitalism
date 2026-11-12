@@ -182,14 +182,20 @@ describe('economy engine', () => {
     expect(withLegacy?.id).toBe('1')
   })
 
-  it('uses Triangular Legacy curve (£450B * P(P+1)/2), +1x/rank Hustle cap, and offline catch-up', () => {
+  it('uses Cubic Legacy curve (£450B * P^3), +1x/rank Hustle cap, and offline catch-up', () => {
     expect(FIRST_LEGACY_LIFETIME).toBe(4.5e11)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 0.99, 0)).toBe(0)
     expect(computeLegacyGain(FIRST_LEGACY_LIFETIME, 0)).toBe(1)
-    // P=2 threshold is 3 * 450B = £1.35T; £1.44T with 1 Legacy immediately awards +1!
-    expect(computeLegacyGain(1.44e12, 1)).toBe(1)
-    // P=3 threshold is 6 * 450B = £2.70T
-    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 6, 1)).toBe(2)
+    // P=2 threshold is 8 * 450B = £3.6T
+    expect(computeLegacyGain(1.44e12, 1)).toBe(0)
+    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 8, 1)).toBe(1)
+    // P=3 threshold is 27 * 450B = £12.15T
+    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 27 - 1, 1)).toBe(1)
+    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 27, 1)).toBe(2)
+    // Float cube roots must not drop a point at large exact thresholds
+    for (const p of [10, 64, 125, 1000]) {
+      expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * p * p * p, 0)).toBe(p)
+    }
     expect(maxHustleMultiplier(0)).toBe(3)
     expect(maxHustleMultiplier(1)).toBe(4)
     expect(maxHustleMultiplier(5)).toBe(8)

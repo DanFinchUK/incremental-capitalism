@@ -46,7 +46,7 @@ describe('useGameStore', () => {
     // Cannot claim free 0-cost Intern before earning at least 1 Legacy
     expect(store.buyPerk('autoClicker')).toBe(false)
 
-    store.addDebugMoney(FIRST_LEGACY_LIFETIME * 6, 1000) // Triangular P=3: 3*4/2 = 6 * 450B
+    store.addDebugMoney(FIRST_LEGACY_LIFETIME * 27, 1000) // Cubic P=3: 3^3 = 27 * 450B
     expect(store.legacyGain).toBe(3)
     store.retire(2000)
     expect(store.legacyPoints).toBe(3)

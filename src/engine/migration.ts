@@ -45,7 +45,7 @@ export interface PersistedSceneState {
 }
 
 export interface PersistedEnvelope {
-  schemaVersion: 4
+  schemaVersion: 5
   scene: PersistedSceneState
 }
 
@@ -122,29 +122,32 @@ function computeHistoricalRunSpent(
   return total
 }
 
-function remapQuadraticToTriangular(rawLifetime: number, legacyPoints: number, oldBase: number): number {
-  const oldFloor = oldBase * legacyPoints * legacyPoints
-  const oldNext = oldBase * (legacyPoints + 1) * (legacyPoints + 1)
-  const newFloor = legacyLifetimeThreshold(legacyPoints)
-  const newNext = legacyLifetimeThreshold(legacyPoints + 1)
-  if (rawLifetime <= oldFloor) {
-    return newFloor
+type LegacyCurve = (points: number) => number
+
+function quadraticCurve(base: number): LegacyCurve {
+  return (points) => base * points * points
+}
+
+function triangularCurve(points: number): number {
+  return FIRST_LEGACY_LIFETIME * ((points * (points + 1)) / 2)
+}
+
+// Re-express lifetimeEarned on the current Legacy curve, keeping the same
+// number of earned points and the same progress through the current bracket.
+function remapLegacyLifetime(rawLifetime: number, legacyPoints: number, oldCurve: LegacyCurve): number {
+  let reached = legacyPoints
+  if (rawLifetime <= oldCurve(legacyPoints)) {
+    return legacyLifetimeThreshold(legacyPoints)
   }
-  if (rawLifetime < oldNext) {
-    const frac = (rawLifetime - oldFloor) / Math.max(1, oldNext - oldFloor)
-    return newFloor + frac * (newNext - newFloor)
+  while (oldCurve(reached + 1) <= rawLifetime) {
+    reached += 1
   }
-  const extraPoints = Math.max(0, Math.floor(Math.sqrt(rawLifetime / oldBase)) - legacyPoints)
-  const targetPts = legacyPoints + extraPoints
-  const targetOldFloor = oldBase * targetPts * targetPts
-  const targetOldNext = oldBase * (targetPts + 1) * (targetPts + 1)
-  const frac = Math.min(
-    1,
-    Math.max(0, (rawLifetime - targetOldFloor) / Math.max(1, targetOldNext - targetOldFloor))
-  )
-  const targetNewFloor = legacyLifetimeThreshold(targetPts)
-  const targetNewNext = legacyLifetimeThreshold(targetPts + 1)
-  return targetNewFloor + frac * (targetNewNext - targetNewFloor)
+  const oldFloor = oldCurve(reached)
+  const oldNext = oldCurve(reached + 1)
+  const frac = Math.min(1, Math.max(0, (rawLifetime - oldFloor) / Math.max(1, oldNext - oldFloor)))
+  const newFloor = legacyLifetimeThreshold(reached)
+  const newNext = legacyLifetimeThreshold(reached + 1)
+  return newFloor + frac * (newNext - newFloor)
 }
 
 function parseBulkMode(raw: unknown): BulkBuyMode {
@@ -239,7 +242,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       lifetimeEarned = Math.max(
         minLifetimeForLegacy,
         money + spentThisRun,
-        remapQuadraticToTriangular(rawLifetime, legacyPoints, LEGACY_V2_THRESHOLD)
+        remapLegacyLifetime(rawLifetime, legacyPoints, quadraticCurve(LEGACY_V2_THRESHOLD))
       )
     } else {
       lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun)
@@ -249,10 +252,27 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       lifetimeEarned = Math.max(
         minLifetimeForLegacy,
         money + spentThisRun,
-        remapQuadraticToTriangular(rawLifetime, legacyPoints, LEGACY_V3_THRESHOLD)
+        remapLegacyLifetime(rawLifetime, legacyPoints, quadraticCurve(LEGACY_V3_THRESHOLD))
+      )
+    } else if (legacyPoints === 1) {
+      // v4 kept 1-Legacy v3 lifetimes as-is on the Triangular curve.
+      lifetimeEarned = Math.max(
+        minLifetimeForLegacy,
+        money + spentThisRun,
+        remapLegacyLifetime(rawLifetime, legacyPoints, triangularCurve)
       )
     } else {
-      lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun, minLifetimeForLegacy)
+      lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun)
+    }
+  } else if (schemaVersion === 4) {
+    if (legacyPoints > 0) {
+      lifetimeEarned = Math.max(
+        minLifetimeForLegacy,
+        money + spentThisRun,
+        remapLegacyLifetime(rawLifetime, legacyPoints, triangularCurve)
+      )
+    } else {
+      lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun)
     }
   } else {
     lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun, minLifetimeForLegacy)
@@ -322,7 +342,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
 
 export function serializeState(scene: PersistedSceneState): string {
   const envelope: PersistedEnvelope = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     scene
   }
   return JSON.stringify(envelope)

@@ -172,14 +172,14 @@ export function legacyLifetimeThreshold(points: number): number {
   if (points <= 0) {
     return 0
   }
-  return FIRST_LEGACY_LIFETIME * ((points * (points + 1)) / 2)
+  return FIRST_LEGACY_LIFETIME * points * points * points
 }
 
 export function computeLegacyGain(lifetimeEarned: number, legacyPoints: number): number {
   const safe = Math.max(0, lifetimeEarned)
   let totalEarnedPoints = Math.max(
     0,
-    Math.floor((Math.sqrt(1 + (8 * safe) / FIRST_LEGACY_LIFETIME) - 1) / 2)
+    Math.floor(Math.cbrt(safe / FIRST_LEGACY_LIFETIME))
   )
   while (legacyLifetimeThreshold(totalEarnedPoints + 1) <= safe) {
     totalEarnedPoints += 1

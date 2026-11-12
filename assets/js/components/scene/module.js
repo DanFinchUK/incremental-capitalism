@@ -1,7 +1,7 @@
 import Vue from 'vue'
 
-// Lifetime earnings needed for the first legacy point; later points need n² times this.
-const FIRST_LEGACY_LIFETIME = 3.8e12
+// Lifetime earnings needed for the first legacy point (about 90 minutes for an optimal player with no auto-clickers); later points need n² times this.
+const FIRST_LEGACY_LIFETIME = 2.17e11
 
 const state = {
   money: 0,

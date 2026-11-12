@@ -40,6 +40,9 @@
             <div class="lyt-Item">
               <div class="scn-DataTitle">Legacy:</div>
               <div class="scn-DataValue">{{ $store.getters.legacyPoints }} (x{{ $store.getters.legacyMultiplier }})</div>
+              <a href="#" class="scn-Action" @click.prevent="retire" :class="{
+                'scn-Action-disabled': $store.getters.legacyGain < 1
+              }">Retire for +{{ $store.getters.legacyGain }}</a>
             </div>
           </div>
         </div>
@@ -107,11 +110,6 @@
   <div class="lyt-Footer">
     <div class="lyt-Item">
       <a href="#" class="scn-Action" @click.prevent="reset">Reset game</a>
-    </div>
-    <div class="lyt-Item">
-      <a href="#" class="scn-Action" @click.prevent="retire" :class="{
-        'scn-Action-disabled': $store.getters.legacyGain < 1
-      }">Retire for +{{ $store.getters.legacyGain }} legacy</a>
     </div>
   </div>
 </template>

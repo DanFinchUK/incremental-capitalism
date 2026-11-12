@@ -8,6 +8,7 @@ const state = {
   legacySpent: 0,
   autoClickers: 0,
   lifetimePurchases: { jobs: {}, businesses: {} },
+  autoBuyDisabled: { jobs: {}, businesses: {} },
   lastUpdate: null
 }
 
@@ -51,6 +52,7 @@ const mutations = {
     state.legacySpent = 0
     state.autoClickers = 0
     state.lifetimePurchases = { jobs: {}, businesses: {} }
+    state.autoBuyDisabled = { jobs: {}, businesses: {} }
   },
 
   RETIRE (state, gain) {
@@ -61,6 +63,10 @@ const mutations = {
   BUY_AUTO_CLICKER (state) {
     state.legacySpent += 2
     state.autoClickers += 1
+  },
+
+  TOGGLE_AUTO_BUY (state, { kind, id }) {
+    Vue.set(state.autoBuyDisabled[kind], id, !state.autoBuyDisabled[kind][id])
   },
 
   LOAD_FROM_STORAGE_OBJECT (state, storageObject) {
@@ -114,6 +120,20 @@ const getters = {
   lifetimePurchases: (state) => state.lifetimePurchases,
   autoBuyThreshold: () => 10,
 
+  autoBuyUnlocked (state, getters) {
+    return (kind, id) => (state.lifetimePurchases[kind][id] || 0) >= getters.autoBuyThreshold
+  },
+
+  autoBuyEnabled (state) {
+    return (kind, id) => !state.autoBuyDisabled[kind][id]
+  },
+
+  // Jobs only earn through auto-clickers, so they are not auto-bought without one.
+  autoBuyActive (state, getters) {
+    return (kind, id) => getters.autoBuyUnlocked(kind, id) && getters.autoBuyEnabled(kind, id) &&
+      (kind === 'businesses' || state.autoClickers > 0)
+  },
+
   // One legacy point per order of magnitude of net worth above £1M.
   legacyGain (state, getters) {
     return Math.max(0, Math.floor(Math.log10(getters.netWorth)) - 5)
@@ -140,6 +160,7 @@ const getters = {
         action: 'addJob',
         id,
         purchases: state.lifetimePurchases.jobs[id] || 0,
+        enabled: !state.autoBuyDisabled.jobs[id],
         cost: getters.jobCost(id),
         income: state.autoClickers * getters.jobs[id].moneyPerClick * getters.legacyMultiplier
       })
@@ -150,6 +171,7 @@ const getters = {
         action: 'addBusiness',
         id,
         purchases: state.lifetimePurchases.businesses[id] || 0,
+        enabled: !state.autoBuyDisabled.businesses[id],
         cost: getters.businessCost(id),
         income: getters.businesses[id].moneyPerSecond * getters.legacyMultiplier
       })
@@ -158,7 +180,7 @@ const getters = {
     let best = null
 
     for (const candidate of candidates) {
-      if (candidate.purchases < getters.autoBuyThreshold || candidate.income <= 0) {
+      if (!candidate.enabled || candidate.purchases < getters.autoBuyThreshold || candidate.income <= 0) {
         continue
       }
       if (!best || candidate.income / candidate.cost > best.income / best.cost) {

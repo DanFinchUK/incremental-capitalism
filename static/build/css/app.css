@@ -1647,6 +1647,15 @@ bottom margins, respectively. */
           user-select: none;
 }
 
+.scn-AutoBuy {
+  display: block;
+  margin-top: 8px;
+  cursor: pointer;
+  -ms-flex-item-align: center;
+      -ms-grid-row-align: center;
+      align-self: center;
+}
+
 .scn-PrimaryAction:active {
   transform: scale(0.97);
 }

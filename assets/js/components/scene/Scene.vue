@@ -77,9 +77,12 @@
               </div>
 
               <div class="lyt-ItemColumn lyt-ItemColumn-action">
-                <a href="#" class="scn-Action" @click.prevent="getJob(id)" :class="{
+                <a v-if="!$store.getters.autoBuyActive('jobs', id)" href="#" class="scn-Action" @click.prevent="getJob(id)" :class="{
                   'scn-Action-disabled': $store.getters.money < $store.getters.jobCost(id)
                 }">Get hired</a>
+                                <label v-if="$store.getters.autoBuyUnlocked('jobs', id)" class="scn-AutoBuy">
+                                  <input type="checkbox" :checked="$store.getters.autoBuyEnabled('jobs', id)" @change="toggleAutoBuy('jobs', id)"> Auto-buy
+                                </label>
               </div>
             </div>
           </div>
@@ -106,9 +109,12 @@
               </div>
 
               <div class="lyt-ItemColumn lyt-ItemColumn-action">
-                <a href="#" class="scn-Action" @click.prevent="getBusiness(id)" :class="{
+                <a v-if="!$store.getters.autoBuyActive('businesses', id)" href="#" class="scn-Action" @click.prevent="getBusiness(id)" :class="{
                   'scn-Action-disabled': $store.getters.money < $store.getters.businessCost(id)
                 }">Get Businessed</a>
+                                <label v-if="$store.getters.autoBuyUnlocked('businesses', id)" class="scn-AutoBuy">
+                                  <input type="checkbox" :checked="$store.getters.autoBuyEnabled('businesses', id)" @change="toggleAutoBuy('businesses', id)"> Auto-buy
+                                </label>
               </div>
           </div>
         </div>
@@ -195,6 +201,10 @@
           return 'Auto-buy unlocked. Jobs only pay out via auto-clickers.'
         }
         return 'Auto-buy unlocked'
+      },
+
+      toggleAutoBuy (kind, id) {
+        store.commit('TOGGLE_AUTO_BUY', { kind, id })
       },
 
       buyAutoClicker () {

@@ -73,6 +73,13 @@
   user-select: none;
 }
 
+.scn-AutoBuy {
+  display: block;
+  margin-top: 8px;
+  cursor: pointer;
+  align-self: center;
+}
+
 .scn-PrimaryAction:active {
   transform: scale(0.97);
 }

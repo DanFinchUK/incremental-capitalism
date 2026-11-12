@@ -64,6 +64,12 @@
   background-color: var(--color-btn-outline-hover);
 }
 
+.scn-Action-activeToggle {
+  background-color: var(--color-perk-pill-bg);
+  color: var(--color-perk-pill-fg);
+  border-color: var(--color-purple);
+}
+
 /* News Ticker */
 .scn-Ticker {
   background-color: #161616;
@@ -318,6 +324,69 @@
 .scn-Card.scn-NextAutoBuy {
   background-color: var(--color-next-row);
   border-color: var(--color-next-row-border);
+}
+
+.scn-Card.scn-SynergyPartner {
+  background-color: var(--color-partner-bg);
+  border-color: var(--color-partner-border);
+  box-shadow: 0 0 0 1px var(--color-partner-border);
+}
+
+.scn-Card.scn-Card-compact {
+  padding: 6px 10px;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.scn-Card.scn-Card-compact .scn-CardImage {
+  width: 28px;
+  height: 28px;
+}
+
+.scn-CompactBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.scn-CompactTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.scn-CompactIncome {
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.scn-NextTag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: #a5c956;
+  color: #111111;
+}
+
+.scn-CompactRefold {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.scn-DeltaInline {
+  color: var(--color-green-text);
+  font-weight: 700;
+  margin-left: 4px;
 }
 
 .scn-Card-teaser {

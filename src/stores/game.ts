@@ -1,10 +1,18 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { BUSINESSES, BUSINESSES_BY_ID, JOBS, JOBS_BY_ID, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
+import {
+  BUSINESSES,
+  BUSINESSES_BY_ID,
+  JOBS,
+  JOBS_BY_ID,
+  SYNERGY_JOB_FOR_BUSINESS,
+  type BusinessDef,
+  type ItemKind,
+  type JobDef
+} from '../data/items'
 import { MARKET_EVENTS, type MarketEventDef, type MarketEventKind } from '../data/events'
 import { perkNextCost, type PerkId, type PerkRanks } from '../data/perks'
 import {
-  MILESTONES,
   autoBuyThreshold,
   bulkBuyQuote,
   computeClickIncome,
@@ -15,14 +23,17 @@ import {
   computeSectorSlices,
   isItemAutoBuyActive,
   isItemAutoBuyUnlocked,
+  itemMilestones,
   legacyMultiplier as calcLegacyMultiplier,
   nextLegacyLifetimeThreshold,
+  quoteIncomeDelta,
   selectAutoBuyTarget,
   socialClassInfo,
   trustFundStartingCash,
   type AutoBuySelectionInput,
   type BulkBuyMode,
   type EconomySnapshotInput,
+  type IncomeDeltaQuote,
   type OfflineCatchUpResult
 } from '../engine/economy'
 import {
@@ -76,12 +87,14 @@ export const useGameStore = defineStore('game', () => {
   const seenItems = ref(initial.seenItems)
   const lifetimeEarned = ref<number>(initial.lifetimeEarned)
   const bulkBuyMode = ref<BulkBuyMode>(initial.bulkBuyMode)
+  const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
   const muted = ref<boolean>(initial.muted)
   const tradingDeskCollapsed = ref<boolean>(initial.tradingDeskCollapsed)
   const lastUpdate = ref<number | null>(initial.lastUpdate)
 
   // Runtime state
   const nowMs = ref<number>(Date.now())
+  const hoveredItem = ref<{ kind: ItemKind; id: string } | null>(null)
   const telemetry = ref<TelemetryState>(createTelemetryState(nowMs.value, initial.money))
   const lastTickMs = ref<number | null>(null)
   const lastSavedMs = ref<number>(0)
@@ -219,6 +232,7 @@ export const useGameStore = defineStore('game', () => {
       seenItems: seenItems.value,
       lifetimeEarned: lifetimeEarned.value,
       bulkBuyMode: bulkBuyMode.value,
+      compactAutoBuy: compactAutoBuy.value,
       muted: muted.value,
       tradingDeskCollapsed: tradingDeskCollapsed.value,
       lastUpdate: ts
@@ -253,11 +267,13 @@ export const useGameStore = defineStore('game', () => {
     seenItems.value = loaded.seenItems
     lifetimeEarned.value = loaded.lifetimeEarned
     bulkBuyMode.value = loaded.bulkBuyMode
+    compactAutoBuy.value = loaded.compactAutoBuy
     muted.value = loaded.muted
     tradingDeskCollapsed.value = loaded.tradingDeskCollapsed
     lastUpdate.value = loaded.lastUpdate
     nowMs.value = ts
     lastTickMs.value = ts
+    hoveredItem.value = null
     hustleBonus.value = 0
     bullRunUntil.value = 0
     overtimeUntil.value = 0
@@ -347,7 +363,7 @@ export const useGameStore = defineStore('game', () => {
 
     refreshSeenItems()
 
-    const crossedMilestone = MILESTONES.filter((m) => prevOwned < m && nextOwned >= m).pop() ?? null
+    const crossedMilestone = itemMilestones(def.scaleFactor).filter((m) => prevOwned < m && nextOwned >= m).pop() ?? null
     const newClass = classStatus.value.current.level
     if (newClass > prevClass) {
       markTelemetryEvent(telemetry.value, 'M')
@@ -616,6 +632,33 @@ export const useGameStore = defineStore('game', () => {
     flushSave(nowMs.value)
   }
 
+  function toggleCompactAutoBuy(): void {
+    compactAutoBuy.value = !compactAutoBuy.value
+    flushSave(nowMs.value)
+  }
+
+  function setHoveredItem(target: { kind: ItemKind; id: string } | null): void {
+    hoveredItem.value = target
+  }
+
+  function isSynergyPartner(kind: ItemKind, id: string): boolean {
+    const h = hoveredItem.value
+    if (!h) {
+      return false
+    }
+    if (h.kind === 'jobs' && kind === 'businesses') {
+      return JOBS_BY_ID[h.id]?.synergyBusinessId === id
+    }
+    if (h.kind === 'businesses' && kind === 'jobs') {
+      return SYNERGY_JOB_FOR_BUSINESS[h.id]?.id === id
+    }
+    return false
+  }
+
+  function itemIncomeDelta(kind: ItemKind, id: string, count: number): IncomeDeltaQuote {
+    return quoteIncomeDelta(kind, id, count, economyInput.value)
+  }
+
   function toggleTradingDesk(): void {
     tradingDeskCollapsed.value = !tradingDeskCollapsed.value
     flushSave(nowMs.value)
@@ -634,10 +677,12 @@ export const useGameStore = defineStore('game', () => {
     seenItems,
     lifetimeEarned,
     bulkBuyMode,
+    compactAutoBuy,
     muted,
     tradingDeskCollapsed,
     lastUpdate,
     nowMs,
+    hoveredItem,
     telemetry,
     hustleBonus,
     activeEvent,
@@ -673,6 +718,7 @@ export const useGameStore = defineStore('game', () => {
     flushSave,
     addDebugMoney,
     itemQuote,
+    itemIncomeDelta,
     buyItem,
     manualClick,
     spawnSpecificEvent,
@@ -690,6 +736,9 @@ export const useGameStore = defineStore('game', () => {
     dismissOfflineReport,
     toggleMute,
     setBulkBuyMode,
+    toggleCompactAutoBuy,
+    setHoveredItem,
+    isSynergyPartner,
     toggleTradingDesk
   }
 })

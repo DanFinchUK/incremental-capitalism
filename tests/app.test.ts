@@ -15,11 +15,12 @@ describe('App UI integration', () => {
 
   it('renders fog-of-war with starter items and ??? teasers while hiding late tiers', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
-    const text = wrapper.text()
-    expect(text).toContain('Hairdresser')
-    expect(text).toContain('Etsy store')
-    expect(text).toContain('???')
-    expect(text).not.toContain('Multi-national conglomerate')
+    const cardTitles = wrapper.findAll('.scn-CardTitle').map((el) => el.text())
+    expect(cardTitles).toContain('Gig delivery rider (0)')
+    expect(cardTitles).toContain('Etsy store (0)')
+    expect(cardTitles).toContain('???')
+    expect(cardTitles.some((t) => t.includes('Artisanal sourdough bakery'))).toBe(false)
+    expect(cardTitles.some((t) => t.includes('Multi-national conglomerate'))).toBe(false)
     wrapper.unmount()
   })
 
@@ -68,6 +69,41 @@ describe('App UI integration', () => {
     expect(wrapper.find('.scn-Modal').exists()).toBe(true)
     await wrapper.find('[data-testid="dismiss-offline"]').trigger('click')
     expect(store.offlineReport).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('shows stack share, buy delta, cross-column synergy highlight, and compact auto-buy rows', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+
+    store.legacyPoints = 1
+    store.businessesOwned = { '1': 10, '20': 2 }
+    store.lifetimePurchases.businesses = { '1': 50, '20': 2 }
+    store.seenItems.jobs = { '1': true, '19': true, '2': true, '3': true, '4': true, '5': true }
+    store.seenItems.businesses = { '1': true, '20': true }
+    await wrapper.vm.$nextTick()
+
+    // Stack total + % share + buy delta on revealed non-auto-bought Phone case & repair kiosk
+    const pageText = wrapper.text()
+    expect(pageText).toContain('total (')
+    expect(pageText).toContain('(+£')
+
+    // Hovering Teaching assistant ('5') highlights its synergy partner Etsy store ('1')
+    const teachingCard = wrapper.find('[data-item-key="jobs-5"]')
+    expect(teachingCard.exists()).toBe(true)
+    await teachingCard.trigger('mouseenter')
+    const etsyCard = wrapper.find('[data-item-key="businesses-1"]')
+    expect(etsyCard.classes()).toContain('scn-SynergyPartner')
+
+    // Compact auto-buy collapses active auto-bought Etsy store into a compact row, click expands
+    const compactBtn = wrapper.find('[data-testid="toggle-compact-autobuy"]')
+    expect(compactBtn.exists()).toBe(true)
+    await compactBtn.trigger('click')
+    expect(store.compactAutoBuy).toBe(true)
+    expect(wrapper.find('[data-item-key="businesses-1"]').classes()).toContain('scn-Card-compact')
+
+    await wrapper.find('[data-item-key="businesses-1"]').trigger('click')
+    expect(wrapper.find('[data-item-key="businesses-1"]').classes()).not.toContain('scn-Card-compact')
     wrapper.unmount()
   })
 })

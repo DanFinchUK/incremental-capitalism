@@ -19,10 +19,10 @@ describe('useGameStore', () => {
 
     store.money = 500
     store.buyItem('jobs', '1', 1)
-    // Owning Job 1 reveals Job 2 and pushes teaser to Job 3
+    // Owning Job #1 ('1' Gig delivery rider) reveals Job #2 ('19' Hairdresser) and pushes teaser to Job #3
     const revealedIds = store.visibleJobs.filter((r) => r.mode === 'revealed').map((r) => r.item.id)
     expect(revealedIds).toContain('1')
-    expect(revealedIds).toContain('2')
+    expect(revealedIds).toContain('19')
   })
 
   it('builds Hustle Streak on manual clicks up to 3x and decays after 1.5s', () => {
@@ -80,7 +80,7 @@ describe('useGameStore', () => {
   it('credits offline catch-up when returning after >=60s and throttles tick saves', () => {
     const store1 = useGameStore()
     store1.hydrateFromStorage(10_000)
-    store1.businessesOwned['1'] = 1 // £3,000/s
+    store1.businessesOwned['1'] = 1 // £2,600/s
     store1.flushSave(10_000)
 
     setActivePinia(createPinia())
@@ -88,7 +88,7 @@ describe('useGameStore', () => {
     store2.hydrateFromStorage(10_000 + 120_000) // 2 minutes later
     expect(store2.offlineReport).not.toBeNull()
     expect(store2.offlineReport?.efficiency).toBe(0.5)
-    expect(store2.offlineReport?.moneyEarned).toBeCloseTo(3000 * 120 * 0.5, 2)
+    expect(store2.offlineReport?.moneyEarned).toBeCloseTo(2600 * 120 * 0.5, 2)
 
     // Tick at +500ms does not overwrite localStorage yet; at +2500ms it flushes
     const savedBefore = localStorage.getItem('state')
@@ -96,5 +96,31 @@ describe('useGameStore', () => {
     expect(localStorage.getItem('state')).toBe(savedBefore)
     store2.tick(132_600)
     expect(localStorage.getItem('state')).not.toBe(savedBefore)
+  })
+
+  it('tracks cross-column synergy partner hover and persists compactAutoBuy toggle', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+
+    // Barista ('4') boosts Artisanal sourdough bakery ('22')
+    store.setHoveredItem({ kind: 'jobs', id: '4' })
+    expect(store.isSynergyPartner('businesses', '22')).toBe(true)
+    expect(store.isSynergyPartner('businesses', '1')).toBe(false)
+
+    store.setHoveredItem({ kind: 'businesses', id: '22' })
+    expect(store.isSynergyPartner('jobs', '4')).toBe(true)
+    expect(store.isSynergyPartner('jobs', '1')).toBe(false)
+
+    store.setHoveredItem(null)
+    expect(store.isSynergyPartner('jobs', '4')).toBe(false)
+
+    expect(store.compactAutoBuy).toBe(false)
+    store.toggleCompactAutoBuy()
+    expect(store.compactAutoBuy).toBe(true)
+
+    setActivePinia(createPinia())
+    const reloaded = useGameStore()
+    reloaded.hydrateFromStorage(2000)
+    expect(reloaded.compactAutoBuy).toBe(true)
   })
 })

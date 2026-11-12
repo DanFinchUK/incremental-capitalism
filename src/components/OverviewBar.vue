@@ -23,6 +23,16 @@
       <button
         type="button"
         class="scn-Action scn-Action-outline"
+        :class="{ 'scn-Action-activeToggle': store.compactAutoBuy }"
+        data-testid="toggle-compact-autobuy"
+        @click="store.toggleCompactAutoBuy()"
+      >
+        Compact auto: {{ store.compactAutoBuy ? 'On' : 'Off' }}
+      </button>
+
+      <button
+        type="button"
+        class="scn-Action scn-Action-outline"
         data-testid="toggle-legacy-shop"
         @click="store.legacyDrawerOpen = !store.legacyDrawerOpen"
       >

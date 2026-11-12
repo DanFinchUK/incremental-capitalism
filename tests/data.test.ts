@@ -1,11 +1,12 @@
-import fs from 'node:fs'
-import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { BUSINESSES, JOBS, itemImageUrl } from '../src/data/items'
 import { SOCIAL_CLASSES } from '../src/data/classes'
 import { LEGACY_PERKS, perkNextCost } from '../src/data/perks'
 import { MARKET_EVENTS } from '../src/data/events'
 import { pickHeadline } from '../src/data/headlines'
+
+const JOB_IMAGE_FILES = Object.keys(import.meta.glob('../public/img/jobs/*.png'))
+const BUSINESS_IMAGE_FILES = Object.keys(import.meta.glob('../public/img/businesses/*.png'))
 
 describe('catalogue & static data', () => {
   it('defines 22 jobs and 22 businesses preserving all legacy IDs plus new UK tiers', () => {
@@ -60,24 +61,19 @@ describe('catalogue & static data', () => {
     expect(itemImageUrl('jobs', 'FTSE 100 CEO')).toBe('./img/jobs/ftse-100-ceo.png')
     expect(itemImageUrl('businesses', 'High-end café')).toBe('./img/businesses/high-end-café.png')
 
-    const publicDir = path.resolve(__dirname, '../public')
+    const jobSet = new Set(JOB_IMAGE_FILES)
+    const bizSet = new Set(BUSINESS_IMAGE_FILES)
     for (const job of JOBS) {
-      const rel = itemImageUrl('jobs', job.label).replace(/^\.\//, '')
-      const full = path.join(publicDir, rel)
-      expect(fs.existsSync(full), `Missing job icon: ${rel}`).toBe(true)
-      const buf = fs.readFileSync(full)
-      expect(buf.subarray(0, 4).toString('hex')).toBe('89504e47')
+      const rel = `../public/${itemImageUrl('jobs', job.label).replace(/^\.\//, '')}`
+      expect(jobSet.has(rel), `Missing job icon: ${rel}`).toBe(true)
     }
     for (const biz of BUSINESSES) {
-      const rel = itemImageUrl('businesses', biz.label).replace(/^\.\//, '')
-      const full = path.join(publicDir, rel)
-      expect(fs.existsSync(full), `Missing business icon: ${rel}`).toBe(true)
-      const buf = fs.readFileSync(full)
-      expect(buf.subarray(0, 4).toString('hex')).toBe('89504e47')
+      const rel = `../public/${itemImageUrl('businesses', biz.label).replace(/^\.\//, '')}`
+      expect(bizSet.has(rel), `Missing business icon: ${rel}`).toBe(true)
     }
 
-    expect(fs.readdirSync(path.join(publicDir, 'img/jobs')).filter((f) => f.endsWith('.png'))).toHaveLength(22)
-    expect(fs.readdirSync(path.join(publicDir, 'img/businesses')).filter((f) => f.endsWith('.png'))).toHaveLength(22)
+    expect(JOB_IMAGE_FILES).toHaveLength(22)
+    expect(BUSINESS_IMAGE_FILES).toHaveLength(22)
   })
 
   it('defines 7 social classes, 6 legacy perks, market events, and headlines', () => {

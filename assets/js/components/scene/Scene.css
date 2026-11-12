@@ -68,6 +68,11 @@
   flex: 1;
 }
 
+.lyt-Content,
+.lyt-Footer {
+  user-select: none;
+}
+
 .scn-PrimaryAction:active {
   transform: scale(0.97);
 }

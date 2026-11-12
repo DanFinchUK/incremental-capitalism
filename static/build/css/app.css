@@ -1640,6 +1640,13 @@ bottom margins, respectively. */
       flex: 1;
 }
 
+.lyt-Content,
+.lyt-Footer {
+  -webkit-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}
+
 .scn-PrimaryAction:active {
   transform: scale(0.97);
 }

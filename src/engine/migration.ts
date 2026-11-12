@@ -4,6 +4,7 @@ import { FIRST_LEGACY_LIFETIME, seriesCost, type BulkBuyMode } from './economy'
 
 export const STORAGE_KEY = 'state'
 const LEGACY_V1_THRESHOLD = 2.17e11
+const LEGACY_V2_THRESHOLD = 3.0e12
 
 export interface PersistedSceneState {
   money: number
@@ -27,13 +28,14 @@ export interface PersistedSceneState {
   }
   lifetimeEarned: number
   bulkBuyMode: BulkBuyMode
+  compactAutoBuy: boolean
   muted: boolean
   tradingDeskCollapsed: boolean
   lastUpdate: number | null
 }
 
 export interface PersistedEnvelope {
-  schemaVersion: 2
+  schemaVersion: 3
   scene: PersistedSceneState
 }
 
@@ -51,6 +53,7 @@ export function createInitialSceneState(): PersistedSceneState {
     seenItems: { jobs: { '1': true }, businesses: { '1': true } },
     lifetimeEarned: 0,
     bulkBuyMode: 1,
+    compactAutoBuy: false,
     muted: false,
     tradingDeskCollapsed: false,
     lastUpdate: null
@@ -132,13 +135,15 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   }
 
   const envelope = parsed as Record<string, unknown>
-  const isV2 = envelope.schemaVersion === 2
+  const schemaVersion = typeof envelope.schemaVersion === 'number' ? envelope.schemaVersion : 1
+  const isV2Plus = schemaVersion >= 2
   const sceneRaw = envelope.scene
   if (!sceneRaw || typeof sceneRaw !== 'object') {
     return initial
   }
   const s = sceneRaw as Record<string, unknown>
 
+  const money = readNonNegativeNumber(s.money, 0)
   const jobsPurchased = readNumberMap(s.jobsPurchased)
   const businessesOwned = readNumberMap(s.businessesOwned)
   const legacyPoints = Math.floor(readNonNegativeNumber(s.legacyPoints, 0))
@@ -165,7 +170,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   }
 
   const perks: PerkRanks = { ...EMPTY_PERKS }
-  if (isV2 && s.perks && typeof s.perks === 'object') {
+  if (isV2Plus && s.perks && typeof s.perks === 'object') {
     const pRaw = s.perks as Record<string, unknown>
     for (const key of Object.keys(EMPTY_PERKS) as PerkId[]) {
       perks[key] = Math.floor(readNonNegativeNumber(pRaw[key], 0))
@@ -175,17 +180,30 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   }
 
   const spentThisRun =
-    isV2 && typeof s.spentThisRun === 'number'
+    isV2Plus && typeof s.spentThisRun === 'number'
       ? readNonNegativeNumber(s.spentThisRun, 0)
       : computeHistoricalRunSpent(jobsPurchased, businessesOwned)
 
   const minLifetimeForLegacy = FIRST_LEGACY_LIFETIME * legacyPoints * legacyPoints
-  let lifetimeEarned = readNonNegativeNumber(s.lifetimeEarned, 0)
-  if (!isV2) {
+  const rawLifetime = readNonNegativeNumber(s.lifetimeEarned, 0)
+  let lifetimeEarned = rawLifetime
+  if (schemaVersion === 1) {
     if (legacyPoints > 0 && lifetimeEarned > 0 && lifetimeEarned < minLifetimeForLegacy) {
       lifetimeEarned = lifetimeEarned * (FIRST_LEGACY_LIFETIME / LEGACY_V1_THRESHOLD)
     }
-    lifetimeEarned = Math.max(lifetimeEarned, minLifetimeForLegacy)
+    lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun, minLifetimeForLegacy)
+  } else if (schemaVersion === 2) {
+    if (legacyPoints > 0) {
+      lifetimeEarned = Math.max(
+        minLifetimeForLegacy,
+        money + spentThisRun,
+        lifetimeEarned * (FIRST_LEGACY_LIFETIME / LEGACY_V2_THRESHOLD)
+      )
+    } else {
+      lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun)
+    }
+  } else {
+    lifetimeEarned = Math.max(lifetimeEarned, money + spentThisRun, minLifetimeForLegacy)
   }
 
   const seenRaw = s.seenItems && typeof s.seenItems === 'object'
@@ -211,7 +229,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       : null
 
   return {
-    money: readNonNegativeNumber(s.money, 0),
+    money,
     spentThisRun,
     jobsPurchased,
     businessesOwned,
@@ -229,6 +247,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     },
     lifetimeEarned,
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
+    compactAutoBuy: Boolean(s.compactAutoBuy),
     muted: Boolean(s.muted),
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),
     lastUpdate
@@ -237,7 +256,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
 
 export function serializeState(scene: PersistedSceneState): string {
   const envelope: PersistedEnvelope = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     scene
   }
   return JSON.stringify(envelope)

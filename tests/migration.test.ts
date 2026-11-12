@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { FIRST_LEGACY_LIFETIME } from '../src/engine/economy'
-import { parseSavedState, serializeState } from '../src/engine/migration'
+import { FIRST_LEGACY_LIFETIME, computeLegacyBracket, computeLegacyGain } from '../src/engine/economy'
+import { createInitialSceneState, parseSavedState, serializeState } from '../src/engine/migration'
 
 const REAL_V1_SAVE = JSON.stringify({
   scene: {
@@ -32,29 +32,75 @@ const REAL_V1_SAVE = JSON.stringify({
   }
 })
 
-describe('v1 -> v2 save migration', () => {
+describe('v1/v2 -> v3 save migration', () => {
   it('migrates real 34-Legacy v1 Vuex save seamlessly without point loss or free points', () => {
     const state = parseSavedState(REAL_V1_SAVE)
     expect(state.legacyPoints).toBe(34)
     expect(state.legacySpent).toBe(34)
     expect(state.perks.autoClicker).toBe(17)
     expect(state.perks.trustFund).toBe(0)
+    expect(state.compactAutoBuy).toBe(false)
     expect(state.lifetimeEarned).toBe(FIRST_LEGACY_LIFETIME * 34 * 34)
+    expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(0)
     expect(state.spentThisRun).toBeGreaterThan(2_000_000_000)
     expect(state.seenItems.jobs['15']).toBe(true)
     expect(state.seenItems.businesses['9']).toBe(true)
     expect(state.seenItems.businesses['19']).toBeFalsy()
   })
 
-  it('round-trips v2 state cleanly and recovers safely from corrupt JSON', () => {
+  it('preserves 0-Legacy v2 lifetimeEarned unscaled so a £500B run immediately unlocks +1 Legacy', () => {
+    const v2ZeroLegacy = JSON.stringify({
+      schemaVersion: 2,
+      scene: {
+        ...createInitialSceneState(),
+        money: 40_000_000_000,
+        spentThisRun: 460_000_000_000,
+        lifetimeEarned: 500_000_000_000,
+        legacyPoints: 0
+      }
+    })
+    const state = parseSavedState(v2ZeroLegacy)
+    expect(state.lifetimeEarned).toBe(500_000_000_000)
+    expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(1)
+  })
+
+  it('rescales >0-Legacy v2 saves from £3T curve to £500B curve preserving bracket % with zero free Legacy', () => {
+    const oldBase = 3.0e12
+    const floor34 = oldBase * 34 * 34
+    const next35 = oldBase * 35 * 35
+    const halfway = floor34 + 0.5 * (next35 - floor34)
+
+    const v2WithLegacy = JSON.stringify({
+      schemaVersion: 2,
+      scene: {
+        ...createInitialSceneState(),
+        money: 1_000_000,
+        spentThisRun: 2_000_000,
+        lifetimeEarned: halfway,
+        legacyPoints: 34,
+        legacySpent: 10
+      }
+    })
+    const state = parseSavedState(v2WithLegacy)
+    expect(computeLegacyGain(state.lifetimeEarned, state.legacyPoints)).toBe(0)
+    const bracket = computeLegacyBracket(state.lifetimeEarned, state.legacyPoints)
+    expect(bracket.progress).toBeCloseTo(0.5, 5)
+  })
+
+  it('round-trips v3 state including compactAutoBuy without double-scaling and recovers from corrupt JSON', () => {
     const migrated = parseSavedState(REAL_V1_SAVE)
     migrated.bulkBuyMode = 'next'
     migrated.muted = true
+    migrated.compactAutoBuy = true
     const encoded = serializeState(migrated)
+    expect(JSON.parse(encoded).schemaVersion).toBe(3)
+
     const reloaded = parseSavedState(encoded)
     expect(reloaded.bulkBuyMode).toBe('next')
     expect(reloaded.muted).toBe(true)
+    expect(reloaded.compactAutoBuy).toBe(true)
     expect(reloaded.perks.autoClicker).toBe(17)
+    expect(reloaded.lifetimeEarned).toBe(migrated.lifetimeEarned)
 
     const fallback = parseSavedState('{not-valid-json')
     expect(fallback.money).toBe(0)

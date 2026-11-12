@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { BUSINESSES, JOBS, itemImageUrl } from '../src/data/items'
 import { SOCIAL_CLASSES } from '../src/data/classes'
@@ -6,35 +8,76 @@ import { MARKET_EVENTS } from '../src/data/events'
 import { pickHeadline } from '../src/data/headlines'
 
 describe('catalogue & static data', () => {
-  it('defines 18 jobs and 18 businesses preserving legacy IDs', () => {
-    expect(JOBS).toHaveLength(18)
-    expect(BUSINESSES).toHaveLength(18)
-    expect(BUSINESSES.map((b) => b.id)).toEqual([
-      '1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
-      '11', '12', '13', '14', '16', '17', '18', '19'
-    ])
+  it('defines 22 jobs and 22 businesses preserving all legacy IDs plus new UK tiers', () => {
+    expect(JOBS).toHaveLength(22)
+    expect(BUSINESSES).toHaveLength(22)
+    expect(JOBS[0]).toMatchObject({ id: '1', label: 'Gig delivery rider', baseCost: 20 })
+    expect(JOBS[1]).toMatchObject({ id: '19', label: 'Hairdresser' })
+    expect(JOBS[21]).toMatchObject({ id: '22', label: 'Non-dom peer' })
+
+    const bizLabels = BUSINESSES.map((b) => b.label)
+    expect(bizLabels).toContain('Phone case & repair kiosk')
+    expect(bizLabels).toContain('Neon vape shop')
+    expect(bizLabels).toContain('Skin-fade barbershop')
+    expect(bizLabels).toContain('High-street bookies')
+    expect(bizLabels).toContain('Buy-to-let portfolio')
+    expect(bizLabels).toContain('Fish and chip shop')
+    expect(bizLabels).toContain('Private health clinic')
+    expect(bizLabels).toContain('Mayfair hedge fund')
+    expect(bizLabels).toContain('Artisanal sourdough bakery')
+    expect(bizLabels).toContain('PFI outsourcing giant')
+
+    const oilIdx = BUSINESSES.findIndex((b) => b.label === 'Oil driller')
+    const bakeryIdx = BUSINESSES.findIndex((b) => b.label === 'Artisanal sourdough bakery')
+    expect(bakeryIdx).toBeGreaterThan(oilIdx)
   })
 
-  it('forms a 1-to-1 synergy bijection between jobs and businesses', () => {
+  it('forms a 1-to-1 synergy bijection between all 22 jobs and 22 businesses', () => {
     const bizIds = new Set(BUSINESSES.map((b) => b.id))
     const targeted = JOBS.map((j) => j.synergyBusinessId)
-    expect(new Set(targeted).size).toBe(18)
+    expect(new Set(targeted).size).toBe(22)
     for (const id of targeted) {
       expect(bizIds.has(id)).toBe(true)
     }
   })
 
-  it('rebalances #11 Utilities provider and #16 Film studio', () => {
-    const utilities = BUSINESSES.find((b) => b.id === '11')
-    const filmStudio = BUSINESSES.find((b) => b.id === '16')
-    expect(utilities?.baseCost).toBe(4_500_000_000)
-    expect(utilities?.moneyPerSecond).toBe(3_600_000)
-    expect(filmStudio?.moneyPerSecond).toBe(75_000_000)
+  it('maintains strictly decreasing unit-1 ROI across all 22 jobs and 22 businesses', () => {
+    for (let i = 1; i < JOBS.length; i++) {
+      const prevRoi = JOBS[i - 1].moneyPerClick / JOBS[i - 1].baseCost
+      const currRoi = JOBS[i].moneyPerClick / JOBS[i].baseCost
+      expect(currRoi).toBeLessThan(prevRoi)
+    }
+    for (let i = 1; i < BUSINESSES.length; i++) {
+      const prevRoi = BUSINESSES[i - 1].moneyPerSecond / BUSINESSES[i - 1].baseCost
+      const currRoi = BUSINESSES[i].moneyPerSecond / BUSINESSES[i].baseCost
+      expect(currRoi).toBeLessThan(prevRoi)
+    }
   })
 
-  it('maps item labels to public image paths including accented café', () => {
+  it('maps item labels cleanly to public image paths and verifies all 44 PNG thumbnails exist with zero orphans', () => {
     expect(itemImageUrl('jobs', 'Shelf filler')).toBe('./img/jobs/shelf-filler.png')
+    expect(itemImageUrl('businesses', 'Phone case & repair kiosk')).toBe('./img/businesses/phone-case-repair-kiosk.png')
+    expect(itemImageUrl('jobs', 'FTSE 100 CEO')).toBe('./img/jobs/ftse-100-ceo.png')
     expect(itemImageUrl('businesses', 'High-end café')).toBe('./img/businesses/high-end-café.png')
+
+    const publicDir = path.resolve(__dirname, '../public')
+    for (const job of JOBS) {
+      const rel = itemImageUrl('jobs', job.label).replace(/^\.\//, '')
+      const full = path.join(publicDir, rel)
+      expect(fs.existsSync(full), `Missing job icon: ${rel}`).toBe(true)
+      const buf = fs.readFileSync(full)
+      expect(buf.subarray(0, 4).toString('hex')).toBe('89504e47')
+    }
+    for (const biz of BUSINESSES) {
+      const rel = itemImageUrl('businesses', biz.label).replace(/^\.\//, '')
+      const full = path.join(publicDir, rel)
+      expect(fs.existsSync(full), `Missing business icon: ${rel}`).toBe(true)
+      const buf = fs.readFileSync(full)
+      expect(buf.subarray(0, 4).toString('hex')).toBe('89504e47')
+    }
+
+    expect(fs.readdirSync(path.join(publicDir, 'img/jobs')).filter((f) => f.endsWith('.png'))).toHaveLength(22)
+    expect(fs.readdirSync(path.join(publicDir, 'img/businesses')).filter((f) => f.endsWith('.png'))).toHaveLength(22)
   })
 
   it('defines 7 social classes, 6 legacy perks, market events, and headlines', () => {

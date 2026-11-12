@@ -33,9 +33,9 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
   },
   {
     kicker: 'The long game',
-    title: 'Retire, then do it all again richer',
+    title: 'Retire and let your heir take over',
     body: [
-      'Once your lifetime earnings reach £450B you can retire for Legacy. Retiring resets your cash, Jobs and Businesses, but every Legacy point multiplies your income by 1.5x for good.',
+      'Once your lifetime earnings reach £450B you can retire for Legacy and hand the estate to your heir. They start over without your Jobs and Businesses, but with a trust fund worth 5% of your net worth, and every Legacy point multiplies their income by 1.5x for good.',
       'Your first retirement unlocks Business auto-buy, and Legacy buys perks in the Old Boys\' Network, starting with a free Unpaid Intern.'
     ],
     tip: 'Retiring as soon as you can get +1 to +3 Legacy is usually the fastest way up.'

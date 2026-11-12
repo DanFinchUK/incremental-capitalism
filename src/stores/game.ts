@@ -23,6 +23,7 @@ import {
   computeClickIncome,
   computeLegacyBracket,
   computeLegacyGain,
+  heirInheritance,
   computeOfflineCatchUp,
   computePassivePerSecond,
   computeSectorSlices,
@@ -60,7 +61,7 @@ import {
   type IncomeSource,
   type TelemetryState
 } from '../engine/telemetry'
-import { formatDuration, formatMultiplier } from '../utils/format'
+import { formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -139,6 +140,7 @@ export const useGameStore = defineStore('game', () => {
 
   const netWorth = computed(() => money.value + spentThisRun.value)
   const classStatus = computed(() => socialClassInfo(netWorth.value))
+  const heirInheritancePreview = computed(() => heirInheritance(netWorth.value))
   const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value))
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
   const legacyGain = computed(() => computeLegacyGain(lifetimeEarned.value, legacyPoints.value))
@@ -683,8 +685,10 @@ export const useGameStore = defineStore('game', () => {
     if (gain < 1) {
       return false
     }
+    // Inheritance isn't earned, so it doesn't count toward lifetime earnings
+    const inheritance = heirInheritance(netWorth.value)
     legacyPoints.value += gain
-    money.value = 0
+    money.value = inheritance
     spentThisRun.value = 0
     jobsPurchased.value = {}
     businessesOwned.value = {}
@@ -696,7 +700,9 @@ export const useGameStore = defineStore('game', () => {
     activeEvent.value = null
     resetTelemetry(telemetry.value, ts, money.value)
     refreshSeenItems()
-    announce(`Retired with +${gain} Legacy! Income multiplier is now x${formatMultiplier(legacyMultiplier.value)}.`)
+    announce(
+      `Retired with +${gain} Legacy! Your heir inherits ${formatCurrency(inheritance)} and a x${formatMultiplier(legacyMultiplier.value)} income multiplier.`
+    )
     flushSave(ts)
     return true
   }
@@ -806,6 +812,7 @@ export const useGameStore = defineStore('game', () => {
     legacyGain,
     nextLegacyAt,
     legacyBracket,
+    heirInheritancePreview,
     autoClickers,
     hustleMultiplier,
     activeClickBuff,

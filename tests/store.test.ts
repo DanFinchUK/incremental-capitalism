@@ -48,8 +48,15 @@ describe('useGameStore', () => {
 
     store.addDebugMoney(FIRST_LEGACY_LIFETIME * 27, 1000) // Between P=3 (10.99 * 450B) and P=4 (30.67 * 450B)
     expect(store.legacyGain).toBe(3)
+    const estate = store.netWorth
+    const lifetimeBefore = store.lifetimeEarned
+    expect(store.heirInheritancePreview).toBe(Math.floor(estate * 0.05))
     store.retire(2000)
     expect(store.legacyPoints).toBe(3)
+    // Heir starts with 5% of the estate as cash; it isn't counted as earned
+    expect(store.money).toBe(Math.floor(estate * 0.05))
+    expect(store.lifetimeEarned).toBe(lifetimeBefore)
+    expect(store.classStatus.current.level).toBeGreaterThan(0)
     expect(store.legacyAvailable).toBe(3)
 
     // 1st Intern costs 0, 2nd Intern costs 1, Grindset Coaching I ('hustleCap') costs 1

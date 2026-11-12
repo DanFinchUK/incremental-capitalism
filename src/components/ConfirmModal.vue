@@ -18,8 +18,9 @@
       </div>
 
       <p class="scn-CardMeta">
-        Cash out this run's holdings into permanent generational privilege. Your cash, active jobs,
-        and active businesses reset, while Legacy, perks, and lifetime purchase counts carry forward.
+        Hand the estate to your heir. Your Jobs and Businesses are wound up, and after some creative
+        accounting your heir starts with {{ inheritancePct }}% of your net worth in cash. Legacy, perks,
+        and lifetime purchase counts carry forward.
       </p>
 
       <div class="scn-ModalGrid">
@@ -45,6 +46,11 @@
           <div class="scn-DataTitle">Ready auto-buys</div>
           <div class="scn-DataValue">{{ readyAutoBuyCount }} / {{ totalCatalogueCount }} items</div>
         </div>
+      </div>
+
+      <div class="scn-StatBox" data-testid="heir-inheritance">
+        <div class="scn-DataTitle">Heir's trust fund</div>
+        <div class="scn-DataValue">{{ formatCurrency(store.heirInheritancePreview) }}</div>
       </div>
 
       <div v-if="store.legacyPoints === 0" class="scn-ModalCallout scn-ModalCallout-perk">
@@ -144,7 +150,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { BUSINESSES, JOBS } from '../data/items'
-import { legacyMultiplier } from '../engine/economy'
+import { HEIR_INHERITANCE_SHARE, legacyMultiplier } from '../engine/economy'
 import { STORAGE_KEY } from '../engine/migration'
 import { useGameStore } from '../stores/game'
 import { formatCurrency, formatMultiplier } from '../utils/format'
@@ -176,6 +182,7 @@ watch(
 
 const gain = computed(() => store.legacyGain)
 const nextPoints = computed(() => store.legacyPoints + gain.value)
+const inheritancePct = Math.round(HEIR_INHERITANCE_SHARE * 100)
 const currMult = computed(() => formatMultiplier(store.legacyMultiplier))
 const nextMult = computed(() => formatMultiplier(legacyMultiplier(nextPoints.value)))
 const totalCatalogueCount = JOBS.length + BUSINESSES.length

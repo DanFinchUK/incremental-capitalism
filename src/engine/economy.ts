@@ -13,6 +13,14 @@ export const FIRST_LEGACY_LIFETIME = 4.5e11
 // for +4 or more loses ground.
 export const LEGACY_INCOME_RATIO = 1.5
 export const LEGACY_THRESHOLD_RATIO = 2.7
+// Share of the retiring run's net worth the heir starts with as cash.
+// Simulated: any share up to 20% leaves the +1..+3 retire balance intact,
+// so this is tuned for feel (skip the penny-clicking, keep the mid game).
+export const HEIR_INHERITANCE_SHARE = 0.05
+
+export function heirInheritance(netWorth: number): number {
+  return Math.floor(Math.max(0, netWorth) * HEIR_INHERITANCE_SHARE)
+}
 export const BASE_CLICK_VALUE = 30
 
 export type BulkBuyMode = 1 | 10 | 'next' | 'max'

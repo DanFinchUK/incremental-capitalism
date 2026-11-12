@@ -71,7 +71,7 @@ describe('App UI integration', () => {
     for (let i = 0; i < 3; i++) {
       await wrapper.find('[data-testid="intro-next"]').trigger('click')
     }
-    expect(intro().text()).toContain('Retire, then do it all again richer')
+    expect(intro().text()).toContain('Retire and let your heir take over')
     expect(wrapper.find('[data-testid="intro-skip"]').exists()).toBe(false)
     await wrapper.find('[data-testid="intro-next"]').trigger('click')
     expect(intro().exists()).toBe(false)
@@ -156,6 +156,7 @@ describe('App UI integration', () => {
     const modal = wrapper.find('[data-testid="retire-modal"]')
     expect(modal.exists()).toBe(true)
     expect(modal.text()).toContain('x1 → x1.5')
+    expect(modal.find('[data-testid="heir-inheritance"]').text()).toContain('£30,000,000,000')
     expect(modal.text()).toContain('Business Auto-buy')
 
     await wrapper.find('[data-testid="confirm-retire-btn"]').trigger('click')

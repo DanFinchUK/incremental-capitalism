@@ -106,7 +106,7 @@ const getters = {
 
   moneyPerClick (state, getters) {
     // Look at the purchases and correlate those to the items.
-    let amount = 10 // We always have at least 10.
+    let amount = 30 // We always have at least 30.
 
     for (const id of Object.keys(state.jobsPurchased)) {
       amount += getters.jobs[id].moneyPerClick * state.jobsPurchased[id]

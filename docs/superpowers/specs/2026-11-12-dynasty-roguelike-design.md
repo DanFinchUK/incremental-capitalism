@@ -73,7 +73,7 @@ There are nine gates, one per class above the starting class, and they must be b
 
 A boss is attempted on demand from a boss card. During an attempt its twist applies and the win condition is tracked. An attempt has a time limit (a few minutes; exact value per boss is the builder's to tune). On a win, the class promotion happens and the headhunter opens. On a loss or timeout, the twist ends, nothing is taken from the player, and the boss can be retried after a cooldown.
 
-Boss targets are fixed per boss and do not scale with the player's Legacy, perks or advisors. Every win condition must get faster as the player gets stronger: no condition may be a fixed amount of effort that power can't shorten (for example, if silver is polished by clicks, Unpaid Interns and click multipliers polish too). The game records each boss's kill time, shows it against the best kill time for that boss, and marks a win that took only a few seconds as a steamroll.
+Boss targets are fixed per boss and do not scale with the player's Legacy, perks or advisors. Every win condition must get faster as the player gets stronger: no condition may be a fixed amount of effort that power can't shorten (for example, if silver is polished by clicks, Unpaid Interns and click multipliers polish too). The game records each boss's kill time and shows it against the best kill time for that boss. "Steamroll" in this document is design guidance for the feeling, not a word or badge that appears in the game.
 
 | Gate into | Boss | Twist and condition (starting point for tuning) |
 |---|---|---|
@@ -193,7 +193,15 @@ Each phase ships playable, tested, and committed on its own.
 
 ## Tuning tool
 
-The balance simulator used so far lives outside the repo. It moves into the repo as a dev-only script (not part of `npm test`) so tuning is reproducible. It must model bosses, gating, automation, advisors and traits well enough to check the pacing goals. (Claude's call.)
+The balance simulator used so far lives outside the repo. It moves into the repo as a dev-only suite with its own command (for example `npm run sim`), kept out of `npm test` because it takes longer. It models a scripted player (buying, clicking, attempting bosses, hiring advisors, picking heirs, retiring) well enough to check the pacing goals, and it states those goals as assertions on specific times and cash milestones, so a balance change that breaks pacing fails loudly. For example:
+
+- Generation 1 beats gate 3 within 30 to 45 simulated minutes of human-paced play.
+- Generation 2 reaches generation 1's deepest gate at least 20% sooner.
+- Net worth at the 10-minute mark of generation 2 is at least a set multiple of generation 1's.
+- The first gate 6 kill happens between hours 5 and 6, and the first gate 9 kill between hours 15 and 20.
+- A boss first killed in generation N is won within a few seconds of starting the attempt by generation N+3.
+
+The exact thresholds are the builder's to set once the scripted player is calibrated, but every pacing goal in this document has at least one assertion. (Agreed with Dan.)
 
 ## Left to the builder
 

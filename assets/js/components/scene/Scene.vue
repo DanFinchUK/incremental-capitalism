@@ -132,6 +132,7 @@
 
     ready () {
       window.requestAnimationFrame(this.nextGameTick)
+      setInterval(this.showAutoFloats, 1000)
     },
 
     data () {
@@ -206,12 +207,19 @@
       getMoney (event) {
         const amount = store.getters.moneyPerClick
         store.commit('ADD_MONEY', amount)
-        this.showFloat(event, amount)
+        this.showFloat(event.clientX, event.clientY, amount)
       },
 
-      showFloat (event, amount) {
+      showAutoFloats () {
+        const amount = store.getters.moneyPerClick
+        for (let i = 0; i < store.getters.autoClickers; i++) {
+          this.showFloat(Math.random() * window.innerWidth, Math.random() * window.innerHeight, amount)
+        }
+      },
+
+      showFloat (x, y, amount) {
         const id = ++this.floatID
-        this.floats.push({ id, amount, x: event.clientX, y: event.clientY })
+        this.floats.push({ id, amount, x, y })
         setTimeout(() => {
           this.floats = this.floats.filter((f) => f.id !== id)
         }, 900)

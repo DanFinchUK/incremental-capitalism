@@ -40,7 +40,7 @@
             <div class="lyt-Item">
               <div class="scn-DataTitle">Legacy:</div>
               <div class="scn-DataValue">{{ $store.getters.legacyPoints }} (x{{ $store.getters.legacyMultiplier }})</div>
-              <a href="#" class="scn-Action" @click.prevent="retire" :class="{
+              <a href="#" class="scn-Action" @click.prevent="retire" :title="retireTitle" :class="{
                 'scn-Action-disabled': $store.getters.legacyGain < 1
               }">Retire for +{{ $store.getters.legacyGain }}</a>
             </div>
@@ -137,6 +137,14 @@
     computed: {
       classLevel () {
         return store.getters.socialClassLevel
+      },
+
+      retireTitle () {
+        const gain = store.getters.legacyGain
+        if (gain < 1) {
+          return 'Reach £1M net worth to earn legacy points'
+        }
+        return `Reset money, jobs and businesses. You keep your legacy and gain ${gain} point${gain === 1 ? '' : 's'}, each adding 25% income.`
       }
     },
 

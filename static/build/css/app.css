@@ -1647,6 +1647,15 @@ bottom margins, respectively. */
           user-select: none;
 }
 
+.scn-Actions {
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-direction: column;
+      flex-direction: column;
+  -ms-flex-align: center;
+      align-items: center;
+}
+
 .scn-AutoBuy {
   display: block;
   margin-top: 8px;
@@ -1654,6 +1663,10 @@ bottom margins, respectively. */
   -ms-flex-item-align: center;
       -ms-grid-row-align: center;
       align-self: center;
+}
+
+.scn-NextAutoBuy {
+  background-color: #e4f2c2;
 }
 
 .scn-PrimaryAction:active {

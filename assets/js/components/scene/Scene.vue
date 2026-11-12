@@ -63,7 +63,7 @@
             <h1 class="scn-ColumnTitle">Jobs</h1>
           </div>
 
-          <div class="lyt-Item" v-for="(id, job) in $store.getters.jobs">
+          <div class="lyt-Item" v-for="(id, job) in $store.getters.jobs" :class="{ 'scn-NextAutoBuy': $store.getters.autoBuyNext('jobs', id) }">
             <div class="lyt-ItemColumns">
               <div class="lyt-ItemColumn lyt-ItemColumn-image">
                 <img :src="$store.getters.jobImage(id)" alt="">
@@ -77,12 +77,14 @@
               </div>
 
               <div class="lyt-ItemColumn lyt-ItemColumn-action">
+                                <div class="scn-Actions">
                 <a v-if="!$store.getters.autoBuyActive('jobs', id)" href="#" class="scn-Action" @click.prevent="getJob(id)" :class="{
                   'scn-Action-disabled': $store.getters.money < $store.getters.jobCost(id)
                 }">Get hired</a>
                                 <label v-if="$store.getters.autoBuyUnlocked('jobs', id)" class="scn-AutoBuy">
                                   <input type="checkbox" :checked="$store.getters.autoBuyEnabled('jobs', id)" @change="toggleAutoBuy('jobs', id)"> Auto-buy
                                 </label>
+                                </div>
               </div>
             </div>
           </div>
@@ -95,7 +97,7 @@
             <h1 class="scn-ColumnTitle">Businesses</h1>
           </div>
 
-          <div class="lyt-Item" v-for="(id, business) in $store.getters.businesses">
+          <div class="lyt-Item" v-for="(id, business) in $store.getters.businesses" :class="{ 'scn-NextAutoBuy': $store.getters.autoBuyNext('businesses', id) }">
             <div class="lyt-ItemColumns">
               <div class="lyt-ItemColumn lyt-ItemColumn-image">
                 <img :src="$store.getters.businessImage(id)" alt="">
@@ -109,12 +111,14 @@
               </div>
 
               <div class="lyt-ItemColumn lyt-ItemColumn-action">
+                                <div class="scn-Actions">
                 <a v-if="!$store.getters.autoBuyActive('businesses', id)" href="#" class="scn-Action" @click.prevent="getBusiness(id)" :class="{
                   'scn-Action-disabled': $store.getters.money < $store.getters.businessCost(id)
                 }">Get Businessed</a>
                                 <label v-if="$store.getters.autoBuyUnlocked('businesses', id)" class="scn-AutoBuy">
                                   <input type="checkbox" :checked="$store.getters.autoBuyEnabled('businesses', id)" @change="toggleAutoBuy('businesses', id)"> Auto-buy
                                 </label>
+                                </div>
               </div>
           </div>
         </div>

@@ -73,11 +73,21 @@
   user-select: none;
 }
 
+.scn-Actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .scn-AutoBuy {
   display: block;
   margin-top: 8px;
   cursor: pointer;
   align-self: center;
+}
+
+.scn-NextAutoBuy {
+  background-color: #e4f2c2;
 }
 
 .scn-PrimaryAction:active {

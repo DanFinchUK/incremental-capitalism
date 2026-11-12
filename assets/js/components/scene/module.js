@@ -101,7 +101,7 @@ const actions = {
     let target = getters.autoBuyTarget
 
     while (target && getters.money >= target.cost) {
-      dispatch(target.action, target.id)
+      dispatch(target.kind === 'jobs' ? 'addJob' : 'addBusiness', target.id)
       target = getters.autoBuyTarget
     }
   }
@@ -134,6 +134,10 @@ const getters = {
       (kind === 'businesses' || state.autoClickers > 0)
   },
 
+  autoBuyNext (state, getters) {
+    return (kind, id) => !!getters.autoBuyTarget && getters.autoBuyTarget.kind === kind && getters.autoBuyTarget.id === id
+  },
+
   // One legacy point per order of magnitude of net worth above £1M.
   legacyGain (state, getters) {
     return Math.max(0, Math.floor(Math.log10(getters.netWorth)) - 5)
@@ -157,7 +161,7 @@ const getters = {
 
     for (const id of Object.keys(getters.jobs)) {
       candidates.push({
-        action: 'addJob',
+        kind: 'jobs',
         id,
         purchases: state.lifetimePurchases.jobs[id] || 0,
         enabled: !state.autoBuyDisabled.jobs[id],
@@ -168,7 +172,7 @@ const getters = {
 
     for (const id of Object.keys(getters.businesses)) {
       candidates.push({
-        action: 'addBusiness',
+        kind: 'businesses',
         id,
         purchases: state.lifetimePurchases.businesses[id] || 0,
         enabled: !state.autoBuyDisabled.businesses[id],

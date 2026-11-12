@@ -1669,6 +1669,30 @@ bottom margins, respectively. */
   background-color: #e4f2c2;
 }
 
+.scn-Overview {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+  -ms-flex-align: center;
+      align-items: center;
+  gap: 4px 24px;
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  background-color: #f7f7f7;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .15);
+  font-weight: 600;
+}
+
+.scn-Overview .scn-Action {
+  -ms-flex-item-align: auto;
+      -ms-grid-row-align: auto;
+      align-self: auto;
+}
+
 .scn-PrimaryAction:active {
   transform: scale(0.97);
 }

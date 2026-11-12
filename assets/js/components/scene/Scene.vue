@@ -2,6 +2,15 @@
   <div class="lyt-Content">
     <div v-if="milestone" class="scn-Milestone">{{ milestone }}</div>
     <div v-for="f in floats" track-by="id" class="scn-Float" :style="{ left: f.x + 'px', top: f.y + 'px' }">+{{ f.amount | currency }}</div>
+    <div class="scn-Overview">
+      <span>Money: {{ $store.getters.money | currency }}</span>
+      <span>{{ $store.getters.moneyPerSecond | currency }} / second</span>
+      <span>{{ $store.getters.moneyPerClick | currency }} / click</span>
+      <span>Legacy: {{ $store.getters.legacyAvailable }} unspent</span>
+      <a href="#" class="scn-Action" @click.prevent="retire" :title="retireTitle" :class="{
+        'scn-Action-disabled': $store.getters.legacyGain < 1
+      }">Retire for +{{ $store.getters.legacyGain }}</a>
+    </div>
     <div class="lyt-Header">
       <div class="lyt-Columns">
         <div class="lyt-Column">

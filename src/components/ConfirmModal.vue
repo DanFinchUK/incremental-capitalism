@@ -43,8 +43,8 @@
           </div>
         </div>
         <div class="scn-StatBox">
-          <div class="scn-DataTitle">Ready auto-buys</div>
-          <div class="scn-DataValue">{{ readyAutoBuyCount }} / {{ totalCatalogueCount }} items</div>
+          <div class="scn-DataTitle">Deepest gate</div>
+          <div class="scn-DataValue">{{ store.gatesBeaten }} / 9</div>
         </div>
       </div>
 
@@ -55,8 +55,7 @@
 
       <div v-if="store.legacyPoints === 0" class="scn-ModalCallout scn-ModalCallout-perk">
         <p>
-          <strong>First retirement unlock:</strong> Activates <strong>Business Auto-buy</strong> on every
-          venture at its purchase goal, grants <strong>1 Free Unpaid Intern</strong>, and opens the Old Boys' Network.
+          <strong>First retirement unlock:</strong> grants <strong>1 Free Unpaid Intern</strong> and opens the Old Boys' Network.
         </p>
       </div>
 
@@ -101,7 +100,7 @@
       <div class="scn-ModalCallout scn-ModalCallout-danger">
         <div><strong>At stake right now:</strong></div>
         <div>• {{ store.legacyPoints }} Legacy point{{ store.legacyPoints === 1 ? '' : 's' }} &amp; all Old Boys' Network perks</div>
-        <div>• {{ formatCurrency(store.lifetimeEarned) }} in lifetime earnings &amp; auto-buy unlock counts</div>
+        <div>• {{ formatCurrency(store.lifetimeEarned) }} in lifetime earnings</div>
       </div>
 
       <div class="scn-BackupRow">
@@ -149,7 +148,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { BUSINESSES, JOBS } from '../data/items'
 import { HEIR_INHERITANCE_SHARE, legacyMultiplier } from '../engine/economy'
 import { STORAGE_KEY } from '../engine/migration'
 import { useGameStore } from '../stores/game'
@@ -185,22 +183,6 @@ const nextPoints = computed(() => store.legacyPoints + gain.value)
 const inheritancePct = Math.round(HEIR_INHERITANCE_SHARE * 100)
 const currMult = computed(() => formatMultiplier(store.legacyMultiplier))
 const nextMult = computed(() => formatMultiplier(legacyMultiplier(nextPoints.value)))
-const totalCatalogueCount = JOBS.length + BUSINESSES.length
-const readyAutoBuyCount = computed(() => {
-  let ready = 0
-  for (const j of JOBS) {
-    if ((store.lifetimePurchases.jobs[j.id] ?? 0) >= store.itemAutoBuyThreshold('jobs', j.id)) {
-      ready += 1
-    }
-  }
-  for (const b of BUSINESSES) {
-    if ((store.lifetimePurchases.businesses[b.id] ?? 0) >= store.itemAutoBuyThreshold('businesses', b.id)) {
-      ready += 1
-    }
-  }
-  return ready
-})
-
 async function copySaveBackup(): Promise<void> {
   store.flushSave(Date.now())
   const raw = localStorage.getItem(STORAGE_KEY) ?? ''

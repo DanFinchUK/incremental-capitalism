@@ -18,7 +18,6 @@ import {
 } from '../data/events'
 import { perkNextCost, type PerkId, type PerkRanks } from '../data/perks'
 import {
-  autoBuyThreshold,
   bulkBuyQuote,
   computeClickIncome,
   computeIncomeBreakdown,
@@ -26,15 +25,11 @@ import {
   computeOfflineCatchUp,
   computePassivePerSecond,
   computeSectorSlices,
-  isItemAutoBuyActive,
-  isItemAutoBuyUnlocked,
   itemMilestones,
   legacyMultiplier as calcLegacyMultiplier,
   maxHustleMultiplier,
   quoteIncomeDelta,
-  selectAutoBuyTarget,
   classInfoForLevel,
-  type AutoBuySelectionInput,
   type BulkBuyMode,
   type EconomySnapshotInput,
   type IncomeDeltaQuote,
@@ -61,6 +56,7 @@ import {
 } from '../engine/telemetry'
 import { formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
 import { bossForGate, itemCostCeiling, legacyForDepth } from '../engine/bosses'
+import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationLine } from '../engine/automation'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
 
@@ -214,13 +210,8 @@ export const useGameStore = defineStore('game', () => {
     hustleMultiplier: hustleMultiplier.value
   }))
 
-  const selectionInput = computed<AutoBuySelectionInput>(() => ({
-    ...economyInput.value,
-    lifetimePurchases: lifetimePurchases.value,
-    autoBuyDisabled: autoBuyDisabled.value,
-    nepotismRank: perks.value.nepotism,
-    itemCostCeiling: costCeiling.value
-  }))
+  // Share of cash under which an item's next unit restocks itself
+  const automationLine = computed(() => automationShare(perks.value.nepotism, 0))
 
   const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
   const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
@@ -228,9 +219,6 @@ export const useGameStore = defineStore('game', () => {
   // Income ignoring Market Opportunity buffs, so windfalls can't stack on them
   const unbuffedMoneyPerSecond = computed(() =>
     computePassivePerSecond({ ...economyInput.value, businessBuffMultiplier: 1, clickBuffMultiplier: 1 })
-  )
-  const autoBuyTarget = computed(() =>
-    autoBuyPaused.value ? null : selectAutoBuyTarget(selectionInput.value)
   )
   const realisedPerSecond = computed(() => currentRealisedPerSec(telemetry.value, nowMs.value))
   const manualRealisedPerSecond = computed(() => currentManualPerSec(telemetry.value, nowMs.value))
@@ -468,26 +456,18 @@ export const useGameStore = defineStore('game', () => {
   function itemQuote(kind: ItemKind, id: string, modeOverride?: BulkBuyMode) {
     const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
     const owned = kind === 'jobs' ? (jobsPurchased.value[id] ?? 0) : (businessesOwned.value[id] ?? 0)
-    let autoBuyRemaining: number | undefined
-    if (kind === 'businesses') {
-      const threshold = autoBuyThreshold('businesses', def.scaleFactor, perks.value.nepotism)
-      const lifetime = lifetimePurchases.value.businesses[id] ?? 0
-      if (lifetime < threshold) {
-        autoBuyRemaining = threshold - lifetime
-      }
-    }
     return bulkBuyQuote(
       def.baseCost,
       def.scaleFactor,
       owned,
       classStatus.value.costDiscount * twist.value.purchaseCostMult,
       modeOverride ?? bulkBuyMode.value,
-      money.value,
-      autoBuyRemaining
+      money.value
     )
   }
 
-  function buyItem(kind: ItemKind, id: string, modeOverride?: BulkBuyMode): { bought: number; hitMilestone: boolean; promotedClass: boolean } {
+  // save: manual purchases save at once; automation relies on the throttled tick save
+  function buyItem(kind: ItemKind, id: string, modeOverride?: BulkBuyMode, save = true): { bought: number; hitMilestone: boolean; promotedClass: boolean } {
     const quote = itemQuote(kind, id, modeOverride)
     const gatedDef = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
     if (!quote.canAfford || quote.count < 1 || !gatedDef || gatedDef.baseCost > costCeiling.value) {
@@ -520,7 +500,9 @@ export const useGameStore = defineStore('game', () => {
       announce(`${def.label} hit ${crossedMilestone} owned: ${step}x output milestone!`)
     }
 
-    flushSave(nowMs.value)
+    if (save) {
+      flushSave(nowMs.value)
+    }
     return {
       bought: quote.count,
       hitMilestone: crossedMilestone !== null,
@@ -528,6 +510,19 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  function isAutomated(kind: ItemKind, id: string): boolean {
+    if (autoBuyDisabled.value[kind][id]) {
+      return false
+    }
+    const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
+    if (!def || def.baseCost > costCeiling.value) {
+      return false
+    }
+    return isWithinAutomationLine(itemQuote(kind, id, 1).cost, money.value, automationLine.value)
+  }
+
+  // Once a second, restock every item behind the automation line, cheapest
+  // first, up to a cap so a huge bank balance can't stall a tick.
   function runAutoBuy(ts: number): void {
     if (isAutoBuyFrozen.value || autoBuyPaused.value || twist.value.automationPaused) {
       return
@@ -535,17 +530,25 @@ export const useGameStore = defineStore('game', () => {
     if (lastAutoBuyAt.value > 0 && ts - lastAutoBuyAt.value < AUTO_BUY_COOLDOWN_MS) {
       return
     }
-    const target = autoBuyTarget.value
-    if (target && money.value >= target.cost) {
-      // Honour the bulk-buy setting so late-game cash gets spent at a useful
-      // pace; drop to a single unit when the bulk amount isn't affordable yet.
-      let res = buyItem(target.kind, target.id)
-      if (res.bought === 0) {
-        res = buyItem(target.kind, target.id, 1)
+    const candidates: Array<{ kind: ItemKind; id: string }> = [
+      ...visibleJobs.value.flatMap((r) => (r.mode === 'revealed' ? [{ kind: 'jobs' as const, id: r.item.id }] : [])),
+      ...visibleBusinesses.value.flatMap((r) => (r.mode === 'revealed' ? [{ kind: 'businesses' as const, id: r.item.id }] : []))
+    ]
+    let bought = 0
+    while (bought < MAX_AUTOMATION_PURCHASES_PER_TICK) {
+      let cheapest: { kind: ItemKind; id: string; cost: number } | null = null
+      for (const c of candidates) {
+        if (!isAutomated(c.kind, c.id)) continue
+        const cost = itemQuote(c.kind, c.id, 1).cost
+        if (!cheapest || cost < cheapest.cost) cheapest = { ...c, cost }
       }
-      if (res.bought > 0) {
-        lastAutoBuyAt.value = ts
+      if (!cheapest || buyItem(cheapest.kind, cheapest.id, 1, false).bought === 0) {
+        break
       }
+      bought += 1
+    }
+    if (bought > 0) {
+      lastAutoBuyAt.value = ts
     }
   }
 
@@ -728,41 +731,8 @@ export const useGameStore = defineStore('game', () => {
     flushSave(nowMs.value)
   }
 
-  function isAutoBuyUnlocked(kind: ItemKind, id: string): boolean {
-    const scale = kind === 'jobs' ? JOBS_BY_ID[id].scaleFactor : BUSINESSES_BY_ID[id].scaleFactor
-    return isItemAutoBuyUnlocked(
-      kind,
-      id,
-      scale,
-      lifetimePurchases.value,
-      perks.value.nepotism,
-      legacyPoints.value
-    )
-  }
-
   function isAutoBuyEnabled(kind: ItemKind, id: string): boolean {
     return !autoBuyDisabled.value[kind][id]
-  }
-
-  function isAutoBuyActive(kind: ItemKind, id: string): boolean {
-    if (autoBuyPaused.value) {
-      return false
-    }
-    const scale = kind === 'jobs' ? JOBS_BY_ID[id].scaleFactor : BUSINESSES_BY_ID[id].scaleFactor
-    return isItemAutoBuyActive(kind, id, scale, selectionInput.value)
-  }
-
-  function isNextAutoBuy(kind: ItemKind, id: string): boolean {
-    return (
-      autoBuyTarget.value !== null &&
-      autoBuyTarget.value.kind === kind &&
-      autoBuyTarget.value.id === id
-    )
-  }
-
-  function itemAutoBuyThreshold(kind: ItemKind, id: string): number {
-    const scale = kind === 'jobs' ? JOBS_BY_ID[id].scaleFactor : BUSINESSES_BY_ID[id].scaleFactor
-    return autoBuyThreshold(kind, scale, perks.value.nepotism)
   }
 
   function buyPerk(id: PerkId): boolean {
@@ -943,7 +913,6 @@ export const useGameStore = defineStore('game', () => {
     realisedPerSecond,
     manualRealisedPerSecond,
     sectorSlices,
-    autoBuyTarget,
     visibleJobs,
     visibleBusinesses,
     hydrateFromStorage,
@@ -957,11 +926,9 @@ export const useGameStore = defineStore('game', () => {
     claimMarketEvent,
     tick,
     toggleAutoBuy,
-    isAutoBuyUnlocked,
     isAutoBuyEnabled,
-    isAutoBuyActive,
-    isNextAutoBuy,
-    itemAutoBuyThreshold,
+    isAutomated,
+    automationLine,
     buyPerk,
     retire,
     hardReset,

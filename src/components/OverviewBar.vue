@@ -11,7 +11,7 @@
         class="scn-BulkGroup"
         role="group"
         aria-label="Bulk purchase amount"
-        title="Buy amount for clicks and auto-buy. Auto-buy drops to x1 when the batch isn't affordable."
+        title="How many to buy per click. Automation restocks anything that costs under the automation line on its own."
       >
         <button
           v-for="opt in bulkOptions"
@@ -26,14 +26,13 @@
       </div>
 
       <button
-        v-if="store.legacyPoints >= 1 || store.autoClickers >= 1"
         type="button"
         class="scn-Action scn-Action-outline"
         :class="{ 'scn-Action-pausedToggle': store.autoBuyPaused }"
         data-testid="toggle-autobuy-pause"
         @click="store.toggleAutoBuyPaused()"
       >
-        Auto-buy: {{ store.autoBuyPaused ? 'Paused' : 'On' }}
+        Automation: {{ store.autoBuyPaused ? 'Paused' : 'On' }}
       </button>
 
       <button

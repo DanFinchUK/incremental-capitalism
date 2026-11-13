@@ -50,7 +50,7 @@
               {{ store.activeClickBuff.mult }}x {{ store.activeClickBuff.label }} ({{ store.activeClickBuff.remainingSec }}s)
             </span>
             <span v-if="store.isAutoBuyFrozen" class="scn-BuffPill scn-BuffPill-freeze">
-              Inquiry: Auto-buy paused ({{ store.autoBuyFreezeRemainingSec }}s)
+              Inquiry: Automation paused ({{ store.autoBuyFreezeRemainingSec }}s)
             </span>
           </div>
 

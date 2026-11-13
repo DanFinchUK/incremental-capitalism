@@ -25,7 +25,7 @@
     class="scn-Card"
     :data-item-key="`${kind}-${row.item.id}`"
     :class="{
-      'scn-NextAutoBuy': store.isNextAutoBuy(kind, row.item.id),
+      'scn-Card-automated': isAutoActive,
       'scn-Card-compact': isCompact
     }"
     @click="handleCardClick"
@@ -42,7 +42,6 @@
           x{{ formatMult(mMultiplier) }}
         </span>
         <span class="scn-CompactIncome">{{ compactIncomeText }}</span>
-        <span v-if="store.isNextAutoBuy(kind, row.item.id)" class="scn-NextTag">Next</span>
       </div>
       <label
         v-if="showAutoBuyCheckbox"
@@ -107,7 +106,7 @@
 
       <div class="scn-Actions" @click.stop>
         <button
-          v-if="!store.isAutoBuyActive(kind, row.item.id)"
+          v-if="!isAutoActive"
           type="button"
           class="scn-Action"
           :disabled="!quote.canAfford"
@@ -125,7 +124,7 @@
             :checked="store.isAutoBuyEnabled(kind, row.item.id)"
             @change="store.toggleAutoBuy(kind, row.item.id)"
           >
-          Auto-buy
+          Automate
         </label>
       </div>
     </template>
@@ -171,7 +170,7 @@ watch(
 )
 
 const isAutoActive = computed(() =>
-  props.row.mode === 'revealed' ? store.isAutoBuyActive(props.kind, props.row.item.id) : false
+  props.row.mode === 'revealed' && !store.autoBuyPaused ? store.isAutomated(props.kind, props.row.item.id) : false
 )
 
 const isCompact = computed(
@@ -276,33 +275,19 @@ const synergyText = computed(() => {
 
 const autoStatusText = computed(() => {
   if (props.row.mode !== 'revealed') return ''
-  const id = props.row.item.id
-  const lifetime = store.lifetimePurchases[props.kind][id] ?? 0
-  const threshold = store.itemAutoBuyThreshold(props.kind, id)
-
-  if (lifetime < threshold) {
-    if (props.kind === 'businesses' && store.legacyPoints < 1) {
-      return `Auto-buy needs 1 Legacy + ${threshold} lifetime buys (${lifetime}/${threshold})`
-    }
-    return `Auto-buy unlocks after ${threshold} lifetime buys (${lifetime}/${threshold})`
-  }
-  if (props.kind === 'businesses' && store.legacyPoints < 1) {
-    return `Purchase goal met (${lifetime}/${threshold}). Retire once to activate Business auto-buy`
-  }
-  if (props.kind === 'jobs' && store.autoClickers < 1) {
-    return 'Purchase goal met: hire Unpaid Interns in Old Boys\' Network to auto-buy Jobs'
+  const linePct = Math.round(store.automationLine * 100)
+  if (!store.isAutoBuyEnabled(props.kind, props.row.item.id)) {
+    return 'Automation off for this item'
   }
   if (store.autoBuyPaused) {
-    return 'Auto-buy paused globally (resume in top bar)'
+    return 'Automation paused (resume in top bar)'
   }
-  return store.isNextAutoBuy(props.kind, id) ? 'Auto-buy active · Next purchase target' : 'Auto-buy unlocked'
+  return isAutoActive.value
+    ? `Automated: restocks itself while it costs under ${linePct}% of your cash`
+    : `Automates once it costs under ${linePct}% of your cash`
 })
 
-const showAutoBuyCheckbox = computed(() => {
-  if (props.row.mode !== 'revealed') return false
-  if (props.kind === 'jobs' && store.autoClickers < 1) return false
-  return store.isAutoBuyUnlocked(props.kind, props.row.item.id)
-})
+const showAutoBuyCheckbox = computed(() => props.row.mode === 'revealed')
 
 const buyButtonLabel = computed(() => {
   const verb = props.kind === 'jobs' ? 'Get hired' : 'Get Businessed'

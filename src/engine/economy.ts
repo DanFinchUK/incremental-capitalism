@@ -73,14 +73,6 @@ export function milestoneMultiplier(owned: number, scaleFactor: number, deregula
   return Math.pow(step, reachedCount)
 }
 
-export function autoBuyThreshold(kind: ItemKind, scaleFactor: number, nepotismRank: number): number {
-  if (kind === 'jobs') {
-    return Math.max(5, 10 - 5 * nepotismRank)
-  }
-  const base = Math.max(10, Math.floor((7.5 / Math.log(scaleFactor)) / 5) * 5)
-  return Math.max(5, base - 5 * nepotismRank)
-}
-
 export function seriesCost(
   baseCost: number,
   scaleFactor: number,
@@ -110,8 +102,7 @@ export function bulkBuyQuote(
   owned: number,
   costDiscount: number,
   mode: BulkBuyMode,
-  availableMoney: number,
-  autoBuyRemaining?: number
+  availableMoney: number
 ): BulkBuyQuote {
   if (mode === 1 || mode === 10) {
     const cost = seriesCost(baseCost, scaleFactor, owned, mode, costDiscount)
@@ -119,14 +110,7 @@ export function bulkBuyQuote(
   }
   if (mode === 'next') {
     const { nextMilestone } = milestoneProgress(owned, scaleFactor)
-    const candidates: number[] = []
-    if (nextMilestone !== null && nextMilestone > owned) {
-      candidates.push(nextMilestone - owned)
-    }
-    if (autoBuyRemaining !== undefined && autoBuyRemaining > 0) {
-      candidates.push(autoBuyRemaining)
-    }
-    const count = candidates.length > 0 ? Math.min(...candidates) : 1
+    const count = nextMilestone !== null && nextMilestone > owned ? nextMilestone - owned : 1
     const cost = seriesCost(baseCost, scaleFactor, owned, count, costDiscount)
     return { count, cost, canAfford: availableMoney >= cost }
   }
@@ -281,103 +265,6 @@ export function quoteIncomeDelta(
     deltaPerSec: Math.max(0, computePassivePerSecond(nextInput) - computePassivePerSecond(input)),
     deltaPerClick: Math.max(0, computeClickIncome(nextInput, true) - computeClickIncome(input, true))
   }
-}
-
-export interface AutoBuySelectionInput extends EconomySnapshotInput {
-  lifetimePurchases: {
-    jobs: Readonly<Record<string, number>>
-    businesses: Readonly<Record<string, number>>
-  }
-  autoBuyDisabled: {
-    jobs: Readonly<Record<string, boolean>>
-    businesses: Readonly<Record<string, boolean>>
-  }
-  nepotismRank: number
-  // Items priced above this are behind an unbeaten class gate
-  itemCostCeiling: number
-}
-
-export interface AutoBuyTarget {
-  kind: ItemKind
-  id: string
-  cost: number
-}
-
-export function isItemAutoBuyUnlocked(
-  kind: ItemKind,
-  id: string,
-  scaleFactor: number,
-  lifetimePurchases: AutoBuySelectionInput['lifetimePurchases'],
-  nepotismRank: number,
-  legacyPoints: number
-): boolean {
-  if (kind === 'businesses' && legacyPoints < 1) {
-    return false
-  }
-  const count = lifetimePurchases[kind][id] ?? 0
-  return count >= autoBuyThreshold(kind, scaleFactor, nepotismRank)
-}
-
-export function isItemAutoBuyActive(
-  kind: ItemKind,
-  id: string,
-  scaleFactor: number,
-  input: AutoBuySelectionInput
-): boolean {
-  if (kind === 'jobs' && input.autoClickers < 1) {
-    return false
-  }
-  if (input.autoBuyDisabled[kind][id]) {
-    return false
-  }
-  const def = (kind === 'jobs' ? JOBS : BUSINESSES).find((d) => d.id === id)
-  if (!def || def.baseCost > input.itemCostCeiling) {
-    return false
-  }
-  return isItemAutoBuyUnlocked(kind, id, scaleFactor, input.lifetimePurchases, input.nepotismRank, input.legacyPoints)
-}
-
-export function selectAutoBuyTarget(input: AutoBuySelectionInput): AutoBuyTarget | null {
-  const costDiscount = 1 - 0.02 * input.classLevel
-  const baselinePassive = computePassivePerSecond(input)
-  let best: AutoBuyTarget | null = null
-  let bestScore = 0
-
-  for (const job of JOBS) {
-    if (!isItemAutoBuyActive('jobs', job.id, job.scaleFactor, input)) {
-      continue
-    }
-    const currentOwned = input.jobsPurchased[job.id] ?? 0
-    const nextCost = seriesCost(job.baseCost, job.scaleFactor, currentOwned, 1, costDiscount)
-    const nextPassive = computePassivePerSecond({
-      ...input,
-      jobsPurchased: { ...input.jobsPurchased, [job.id]: currentOwned + 1 }
-    })
-    const score = (nextPassive - baselinePassive) / nextCost
-    if (score > bestScore) {
-      bestScore = score
-      best = { kind: 'jobs', id: job.id, cost: nextCost }
-    }
-  }
-
-  for (const biz of BUSINESSES) {
-    if (!isItemAutoBuyActive('businesses', biz.id, biz.scaleFactor, input)) {
-      continue
-    }
-    const currentOwned = input.businessesOwned[biz.id] ?? 0
-    const nextCost = seriesCost(biz.baseCost, biz.scaleFactor, currentOwned, 1, costDiscount)
-    const nextPassive = computePassivePerSecond({
-      ...input,
-      businessesOwned: { ...input.businessesOwned, [biz.id]: currentOwned + 1 }
-    })
-    const score = (nextPassive - baselinePassive) / nextCost
-    if (score > bestScore) {
-      bestScore = score
-      best = { kind: 'businesses', id: biz.id, cost: nextCost }
-    }
-  }
-
-  return best
 }
 
 export interface OfflineCatchUpResult {

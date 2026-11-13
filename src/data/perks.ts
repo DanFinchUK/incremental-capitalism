@@ -30,7 +30,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'autoClicker',
     label: 'Unpaid Interns (Auto-Clicker)',
-    description: 'Each rank clicks Get Paid once per second (riding your manual Hustle streak!) and enables Job auto-buying. First intern is literally unpaid!',
+    description: 'Each rank clicks Get Paid once per second, riding your manual Hustle streak. First intern is literally unpaid!',
     maxRank: null,
     costForRank: (r) => Math.floor(Math.sqrt(r)),
     effectSummary: (r) => `${r} auto-click${r === 1 ? '' : 's'}/sec`
@@ -54,10 +54,10 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'nepotism',
     label: 'Old School Tie',
-    description: 'Lowers every Job & Business auto-buy unlock requirement by 5 lifetime purchases (min 5).',
+    description: 'Moves the automation line: items costing up to 1% more of your cash per rank restock themselves.',
     maxRank: 4,
     costForRank: (r) => [1, 1, 2, 2][r],
-    effectSummary: (r) => `-${5 * r} lifetime purchases needed`
+    effectSummary: (r) => `Automation line at ${1 + r}% of cash`
   },
   {
     id: 'deregulation',

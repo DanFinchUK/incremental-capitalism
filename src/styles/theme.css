@@ -342,9 +342,10 @@
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.scn-Card.scn-NextAutoBuy {
-  background-color: var(--color-next-row);
-  border-color: var(--color-next-row-border);
+/* Behind the automation line: it looks after itself */
+.scn-Card.scn-Card-automated {
+  border-style: dashed;
+  background-color: var(--color-card-subtle);
 }
 
 .scn-Card.scn-Card-compact {

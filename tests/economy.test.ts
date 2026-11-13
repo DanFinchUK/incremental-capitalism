@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SOCIAL_CLASSES } from '../src/data/classes'
 import {
-  autoBuyThreshold,
   bulkBuyQuote,
   computeClickIncome,
   legacyMultiplier,
@@ -11,7 +10,6 @@ import {
   milestoneMultiplier,
   milestoneProgress,
   quoteIncomeDelta,
-  selectAutoBuyTarget,
   seriesCost,
   classInfoForLevel,
   maxHustleMultiplier
@@ -42,21 +40,6 @@ describe('economy engine', () => {
     expect(eliteProg.nextMilestone).toBe(5)
   })
 
-  it('tapers business auto-buy thresholds floored to nearest 5 and respects nepotism', () => {
-    expect(autoBuyThreshold('businesses', 1.2, 0)).toBe(40)
-    expect(autoBuyThreshold('businesses', 1.25, 0)).toBe(30)
-    expect(autoBuyThreshold('businesses', 1.3, 0)).toBe(25)
-    expect(autoBuyThreshold('businesses', 1.4, 0)).toBe(20)
-    expect(autoBuyThreshold('businesses', 1.5, 0)).toBe(15)
-    expect(autoBuyThreshold('businesses', 1.65, 0)).toBe(10)
-    expect(autoBuyThreshold('businesses', 2.05, 0)).toBe(10)
-
-    expect(autoBuyThreshold('businesses', 1.2, 2)).toBe(30)
-    expect(autoBuyThreshold('businesses', 2.05, 3)).toBe(5)
-    expect(autoBuyThreshold('jobs', 1.1, 0)).toBe(10)
-    expect(autoBuyThreshold('jobs', 1.1, 2)).toBe(5)
-  })
-
   it('calculates exact geometric bulk-buy quotes including per-item tapered next milestones', () => {
     const one = bulkBuyQuote(20_000, 1.2, 0, 1, 1, 50_000)
     expect(one).toEqual({ count: 1, cost: 20_000, canAfford: true })
@@ -69,9 +52,8 @@ describe('economy engine', () => {
     const nextElite = bulkBuyQuote(2_600_000_000_000, 1.98, 1, 1, 'next', 1e16)
     expect(nextElite.count).toBe(2)
 
-    // Buy-to-let (sf 1.50, milestones [10,20,...]) at 10 owned with 5 buys left to hit 15 auto-buy unlock targets x5
-    const nextAutoUnlock = bulkBuyQuote(115_000_000, 1.5, 10, 1, 'next', 1e15, 5)
-    expect(nextAutoUnlock.count).toBe(5)
+    // Buy-to-let (sf 1.50, milestones [10,20,...]) at 10 owned targets the 20 milestone
+    expect(bulkBuyQuote(115_000_000, 1.5, 10, 1, 'next', 1e15).count).toBe(10)
 
     const budget = seriesCost(20_000, 1.2, 0, 6, 1) + 50
     const maxAffordable = bulkBuyQuote(20_000, 1.2, 0, 1, 'max', budget)
@@ -144,43 +126,6 @@ describe('economy engine', () => {
     const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)
     expect(deltaJob.deltaPerClick).toBeGreaterThan(0)
     expect(deltaJob.deltaPerSec).toBeGreaterThan(0)
-  })
-
-  it('gates business auto-buy on 1 Legacy and picks milestone jumps when optimal', () => {
-    const noLegacy = selectAutoBuyTarget({
-      jobsPurchased: {},
-      businessesOwned: { '1': 9 },
-      lifetimePurchases: { jobs: {}, businesses: { '1': 50 } },
-      autoBuyDisabled: { jobs: {}, businesses: {} },
-      legacyPoints: 0,
-      classLevel: 0,
-      deregulationRank: 0,
-      nepotismRank: 0,
-      itemCostCeiling: Infinity,
-      autoClickers: 0,
-      businessBuffMultiplier: 1,
-      clickBuffMultiplier: 1,
-      hustleMultiplier: 1
-    })
-    expect(noLegacy).toBeNull()
-
-    const withLegacy = selectAutoBuyTarget({
-      jobsPurchased: {},
-      businessesOwned: { '1': 9, '20': 0 },
-      lifetimePurchases: { jobs: {}, businesses: { '1': 50, '20': 50 } },
-      autoBuyDisabled: { jobs: {}, businesses: {} },
-      legacyPoints: 1,
-      classLevel: 0,
-      deregulationRank: 0,
-      nepotismRank: 0,
-      itemCostCeiling: Infinity,
-      autoClickers: 0,
-      businessBuffMultiplier: 1,
-      clickBuffMultiplier: 1,
-      hustleMultiplier: 1
-    })
-    expect(withLegacy?.kind).toBe('businesses')
-    expect(withLegacy?.id).toBe('1')
   })
 
   it('adds 5% income per Legacy point, +1x/rank Hustle cap, and offline catch-up', () => {

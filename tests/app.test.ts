@@ -106,24 +106,26 @@ describe('App UI integration', () => {
     wrapper.unmount()
   })
 
-  it('shows stack share, buy delta, and compact auto-buy rows', async () => {
+  it('shows stack share, buy delta, and compact rows for automated items', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
 
     store.gatesBeaten = 9
     store.legacyPoints = 1
-    store.businessesOwned = { '1': 10, '20': 2 }
-    store.lifetimePurchases.businesses = { '1': 50, '20': 2 }
+    store.businessesOwned = { '1': 10, '20': 10 }
+    // Etsy's next unit (~£124k) is under 1% of £15M cash, so it is automated;
+    // the Phone kiosk's (~£516k) is not, so it keeps its buy button and delta
+    store.money = 15_000_000
     store.seenItems.jobs = { '1': true, '19': true, '2': true, '3': true, '4': true, '5': true }
     store.seenItems.businesses = { '1': true, '20': true }
     await wrapper.vm.$nextTick()
 
-    // Stack total + % share + buy delta on revealed non-auto-bought Phone case & repair kiosk
+    // Stack total + % share + buy delta on the revealed items
     const pageText = wrapper.text()
     expect(pageText).toContain('total (')
     expect(pageText).toContain('(+£')
 
-    // Compact auto-buy collapses active auto-bought Etsy store into a compact row, click expands
+    // Compact mode collapses the automated Etsy store into a compact row, click expands
     const compactBtn = wrapper.find('[data-testid="toggle-compact-autobuy"]')
     expect(compactBtn.exists()).toBe(true)
     await compactBtn.trigger('click')
@@ -133,12 +135,12 @@ describe('App UI integration', () => {
     await wrapper.find('[data-item-key="businesses-1"]').trigger('click')
     expect(wrapper.find('[data-item-key="businesses-1"]').classes()).not.toContain('scn-Card-compact')
 
-    // Master Auto-buy pause reveals manual buy button on ticked cards without unchecking Auto-buy
+    // Pausing automation brings back the manual buy button on automated cards
     const pauseBtn = wrapper.find('[data-testid="toggle-autobuy-pause"]')
     expect(pauseBtn.exists()).toBe(true)
-    expect(pauseBtn.text()).toContain('Auto-buy: On')
+    expect(pauseBtn.text()).toContain('Automation: On')
     await pauseBtn.trigger('click')
-    expect(pauseBtn.text()).toContain('Auto-buy: Paused')
+    expect(pauseBtn.text()).toContain('Automation: Paused')
     expect(wrapper.find('[data-item-key="businesses-1"]').text()).toContain('Get Businessed')
     wrapper.unmount()
   })
@@ -159,7 +161,7 @@ describe('App UI integration', () => {
     expect(modal.exists()).toBe(true)
     expect(modal.text()).toContain('x1 → x1.05')
     expect(modal.find('[data-testid="heir-inheritance"]').text()).toContain('£30,000,000,000')
-    expect(modal.text()).toContain('Business Auto-buy')
+    expect(modal.text()).toContain('Free Unpaid Intern')
 
     await wrapper.find('[data-testid="confirm-retire-btn"]').trigger('click')
     expect(wrapper.find('[data-testid="retire-modal"]').exists()).toBe(false)

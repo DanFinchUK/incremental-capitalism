@@ -12,7 +12,9 @@ function readyFor(gate: number) {
   store.hydrateFromStorage(T0)
   store.closeIntro(T0)
   store.gatesBeaten = gate - 1
-  store.addDebugMoney(gateThreshold(gate), T0)
+  // A little over the threshold: automation spends from the first tick, and
+  // float rounding could otherwise leave net worth a hair under it
+  store.addDebugMoney(gateThreshold(gate) * 1.01, T0)
   store.tick(T0)
   return store
 }
@@ -58,14 +60,14 @@ describe('boss attempts', () => {
 
   it('Grilling pauses automation only during the attempt', () => {
     const store = readyFor(8)
-    store.legacyPoints = 1
-    store.lifetimePurchases.businesses['1'] = 500
+    const units = () => Object.values(store.jobsPurchased).reduce((a, b) => a + b, 0) + Object.values(store.businessesOwned).reduce((a, b) => a + b, 0)
     store.startBossAttempt()
+    const during = units()
     for (let i = 1; i <= 3; i++) store.tick(T0 + i * 1100)
-    expect(store.businessesOwned['1'] ?? 0).toBe(0)
+    expect(units()).toBe(during)
     store.abandonBossAttempt()
     store.tick(T0 + 5000)
-    expect(store.businessesOwned['1'] ?? 0).toBeGreaterThan(0)
+    expect(units()).toBeGreaterThan(during)
   })
 
   it("Landlord's rent applies to every income credit, including windfalls and clicks", () => {
@@ -88,6 +90,7 @@ describe('boss attempts', () => {
     store.businessesOwned['1'] = 2
     store.jobsPurchased['1'] = 5
     store.perks.autoClicker = 2
+    store.toggleAutoBuyPaused() // keep automation's spending out of the sums
     store.startBossAttempt()
     const before = store.money
     const click = store.manualClick(T0 + 10)

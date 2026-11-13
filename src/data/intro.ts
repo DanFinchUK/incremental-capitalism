@@ -36,7 +36,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     title: 'Retire and let your heir take over',
     body: [
       'Once you have beaten your first boss you can retire and hand the estate to your heir. Legacy is paid for the deepest gate you beat, and one gate deeper is worth far more than the same depth twice. Your heir starts over with a trust fund worth 5% of your net worth, and every Legacy point adds 5% to their income for good.',
-      'Your first retirement unlocks Business auto-buy, and Legacy buys perks in the Old Boys\' Network, starting with a free Unpaid Intern.'
+      'Legacy also buys perks in the Old Boys\' Network, starting with a free Unpaid Intern.'
     ],
     tip: 'Each generation, try to beat your best split times, then push one gate further.'
   }

@@ -16,7 +16,7 @@
           <h2 id="class-modal-title">
             <template v-if="victory">{{ victory.boss.title }}: won</template>
             <template v-else>
-              {{ celebratedDef ? `Welcome to the ${celebratedDef.label}` : `British Class Pyramid (${store.highestClassReached + 1}/${SOCIAL_CLASSES.length} unlocked)` }}
+              {{ celebratedDef ? `Your new class: ${celebratedDef.label}` : `British Class Pyramid (${store.highestClassReached + 1}/${SOCIAL_CLASSES.length} unlocked)` }}
             </template>
           </h2>
         </div>
@@ -33,7 +33,7 @@
       </template>
 
       <div v-if="celebratedDef" class="scn-ModalCallout scn-ModalCallout-perk">
-        <div v-if="victory">You join the <strong>{{ celebratedDef.label }}</strong></div>
+        <div v-if="victory">Your new class: <strong>{{ celebratedDef.label }}</strong></div>
         <div><strong>{{ celebratedDef.perkSummary }}</strong></div>
         <div>{{ celebratedDef.initiationNote }}</div>
       </div>

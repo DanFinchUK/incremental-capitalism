@@ -216,7 +216,7 @@ export const useGameStore = defineStore('game', () => {
       if (!firstTime) {
         const title = bossForGate(gate)?.title ?? `Gate ${gate}`
         const best = prevBestKillMs !== null ? ` (best ${formatClock(prevBestKillMs)})` : ''
-        announce(`${title} beaten in ${formatClock(killMs)}${best}. ${classStatus.value.current.label} again.`)
+        announce(`${title} beaten in ${formatClock(killMs)}${best}. Class: ${classStatus.value.current.label}.`)
       }
       splits.value = withSplit(splits.value, gate, activeGenerationMs.value)
       lastKillMs.value = withSplit(lastKillMs.value, gate, killMs)

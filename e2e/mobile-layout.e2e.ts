@@ -51,3 +51,23 @@ test('running buffs and penalties show in the dock', async ({ page }) => {
   await withStore(page, `(s) => { s.spawnSpecificEvent('shadyDeal', Date.now()); s.claimMarketEvent(Date.now(), () => 0.9) }`)
   await expect(page.getByTestId('mobile-dock')).toContainText('x0.5')
 })
+
+test('the Businesses tab shows how many businesses you can afford while you are on Jobs', async ({ page }) => {
+  await newGame(page)
+  const tab = page.getByTestId('tab-businesses')
+  await expect(tab.getByTestId('tab-affordable')).toHaveCount(0)
+  await withStore(page, `(s) => s.addDebugMoney(25_000, Date.now())`)
+  await expect(tab.getByTestId('tab-affordable')).toHaveText('1')
+})
+
+test('a tab marks items revealed since you last looked at it', async ({ page }) => {
+  await newGame(page)
+  const tab = page.getByTestId('tab-businesses')
+  await expect(tab.getByTestId('tab-new')).toHaveCount(0)
+  // Enough net worth to reveal the next business, while on the Jobs tab
+  await withStore(page, `(s) => { s.addDebugMoney(100_000, Date.now()); s.tick(Date.now()) }`)
+  await expect(tab.getByTestId('tab-new')).toBeVisible()
+  await tab.tap()
+  await page.getByTestId('tab-jobs').tap()
+  await expect(tab.getByTestId('tab-new')).toHaveCount(0)
+})

@@ -1,3 +1,8 @@
+/* No double-tap zoom anywhere (pinch zoom is off in the viewport tag) */
+html {
+  touch-action: manipulation;
+}
+
 /* Phone layout (max-width 720px). One section at a time, with money, the
    next gate, Get paid and the section tabs docked under the thumb. */
 
@@ -60,6 +65,9 @@
 }
 
 .mob-EventSlot .scn-MarketEvent {
+  --shift-x: 0% !important;
+  --shift-y: 0% !important;
+  max-height: none;
   position: static;
   width: 100%;
   max-width: none;
@@ -140,6 +148,32 @@
   font-weight: 700;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+.mob-Tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.mob-TabCount {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  background: var(--color-green-text);
+  color: var(--color-bg);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.mob-TabNew {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--color-gold);
+  color: #000000;
+  font-size: 9px;
+  line-height: 14px;
 }
 
 .mob-Tab-active {

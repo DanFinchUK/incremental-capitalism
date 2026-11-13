@@ -59,20 +59,23 @@
         @click="emit('tab', t.id)"
       >
         {{ t.label }}
+        <span v-if="hasNew(t.id)" class="mob-TabNew" data-testid="tab-new">New</span>
+        <span v-if="affordable(t.id) > 0" class="mob-TabCount" data-testid="tab-affordable" :aria-label="`${affordable(t.id)} you can afford`">{{ affordable(t.id) }}</span>
       </button>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import type { ItemKind } from '../data/items'
 import { gateThreshold } from '../engine/bosses'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
 
 export type PhoneTab = 'jobs' | 'businesses' | 'family'
 
-defineProps<{ tab: PhoneTab }>()
+const props = defineProps<{ tab: PhoneTab }>()
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
   (e: 'tab', tab: PhoneTab): void
@@ -107,6 +110,41 @@ const tabs: ReadonlyArray<{ id: PhoneTab; label: string }> = [
 const boss = computed(() => store.nextBoss)
 const threshold = computed(() => (boss.value ? gateThreshold(boss.value.def.gate) : 0))
 const pct = computed(() => Math.round((boss.value?.progress ?? 0) * 100))
+
+// Tab badges: how many items in each list you can afford right now, and
+// whether it has items revealed since you last looked. Information only;
+// working out which to buy is still yours.
+const LIST_KIND: Partial<Record<PhoneTab, ItemKind>> = { jobs: 'jobs', businesses: 'businesses' }
+
+function revealedIds(kind: ItemKind): string[] {
+  const rows = kind === 'jobs' ? store.visibleJobs : store.visibleBusinesses
+  return rows.flatMap((r) => (r.mode === 'revealed' ? [r.item.id] : []))
+}
+
+function affordable(tab: PhoneTab): number {
+  const kind = LIST_KIND[tab]
+  return kind ? revealedIds(kind).filter((id) => store.itemQuote(kind, id).canAfford).length : 0
+}
+
+const viewed = reactive<Record<ItemKind, Set<string>>>({
+  jobs: new Set(revealedIds('jobs')),
+  businesses: new Set(revealedIds('businesses'))
+})
+
+function hasNew(tab: PhoneTab): boolean {
+  const kind = LIST_KIND[tab]
+  return kind !== undefined && tab !== props.tab && revealedIds(kind).some((id) => !viewed[kind].has(id))
+}
+
+// Whatever is revealed on the open tab counts as seen
+watch(
+  () => [props.tab, revealedIds('jobs').length, revealedIds('businesses').length],
+  () => {
+    const kind = LIST_KIND[props.tab]
+    if (kind) for (const id of revealedIds(kind)) viewed[kind].add(id)
+  },
+  { immediate: true }
+)
 
 function startBoss(): void {
   store.startBossAttempt()

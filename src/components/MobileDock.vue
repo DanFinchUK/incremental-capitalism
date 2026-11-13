@@ -25,7 +25,16 @@
           Rules
         </button>
         <button
-          v-if="boss.status === 'available'"
+          v-if="boss.status === 'available' && store.mustHireFirst"
+          type="button"
+          class="scn-Action scn-Action-purple"
+          data-testid="dock-hire-first"
+          @click="emit('hire')"
+        >
+          Hire first
+        </button>
+        <button
+          v-else-if="boss.status === 'available'"
           type="button"
           class="scn-Action scn-Action-purple"
           data-testid="dock-boss-start"
@@ -81,6 +90,7 @@ const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
   (e: 'tab', tab: PhoneTab): void
   (e: 'rules'): void
+  (e: 'hire'): void
 }>()
 
 const store = useGameStore()

@@ -34,7 +34,8 @@
 
     <div v-else-if="boss.status === 'available'" class="scn-BossActions">
       <span class="scn-AutoLine">{{ timeLimitSec }}s to win. Losing costs nothing but time.</span>
-      <button type="button" class="scn-Action scn-Action-purple" data-testid="boss-start" @click="store.startBossAttempt()">
+      <span v-if="store.mustHireFirst" class="scn-AutoLine" data-testid="boss-hire-first">Hire from the headhunter first.</span>
+      <button v-else type="button" class="scn-Action scn-Action-purple" data-testid="boss-start" @click="store.startBossAttempt()">
         Take it on
       </button>
     </div>

@@ -25,7 +25,6 @@ export interface OfficeModule {
   queuedOffers: Ref<number>
   officeSources: ComputedRef<ModifierSource[]>
   hireAdvisor: (offerIndex: number, replaceSeat?: number) => boolean
-  skipOffer: () => void
   fireAdvisor: (seat: number) => void
   firePA: () => void
   promoteToPA: (seat: number) => void
@@ -82,10 +81,6 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     deps.announce(`${def.name} joins the family office.`)
     deps.flushSave()
     return true
-  }
-
-  function skipOffer(): void {
-    nextOffer()
   }
 
   function fireAdvisor(seat: number): void {
@@ -157,7 +152,6 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     queuedOffers,
     officeSources,
     hireAdvisor,
-    skipOffer,
     fireAdvisor,
     firePA,
     promoteToPA,

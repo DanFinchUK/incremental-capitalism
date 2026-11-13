@@ -73,6 +73,7 @@ describe('beating a boss', () => {
   it('a repeat win in a later generation gets a banner with the time, not the full screen', () => {
     const store = fresh()
     let t = winGate1(store, T0)
+    store.hireAdvisor(0)
     store.closeClassModal()
     store.retire(t)
     store.pickHeir(0)

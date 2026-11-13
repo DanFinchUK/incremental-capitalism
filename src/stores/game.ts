@@ -236,6 +236,8 @@ export const useGameStore = defineStore('game', () => {
     }
   })
   const twist = bosses.twist
+  // Every boss win comes with a hire, and it must be made before moving on
+  const mustHireFirst = computed(() => office.headhunterOffer.value.length > 0)
   const plays = createPlayLogModule(loadPlayLog(), {
     generation: () => generation.value,
     activeMs: () => activeGenerationMs.value,
@@ -983,7 +985,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function startBossAttempt(): boolean {
-    if (heirChoices.value.length > 0 || !bosses.startBossAttempt()) {
+    if (heirChoices.value.length > 0 || mustHireFirst.value || !bosses.startBossAttempt()) {
       return false
     }
     const gate = bosses.bossAttempt.value!.gate
@@ -1198,6 +1200,10 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function closeClassModal(): void {
+    // The victory screen waits for the hire it offers
+    if (celebratedClassLevel.value !== null && mustHireFirst.value) {
+      return
+    }
     classModalOpen.value = false
     celebratedClassLevel.value = null
   }
@@ -1255,7 +1261,8 @@ export const useGameStore = defineStore('game', () => {
     playLog: plays.playLog,
     flushAll,
     exportSave,
-    skipOffer: office.skipOffer,
+    rollOffer: office.rollOffer,
+    mustHireFirst,
     fireAdvisor,
     achievements,
     achievementsOpen,

@@ -20,7 +20,7 @@
             </template>
           </h2>
         </div>
-        <button type="button" class="scn-Action scn-Action-outline" @click="store.closeClassModal()">
+        <button v-if="!hireBlocksClose" type="button" class="scn-Action scn-Action-outline" @click="store.closeClassModal()">
           Close
         </button>
       </div>
@@ -107,7 +107,9 @@
       </details>
 
       <div class="scn-ModalFooter">
+        <p v-if="hireBlocksClose" class="scn-AutoLine">Hire one of the candidates above to carry on.</p>
         <button
+          v-else
           type="button"
           class="scn-Action scn-Action-purple"
           @click="store.closeClassModal()"
@@ -139,6 +141,9 @@ const celebratedDef = computed(() =>
 )
 
 // The boss just beaten for the first time, while its celebration is open
+// The victory screen waits for its hire
+const hireBlocksClose = computed(() => store.celebratedClassLevel !== null && store.mustHireFirst)
+
 const victory = computed(() => {
   const win = store.lastVictory
   if (!win || !win.firstTime || store.celebratedClassLevel !== win.gate) return null

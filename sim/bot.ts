@@ -116,14 +116,20 @@ function bestBuy(store: Store, cfg: BotConfig): { kind: ItemKind; id: string } |
 // becomes the PA so the office has continuity.
 function manageOffice(store: Store): void {
   if (store.headhunterOffer.length > 0) {
+    let best = 0
+    store.headhunterOffer.forEach((id, i) => {
+      if (RARITY_RANK[ADVISORS_BY_ID[id].rarity] > RARITY_RANK[ADVISORS_BY_ID[store.headhunterOffer[best]].rarity]) best = i
+    })
     if (store.officeSeats.some((s) => s === null)) {
-      let best = 0
-      store.headhunterOffer.forEach((id, i) => {
-        if (RARITY_RANK[ADVISORS_BY_ID[id].rarity] > RARITY_RANK[ADVISORS_BY_ID[store.headhunterOffer[best]].rarity]) best = i
-      })
       store.hireAdvisor(best)
     } else {
-      store.skipOffer()
+      // Hiring is required, so replace the least rare advisor in the office
+      let seat = 0
+      store.officeSeats.forEach((inst, i) => {
+        const rank = (x: typeof inst) => (x ? RARITY_RANK[ADVISORS_BY_ID[x.advisorId].rarity] : -1)
+        if (rank(inst) < rank(store.officeSeats[seat])) seat = i
+      })
+      store.hireAdvisor(best, seat)
     }
   }
   if (!store.paChair) {

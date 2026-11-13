@@ -23,6 +23,8 @@ const T0 = 1_000_000
 // Beat the next gate by forcing a win: unlock, start, then meet its condition.
 function beatNextGate(store: ReturnType<typeof useGameStore>, t: number): number {
   const gate = store.gatesBeaten + 1
+  // Each win's hire has to be made before the next fight
+  if (store.mustHireFirst) store.hireAdvisor(0, 0)
   store.addDebugMoney(gateThreshold(gate) * 10, t)
   store.startBossAttempt()
   const attempt = store.bossAttempt!

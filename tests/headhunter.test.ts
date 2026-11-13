@@ -36,25 +36,63 @@ describe('headhunter offers', () => {
     return store
   }
 
-  it('every boss win earns a hire: an unused offer waits instead of being replaced', () => {
+  it('every boss win earns a hire, and a second offer waits rather than replacing the first', () => {
     const store = fresh()
-    let t = winGate(store, 1, T0)
+    winGate(store, 1, T0)
     const first = [...store.headhunterOffer]
-    t = winGate(store, 2, t)
-    expect(store.gatesBeaten).toBe(2)
+    store.rollOffer()
     expect(store.headhunterOffer).toEqual(first)
     expect(store.queuedOffers).toBe(1)
     store.hireAdvisor(0)
     expect(store.headhunterOffer).toHaveLength(3)
     expect(store.queuedOffers).toBe(0)
-    store.skipOffer()
-    expect(store.headhunterOffer).toHaveLength(0)
+  })
+
+  it('hiring is required: there is no skipping, and the next boss waits until you hire', () => {
+    const store = fresh()
+    const t = winGate(store, 1, T0)
+    expect('skipOffer' in store).toBe(false)
+    store.addDebugMoney(gateThreshold(2) * 2, t)
+    store.tick(t)
+    expect(store.nextBoss?.status).toBe('available')
+    expect(store.mustHireFirst).toBe(true)
+    expect(store.startBossAttempt()).toBe(false)
+    store.hireAdvisor(0)
+    expect(store.mustHireFirst).toBe(false)
+    expect(store.startBossAttempt()).toBe(true)
+  })
+
+  it('the victory screen stays open until you hire', () => {
+    const store = fresh()
+    store.addDebugMoney(gateThreshold(1) * 2, T0)
+    store.jobsPurchased['21'] = 50
+    store.tick(T0)
+    store.startBossAttempt()
+    for (let i = 0; i < 200; i++) store.manualClick(T0 + 10 + i * 20)
+    store.tick(T0 + 4500)
+    expect(store.classModalOpen).toBe(true)
+    store.closeClassModal()
+    expect(store.classModalOpen).toBe(true)
+    store.hireAdvisor(0)
+    store.closeClassModal()
+    expect(store.classModalOpen).toBe(false)
+  })
+
+  it('with every seat taken, the required hire replaces someone', () => {
+    const store = fresh()
+    for (let i = 0; i < store.officeSeats.length; i++) {
+      store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
+      store.hireAdvisor(0)
+    }
+    store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
+    expect(store.hireAdvisor(1, 0)).toBe(true)
+    expect(store.officeSeats[0]?.advisorId).toBe('sommelier')
   })
 
   it('queued offers survive a reload', () => {
     const store = fresh()
-    let t = winGate(store, 1, T0)
-    t = winGate(store, 2, t)
+    const t = winGate(store, 1, T0)
+    store.rollOffer()
     store.flushSave(t)
     const loaded = parseSavedState(localStorage.getItem(STORAGE_KEY))
     expect(loaded.office.queued).toBe(1)

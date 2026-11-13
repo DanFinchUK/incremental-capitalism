@@ -66,6 +66,7 @@ describe('achievements', () => {
     store.tick(T0)
     forceWin(store, T0)
     expect(store.achievements).toEqual(expect.arrayContaining(['solidarity', 'no-sweat']))
+    store.hireAdvisor(0)
     store.gatesBeaten = 3
     store.addDebugMoney(gateThreshold(4) * 10, T0 + 2000)
     store.startBossAttempt()

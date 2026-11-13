@@ -88,7 +88,7 @@
       </div>
     </footer>
 
-    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" />
+    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" @hire="showHeadhunter" />
   </div>
 </template>
 
@@ -149,6 +149,13 @@ function showBossRules(): void {
   if (phoneTab.value !== 'family') tabScroll[phoneTab.value] = window.scrollY
   phoneTab.value = 'family'
   nextTick(() => document.querySelector('[data-testid="boss-card"]')?.scrollIntoView({ block: 'start' }))
+}
+
+// The dock's Hire first button: open Family & gates at the headhunter
+function showHeadhunter(): void {
+  if (phoneTab.value !== 'family') tabScroll[phoneTab.value] = window.scrollY
+  phoneTab.value = 'family'
+  nextTick(() => document.querySelector('[data-testid="headhunter"]')?.scrollIntoView({ block: 'start' }))
 }
 
 function payButton(): HTMLButtonElement | null {

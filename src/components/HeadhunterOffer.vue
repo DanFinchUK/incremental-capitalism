@@ -2,9 +2,8 @@
   <div v-if="offer.length > 0" class="scn-Headhunter" data-testid="headhunter">
     <div class="scn-OfficeHeader">
       <strong>
-        The headhunter has three candidates<span v-if="store.queuedOffers > 0">, and {{ store.queuedOffers }} more shortlist{{ store.queuedOffers === 1 ? '' : 's' }} after these</span>
+        Hire one of the headhunter's three candidates<span v-if="store.queuedOffers > 0">, and {{ store.queuedOffers }} more shortlist{{ store.queuedOffers === 1 ? '' : 's' }} after these</span>
       </strong>
-      <button type="button" class="scn-Action scn-Action-outline" @click="store.skipOffer()">Not today</button>
     </div>
     <p v-if="seatsFull" class="scn-AutoLine">The office is full: fire someone first, or hire straight into a seat.</p>
     <div class="scn-AdvisorGrid">

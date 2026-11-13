@@ -62,6 +62,9 @@ import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationL
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
 import { createOfficeModule } from './modules/office'
+import { MAX_TREE_ENTRIES, type GenerationRecord } from '../engine/family'
+import type { AdvisorInstance } from '../engine/office'
+import { ADVISORS_BY_ID } from '../data/advisors'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -147,6 +150,8 @@ export const useGameStore = defineStore('game', () => {
   const heir = ref<Heir>(initial.heir ?? { name: '', traitId: null })
   const heirChoices = ref<Heir[]>(initial.heirChoices)
   const generation = ref<number>(initial.generation)
+  const familyTree = ref<GenerationRecord[]>(initial.familyTree)
+  const familyTreeOpen = ref(false)
   const office = createOfficeModule({
     money,
     extraSeats: () => perks.value.officeSeats,
@@ -345,6 +350,7 @@ export const useGameStore = defineStore('game', () => {
       heirChoices: heirChoices.value,
       generation: generation.value,
       office: office.snapshot(),
+      familyTree: familyTree.value,
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
@@ -394,6 +400,7 @@ export const useGameStore = defineStore('game', () => {
     heirChoices.value = loaded.heirChoices
     generation.value = loaded.generation
     office.loadState(loaded.office)
+    familyTree.value = loaded.familyTree
     bosses.bossAttempt.value = null
     bosses.bossCooldownUntilMs.value = 0
     bulkBuyMode.value = loaded.bulkBuyMode
@@ -794,6 +801,20 @@ export const useGameStore = defineStore('game', () => {
     if (gatesBeaten.value < 1 || gain < 1) {
       return false
     }
+    const payroll = [office.paChair.value, ...office.officeSeats.value].filter((a): a is AdvisorInstance => a !== null)
+    familyTree.value = [
+      ...familyTree.value,
+      {
+        generation: generation.value,
+        name: heir.value.name,
+        traitId: heir.value.traitId,
+        deepestGate: gatesBeaten.value,
+        legacyEarned: gain,
+        activeMs: activeGenerationMs.value,
+        advisors: payroll.map((a) => ADVISORS_BY_ID[a.advisorId]?.name ?? a.advisorId),
+        splits: [...splits.value]
+      }
+    ].slice(-MAX_TREE_ENTRIES)
     // Inheritance isn't earned, so it doesn't count toward lifetime earnings
     const inheritance = heirInheritance(netWorth.value, modifiers.value.trustFundShareAdd)
     legacyPoints.value += gain
@@ -803,7 +824,7 @@ export const useGameStore = defineStore('game', () => {
     businessesOwned.value = {}
     gatesBeaten.value = 0
     activeGenerationMs.value = 0
-    heirChoices.value = rollHeirChoices(Math.random, familySurname.value, [heir.value.name])
+    heirChoices.value = rollHeirChoices(Math.random, familySurname.value, [...familyTree.value.map((r) => r.name), heir.value.name])
     office.onRetire()
     splits.value = emptySplits()
     lastKillMs.value = emptySplits()
@@ -952,6 +973,8 @@ export const useGameStore = defineStore('game', () => {
     modifiers,
     pickHeir,
     bossTarget,
+    familyTree,
+    familyTreeOpen,
     officeSeats: office.officeSeats,
     paChair: office.paChair,
     headhunterOffer: office.headhunterOffer,

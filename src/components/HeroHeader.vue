@@ -18,12 +18,6 @@
             </h1>
             <p class="scn-ClassDesc">{{ store.classStatus.current.description }}</p>
             <span class="scn-ClassPerk">Privilege: {{ store.classStatus.current.perkSummary }}</span>
-            <p class="scn-HeirLine" data-testid="current-heir">
-              Head of the family: <strong>{{ store.heir.name }}</strong>
-              <span v-if="currentTrait"> · {{ currentTrait.name }}</span>
-              <span v-else> · the founder</span>
-              <span class="scn-StatHint"> (generation {{ store.generation }})</span>
-            </p>
 
             <div class="scn-ProgressTrack" role="progressbar" :aria-valuenow="Math.round(store.classStatus.bracketProgress * 100)" aria-valuemin="0" aria-valuemax="100">
               <div
@@ -44,6 +38,15 @@
               {{ store.highestClassReached + 1 }}/{{ SOCIAL_CLASSES.length }} classes unlocked · Click to view pyramid
             </span>
           </div>
+          <p class="scn-HeirLine" data-testid="current-heir">
+            Head of the family: <strong>{{ store.heir.name }}</strong>
+            <span v-if="currentTrait"> · {{ currentTrait.name }}</span>
+            <span v-else> · the founder</span>
+            <span class="scn-StatHint"> (generation {{ store.generation }})</span>
+            <button type="button" class="scn-LinkButton" data-testid="open-family-tree" @click="store.familyTreeOpen = true">
+              Family tree
+            </button>
+          </p>
 
           <div class="scn-HustleRow">
             <span v-if="store.hustleMultiplier > 1.01" class="scn-BuffPill scn-BuffPill-streak">

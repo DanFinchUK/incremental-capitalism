@@ -5,6 +5,7 @@ import { emptySplits } from './splits'
 import { TRAITS_BY_ID, type Heir } from '../data/heirs'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import type { AdvisorInstance } from './office'
+import { MAX_TREE_ENTRIES, readGenerationRecord, type GenerationRecord } from './family'
 import type { OfficeState } from '../stores/modules/office'
 
 export const STORAGE_KEY = 'state'
@@ -44,6 +45,7 @@ export interface PersistedSceneState {
   heirChoices: Heir[]
   generation: number
   office: OfficeState
+  familyTree: GenerationRecord[]
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
   compactAutoBuy: boolean
@@ -83,6 +85,7 @@ export function createInitialSceneState(): PersistedSceneState {
     heirChoices: [],
     generation: 1,
     office: { seats: [], paChair: null, offer: [] },
+    familyTree: [],
     bulkBuyMode: 1,
     autoBuyPaused: false,
     compactAutoBuy: false,
@@ -299,6 +302,9 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     heirChoices: Array.isArray(s.heirChoices) ? s.heirChoices.map(readHeir).filter((h): h is Heir => h !== null) : [],
     generation: Math.max(1, Math.floor(readNonNegativeNumber(s.generation, 1))),
     office: readOffice(s.office),
+    familyTree: Array.isArray(s.familyTree)
+      ? s.familyTree.map(readGenerationRecord).filter((r): r is GenerationRecord => r !== null).slice(-MAX_TREE_ENTRIES)
+      : [],
     gatesBeaten: Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.gatesBeaten, 0))),
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     autoBuyPaused: Boolean(s.autoBuyPaused),

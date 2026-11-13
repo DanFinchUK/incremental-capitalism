@@ -19,6 +19,7 @@
         @confirm-retire="confirmRetire"
         @confirm-reset="confirmHardReset"
       />
+      <FamilyTreeModal />
       <HeirDraftModal />
 
       <OverviewBar @retire="handleRetire" />
@@ -83,6 +84,7 @@ import ClassModal from './components/ClassModal.vue'
 import ConfirmModal, { type ConfirmDialogMode } from './components/ConfirmModal.vue'
 import IntroModal from './components/IntroModal.vue'
 import HeirDraftModal from './components/HeirDraftModal.vue'
+import FamilyTreeModal from './components/FamilyTreeModal.vue'
 import FloatingPayouts, { type FloatParticle } from './components/FloatingPayouts.vue'
 import HeroHeader from './components/HeroHeader.vue'
 import BossCard from './components/BossCard.vue'

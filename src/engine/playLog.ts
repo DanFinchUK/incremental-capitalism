@@ -68,8 +68,10 @@ export function noteNetWorth(log: PlayLog, generation: number, activeMs: number,
 
 export function touchSession(log: PlayLog, ts: number): void {
   const last = log.sessions[log.sessions.length - 1]
-  if (last && ts >= last[1] && ts - last[1] <= SESSION_GAP_MS) {
-    last[1] = ts
+  // Phones resync their clocks now and then, so the wall clock can step back
+  // a little mid-session. Only a long gap either way starts a new session.
+  if (last && Math.abs(ts - last[1]) <= SESSION_GAP_MS) {
+    last[1] = Math.max(last[1], ts)
     return
   }
   log.sessions.push([ts, ts])

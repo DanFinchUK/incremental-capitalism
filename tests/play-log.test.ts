@@ -45,6 +45,15 @@ describe('play log engine', () => {
     ])
   })
 
+  it('keeps one session when the clock steps back a little (a phone resyncing its time)', () => {
+    const log = createPlayLog()
+    touchSession(log, 10_000)
+    touchSession(log, 12_333)
+    touchSession(log, 10_000) // the clock stepped back 2.3s
+    touchSession(log, 15_000)
+    expect(log.sessions).toEqual([[10_000, 15_000]])
+  })
+
   it('reads back what it wrote and survives junk', () => {
     const log = createPlayLog()
     touchSession(log, 5)

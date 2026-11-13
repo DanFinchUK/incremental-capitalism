@@ -14,7 +14,8 @@ import {
   RARITY_LABELS,
   pickMarketEvent,
   type MarketEventDef,
-  type MarketEventKind
+  type MarketEventKind,
+  type ScandalOutcome
 } from '../data/events'
 import { perkNextCost, type PerkId, type PerkRanks } from '../data/perks'
 import {
@@ -81,7 +82,7 @@ export interface ActiveMarketEvent {
   corked: boolean
 }
 
-export type ClaimEventOutcome = 'golden' | 'shadyWin' | 'shadyFreeze' | 'corked' | null
+export type ClaimEventOutcome = 'golden' | 'shadyWin' | 'shadyFreeze' | 'corked' | 'scandal' | null
 
 export interface TimedBuff {
   kind: MarketEventKind
@@ -133,6 +134,8 @@ export const useGameStore = defineStore('game', () => {
   const hustleBonus = ref<number>(0)
   const lastManualClickAt = ref<number>(0)
   const clickBuff = ref<TimedBuff | null>(null)
+  // A scandal's lingering cost: all income multiplied down until it expires
+  const penalty = ref<{ mult: number; until: number } | null>(null)
   const businessBuff = ref<TimedBuff | null>(null)
   const autoBuyFrozenUntil = ref<number>(0)
   const activeEvent = ref<ActiveMarketEvent | null>(null)
@@ -221,6 +224,11 @@ export const useGameStore = defineStore('game', () => {
   const activeClickBuff = computed(() => buffView(clickBuff.value))
   const activeBusinessBuff = computed(() => buffView(businessBuff.value))
   const isAutoBuyFrozen = computed(() => nowMs.value < autoBuyFrozenUntil.value)
+  const incomePenalty = computed(() =>
+    penalty.value && nowMs.value < penalty.value.until
+      ? { mult: penalty.value.mult, remainingSec: Math.ceil((penalty.value.until - nowMs.value) / 1000) }
+      : null
+  )
 
   const autoBuyFreezeRemainingSec = computed(() =>
     Math.max(0, Math.ceil((autoBuyFrozenUntil.value - nowMs.value) / 1000))
@@ -455,7 +463,7 @@ export const useGameStore = defineStore('game', () => {
       return
     }
     // Boss rent, retainers and commissions come off every credit
-    amount *= (1 - twist.value.incomeTaxRate) * (1 - modifiers.value.incomeDrain)
+    amount *= (1 - twist.value.incomeTaxRate) * (1 - modifiers.value.incomeDrain) * (incomePenalty.value?.mult ?? 1)
     if (bosses.bossAttempt.value) {
       bosses.bossAttempt.value.earnedAfterTax += amount
     }
@@ -661,11 +669,52 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  function claimMarketEvent(ts = Date.now(), rng: () => number = Math.random): ClaimEventOutcome {
+  function applyScandalOutcome(o: ScandalOutcome, def: MarketEventDef, ts: number, rng: () => number): void {
+    switch (o.type) {
+      case 'cashLoss':
+        money.value -= money.value * o.share
+        break
+      case 'windfall':
+        creditMoney(unbuffedMoneyPerSecond.value * o.seconds * modifiers.value.windfallMult, 'windfall', ts)
+        break
+      case 'buff': {
+        const slot = o.target === 'click' ? clickBuff : businessBuff
+        const current = buffView(slot.value)
+        if (!current || current.mult <= o.mult) {
+          slot.value = { kind: def.kind, label: def.buffLabel, mult: o.mult, until: ts + o.durationSec * 1000 }
+        }
+        break
+      }
+      case 'freeze':
+        autoBuyFrozenUntil.value = Math.max(autoBuyFrozenUntil.value, ts + o.sec * 1000)
+        break
+      case 'penalty':
+        penalty.value = { mult: o.mult, until: ts + o.durationSec * 1000 }
+        break
+      case 'gamble':
+        for (const next of rng() < o.chance ? o.win : o.lose) applyScandalOutcome(next, def, ts, rng)
+        break
+    }
+  }
+
+  // option: which choice the player made, for scandals; ignored otherwise
+  function claimMarketEvent(ts = Date.now(), rng: () => number = Math.random, option?: number): ClaimEventOutcome {
     nowMs.value = ts
     const ev = activeEvent.value
     if (!ev) {
       return null
+    }
+    if (ev.def.effect.type === 'scandal') {
+      const choice = option === undefined ? undefined : ev.def.effect.options[option]
+      if (!choice) {
+        return null
+      }
+      activeEvent.value = null
+      scheduleNextEvent(ts, rng)
+      for (const o of choice.outcomes) applyScandalOutcome(o, ev.def, ts, rng)
+      announce(`${ev.def.title.replace(/!$/, '')}: you chose to ${choice.label.charAt(0).toLowerCase()}${choice.label.slice(1)}.`)
+      flushSave(ts)
+      return 'scandal'
     }
     activeEvent.value = null
     scheduleNextEvent(ts, rng)
@@ -708,6 +757,9 @@ export const useGameStore = defineStore('game', () => {
       announce(`${rarityPrefix}${name}: ${formatDuration(effect.seconds)} of passive income wired offshore!`)
       flushSave(ts)
       return 'golden'
+    }
+    if (effect.type !== 'shady') {
+      return null
     }
     // Shady Deal: 50/50 windfall vs auto-buy freeze
     if (rng() < 0.5) {
@@ -1004,6 +1056,7 @@ export const useGameStore = defineStore('game', () => {
     activeClickBuff,
     activeBusinessBuff,
     isAutoBuyFrozen,
+    incomePenalty,
     autoBuyFreezeRemainingSec,
     economyInput,
     moneyPerClick,

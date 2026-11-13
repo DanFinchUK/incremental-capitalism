@@ -1535,3 +1535,24 @@
 .scn-TreeEntry p {
   margin: 4px 0 0;
 }
+
+/* Scandals */
+.scn-MarketEvent-scandal {
+  cursor: default;
+  animation: none;
+  transform: translate(-50%, -50%);
+  max-width: 340px;
+}
+
+.scn-ScandalOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.scn-ScandalOption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

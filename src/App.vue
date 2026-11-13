@@ -8,7 +8,7 @@
       </div>
 
       <FloatingPayouts :floats="floats" />
-      <MarketEvent @claim="handleClaimEvent" />
+      <MarketEvent @claim="handleClaimEvent" @choose="handleScandalChoice" />
       <IntroModal />
       <WelcomeModal v-if="!store.introOpen" />
       <ClassModal />
@@ -192,6 +192,10 @@ function handleBuyPerk(id: PerkId): void {
   if (store.buyPerk(id)) {
     playSfx('milestone', store.muted)
   }
+}
+
+function handleScandalChoice(option: number): void {
+  store.claimMarketEvent(Date.now(), Math.random, option)
 }
 
 function handleClaimEvent(): void {

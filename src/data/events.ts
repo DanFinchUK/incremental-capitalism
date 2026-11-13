@@ -9,12 +9,33 @@ export type MarketEventKind =
   | 'shadyDeal'
   | 'unpaidOvertime'
   | 'bankHolidayBailout'
+  | 'leakedWhatsApps'
+  | 'nonDomQuestioned'
+  | 'secondHomeFlooded'
+  | 'internToThePress'
 
 export type MarketEventEffect =
   | { type: 'clickBuff'; mult: number; durationSec: number }
   | { type: 'businessBuff'; mult: number; durationSec: number }
   | { type: 'windfall'; seconds: number }
   | { type: 'shady'; winSeconds: number; freezeSec: number }
+  | { type: 'scandal'; options: readonly [ScandalOption, ScandalOption] }
+
+// What one choice in a scandal does. A gamble picks win or lose by chance.
+export type ScandalOutcome =
+  | { type: 'cashLoss'; share: number }
+  | { type: 'windfall'; seconds: number }
+  | { type: 'buff'; target: 'click' | 'business'; mult: number; durationSec: number }
+  | { type: 'freeze'; sec: number }
+  | { type: 'penalty'; mult: number; durationSec: number }
+  | { type: 'gamble'; chance: number; win: ReadonlyArray<ScandalOutcome>; lose: ReadonlyArray<ScandalOutcome> }
+
+export interface ScandalOption {
+  label: string
+  // Shown under the button so the player knows the stakes
+  detail: string
+  outcomes: ReadonlyArray<ScandalOutcome>
+}
 
 export interface MarketEventDef {
   kind: MarketEventKind
@@ -41,7 +62,7 @@ export const RARITY_LABELS: Readonly<Record<EventRarity, string>> = {
   legendary: 'Legendary'
 }
 
-export const MARKET_EVENTS: ReadonlyArray<MarketEventDef> = [
+const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {
     kind: 'paidOvertime',
     title: 'Paid Overtime',
@@ -115,6 +136,121 @@ export const MARKET_EVENTS: ReadonlyArray<MarketEventDef> = [
     effect: { type: 'windfall', seconds: 600 }
   }
 ]
+
+// Scandals ask for a decision. The satire is always aimed at the player's
+// own family when they take the cynical route.
+export const SCANDALS: ReadonlyArray<MarketEventDef> = [
+  {
+    kind: 'leakedWhatsApps',
+    title: 'Leaked WhatsApps!',
+    subtitle: 'The "Lads on Tour (Board)" group chat has reached a journalist.',
+    buffLabel: 'Free Publicity',
+    rarity: 'rare',
+    shady: true,
+    effect: {
+      type: 'scandal',
+      options: [
+        { label: 'Pay the hush money', detail: 'Costs 10% of cash.', outcomes: [{ type: 'cashLoss', share: 0.1 }] },
+        {
+          label: 'Ride it out',
+          detail: '50/50: 3x business income for 30s, or income halved for 60s.',
+          outcomes: [
+            {
+              type: 'gamble',
+              chance: 0.5,
+              win: [{ type: 'buff', target: 'business', mult: 3, durationSec: 30 }],
+              lose: [{ type: 'penalty', mult: 0.5, durationSec: 60 }]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    kind: 'nonDomQuestioned',
+    title: 'Non-Dom Status Questioned!',
+    subtitle: 'A select committee has noticed you "live" in a Monaco postbox.',
+    buffLabel: 'Public Goodwill',
+    rarity: 'rare',
+    shady: true,
+    effect: {
+      type: 'scandal',
+      options: [
+        {
+          label: 'Move it all offshore',
+          detail: '90s windfall, but automation freezes for 30s while the lawyers work.',
+          outcomes: [
+            { type: 'windfall', seconds: 90 },
+            { type: 'freeze', sec: 30 }
+          ]
+        },
+        {
+          label: 'Pay your taxes like everyone else',
+          detail: 'Costs 5% of cash; the goodwill doubles click pay for 60s.',
+          outcomes: [
+            { type: 'cashLoss', share: 0.05 },
+            { type: 'buff', target: 'click', mult: 2, durationSec: 60 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    kind: 'secondHomeFlooded',
+    title: 'Third Home Flooded!',
+    subtitle: 'The moat at the Cotswolds place has burst its banks.',
+    buffLabel: 'Insurance',
+    rarity: 'common',
+    shady: true,
+    effect: {
+      type: 'scandal',
+      options: [
+        { label: 'Claim on the insurance', detail: '60s windfall.', outcomes: [{ type: 'windfall', seconds: 60 }] },
+        {
+          label: 'Blame the council',
+          detail: '50/50: a 180s compensation windfall, or automation frozen for 20s.',
+          outcomes: [
+            {
+              type: 'gamble',
+              chance: 0.5,
+              win: [{ type: 'windfall', seconds: 180 }],
+              lose: [{ type: 'freeze', sec: 20 }]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    kind: 'internToThePress',
+    title: 'Unpaid Intern Goes to the Press!',
+    subtitle: 'Nine months of "exposure" turned out to be exposure after all.',
+    buffLabel: 'Back Pay',
+    rarity: 'common',
+    shady: true,
+    effect: {
+      type: 'scandal',
+      options: [
+        {
+          label: 'Pay them, finally',
+          detail: 'Costs 3% of cash; a motivated workforce doubles click pay for 30s.',
+          outcomes: [
+            { type: 'cashLoss', share: 0.03 },
+            { type: 'buff', target: 'click', mult: 2, durationSec: 30 }
+          ]
+        },
+        {
+          label: 'Call it a learning opportunity',
+          detail: '50/50: it blows over, or income is halved for 45s.',
+          outcomes: [{ type: 'gamble', chance: 0.5, win: [], lose: [{ type: 'penalty', mult: 0.5, durationSec: 45 }] }]
+        }
+      ]
+    }
+  }
+]
+
+// Every event that can spawn, scandals included
+export const MARKET_EVENTS: ReadonlyArray<MarketEventDef> = [...OPPORTUNITIES, ...SCANDALS]
 
 export const MARKET_EVENTS_BY_KIND: Readonly<Record<MarketEventKind, MarketEventDef>> = Object.fromEntries(
   MARKET_EVENTS.map((e) => [e.kind, e])

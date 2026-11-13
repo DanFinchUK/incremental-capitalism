@@ -58,6 +58,9 @@
             <span v-if="store.activeClickBuff" class="scn-BuffPill">
               {{ store.activeClickBuff.mult }}x {{ store.activeClickBuff.label }} ({{ store.activeClickBuff.remainingSec }}s)
             </span>
+            <span v-if="store.incomePenalty" class="scn-BuffPill scn-BuffPill-freeze" data-testid="penalty-pill">
+              Scandal: income x{{ store.incomePenalty.mult }} ({{ store.incomePenalty.remainingSec }}s)
+            </span>
             <span v-if="store.isAutoBuyFrozen" class="scn-BuffPill scn-BuffPill-freeze">
               Inquiry: Automation paused ({{ store.autoBuyFreezeRemainingSec }}s)
             </span>

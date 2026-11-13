@@ -3,7 +3,7 @@
     v-if="scandal && store.activeEvent"
     class="scn-MarketEvent scn-MarketEvent-shady scn-MarketEvent-scandal"
     :class="`scn-MarketEvent-${store.activeEvent.def.rarity}`"
-    :style="{ left: `${store.activeEvent.xPct}%`, top: `${store.activeEvent.yPct}%` }"
+    :style="placement"
     role="group"
     :aria-label="store.activeEvent.def.title"
   >
@@ -26,7 +26,7 @@
     type="button"
     class="scn-MarketEvent"
     :class="[`scn-MarketEvent-${store.activeEvent.def.rarity}`, { 'scn-MarketEvent-shady': store.activeEvent.def.shady }]"
-    :style="{ left: `${store.activeEvent.xPct}%`, top: `${store.activeEvent.yPct}%` }"
+    :style="placement"
     @click="emit('claim')"
   >
     <span class="scn-MarketEventTag">
@@ -50,6 +50,14 @@ const emit = defineEmits<{
 }>()
 
 const store = useGameStore()
+
+// Shift the card back by the same share of its own size as its position on
+// screen, so it stays fully visible wherever in the spawn area it lands
+const placement = computed(() => {
+  const ev = store.activeEvent
+  if (!ev) return {}
+  return { left: `${ev.xPct}%`, top: `${ev.yPct}%`, '--shift-x': `-${ev.xPct}%`, '--shift-y': `-${ev.yPct}%` }
+})
 
 const scandal = computed(() => {
   const effect = store.activeEvent?.def.effect

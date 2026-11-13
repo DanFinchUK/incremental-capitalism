@@ -113,7 +113,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Clicks polish silver instead of paying.',
     conditionText: 'Polish the target worth of silver. Unpaid Interns polish too.',
     twists: [{ kind: 'clicksPolish' }],
-    condition: { kind: 'polish', target: gateTarget(6, 0.2) },
+    condition: { kind: 'polish', target: gateTarget(6, 0.35) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 63

@@ -8,13 +8,15 @@
     "build": "vite build",
     "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
-    "sim": "vitest run --config vitest.sim.config.ts"
+    "sim": "vitest run --config vitest.sim.config.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "pinia": "^2.3.1",
     "vue": "^3.5.13"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.6",
     "jsdom": "^25.0.1",

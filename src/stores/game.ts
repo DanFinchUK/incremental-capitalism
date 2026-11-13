@@ -102,6 +102,8 @@ export interface ActiveBuffView {
 
 const SAVE_THROTTLE_MS = 2000
 const AUTO_BUY_COOLDOWN_MS = 1000
+// Income multiplier while a freeze lands on a family with no automation
+const FREEZE_INCOME_MULT = 0.5
 
 function achievementSource(count: number): ModifierSource {
   const mult = 1 + ACHIEVEMENT_INCOME_BONUS * count
@@ -705,6 +707,18 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  // A freeze stops automation. A family with no automation to freeze has its
+  // income halved for the same time instead, so the threat always bites.
+  function applyFreeze(ms: number, ts: number): void {
+    if (automationLine.value > 0) {
+      autoBuyFrozenUntil.value = Math.max(autoBuyFrozenUntil.value, ts + ms)
+      return
+    }
+    if (!incomePenalty.value || incomePenalty.value.mult >= FREEZE_INCOME_MULT) {
+      penalty.value = { mult: FREEZE_INCOME_MULT, until: ts + ms }
+    }
+  }
+
   function applyScandalOutcome(o: ScandalOutcome, def: MarketEventDef, ts: number, rng: () => number): void {
     switch (o.type) {
       case 'cashLoss':
@@ -722,7 +736,7 @@ export const useGameStore = defineStore('game', () => {
         break
       }
       case 'freeze':
-        autoBuyFrozenUntil.value = Math.max(autoBuyFrozenUntil.value, ts + o.sec * 1000 * modifiers.value.scandalSeverity)
+        applyFreeze(o.sec * 1000 * modifiers.value.scandalSeverity, ts)
         break
       case 'penalty':
         // A harsher penalty that is still running is kept
@@ -806,7 +820,7 @@ export const useGameStore = defineStore('game', () => {
     if (effect.type !== 'shady') {
       return null
     }
-    // Shady Deal: 50/50 windfall vs auto-buy freeze
+    // Shady Deal: 50/50 windfall vs a freeze
     if (rng() < 0.5) {
       const windfall = Math.max(1500, unbuffedMoneyPerSecond.value * effect.winSeconds) * modifiers.value.windfallMult
       markTelemetryEvent(telemetry.value, '★')
@@ -816,8 +830,12 @@ export const useGameStore = defineStore('game', () => {
       flushSave(ts)
       return 'shadyWin'
     }
-    autoBuyFrozenUntil.value = ts + effect.freezeSec * 1000
-    announce(`Select Committee Inquiry! Auto-buying paused for ${effect.freezeSec}s (cash untouched).`)
+    applyFreeze(effect.freezeSec * 1000, ts)
+    announce(
+      automationLine.value > 0
+        ? `Select Committee Inquiry! Automation paused for ${effect.freezeSec}s (cash untouched).`
+        : `Select Committee Inquiry! Income halved for ${effect.freezeSec}s (cash untouched).`
+    )
     flushSave(ts)
     return 'shadyFreeze'
   }

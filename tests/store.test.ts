@@ -88,12 +88,13 @@ describe('useGameStore', () => {
     expect(res1).toBe('golden')
     expect(store.activeBusinessBuff).toMatchObject({ mult: 5, label: 'QE', remainingSec: 20 })
 
-    // Losing 50/50 shady roll freezes auto-buy for 15s, zero cash lost
+    // Losing the 50/50 shady roll freezes for 15s; with no automation that
+    // halves income instead. Zero cash lost either way
     store.spawnSpecificEvent('shadyDeal', 3000)
     const res2 = store.claimMarketEvent(3100, () => 0.9)
     expect(res2).toBe('shadyFreeze')
     expect(store.money).toBe(10_000)
-    expect(store.isAutoBuyFrozen).toBe(true)
+    expect(store.incomePenalty).toMatchObject({ mult: 0.5 })
   })
 
   it('pays windfalls from unbuffed income and never downgrades a stronger running buff', () => {

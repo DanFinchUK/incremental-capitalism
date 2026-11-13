@@ -117,7 +117,7 @@ const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {
     kind: 'shadyDeal',
     title: 'Shady VIP-Lane Tip-Off',
-    subtitle: '50/50 Risk: 180s windfall OR 15s auto-buy freeze',
+    subtitle: '50/50 Risk: 180s windfall OR a 15s freeze (automation stops, or income halves without it)',
     buffLabel: 'VIP Lane',
     rarity: 'rare',
     shady: true,
@@ -188,7 +188,7 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
       options: [
         {
           label: 'Move it all offshore',
-          detail: '90s windfall, but automation freezes for 30s while the lawyers work.',
+          detail: '90s windfall, then a 30s freeze while the lawyers work: automation stops, or income halves if you have none.',
           outcomes: [
             { type: 'windfall', seconds: 90 },
             { type: 'freeze', sec: 30 }
@@ -220,7 +220,7 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
         { label: 'Claim on the insurance', detail: '60s windfall.', outcomes: [{ type: 'windfall', seconds: 60 }] },
         {
           label: 'Blame the council',
-          detail: '50/50: a 180s compensation windfall, or automation frozen for 20s.',
+          detail: '50/50: a 180s compensation windfall, or a 20s freeze (automation stops, or income halves without it).',
           outcomes: [
             {
               type: 'gamble',

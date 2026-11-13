@@ -11,10 +11,13 @@
       <div class="scn-DrawerHeader">
         <div class="scn-ModalTop">
           <span class="scn-ModalKicker scn-ModalKicker-purple">
-            {{ celebratedDef ? 'New Lifetime Milestone' : 'The Great British Class Survey' }}
+            {{ victory ? `Gate ${victory.boss.gate} of 9 beaten` : celebratedDef ? 'New Lifetime Milestone' : 'The Great British Class Survey' }}
           </span>
           <h2 id="class-modal-title">
-            {{ celebratedDef ? `Welcome to the ${celebratedDef.label}` : `British Class Pyramid (${store.highestClassReached + 1}/${SOCIAL_CLASSES.length} unlocked)` }}
+            <template v-if="victory">{{ victory.boss.title }}: won</template>
+            <template v-else>
+              {{ celebratedDef ? `Welcome to the ${celebratedDef.label}` : `British Class Pyramid (${store.highestClassReached + 1}/${SOCIAL_CLASSES.length} unlocked)` }}
+            </template>
           </h2>
         </div>
         <button type="button" class="scn-Action scn-Action-outline" @click="store.closeClassModal()">
@@ -22,11 +25,31 @@
         </button>
       </div>
 
+      <template v-if="victory">
+        <p class="scn-VictoryStory">{{ victory.boss.victoryText }}</p>
+        <p class="scn-StatHint" data-testid="victory-time">
+          Won in {{ formatClock(victory.killMs) }}, {{ formatClock(victory.splitMs) }} into this generation
+        </p>
+      </template>
+
       <div v-if="celebratedDef" class="scn-ModalCallout scn-ModalCallout-perk">
+        <div v-if="victory">You join the <strong>{{ celebratedDef.label }}</strong></div>
         <div><strong>{{ celebratedDef.perkSummary }}</strong></div>
         <div>{{ celebratedDef.initiationNote }}</div>
       </div>
 
+      <ul v-if="victory" class="scn-VictoryUnlocks" data-testid="victory-unlocks">
+        <li v-if="victory.newJobs > 0 || victory.newBusinesses > 0">
+          Now open: {{ unlockText }}
+        </li>
+        <li v-if="store.headhunterOffer.length > 0">A headhunter is waiting in the family office with {{ store.headhunterOffer.length }} advisors to meet.</li>
+        <li v-if="victory.nextBoss">
+          Next: {{ victory.nextBoss.title }}, at {{ formatCurrency(victory.nextThreshold) }} net worth.
+        </li>
+      </ul>
+
+      <details class="scn-PyramidFold" data-testid="class-pyramid" :open="!victory">
+        <summary v-if="victory">Class pyramid</summary>
       <div class="scn-PyramidList">
         <div
           v-for="cls in pyramidRungs"
@@ -78,6 +101,7 @@
           </template>
         </div>
       </div>
+      </details>
 
       <div class="scn-ModalFooter">
         <button
@@ -85,7 +109,7 @@
           class="scn-Action scn-Action-purple"
           @click="store.closeClassModal()"
         >
-          {{ celebratedDef ? 'Assume your rightful place' : 'Back to the market' }}
+          {{ victory ? 'Back to work' : celebratedDef ? 'Assume your rightful place' : 'Back to the market' }}
         </button>
       </div>
     </div>
@@ -95,8 +119,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
 import { SOCIAL_CLASSES } from '../data/classes'
+import { BUSINESSES, JOBS } from '../data/items'
+import { bossForGate, gateThreshold, itemCostCeiling } from '../engine/bosses'
 import { useGameStore } from '../stores/game'
-import { formatCurrency } from '../utils/format'
+import { formatClock, formatCurrency } from '../utils/format'
 
 const store = useGameStore()
 
@@ -107,6 +133,35 @@ const celebratedDef = computed(() =>
     ? (SOCIAL_CLASSES[store.celebratedClassLevel] ?? null)
     : null
 )
+
+// The boss just beaten for the first time, while its celebration is open
+const victory = computed(() => {
+  const win = store.lastVictory
+  if (!win || !win.firstTime || store.celebratedClassLevel !== win.gate) return null
+  const boss = bossForGate(win.gate)
+  if (!boss) return null
+  // Items whose tier this gate unlocked
+  const opened = (cost: number) => cost > itemCostCeiling(win.gate - 1) && cost <= itemCostCeiling(win.gate)
+  const nextBoss = bossForGate(win.gate + 1)
+  return {
+    boss,
+    killMs: win.killMs,
+    splitMs: win.splitMs,
+    newJobs: JOBS.filter((j) => opened(j.baseCost)).length,
+    newBusinesses: BUSINESSES.filter((b) => opened(b.baseCost)).length,
+    nextBoss,
+    nextThreshold: nextBoss ? gateThreshold(nextBoss.gate) : 0
+  }
+})
+
+const unlockText = computed(() => {
+  const v = victory.value
+  if (!v) return ''
+  const parts = []
+  if (v.newJobs > 0) parts.push(`${v.newJobs} new job${v.newJobs === 1 ? '' : 's'}`)
+  if (v.newBusinesses > 0) parts.push(`${v.newBusinesses} new business${v.newBusinesses === 1 ? '' : 'es'}`)
+  return parts.join(' and ')
+})
 
 function thresholdLabel(threshold: number): string {
   return threshold <= 0 ? '£0.00' : formatCurrency(threshold + 1)

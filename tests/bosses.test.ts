@@ -18,6 +18,7 @@ function boss(condition: BossDef['condition'], timeLimitSec = 100): BossDef {
     id: 'test',
     title: 'Test',
     blurb: '',
+    victoryText: '',
     twistText: '',
     conditionText: '',
     twists: [],

@@ -55,7 +55,7 @@ import {
   type IncomeSource,
   type TelemetryState
 } from '../engine/telemetry'
-import { formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
+import { formatClock, formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
 import { bossForGate, conditionTarget, itemCostCeiling, legacyForDepth } from '../engine/bosses'
 import { combineModifiers, type ModifierSource } from '../engine/modifiers'
 import { TRAITS_BY_ID, generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
@@ -154,6 +154,8 @@ export const useGameStore = defineStore('game', () => {
   const nextEventSeq = ref<number>(0)
   const offlineReport = ref<OfflineCatchUpResult | null>(null)
   const bannerMessage = ref<string | null>(null)
+  // The most recent boss win, for the victory screen and banner
+  const lastVictory = ref<{ gate: number; killMs: number; splitMs: number; prevBestKillMs: number | null; firstTime: boolean } | null>(null)
   const legacyDrawerOpen = ref<boolean>(false)
   const classModalOpen = ref<boolean>(false)
   const celebratedClassLevel = ref<number | null>(null)
@@ -207,6 +209,15 @@ export const useGameStore = defineStore('game', () => {
       if (gate === 6) unlockAchievement('silver-service')
       if (gate === 9) unlockAchievement('garden-party')
       if (killMs <= 3000) unlockAchievement('no-sweat')
+      // A first-time win has just opened the celebration; a repeat gets a banner
+      const firstTime = classModalOpen.value && celebratedClassLevel.value === gate
+      const prevBestKillMs = bestKillMs.value[gate] ?? null
+      lastVictory.value = { gate, killMs, splitMs: activeGenerationMs.value, prevBestKillMs, firstTime }
+      if (!firstTime) {
+        const title = bossForGate(gate)?.title ?? `Gate ${gate}`
+        const best = prevBestKillMs !== null ? ` (best ${formatClock(prevBestKillMs)})` : ''
+        announce(`${title} beaten in ${formatClock(killMs)}${best}. ${classStatus.value.current.label} again.`)
+      }
       splits.value = withSplit(splits.value, gate, activeGenerationMs.value)
       lastKillMs.value = withSplit(lastKillMs.value, gate, killMs)
       bestSplits.value = mergeBests(bestSplits.value, splits.value)
@@ -547,9 +558,8 @@ export const useGameStore = defineStore('game', () => {
       highestClassReached.value = newClass
       celebratedClassLevel.value = newClass
       classModalOpen.value = true
-    } else {
-      announce(`Promoted to ${classStatus.value.current.label}! (${classStatus.value.current.perkSummary})`)
     }
+    // A repeat promotion is announced with the boss win itself
     return true
   }
 
@@ -1221,6 +1231,7 @@ export const useGameStore = defineStore('game', () => {
     activeEvent,
     offlineReport,
     bannerMessage,
+    lastVictory,
     legacyDrawerOpen,
     classModalOpen,
     celebratedClassLevel,

@@ -231,7 +231,7 @@ const empireSharePct = computed(() => {
 const unitSuffix = computed(() => (props.kind === 'jobs' ? 'click' : 's'))
 
 const incomeLineText = computed(() => {
-  if (props.row.mode !== 'revealed' || store.automationLine <= 0) return ''
+  if (props.row.mode !== 'revealed') return ''
   if (owned.value > 0) {
     return `Income: ${formatCurrency(effectiveUnitIncome.value)}/${unitSuffix.value} each · ${formatCurrency(stackTotal.value)}/${unitSuffix.value} total (${empireSharePct.value.toFixed(1)}%)`
   }
@@ -274,7 +274,7 @@ const synergyText = computed(() => {
 })
 
 const autoStatusText = computed(() => {
-  if (props.row.mode !== 'revealed') return ''
+  if (props.row.mode !== 'revealed' || store.automationLine <= 0) return ''
   const linePct = Math.round(store.automationLine * 100)
   if (!store.isAutoBuyEnabled(props.kind, props.row.item.id)) {
     return 'Automation off for this item'

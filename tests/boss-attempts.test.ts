@@ -175,9 +175,51 @@ describe('boss attempts', () => {
     expect(store.nextBoss!.status).toBe('available')
   })
 
-  it('Golf tells the player that auto-buys count as strokes', () => {
+  it('Golf benches automation so only your own purchases are strokes', () => {
     const store = readyFor(4)
-    expect(store.nextBoss!.def.twistText.toLowerCase()).toContain('auto-buy')
+    store.startBossAttempt()
+    expect(store.twist.automationPaused).toBe(true)
+    expect(store.nextBoss!.def.twistText.toLowerCase()).toContain('automation')
+  })
+
+  it('abandoning after the first few seconds still costs the cooldown', () => {
+    const store = readyFor(1)
+    store.startBossAttempt()
+    store.abandonBossAttempt()
+    expect(store.nextBoss!.status).toBe('available') // a misclick is free
+    store.startBossAttempt()
+    let t = T0
+    for (let i = 0; i < 15; i++) store.tick((t += 1000))
+    store.abandonBossAttempt()
+    expect(store.nextBoss!.status).toBe('cooldown')
+  })
+
+  it('a corked bottle leaves with the sommelier when the fight ends', () => {
+    const store = readyFor(5)
+    store.startBossAttempt()
+    store.tick(T0 + 7000)
+    store.activeEvent!.corked = true
+    store.abandonBossAttempt()
+    expect(store.activeEvent).toBeNull()
+  })
+
+  it('good tastings during the Champagne fight pay a fine-vintage bonus', () => {
+    const store = readyFor(5)
+    store.businessesOwned['1'] = 10
+    store.startBossAttempt()
+    store.spawnSpecificEvent('paidOvertime', T0)
+    const before = store.money
+    store.claimMarketEvent(T0)
+    const income = computePassivePerSecond({ ...store.economyInput, businessBuffMultiplier: 1, clickBuffMultiplier: 1 })
+    expect(store.money - before).toBeCloseTo(income * 20, -2)
+  })
+
+  it('the Champagne flood waits while the intro is open', () => {
+    const store = readyFor(5)
+    store.startBossAttempt()
+    store.openIntro()
+    store.tick(T0 + 7000)
+    expect(store.activeEvent).toBeNull()
   })
 
   it('Champagne floods opportunities, and a corked one costs 5% of cash', () => {

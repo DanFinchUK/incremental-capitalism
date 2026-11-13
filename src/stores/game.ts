@@ -163,7 +163,13 @@ export const useGameStore = defineStore('game', () => {
       bestSplits.value = mergeBests(bestSplits.value, splits.value)
       bestKillMs.value = mergeBests(bestKillMs.value, lastKillMs.value)
     },
-    bestKillFor: (gate) => bestKillMs.value[gate] ?? null
+    bestKillFor: (gate) => bestKillMs.value[gate] ?? null,
+    onAttemptEnded: () => {
+      // Corked bottles belong to the tasting; they leave with the sommelier
+      if (activeEvent.value?.corked) {
+        activeEvent.value = null
+      }
+    }
   })
   const twist = bosses.twist
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
@@ -596,7 +602,7 @@ export const useGameStore = defineStore('game', () => {
       activeEvent.value = null
     }
     const flood = twist.value.flood
-    if (flood && !activeEvent.value && ts - lastFloodSpawnMs.value >= flood.intervalSec * 1000) {
+    if (flood && !activeEvent.value && !introOpen.value && ts - lastFloodSpawnMs.value >= flood.intervalSec * 1000) {
       lastFloodSpawnMs.value = ts
       showMarketEvent(pickMarketEvent(rng), ts, rng, rng() < flood.corkedChance)
       return
@@ -619,6 +625,10 @@ export const useGameStore = defineStore('game', () => {
       money.value *= 0.95
       announce('Corked! The sommelier sniffs, and 5% of your cash evaporates.')
       return 'corked'
+    }
+    if (twist.value.flood) {
+      // A good bottle during the tasting is worth savouring
+      creditMoney(unbuffedMoneyPerSecond.value * 20, 'windfall', ts)
     }
     const durationMult = 1 + 0.25 * perks.value.insider
     const def = ev.def

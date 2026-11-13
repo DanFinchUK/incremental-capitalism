@@ -34,7 +34,12 @@ export interface BossModuleDeps {
   announce: (msg: string) => void
   onBossWon: (gate: number, killMs: number) => void
   bestKillFor: (gate: number) => number | null
+  // Called whenever an attempt ends, however it ends
+  onAttemptEnded: () => void
 }
+
+// Abandoning in the first seconds is treated as a misclick and is free.
+const FREE_ABANDON_MS = 10_000
 
 export interface BossModule {
   bossAttempt: Ref<BossTracker | null>
@@ -107,7 +112,16 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
   }
 
   function abandonBossAttempt(): void {
+    const tracker = bossAttempt.value
+    const def = attemptDef.value
+    if (!tracker || !def) {
+      return
+    }
     bossAttempt.value = null
+    if (deps.activeMs() - tracker.startedActiveMs >= FREE_ABANDON_MS) {
+      bossCooldownUntilMs.value = deps.activeMs() + def.cooldownSec * 1000
+    }
+    deps.onAttemptEnded()
   }
 
   function evaluateAttempt(): void {
@@ -126,10 +140,12 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
         deps.announce(`${def.title} beaten!`)
       }
       deps.onBossWon(def.gate, killMs)
+      deps.onAttemptEnded()
     } else if (result.lost) {
       bossAttempt.value = null
       bossCooldownUntilMs.value = deps.activeMs() + def.cooldownSec * 1000
       deps.announce(`${def.title} got the better of you this time. Regroup and try again.`)
+      deps.onAttemptEnded()
     }
   }
 

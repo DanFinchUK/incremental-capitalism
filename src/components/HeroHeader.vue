@@ -72,7 +72,7 @@
             ref="payButtonRef"
             type="button"
             class="scn-PrimaryAction"
-            @click="emit('paid', $event)"
+            v-on="payPress"
           >
             Get paid
           </button>
@@ -117,6 +117,7 @@
 </template>
 
 <script setup lang="ts">
+import { press } from '../utils/press'
 import { computed, ref } from 'vue'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { useGameStore } from '../stores/game'
@@ -132,6 +133,7 @@ const emit = defineEmits<{
 defineProps<{ phone?: boolean }>()
 
 const store = useGameStore()
+const payPress = press((ev) => emit('paid', ev), 'down')
 const currentTrait = computed(() => (store.heir.traitId ? TRAITS_BY_ID[store.heir.traitId] : null))
 const payButtonRef = ref<HTMLButtonElement | null>(null)
 

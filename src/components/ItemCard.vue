@@ -110,7 +110,7 @@
           type="button"
           class="scn-Action"
           :disabled="!quote.canAfford"
-          @click="emit('buy', kind, row.item.id)"
+          v-on="buyPress"
         >
           {{ buyButtonLabel }}
         </button>
@@ -132,6 +132,7 @@
 </template>
 
 <script setup lang="ts">
+import { press } from '../utils/press'
 import { computed, ref, watch } from 'vue'
 import {
   BUSINESSES_BY_ID,
@@ -289,6 +290,11 @@ const autoStatusText = computed(() => {
 
 // Nothing automates until an advisor, heir or title brings it
 const showAutoBuyCheckbox = computed(() => props.row.mode === 'revealed' && store.automationLine > 0)
+
+// Buys on finger lift, so it works while another finger is on Get paid
+const buyPress = press(() => {
+  if (props.row.mode === 'revealed') emit('buy', props.kind, props.row.item.id)
+})
 
 const buyButtonLabel = computed(() => {
   const verb = props.kind === 'jobs' ? 'Get hired' : 'Get Businessed'

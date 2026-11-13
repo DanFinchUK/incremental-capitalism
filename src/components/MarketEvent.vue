@@ -14,7 +14,7 @@
     <div class="scn-AutoLine">{{ store.activeEvent.def.subtitle }}</div>
     <div class="scn-ScandalOptions">
       <div v-for="(option, i) in scandal.options" :key="option.label" class="scn-ScandalOption">
-        <button type="button" class="scn-Action" data-testid="scandal-option" @click="emit('choose', i)">
+        <button type="button" class="scn-Action" data-testid="scandal-option" v-on="optionPress[i]">
           {{ option.label }}
         </button>
         <span class="scn-StatHint">{{ option.detail }}</span>
@@ -27,7 +27,7 @@
     class="scn-MarketEvent"
     :class="[`scn-MarketEvent-${store.activeEvent.def.rarity}`, { 'scn-MarketEvent-shady': store.activeEvent.def.shady }]"
     :style="placement"
-    @click="emit('claim')"
+    v-on="claimPress"
   >
     <span class="scn-MarketEventTag">
       {{ RARITY_LABELS[store.activeEvent.def.rarity] }}
@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import { press } from '../utils/press'
 import { computed } from 'vue'
 import { RARITY_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
@@ -50,6 +51,10 @@ const emit = defineEmits<{
 }>()
 
 const store = useGameStore()
+
+// Act per finger, so a pop-up can be hit while still tapping Get paid
+const claimPress = press(() => emit('claim'))
+const optionPress = [press(() => emit('choose', 0)), press(() => emit('choose', 1))]
 
 // Shift the card back by the same share of its own size as its position on
 // screen, so it stays fully visible wherever in the spawn area it lands

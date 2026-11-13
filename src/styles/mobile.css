@@ -1,6 +1,12 @@
-/* No double-tap zoom anywhere (pinch zoom is off in the viewport tag) */
+/* Scrolling only: no pinch or double-tap zoom. Without pinch, a second
+   finger is its own press rather than half of a gesture. */
 html {
-  touch-action: manipulation;
+  touch-action: pan-x pan-y;
+}
+
+/* Get paid is only ever tapped, never scrolled from */
+.scn-PrimaryAction {
+  touch-action: none;
 }
 
 /* Phone layout (max-width 720px). One section at a time, with money, the

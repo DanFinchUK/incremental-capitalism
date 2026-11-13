@@ -51,7 +51,7 @@
     <!-- Opportunities and scandals are teleported here on a phone -->
     <div id="dock-events" class="mob-EventSlot"></div>
 
-    <button ref="payButtonRef" type="button" class="scn-PrimaryAction mob-Pay" @click="emit('paid', $event)">
+    <button ref="payButtonRef" type="button" class="scn-PrimaryAction mob-Pay" v-on="payPress">
       Get paid
     </button>
 
@@ -77,6 +77,7 @@
 </template>
 
 <script setup lang="ts">
+import { press } from '../utils/press'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { ItemKind } from '../data/items'
 import { gateThreshold } from '../engine/bosses'
@@ -94,6 +95,8 @@ const emit = defineEmits<{
 }>()
 
 const store = useGameStore()
+// Pays as each finger lands, so two-finger tapping counts every tap
+const payPress = press((ev) => emit('paid', ev), 'down')
 const payButtonRef = ref<HTMLButtonElement | null>(null)
 defineExpose({ payButtonRef })
 

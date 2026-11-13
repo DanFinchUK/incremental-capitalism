@@ -6,6 +6,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import type { ItemKind } from '../src/data/items'
 import type { PerkId } from '../src/data/perks'
+import { TRAITS_BY_ID } from '../src/data/heirs'
 import { useGameStore } from '../src/stores/game'
 
 export interface BotConfig {
@@ -114,6 +115,18 @@ function decide(store: Store, cfg: BotConfig): void {
   }
 }
 
+const RARITY_RANK: Readonly<Record<string, number>> = { legendary: 3, rare: 2, common: 1 }
+
+// The bot takes the rarest heir on offer, first one on a tie.
+function pickHeir(store: Store): void {
+  let best = 0
+  store.heirChoices.forEach((h, i) => {
+    const rank = (id: string | null) => (id ? RARITY_RANK[TRAITS_BY_ID[id].rarity] : 0)
+    if (rank(h.traitId) > rank(store.heirChoices[best].traitId)) best = i
+  })
+  store.pickHeir(best)
+}
+
 function buyPerks(store: Store): void {
   for (;;) {
     let bought = false
@@ -217,6 +230,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       finishGeneration()
       cumulativeMs += genMs
       store.retire(ts)
+      pickHeir(store)
       buyPerks(store)
       generation += 1
       netWorthAt10Min = 0

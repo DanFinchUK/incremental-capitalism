@@ -18,6 +18,12 @@
             </h1>
             <p class="scn-ClassDesc">{{ store.classStatus.current.description }}</p>
             <span class="scn-ClassPerk">Privilege: {{ store.classStatus.current.perkSummary }}</span>
+            <p class="scn-HeirLine" data-testid="current-heir">
+              Head of the family: <strong>{{ store.heir.name }}</strong>
+              <span v-if="currentTrait"> · {{ currentTrait.name }}</span>
+              <span v-else> · the founder</span>
+              <span class="scn-StatHint"> (generation {{ store.generation }})</span>
+            </p>
 
             <div class="scn-ProgressTrack" role="progressbar" :aria-valuenow="Math.round(store.classStatus.bracketProgress * 100)" aria-valuemin="0" aria-valuemax="100">
               <div
@@ -107,12 +113,14 @@ import { computed, ref } from 'vue'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { useGameStore } from '../stores/game'
 import { formatCurrency, formatMultiplier } from '../utils/format'
+import { TRAITS_BY_ID } from '../data/heirs'
 
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
 }>()
 
 const store = useGameStore()
+const currentTrait = computed(() => (store.heir.traitId ? TRAITS_BY_ID[store.heir.traitId] : null))
 const payButtonRef = ref<HTMLButtonElement | null>(null)
 
 const legacyMultLabel = computed(() => formatMultiplier(store.legacyMultiplier))

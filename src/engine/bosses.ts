@@ -19,20 +19,23 @@ export const NO_TWIST: Readonly<TwistEffects> = Object.freeze({
   flood: null
 })
 
-export function combineTwists(twists: ReadonlyArray<BossTwist>): TwistEffects {
+// strength scales how hard the numeric twists bite (1 = full, 0.75 = a
+// quarter weaker); on/off twists are unaffected.
+export function combineTwists(twists: ReadonlyArray<BossTwist>, strength = 1): TwistEffects {
   const effects: TwistEffects = { ...NO_TWIST }
   for (const twist of twists) {
     switch (twist.kind) {
       case 'clickPay':
-        effects.clickPayMult *= twist.mult
+        effects.clickPayMult *= 1 - (1 - twist.mult) * strength
         break
-      case 'incomeTax':
+      case 'incomeTax': {
+        const rate = twist.rate * strength
         // Stacked rents compound; a single rent keeps its exact rate
-        effects.incomeTaxRate =
-          effects.incomeTaxRate === 0 ? twist.rate : 1 - (1 - effects.incomeTaxRate) * (1 - twist.rate)
+        effects.incomeTaxRate = effects.incomeTaxRate === 0 ? rate : 1 - (1 - effects.incomeTaxRate) * (1 - rate)
         break
+      }
       case 'purchaseCost':
-        effects.purchaseCostMult *= twist.mult
+        effects.purchaseCostMult *= 1 + (twist.mult - 1) * strength
         break
       case 'eventFlood':
         effects.flood = { intervalSec: twist.intervalSec, corkedChance: twist.corkedChance }
@@ -88,39 +91,59 @@ function ratio(value: number, target: number): number {
   return target <= 0 ? 1 : Math.min(1, Math.max(0, value / target))
 }
 
-export function evaluateBoss(def: BossDef, t: BossTracker, s: BossSnapshot, activeMs: number): BossEvaluation {
+export interface BossScale {
+  targetMult: number
+  timeMult: number
+}
+
+export const NO_BOSS_SCALE: Readonly<BossScale> = Object.freeze({ targetMult: 1, timeMult: 1 })
+
+// The condition's headline target (the net worth for ownAllRevealed).
+export function conditionTarget(def: BossDef, scale: BossScale = NO_BOSS_SCALE): number {
   const c = def.condition
+  return (c.kind === 'ownAllRevealed' ? c.netWorth : c.target) * scale.targetMult
+}
+
+export function evaluateBoss(
+  def: BossDef,
+  t: BossTracker,
+  s: BossSnapshot,
+  activeMs: number,
+  scale: BossScale = NO_BOSS_SCALE
+): BossEvaluation {
+  const c = def.condition
+  const target = conditionTarget(def, scale)
   let progress: number
   let won: boolean
   let bust = false
   switch (c.kind) {
     case 'clickEarningsAtFullHustle':
-      progress = ratio(t.clickEarningsAtFullHustle, c.target)
-      won = t.clickEarningsAtFullHustle >= c.target
+      progress = ratio(t.clickEarningsAtFullHustle, target)
+      won = t.clickEarningsAtFullHustle >= target
       break
     case 'earnedAfterTax':
-      progress = ratio(t.earnedAfterTax, c.target)
-      won = t.earnedAfterTax >= c.target
+      progress = ratio(t.earnedAfterTax, target)
+      won = t.earnedAfterTax >= target
       break
     case 'netWorth':
-      progress = ratio(s.netWorth, c.target)
-      won = s.netWorth >= c.target
+      progress = ratio(s.netWorth, target)
+      won = s.netWorth >= target
       break
     case 'netWorthWithinPar':
       bust = t.purchases > c.par
-      progress = ratio(s.netWorth, c.target)
-      won = !bust && s.netWorth >= c.target
+      progress = ratio(s.netWorth, target)
+      won = !bust && s.netWorth >= target
       break
     case 'polish':
-      progress = ratio(t.polish, c.target)
-      won = t.polish >= c.target
+      progress = ratio(t.polish, target)
+      won = t.polish >= target
       break
     case 'ownAllRevealed':
-      won = s.allRevealedOwned && s.netWorth >= c.netWorth
-      progress = won ? 1 : Math.min(ratio(s.netWorth, c.netWorth), 0.99)
+      won = s.allRevealedOwned && s.netWorth >= target
+      progress = won ? 1 : Math.min(ratio(s.netWorth, target), 0.99)
       break
   }
-  const timedOut = activeMs - t.startedActiveMs >= def.timeLimitSec * 1000
+  const timedOut = activeMs - t.startedActiveMs >= def.timeLimitSec * scale.timeMult * 1000
   return { progress, won, lost: !won && (bust || timedOut) }
 }
 

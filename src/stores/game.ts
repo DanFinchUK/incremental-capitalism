@@ -55,7 +55,9 @@ import {
   type TelemetryState
 } from '../engine/telemetry'
 import { formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
-import { bossForGate, itemCostCeiling, legacyForDepth } from '../engine/bosses'
+import { bossForGate, conditionTarget, itemCostCeiling, legacyForDepth } from '../engine/bosses'
+import { combineModifiers } from '../engine/modifiers'
+import { TRAITS_BY_ID, generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationLine } from '../engine/automation'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
@@ -140,6 +142,14 @@ export const useGameStore = defineStore('game', () => {
 
   const netWorth = computed(() => money.value + spentThisRun.value)
   const gatesBeaten = ref<number>(initial.gatesBeaten)
+  const familySurname = ref<string>(initial.familySurname)
+  const heir = ref<Heir>(initial.heir ?? { name: '', traitId: null })
+  const heirChoices = ref<Heir[]>(initial.heirChoices)
+  const generation = ref<number>(initial.generation)
+  // Every rule-bending source in play: the heir's trait (advisors and titles join later)
+  const modifiers = computed(() =>
+    combineModifiers(heir.value.traitId && TRAITS_BY_ID[heir.value.traitId] ? [TRAITS_BY_ID[heir.value.traitId].mods] : [])
+  )
   const activeGenerationMs = ref<number>(initial.activeGenerationMs)
   const lastFloodSpawnMs = ref<number>(0)
   const splits = ref<(number | null)[]>(initial.splits)
@@ -160,6 +170,8 @@ export const useGameStore = defineStore('game', () => {
       bestKillMs.value = mergeBests(bestKillMs.value, lastKillMs.value)
     },
     bestKillFor: (gate) => bestKillMs.value[gate] ?? null,
+    bossScale: () => ({ targetMult: modifiers.value.bossTargetMult, timeMult: modifiers.value.bossTimeMult }),
+    twistStrength: () => modifiers.value.twistStrength,
     onAttemptEnded: () => {
       // Corked bottles belong to the tasting; they leave with the sommelier
       if (activeEvent.value?.corked) {
@@ -170,11 +182,11 @@ export const useGameStore = defineStore('game', () => {
   const twist = bosses.twist
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
   const costCeiling = computed(() => itemCostCeiling(gatesBeaten.value))
-  const heirInheritancePreview = computed(() => heirInheritance(netWorth.value))
+  const heirInheritancePreview = computed(() => heirInheritance(netWorth.value, modifiers.value.trustFundShareAdd))
   const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value))
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
   const legacyOnRetire = computed(() => legacyForDepth(gatesBeaten.value))
-  const autoClickers = computed(() => perks.value.autoClicker)
+  const autoClickers = computed(() => (modifiers.value.internsDisabled ? 0 : perks.value.autoClicker))
   const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
   const hustleMultiplier = computed(() => 1 + hustleBonus.value)
 
@@ -207,11 +219,12 @@ export const useGameStore = defineStore('game', () => {
     autoClickers: autoClickers.value,
     businessBuffMultiplier: activeBusinessBuff.value?.mult ?? 1,
     clickBuffMultiplier: (activeClickBuff.value?.mult ?? 1) * twist.value.clickPayMult,
-    hustleMultiplier: hustleMultiplier.value
+    hustleMultiplier: hustleMultiplier.value,
+    mods: modifiers.value
   }))
 
   // Share of cash under which an item's next unit restocks itself
-  const automationLine = computed(() => automationShare(perks.value.nepotism, 0))
+  const automationLine = computed(() => automationShare(perks.value.nepotism, modifiers.value.automationShareBonus))
 
   const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
   const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
@@ -316,6 +329,10 @@ export const useGameStore = defineStore('game', () => {
       bestSplits: bestSplits.value,
       lastKillMs: lastKillMs.value,
       bestKillMs: bestKillMs.value,
+      familySurname: familySurname.value,
+      heir: heir.value,
+      heirChoices: heirChoices.value,
+      generation: generation.value,
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
@@ -337,7 +354,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function scheduleNextEvent(fromMs: number, rng: () => number = Math.random): void {
-    const delaySec = (45 + rng() * 45) * Math.pow(0.85, perks.value.insider)
+    const delaySec = (45 + rng() * 45) * Math.pow(0.85, perks.value.insider) * modifiers.value.eventIntervalMult
     nextEventAt.value = fromMs + delaySec * 1000
   }
 
@@ -360,6 +377,10 @@ export const useGameStore = defineStore('game', () => {
     bestSplits.value = loaded.bestSplits
     lastKillMs.value = loaded.lastKillMs
     bestKillMs.value = loaded.bestKillMs
+    familySurname.value = loaded.familySurname || generateSurname(Math.random)
+    heir.value = loaded.heir ?? { name: heirName(Math.random, familySurname.value, []), traitId: null }
+    heirChoices.value = loaded.heirChoices
+    generation.value = loaded.generation
     bosses.bossAttempt.value = null
     bosses.bossCooldownUntilMs.value = 0
     bulkBuyMode.value = loaded.bulkBuyMode
@@ -413,8 +434,8 @@ export const useGameStore = defineStore('game', () => {
     if (amount <= 0) {
       return
     }
-    // Boss rent comes off every credit
-    amount *= 1 - twist.value.incomeTaxRate
+    // Boss rent, retainers and commissions come off every credit
+    amount *= (1 - twist.value.incomeTaxRate) * (1 - modifiers.value.incomeDrain)
     if (bosses.bossAttempt.value) {
       bosses.bossAttempt.value.earnedAfterTax += amount
     }
@@ -460,7 +481,10 @@ export const useGameStore = defineStore('game', () => {
       def.baseCost,
       def.scaleFactor,
       owned,
-      classStatus.value.costDiscount * twist.value.purchaseCostMult,
+      classStatus.value.costDiscount *
+        twist.value.purchaseCostMult *
+        modifiers.value.purchaseCostMult *
+        (modifiers.value.sectorCostMult[def.sector] ?? 1),
       modeOverride ?? bulkBuyMode.value,
       money.value
     )
@@ -611,7 +635,8 @@ export const useGameStore = defineStore('game', () => {
       return
     }
     if (!activeEvent.value && !introOpen.value && nextEventAt.value > 0 && ts >= nextEventAt.value) {
-      showMarketEvent(pickMarketEvent(rng), ts, rng)
+      const shady = rng() < modifiers.value.shadyBonus
+      showMarketEvent(shady ? MARKET_EVENTS_BY_KIND.shadyDeal : pickMarketEvent(rng), ts, rng)
       scheduleNextEvent(ts, rng)
     }
   }
@@ -631,7 +656,7 @@ export const useGameStore = defineStore('game', () => {
     }
     if (twist.value.flood) {
       // A good bottle during the tasting is worth savouring
-      creditMoney(unbuffedMoneyPerSecond.value * 20, 'windfall', ts)
+      creditMoney(unbuffedMoneyPerSecond.value * 20 * modifiers.value.windfallMult, 'windfall', ts)
     }
     const durationMult = 1 + 0.25 * perks.value.insider
     const def = ev.def
@@ -656,7 +681,7 @@ export const useGameStore = defineStore('game', () => {
       return 'golden'
     }
     if (effect.type === 'windfall') {
-      const windfall = Math.max(500, unbuffedMoneyPerSecond.value * effect.seconds)
+      const windfall = Math.max(500, unbuffedMoneyPerSecond.value * effect.seconds) * modifiers.value.windfallMult
       markTelemetryEvent(telemetry.value, '★')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
@@ -666,7 +691,7 @@ export const useGameStore = defineStore('game', () => {
     }
     // Shady Deal: 50/50 windfall vs auto-buy freeze
     if (rng() < 0.5) {
-      const windfall = Math.max(1500, unbuffedMoneyPerSecond.value * effect.winSeconds)
+      const windfall = Math.max(1500, unbuffedMoneyPerSecond.value * effect.winSeconds) * modifiers.value.windfallMult
       markTelemetryEvent(telemetry.value, '★')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
@@ -756,7 +781,7 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
     // Inheritance isn't earned, so it doesn't count toward lifetime earnings
-    const inheritance = heirInheritance(netWorth.value)
+    const inheritance = heirInheritance(netWorth.value, modifiers.value.trustFundShareAdd)
     legacyPoints.value += gain
     money.value = inheritance
     spentThisRun.value = 0
@@ -764,6 +789,7 @@ export const useGameStore = defineStore('game', () => {
     businessesOwned.value = {}
     gatesBeaten.value = 0
     activeGenerationMs.value = 0
+    heirChoices.value = rollHeirChoices(Math.random, familySurname.value, [heir.value.name])
     splits.value = emptySplits()
     lastKillMs.value = emptySplits()
     bosses.bossAttempt.value = null
@@ -781,6 +807,26 @@ export const useGameStore = defineStore('game', () => {
     )
     flushSave(ts)
     return true
+  }
+
+  // Choose who inherits after retiring. The trait applies from now on.
+  function pickHeir(index: number): void {
+    const chosen = heirChoices.value[index]
+    if (!chosen) {
+      return
+    }
+    heir.value = chosen
+    heirChoices.value = []
+    generation.value += 1
+    money.value *= modifiers.value.trustFundMult
+    announce(`${chosen.name} takes over the family firm.`)
+    flushSave(nowMs.value)
+  }
+
+  // The current target for a gate's boss, after the heir's trait and advisors
+  function bossTarget(gate: number): number {
+    const def = bossForGate(gate)
+    return def ? conditionTarget(def, { targetMult: modifiers.value.bossTargetMult, timeMult: 1 }) : 0
   }
 
   function openIntro(): void {
@@ -884,6 +930,13 @@ export const useGameStore = defineStore('game', () => {
     netWorth,
     gatesBeaten,
     handleClassPromotion,
+    familySurname,
+    heir,
+    heirChoices,
+    generation,
+    modifiers,
+    pickHeir,
+    bossTarget,
     costCeiling,
     activeGenerationMs,
     bossAttempt: bosses.bossAttempt,

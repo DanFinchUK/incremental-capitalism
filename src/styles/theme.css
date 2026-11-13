@@ -1334,3 +1334,69 @@
   font-style: italic;
   color: var(--color-shady-fg);
 }
+
+/* Succession */
+.scn-ModalBackdrop-top {
+  z-index: 60;
+}
+
+.scn-HeirGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.scn-HeirCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  background: var(--color-card);
+  border: 2px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.scn-HeirCard .scn-MarketEventTag {
+  align-self: flex-start;
+  background: var(--color-pip-bg);
+  color: var(--color-body);
+}
+
+.scn-HeirCard-rare {
+  background: var(--color-perk-pill-bg);
+  border-color: var(--color-purple);
+}
+
+.scn-HeirCard-rare .scn-MarketEventTag {
+  background: var(--color-purple);
+  color: #ffffff;
+}
+
+.scn-HeirCard-legendary {
+  background: var(--color-gold-bg);
+  border-color: var(--color-gold);
+  box-shadow: 0 0 18px var(--color-gold);
+}
+
+.scn-HeirCard-legendary .scn-MarketEventTag {
+  background: var(--color-gold);
+  color: #111111;
+}
+
+.scn-HeirCard button {
+  margin-top: auto;
+}
+
+.scn-HeirName {
+  margin: 0;
+  font-size: 18px;
+}
+
+.scn-HeirTrait {
+  font-size: 15px;
+}
+
+.scn-HeirLine {
+  margin: 6px 0 0;
+  font-size: 14px;
+}

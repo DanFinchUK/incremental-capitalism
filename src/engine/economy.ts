@@ -1,5 +1,6 @@
 import { BUSINESSES, JOBS, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
 import { SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
+import { NEUTRAL_MODIFIERS, type Modifiers } from './modifiers'
 
 const MILESTONES_GENTLE: ReadonlyArray<number> = [10, 25, 50, 100, 200]
 const MILESTONES_MODERATE: ReadonlyArray<number> = [10, 20, 40, 75, 125]
@@ -15,8 +16,8 @@ export const LEGACY_INCOME_PER_POINT = 0.05
 // so this is tuned for feel (skip the penny-clicking, keep the mid game).
 export const HEIR_INHERITANCE_SHARE = 0.05
 
-export function heirInheritance(netWorth: number): number {
-  return Math.floor(Math.max(0, netWorth) * HEIR_INHERITANCE_SHARE)
+export function heirInheritance(netWorth: number, shareAdd = 0): number {
+  return Math.floor(Math.max(0, netWorth) * (HEIR_INHERITANCE_SHARE + shareAdd))
 }
 export const BASE_CLICK_VALUE = 30
 
@@ -64,12 +65,12 @@ export function milestoneProgress(owned: number, scaleFactor: number): Milestone
   return { reachedCount, prevMilestone, nextMilestone, progress }
 }
 
-export function milestoneMultiplier(owned: number, scaleFactor: number, deregulationRank: number): number {
+export function milestoneMultiplier(owned: number, scaleFactor: number, deregulationRank: number, stepBonus = 0): number {
   const { reachedCount } = milestoneProgress(owned, scaleFactor)
   if (reachedCount === 0) {
     return 1
   }
-  const step = 2 + 0.25 * deregulationRank
+  const step = 2 + 0.25 * deregulationRank + stepBonus
   return Math.pow(step, reachedCount)
 }
 
@@ -156,8 +157,8 @@ export function classInfoForLevel(level: number, netWorth: number): SocialClassS
   return { current, next, incomeMultiplier, costDiscount, bracketProgress }
 }
 
-export function legacyMultiplier(legacyPoints: number): number {
-  return 1 + LEGACY_INCOME_PER_POINT * Math.max(0, legacyPoints)
+export function legacyMultiplier(legacyPoints: number, scale = 1): number {
+  return 1 + LEGACY_INCOME_PER_POINT * Math.max(0, legacyPoints) * scale
 }
 
 export function maxHustleMultiplier(rank: number): number {
@@ -174,21 +175,32 @@ export interface EconomySnapshotInput {
   businessBuffMultiplier: number
   clickBuffMultiplier: number
   hustleMultiplier: number
+  // Heir traits, advisors and titles
+  mods?: Modifiers
+}
+
+function modsOf(input: EconomySnapshotInput): Modifiers {
+  return input.mods ?? NEUTRAL_MODIFIERS
 }
 
 export function jobUnitClickIncome(job: JobDef, owned: number, input: EconomySnapshotInput): number {
-  const mMult = milestoneMultiplier(Math.max(1, owned), job.scaleFactor, input.deregulationRank)
+  const mods = modsOf(input)
+  const mMult = milestoneMultiplier(Math.max(1, owned), job.scaleFactor, input.deregulationRank, mods.milestoneStepBonus)
   const classMult = 1 + 0.15 * input.classLevel
-  return job.moneyPerClick * mMult * classMult * legacyMultiplier(input.legacyPoints) * input.clickBuffMultiplier
+  return job.moneyPerClick * mMult * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.clickBuffMultiplier * mods.clickMult
 }
 
 export function businessUnitPerSecond(biz: BusinessDef, owned: number, input: EconomySnapshotInput): number {
-  const mMult = milestoneMultiplier(Math.max(1, owned), biz.scaleFactor, input.deregulationRank)
+  const mods = modsOf(input)
+  const mMult = milestoneMultiplier(Math.max(1, owned), biz.scaleFactor, input.deregulationRank, mods.milestoneStepBonus)
   const synJob = SYNERGY_JOB_FOR_BUSINESS[biz.id]
   const synOwned = synJob ? (input.jobsPurchased[synJob.id] ?? 0) : 0
   const synMult = 1 + 0.01 * synOwned
   const classMult = 1 + 0.15 * input.classLevel
-  return biz.moneyPerSecond * mMult * synMult * classMult * legacyMultiplier(input.legacyPoints) * input.businessBuffMultiplier
+  return (
+    biz.moneyPerSecond * mMult * synMult * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) *
+    input.businessBuffMultiplier * mods.businessMult * (mods.sectorBusinessMult[biz.sector] ?? 1)
+  )
 }
 
 export function computeClickIncome(input: EconomySnapshotInput, includeHustle: boolean): number {
@@ -196,11 +208,12 @@ export function computeClickIncome(input: EconomySnapshotInput, includeHustle: b
   for (const job of JOBS) {
     const n = input.jobsPurchased[job.id] ?? 0
     if (n > 0) {
-      raw += job.moneyPerClick * milestoneMultiplier(n, job.scaleFactor, input.deregulationRank) * n
+      raw += job.moneyPerClick * milestoneMultiplier(n, job.scaleFactor, input.deregulationRank, modsOf(input).milestoneStepBonus) * n
     }
   }
   const classMult = 1 + 0.15 * input.classLevel
-  const baseClick = raw * classMult * legacyMultiplier(input.legacyPoints) * input.clickBuffMultiplier
+  const mods = modsOf(input)
+  const baseClick = raw * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.clickBuffMultiplier * mods.clickMult
   return includeHustle ? baseClick * input.hustleMultiplier : baseClick
 }
 
@@ -215,18 +228,24 @@ export function computePassivePerSecond(input: EconomySnapshotInput): number {
 }
 
 export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreakdown {
+  const mods = modsOf(input)
   let rawBusinesses = 0
   for (const biz of BUSINESSES) {
     const n = input.businessesOwned[biz.id] ?? 0
     if (n > 0) {
       const synJob = SYNERGY_JOB_FOR_BUSINESS[biz.id]
       const synOwned = synJob ? (input.jobsPurchased[synJob.id] ?? 0) : 0
-      rawBusinesses += biz.moneyPerSecond * milestoneMultiplier(n, biz.scaleFactor, input.deregulationRank) * (1 + 0.01 * synOwned) * n
+      rawBusinesses +=
+        biz.moneyPerSecond *
+        milestoneMultiplier(n, biz.scaleFactor, input.deregulationRank, mods.milestoneStepBonus) *
+        (1 + 0.01 * synOwned) *
+        n *
+        (mods.sectorBusinessMult[biz.sector] ?? 1)
     }
   }
   const classMult = 1 + 0.15 * input.classLevel
   const bizIncome =
-    rawBusinesses * classMult * legacyMultiplier(input.legacyPoints) * input.businessBuffMultiplier
+    rawBusinesses * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.businessBuffMultiplier * mods.businessMult
   const autoClickIncome = input.autoClickers * computeClickIncome(input, true)
   return { business: bizIncome, interns: autoClickIncome }
 }

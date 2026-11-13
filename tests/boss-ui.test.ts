@@ -98,3 +98,32 @@ describe('boss and splits UI', () => {
     wrapper.unmount()
   })
 })
+
+describe('heir draft UI', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  it('shows the succession choice after retiring and hands over on pick', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro()
+    expect(wrapper.text()).toContain(store.heir.name)
+    store.addDebugMoney(1e9)
+    store.gatesBeaten = 1
+    store.retire()
+    await wrapper.vm.$nextTick()
+    const modal = wrapper.find('[data-testid="heir-draft"]')
+    expect(modal.exists()).toBe(true)
+    expect(modal.findAll('[data-testid="heir-option"]')).toHaveLength(3)
+    const chosen = store.heirChoices[2]
+    await modal.findAll('[data-testid="heir-option"]')[2].find('button').trigger('click')
+    expect(wrapper.find('[data-testid="heir-draft"]').exists()).toBe(false)
+    expect(store.heir).toEqual(chosen)
+    expect(wrapper.text()).toContain(chosen.name)
+    wrapper.unmount()
+  })
+})

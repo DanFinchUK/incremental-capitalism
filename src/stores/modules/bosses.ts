@@ -8,6 +8,7 @@ import {
   gateThreshold,
   newTracker,
   type BossEvaluation,
+  type BossScale,
   type BossTracker,
   type TwistEffects
 } from '../../engine/bosses'
@@ -36,6 +37,9 @@ export interface BossModuleDeps {
   bestKillFor: (gate: number) => number | null
   // Called whenever an attempt ends, however it ends
   onAttemptEnded: () => void
+  // Heir traits and advisors: bigger or smaller targets, longer fights, softer twists
+  bossScale: () => BossScale
+  twistStrength: () => number
 }
 
 // Abandoning in the first seconds is treated as a misclick and is free.
@@ -57,14 +61,17 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
   const bossCooldownUntilMs = ref<number>(0)
 
   const attemptDef = computed(() => (bossAttempt.value ? bossForGate(bossAttempt.value.gate) : null))
-  const twist = computed<TwistEffects>(() => (attemptDef.value ? combineTwists(attemptDef.value.twists) : NO_TWIST))
+  const twist = computed<TwistEffects>(() =>
+    attemptDef.value ? combineTwists(attemptDef.value.twists, deps.twistStrength()) : NO_TWIST
+  )
 
   function currentEvaluation(def: BossDef, tracker: BossTracker): BossEvaluation {
     return evaluateBoss(
       def,
       tracker,
       { netWorth: deps.netWorth(), allRevealedOwned: deps.allRevealedOwned() },
-      deps.activeMs()
+      deps.activeMs(),
+      deps.bossScale()
     )
   }
 
@@ -83,7 +90,7 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
         ...base,
         status: 'active',
         progress: currentEvaluation(def, tracker).progress,
-        remainingSec: Math.max(0, Math.ceil((def.timeLimitSec * 1000 - elapsedMs) / 1000))
+        remainingSec: Math.max(0, Math.ceil((def.timeLimitSec * deps.bossScale().timeMult * 1000 - elapsedMs) / 1000))
       }
     }
     if (activeMs < bossCooldownUntilMs.value) {

@@ -33,7 +33,7 @@
     </template>
 
     <div v-else-if="boss.status === 'available'" class="scn-BossActions">
-      <span class="scn-AutoLine">{{ boss.def.timeLimitSec }}s to win. Losing costs nothing but time.</span>
+      <span class="scn-AutoLine">{{ timeLimitSec }}s to win. Losing costs nothing but time.</span>
       <button type="button" class="scn-Action scn-Action-purple" data-testid="boss-start" @click="store.startBossAttempt()">
         Take it on
       </button>
@@ -69,9 +69,6 @@ const threshold = computed(() => (boss.value ? gateThreshold(boss.value.def.gate
 const pct = computed(() => Math.round((boss.value?.progress ?? 0) * 100))
 const lastKill = computed(() => (boss.value ? (store.lastKillMs[boss.value.def.gate] ?? null) : null))
 
-const target = computed(() => {
-  const c = boss.value?.def.condition
-  if (!c) return 0
-  return c.kind === 'ownAllRevealed' ? c.netWorth : c.target
-})
+const target = computed(() => (boss.value ? store.bossTarget(boss.value.def.gate) : 0))
+const timeLimitSec = computed(() => Math.round((boss.value?.def.timeLimitSec ?? 0) * store.modifiers.bossTimeMult))
 </script>

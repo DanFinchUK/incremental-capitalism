@@ -2,6 +2,7 @@ import { SOCIAL_CLASSES } from '../data/classes'
 import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } from '../data/perks'
 import type { BulkBuyMode } from './economy'
 import { emptySplits } from './splits'
+import { TRAITS_BY_ID, type Heir } from '../data/heirs'
 
 export const STORAGE_KEY = 'state'
 // Saves from any earlier schema reset to a new game.
@@ -35,6 +36,10 @@ export interface PersistedSceneState {
   bestSplits: (number | null)[]
   lastKillMs: (number | null)[]
   bestKillMs: (number | null)[]
+  familySurname: string
+  heir: Heir | null
+  heirChoices: Heir[]
+  generation: number
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
   compactAutoBuy: boolean
@@ -69,6 +74,10 @@ export function createInitialSceneState(): PersistedSceneState {
     bestSplits: emptySplits(),
     lastKillMs: emptySplits(),
     bestKillMs: emptySplits(),
+    familySurname: '',
+    heir: null,
+    heirChoices: [],
+    generation: 1,
     bulkBuyMode: 1,
     autoBuyPaused: false,
     compactAutoBuy: false,
@@ -103,6 +112,14 @@ function readBooleanMap(raw: unknown): Record<string, boolean> {
     }
   }
   return result
+}
+
+function readHeir(raw: unknown): Heir | null {
+  if (!raw || typeof raw !== 'object') return null
+  const h = raw as Record<string, unknown>
+  if (typeof h.name !== 'string') return null
+  const traitId = typeof h.traitId === 'string' && TRAITS_BY_ID[h.traitId] ? h.traitId : null
+  return { name: h.name, traitId }
 }
 
 function readSplits(raw: unknown): (number | null)[] {
@@ -250,6 +267,10 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     bestSplits: readSplits(s.bestSplits),
     lastKillMs: readSplits(s.lastKillMs),
     bestKillMs: readSplits(s.bestKillMs),
+    familySurname: typeof s.familySurname === 'string' ? s.familySurname : '',
+    heir: readHeir(s.heir),
+    heirChoices: Array.isArray(s.heirChoices) ? s.heirChoices.map(readHeir).filter((h): h is Heir => h !== null) : [],
+    generation: Math.max(1, Math.floor(readNonNegativeNumber(s.generation, 1))),
     gatesBeaten: Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.gatesBeaten, 0))),
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     autoBuyPaused: Boolean(s.autoBuyPaused),

@@ -14,6 +14,14 @@ import {
 
 export type BossStatus = 'locked' | 'available' | 'active' | 'cooldown'
 
+// How a boss attempt finished, for the play log
+export interface AttemptEnded {
+  gate: number
+  result: 'won' | 'lost' | 'abandoned'
+  ms: number
+  progress: number
+}
+
 export interface BossView {
   def: BossDef
   status: BossStatus
@@ -36,7 +44,7 @@ export interface BossModuleDeps {
   onBossWon: (gate: number, killMs: number, purchases: number) => void
   bestKillFor: (gate: number) => number | null
   // Called whenever an attempt ends, however it ends
-  onAttemptEnded: () => void
+  onAttemptEnded: (ended: AttemptEnded) => void
   // Heir traits and advisors: longer fights (fixed at the start) and softer twists
   bossTimeMult: () => number
   twistStrength: () => number
@@ -123,11 +131,12 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
     if (!tracker || !def) {
       return
     }
+    const progress = currentEvaluation(def, tracker).progress
     bossAttempt.value = null
     if (deps.activeMs() - tracker.startedActiveMs >= FREE_ABANDON_MS) {
       bossCooldownUntilMs.value = deps.activeMs() + def.cooldownSec * 1000
     }
-    deps.onAttemptEnded()
+    deps.onAttemptEnded({ gate: def.gate, result: 'abandoned', ms: deps.activeMs() - tracker.startedActiveMs, progress })
   }
 
   function evaluateAttempt(): void {
@@ -146,12 +155,12 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
         deps.announce(`${def.title} beaten!`)
       }
       deps.onBossWon(def.gate, killMs, tracker.purchases)
-      deps.onAttemptEnded()
+      deps.onAttemptEnded({ gate: def.gate, result: 'won', ms: killMs, progress: 1 })
     } else if (result.lost) {
       bossAttempt.value = null
       bossCooldownUntilMs.value = deps.activeMs() + def.cooldownSec * 1000
       deps.announce(`${def.title} got the better of you this time. Regroup and try again.`)
-      deps.onAttemptEnded()
+      deps.onAttemptEnded({ gate: def.gate, result: 'lost', ms: deps.activeMs() - tracker.startedActiveMs, progress: result.progress })
     }
   }
 

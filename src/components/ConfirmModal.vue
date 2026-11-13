@@ -149,7 +149,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { HEIR_INHERITANCE_SHARE, legacyMultiplier } from '../engine/economy'
-import { STORAGE_KEY } from '../engine/migration'
 import { useGameStore } from '../stores/game'
 import { formatCurrency, formatMultiplier } from '../utils/format'
 
@@ -184,8 +183,7 @@ const inheritancePct = computed(() => Math.round((HEIR_INHERITANCE_SHARE + store
 const currMult = computed(() => formatMultiplier(store.legacyMultiplier))
 const nextMult = computed(() => formatMultiplier(legacyMultiplier(nextPoints.value, store.modifiers.legacyScale)))
 async function copySaveBackup(): Promise<void> {
-  store.flushSave(Date.now())
-  const raw = localStorage.getItem(STORAGE_KEY) ?? ''
+  const raw = store.exportSave(Date.now())
   if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
     try {
       await navigator.clipboard.writeText(raw)

@@ -59,6 +59,8 @@ import { formatCurrency, formatDuration, formatMultiplier } from '../utils/forma
 import { bossForGate, conditionTarget, itemCostCeiling, legacyForDepth } from '../engine/bosses'
 import { combineModifiers, type ModifierSource } from '../engine/modifiers'
 import { TRAITS_BY_ID, generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
+import { createPlayLogModule } from './modules/playLog'
+import { loadPlayLog, withPlayLog } from '../engine/playLog'
 import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationLine } from '../engine/automation'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
@@ -214,7 +216,8 @@ export const useGameStore = defineStore('game', () => {
     bestKillFor: (gate) => bestKillMs.value[gate] ?? null,
     bossTimeMult: () => modifiers.value.bossTimeMult,
     twistStrength: () => modifiers.value.twistStrength,
-    onAttemptEnded: () => {
+    onAttemptEnded: (ended) => {
+      plays.onAttemptEnded(nowMs.value, ended)
       // Corked bottles belong to the tasting; they leave with the sommelier
       if (activeEvent.value?.corked) {
         activeEvent.value = null
@@ -222,6 +225,22 @@ export const useGameStore = defineStore('game', () => {
     }
   })
   const twist = bosses.twist
+  const plays = createPlayLogModule(loadPlayLog(), {
+    generation: () => generation.value,
+    activeMs: () => activeGenerationMs.value,
+    netWorth: () => netWorth.value,
+    openGate: () => {
+      const boss = bosses.nextBoss.value
+      return boss && boss.status !== 'locked' ? boss.def.gate : null
+    },
+    attempt: () => {
+      const tracker = bosses.bossAttempt.value
+      const boss = bosses.nextBoss.value
+      return tracker && boss ? { gate: tracker.gate, startedActiveMs: tracker.startedActiveMs, progress: boss.progress } : null
+    },
+    hustle: () => hustleMultiplier.value
+  })
+  plays.resetGateWatch(initial.gatesBeaten)
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
   const costCeiling = computed(() => itemCostCeiling(gatesBeaten.value))
   const heirInheritancePreview = computed(() => heirInheritance(netWorth.value, modifiers.value.trustFundShareAdd))
@@ -449,6 +468,7 @@ export const useGameStore = defineStore('game', () => {
     introOpen.value = !loaded.introSeen
     tradingDeskCollapsed.value = loaded.tradingDeskCollapsed
     lastUpdate.value = loaded.lastUpdate
+    plays.resetGateWatch(loaded.gatesBeaten)
     nowMs.value = ts
     lastTickMs.value = ts
     lastAutoBuyAt.value = 0
@@ -585,6 +605,7 @@ export const useGameStore = defineStore('game', () => {
     }
 
     if (save) {
+      plays.log(nowMs.value, 'buy', { kind, id, n: quote.count, cost: quote.cost, owned: nextOwned })
       flushSave(nowMs.value)
     }
     return {
@@ -642,6 +663,7 @@ export const useGameStore = defineStore('game', () => {
     const step = maxBonus / 20
     hustleBonus.value = Math.min(maxBonus, Number((hustleBonus.value + step).toFixed(2)))
     lastManualClickAt.value = ts
+    plays.onTap(hustleMultiplier.value >= maxHustle.value - 0.01)
     const amount = moneyPerClick.value
     creditClicks(amount, 'manual', ts)
     refreshSeenItems()
@@ -688,6 +710,7 @@ export const useGameStore = defineStore('game', () => {
     if (activeEvent.value && ts >= activeEvent.value.expiresAt) {
       const expired = activeEvent.value
       activeEvent.value = null
+      plays.log(ts, expired.def.effect.type === 'scandal' ? 'scandal-ignored' : 'event-missed', { kind: expired.def.kind })
       if (expired.def.effect.type === 'scandal') {
         // Letting a scandal run is a choice too
         for (const o of expired.def.effect.ignored) applyScandalOutcome(o, expired.def, ts, rng)
@@ -764,6 +787,7 @@ export const useGameStore = defineStore('game', () => {
       }
       activeEvent.value = null
       scheduleNextEvent(ts, rng)
+      plays.log(ts, 'scandal-choice', { kind: ev.def.kind, option: option! })
       for (const o of choice.outcomes) applyScandalOutcome(o, ev.def, ts, rng)
       achievementProgress.value = { ...achievementProgress.value, scandals: achievementProgress.value.scandals + 1 }
       if (achievementProgress.value.scandals >= 5) unlockAchievement('spin-cycle')
@@ -856,6 +880,10 @@ export const useGameStore = defineStore('game', () => {
     if (elapsedMs >= 60_000) {
       // Time away abandons a boss fight (no cooldown), so offline income
       // can never win it
+      if (bosses.bossAttempt.value) {
+        plays.log(ts, 'boss-end', { gate: bosses.bossAttempt.value.gate, result: 'away' })
+      }
+      plays.log(ts, 'away', { ms: elapsedMs })
       bosses.bossAttempt.value = null
       const catchUp = computeOfflineCatchUp(elapsedMs, moneyPerSecond.value, perks.value.offshore)
       if (catchUp) {
@@ -885,6 +913,7 @@ export const useGameStore = defineStore('game', () => {
     }
     maybeSpawnRandomEvent(ts)
     bosses.evaluateAttempt()
+    plays.onTick(ts)
     checkStateAchievements()
 
     if (ts - lastSavedMs.value >= SAVE_THROTTLE_MS) {
@@ -911,7 +940,50 @@ export const useGameStore = defineStore('game', () => {
     }
     perks.value[id] += 1
     legacySpent.value += cost
+    plays.log(nowMs.value, 'perk', { id, rank: perks.value[id] })
     flushSave(nowMs.value)
+    return true
+  }
+
+  // Claims an opportunity and logs what came of it; scandal choices log themselves
+  function claimMarketEventLogged(ts = Date.now(), rng: () => number = Math.random, option?: number): ClaimEventOutcome {
+    const kind = activeEvent.value?.def.kind
+    const result = claimMarketEvent(ts, rng, option)
+    if (kind && result && result !== 'scandal') plays.log(ts, 'event', { kind, result })
+    return result
+  }
+
+  // Write everything now (leaving the page), including the play log
+  function flushAll(ts = Date.now()): void {
+    flushSave(ts)
+    plays.flush(ts)
+  }
+
+  // The save JSON with the play log included, for the Copy save button
+  function exportSave(ts = Date.now()): string {
+    flushAll(ts)
+    return withPlayLog(localStorage.getItem(STORAGE_KEY) ?? '', plays.playLog.value)
+  }
+
+  function hireAdvisor(offerIndex: number, replaceSeat?: number): boolean {
+    const advisorId = office.headhunterOffer.value[offerIndex]
+    const hired = office.hireAdvisor(offerIndex, replaceSeat)
+    if (hired) plays.log(nowMs.value, 'hire', { advisor: advisorId, replaced: replaceSeat !== undefined })
+    return hired
+  }
+
+  function startBossAttempt(): boolean {
+    if (heirChoices.value.length > 0 || !bosses.startBossAttempt()) {
+      return false
+    }
+    const gate = bosses.bossAttempt.value!.gate
+    plays.onBossStart(nowMs.value, gate, {
+      netWorth: netWorth.value,
+      perClick: moneyPerClick.value,
+      perSec: moneyPerSecond.value,
+      maxHustle: maxHustle.value,
+      target: bossTarget(gate)
+    })
     return true
   }
 
@@ -922,7 +994,9 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
     if (gatesBeaten.value <= 2) unlockAchievement('early-retirement')
+    plays.log(ts, 'retire', { gate: gatesBeaten.value, legacy: gain, netWorth: netWorth.value })
     const inheritance = endGeneration(ts, gain)
+    plays.resetGateWatch(0)
     announce(
       `Retired with +${gain} Legacy! Your heir inherits ${formatCurrency(inheritance)} and a x${formatMultiplier(legacyMultiplier.value)} income multiplier.`
     )
@@ -989,7 +1063,9 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
     titles.value += gain
+    plays.log(ts, 'elevate', { titles: gain })
     endGeneration(ts, 0)
+    plays.resetGateWatch(0)
     legacyPoints.value = 0
     legacySpent.value = 0
     perks.value = { ...EMPTY_PERKS }
@@ -1006,6 +1082,7 @@ export const useGameStore = defineStore('game', () => {
       return
     }
     heir.value = chosen
+    plays.log(nowMs.value, 'heir', { trait: chosen.traitId ?? 'none', options: heirChoices.value.length })
     heirChoices.value = []
     generation.value += 1
     money.value *= modifiers.value.trustFundMult
@@ -1065,6 +1142,7 @@ export const useGameStore = defineStore('game', () => {
   function hardReset(ts = Date.now()): void {
     const fresh = createInitialSceneState()
     applyLoadedState(fresh, ts)
+    plays.clear(ts)
     offlineReport.value = null
     bannerMessage.value = null
     legacyDrawerOpen.value = false
@@ -1161,7 +1239,10 @@ export const useGameStore = defineStore('game', () => {
     officeSeats: office.officeSeats,
     paChair: office.paChair,
     headhunterOffer: office.headhunterOffer,
-    hireAdvisor: office.hireAdvisor,
+    hireAdvisor,
+    playLog: plays.playLog,
+    flushAll,
+    exportSave,
     skipOffer: office.skipOffer,
     fireAdvisor,
     achievements,
@@ -1177,7 +1258,7 @@ export const useGameStore = defineStore('game', () => {
     bossAttempt: bosses.bossAttempt,
     twist,
     nextBoss: bosses.nextBoss,
-    startBossAttempt: () => (heirChoices.value.length > 0 ? false : bosses.startBossAttempt()),
+    startBossAttempt,
     abandonBossAttempt: bosses.abandonBossAttempt,
     classStatus,
     legacyMultiplier,
@@ -1212,7 +1293,7 @@ export const useGameStore = defineStore('game', () => {
     buyItem,
     manualClick,
     spawnSpecificEvent,
-    claimMarketEvent,
+    claimMarketEvent: claimMarketEventLogged,
     tick,
     toggleAutoBuy,
     isAutoBuyEnabled,

@@ -283,7 +283,12 @@ function confirmHardReset(): void {
 }
 
 function onBeforeUnload(): void {
-  store.flushSave(Date.now())
+  store.flushAll(Date.now())
+}
+
+// Phones rarely fire beforeunload, so also save when the page is hidden
+function onVisibilityChange(): void {
+  if (document.visibilityState === 'hidden') store.flushAll(Date.now())
 }
 
 function frameLoop(): void {
@@ -295,6 +300,8 @@ onMounted(() => {
   rafId = window.requestAnimationFrame(frameLoop)
   autoFloatTimer = setInterval(scheduleAutoFloats, 1000)
   window.addEventListener('beforeunload', onBeforeUnload)
+  window.addEventListener('pagehide', onBeforeUnload)
+  document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
 onUnmounted(() => {
@@ -312,5 +319,7 @@ onUnmounted(() => {
   }
   pendingTimeouts.clear()
   window.removeEventListener('beforeunload', onBeforeUnload)
+  window.removeEventListener('pagehide', onBeforeUnload)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
 })
 </script>

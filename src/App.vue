@@ -8,7 +8,10 @@
       </div>
 
       <FloatingPayouts :floats="floats" />
-      <MarketEvent @claim="handleClaimEvent" @choose="handleScandalChoice" />
+      <!-- On a phone, pop-ups sit in the dock above Get paid, not over the lists -->
+      <Teleport to="#dock-events" :disabled="!phone" defer>
+        <MarketEvent @claim="handleClaimEvent" @choose="handleScandalChoice" />
+      </Teleport>
       <IntroModal />
       <WelcomeModal v-if="!store.introOpen" />
       <ClassModal />
@@ -34,8 +37,9 @@
         <TradingDesk />
       </template>
 
-      <div v-if="!phone || phoneTab !== 'family'" class="lyt-Columns">
-        <section v-if="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
+      <!-- v-show keeps both lists alive, so switching tabs doesn't reload them -->
+      <div v-show="!phone || phoneTab !== 'family'" class="lyt-Columns">
+        <section v-show="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
           <div class="lyt-Items">
             <div class="lyt-ListHead">
               <h2 class="scn-ColumnTitle">Jobs</h2>
@@ -51,7 +55,7 @@
           </div>
         </section>
 
-        <section v-if="!phone || phoneTab === 'businesses'" class="lyt-Column" aria-label="Businesses">
+        <section v-show="!phone || phoneTab === 'businesses'" class="lyt-Column" aria-label="Businesses">
           <div class="lyt-Items">
             <div class="lyt-ListHead">
               <h2 class="scn-ColumnTitle">Businesses</h2>
@@ -84,7 +88,7 @@
       </div>
     </footer>
 
-    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" />
+    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" />
   </div>
 </template>
 
@@ -138,6 +142,13 @@ function switchPhoneTab(next: PhoneTab): void {
   tabScroll[phoneTab.value] = window.scrollY
   phoneTab.value = next
   nextTick(() => window.scrollTo({ top: tabScroll[next] }))
+}
+
+// The dock's Rules button: open Family & gates at the boss card
+function showBossRules(): void {
+  if (phoneTab.value !== 'family') tabScroll[phoneTab.value] = window.scrollY
+  phoneTab.value = 'family'
+  nextTick(() => document.querySelector('[data-testid="boss-card"]')?.scrollIntoView({ block: 'start' }))
 }
 
 function payButton(): HTMLButtonElement | null {

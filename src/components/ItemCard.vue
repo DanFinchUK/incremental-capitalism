@@ -80,13 +80,13 @@
           </button>
         </div>
 
-        <p class="scn-CardMeta">
+        <p class="scn-CardMeta scn-CostLine">
           {{ kind === 'jobs' ? 'Cost to apply' : 'Cost to start' }}<span v-if="quote.count > 1"> (x{{ quote.count }})</span>:
           {{ formatCurrency(quote.cost) }}
           <span v-if="deltaText" class="scn-DeltaInline">{{ deltaText }}</span>
         </p>
 
-        <p class="scn-CardMeta">{{ incomeLineText }}</p>
+        <p class="scn-CardMeta scn-IncomeLine">{{ incomeLineText }}</p>
 
         <p class="scn-SynergyLine">{{ synergyText }}</p>
 

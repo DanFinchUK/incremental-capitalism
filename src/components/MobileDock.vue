@@ -5,38 +5,42 @@
       <span>{{ formatCurrency(store.moneyPerSecond) }}/s</span>
       <span>{{ formatCurrency(store.moneyPerClick) }}/tap</span>
       <span v-if="store.hustleMultiplier > 1.01" class="mob-Hustle">{{ store.hustleMultiplier.toFixed(1) }}x</span>
+      <span v-if="store.activeClickBuff" class="mob-Buff">{{ store.activeClickBuff.label }} x{{ store.activeClickBuff.mult }} {{ store.activeClickBuff.remainingSec }}s</span>
+      <span v-if="store.activeBusinessBuff" class="mob-Buff">{{ store.activeBusinessBuff.label }} x{{ store.activeBusinessBuff.mult }} {{ store.activeBusinessBuff.remainingSec }}s</span>
+      <span v-if="store.incomePenalty" class="mob-Penalty">Income x{{ store.incomePenalty.mult }} {{ store.incomePenalty.remainingSec }}s</span>
+      <span v-if="store.isAutoBuyFrozen" class="mob-Penalty">Automation frozen {{ store.autoBuyFreezeRemainingSec }}s</span>
     </div>
 
     <div v-if="boss" class="mob-Gate" :class="`mob-Gate-${boss.status}`" data-testid="dock-gate">
       <div class="mob-GateText">
-        <strong>Gate {{ boss.def.gate }}: {{ boss.def.title }}</strong>
+        <strong>{{ boss.def.title }}</strong>
         <span class="mob-GateSep" aria-hidden="true">·</span>
-        <span v-if="boss.status === 'locked'">{{ formatCurrency(Math.max(0, threshold - store.netWorth)) }} to go</span>
+        <span v-if="boss.status === 'locked'">Gate {{ boss.def.gate }} · {{ formatCurrency(Math.max(0, threshold - store.netWorth)) }} to go</span>
         <span v-else-if="boss.status === 'active'">{{ pct }}% · {{ boss.remainingSec }}s left</span>
         <span v-else-if="boss.status === 'cooldown'">Regrouping, {{ boss.cooldownSec }}s</span>
-        <span v-else>Ready when you are</span>
+        <span v-else>Gate {{ boss.def.gate }} · ready when you are</span>
       </div>
-      <button
-        v-if="boss.status === 'available'"
-        type="button"
-        class="scn-Action scn-Action-purple"
-        data-testid="dock-boss-start"
-        @click="startBoss"
-      >
-        Take it on
-      </button>
-      <button
-        v-else-if="boss.status === 'active' || boss.status === 'cooldown'"
-        type="button"
-        class="scn-Action scn-Action-outline"
-        @click="emit('tab', 'family')"
-      >
-        Rules
-      </button>
+      <div v-if="boss.status !== 'locked'" class="mob-GateActions">
+        <button type="button" class="scn-Action scn-Action-outline" data-testid="dock-boss-rules" @click="emit('rules')">
+          Rules
+        </button>
+        <button
+          v-if="boss.status === 'available'"
+          type="button"
+          class="scn-Action scn-Action-purple"
+          data-testid="dock-boss-start"
+          @click="startBoss"
+        >
+          Take it on
+        </button>
+      </div>
       <div class="mob-GateBar" role="progressbar" :aria-valuenow="pct" aria-valuemin="0" aria-valuemax="100">
         <div class="mob-GateFill" :style="{ width: `${pct}%` }"></div>
       </div>
     </div>
+
+    <!-- Opportunities and scandals are teleported here on a phone -->
+    <div id="dock-events" class="mob-EventSlot"></div>
 
     <button ref="payButtonRef" type="button" class="scn-PrimaryAction mob-Pay" @click="emit('paid', $event)">
       Get paid
@@ -72,6 +76,7 @@ defineProps<{ tab: PhoneTab }>()
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
   (e: 'tab', tab: PhoneTab): void
+  (e: 'rules'): void
 }>()
 
 const store = useGameStore()

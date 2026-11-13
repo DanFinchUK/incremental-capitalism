@@ -39,6 +39,34 @@
   color: var(--color-body);
 }
 
+.mob-Buff {
+  font-weight: 700;
+  color: var(--color-green-text);
+}
+
+.mob-Penalty {
+  font-weight: 700;
+  color: var(--color-danger-fg, #e5484d);
+}
+
+.mob-GateActions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Pop-ups take their place in the dock rather than floating over the lists */
+.mob-EventSlot:empty {
+  display: none;
+}
+
+.mob-EventSlot .scn-MarketEvent {
+  position: static;
+  width: 100%;
+  max-width: none;
+  transform: none;
+  box-sizing: border-box;
+}
+
 .mob-Hustle {
   font-weight: 700;
   color: var(--color-purple);
@@ -54,19 +82,19 @@
 
 .mob-GateText {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  flex-direction: column;
   min-width: 0;
-  white-space: nowrap;
+  line-height: 1.3;
 }
 
 .mob-GateText strong {
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mob-GateSep {
-  color: var(--color-muted);
+  display: none;
 }
 
 .mob-GateBar {
@@ -151,16 +179,6 @@
     padding-bottom: calc(var(--dock-h, 240px) + 16px);
   }
 
-  /* Opportunities pop up just above the dock, within thumb reach */
-  .ic-Shell-phone .scn-MarketEvent {
-    top: auto !important;
-    bottom: calc(var(--dock-h, 240px) + 12px);
-    left: 50% !important;
-    transform: translateX(-50%);
-    width: calc(100% - 32px);
-    max-width: 380px;
-  }
-
   /* Touch targets: 44px is the comfortable minimum */
   .scn-Action,
   .scn-BulkBtn {
@@ -207,6 +225,14 @@
      The milestone badge still shows the multiplier earned. */
   .ic-Shell-phone .scn-Pips {
     display: none;
+  }
+
+  /* Room for two lines, so a card doesn't grow (and move its Buy button)
+     when the first purchase adds the running total */
+  .ic-Shell-phone .scn-CostLine,
+  .ic-Shell-phone .scn-IncomeLine {
+    min-height: 2.8em;
+    line-height: 1.4;
   }
 
   .ic-Shell-phone .scn-SynergyLine {

@@ -2,15 +2,9 @@
 // a person would: tap Get paid, buy the first jobs, then buy the first
 // business. Each step also checks the page is usable at that size.
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { PIXEL_10_PRO } from './phone'
 
-// Pixel 10 Pro, portrait
-test.use({
-  viewport: { width: 412, height: 915 },
-  deviceScaleFactor: 3.5,
-  isMobile: true,
-  hasTouch: true,
-  userAgent: 'Mozilla/5.0 (Linux; Android 16; Pixel 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36'
-})
+test.use(PIXEL_10_PRO)
 
 // Usability checks are soft: one run lists every problem, and the test still
 // fails if any were found.
@@ -60,7 +54,10 @@ test('a new player can reach their first business by touch', async ({ page }) =>
 
   // Shop each list in turn by its tab. Get paid should never leave the
   // screen, and scrolling should be rare.
-  const buyButtons = page.locator('[data-item-key] button.scn-Action:not(:disabled)', { hasText: /^(Get hired|Get Businessed)/ })
+  // Only the list on the open tab is visible; the other stays in the page
+  const buyButtons = page
+    .locator('[data-item-key] button.scn-Action:not(:disabled)', { hasText: /^(Get hired|Get Businessed)/ })
+    .filter({ visible: true })
   const tabs = [page.getByTestId('tab-jobs'), page.getByTestId('tab-businesses')]
   for (const tab of tabs) await expectTappable(tab, 'Section tab')
   let scrolled = 0

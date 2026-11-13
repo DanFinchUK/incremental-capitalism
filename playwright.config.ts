@@ -6,7 +6,7 @@ export default defineConfig({
   testDir: 'e2e',
   testMatch: '**/*.e2e.ts',
   timeout: 240_000,
-  use: { baseURL: 'http://localhost:5179' },
+  use: { baseURL: 'http://localhost:5179', actionTimeout: 10_000 },
   webServer: {
     command: 'npx vite --port 5179 --strictPort',
     url: 'http://localhost:5179',

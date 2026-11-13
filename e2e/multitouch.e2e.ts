@@ -73,8 +73,8 @@ test.describe('with a mouse', () => {
 
 test('one finger on Get paid while another scrolls the list', async ({ page }) => {
   await newGame(page)
-  // Enough items revealed that the Jobs list scrolls
-  await withStore(page, `(s) => { s.addDebugMoney(1e8, Date.now()); s.tick(Date.now()) }`)
+  // Own one of each early job, so the Jobs list is long enough to scroll
+  await withStore(page, `(s) => { for (const id of ['1', '19', '2', '3', '4', '5', '6']) s.jobsPurchased[id] = 1; s.tick(Date.now()) }`)
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 400)).toBe(true)
   const pay = await centre(page, '.mob-Pay', 1)
   const cdp = await page.context().newCDPSession(page)

@@ -316,76 +316,43 @@ export const useGameStore = defineStore('game', () => {
   const manualRealisedPerSecond = computed(() => currentManualPerSec(telemetry.value, nowMs.value))
   const sectorSlices = computed(() => computeSectorSlices(economyInput.value, manualRealisedPerSecond.value))
 
+  // Keeps the saved record of what has been seen in step with what is shown
   function refreshSeenItems(): void {
-    for (let i = 0; i < JOBS.length; i++) {
-      const job = JOBS[i]
-      const prev = i > 0 ? JOBS[i - 1] : null
-      const prevOwned = prev ? ((jobsPurchased.value[prev.id] ?? 0) > 0 || (lifetimePurchases.value.jobs[prev.id] ?? 0) > 0) : false
-      if (job.baseCost > costCeiling.value) {
-        continue
-      }
-      if (
-        i === 0 ||
-        (jobsPurchased.value[job.id] ?? 0) > 0 ||
-        (lifetimePurchases.value.jobs[job.id] ?? 0) > 0 ||
-        money.value >= 0.5 * job.baseCost ||
-        prevOwned
-      ) {
-        seenItems.value.jobs[job.id] = true
-      }
-    }
-    for (let i = 0; i < BUSINESSES.length; i++) {
-      const biz = BUSINESSES[i]
-      const prev = i > 0 ? BUSINESSES[i - 1] : null
-      const prevOwned = prev
-        ? ((businessesOwned.value[biz.id] ?? 0) > 0 || (lifetimePurchases.value.businesses[biz.id] ?? 0) > 0)
-        : false
-      if (biz.baseCost > costCeiling.value) {
-        continue
-      }
-      if (
-        i === 0 ||
-        (businessesOwned.value[biz.id] ?? 0) > 0 ||
-        (lifetimePurchases.value.businesses[biz.id] ?? 0) > 0 ||
-        money.value >= 0.5 * biz.baseCost ||
-        prevOwned
-      ) {
-        seenItems.value.businesses[biz.id] = true
-      }
-    }
+    for (const row of visibleJobs.value) if (row.mode === 'revealed') seenItems.value.jobs[row.item.id] = true
+    for (const row of visibleBusinesses.value) if (row.mode === 'revealed') seenItems.value.businesses[row.item.id] = true
   }
 
+  // Each item appears once you own one of the item before it in the same
+  // list this generation (the first is always there), up to the cost
+  // ceiling. The next one shows as a teaser, or as locked behind the boss.
   function buildVisibleList<T extends { id: string; baseCost: number }>(
     items: ReadonlyArray<T>,
-    seenMap: Readonly<Record<string, boolean>>,
+    owned: Readonly<Record<string, number>>,
     prefix: string
   ): VisibleRow<T>[] {
-    // Items are listed cheapest first, so everything up to the last seen
-    // item under the ceiling is revealed.
-    let highestSeen = -1
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].baseCost <= costCeiling.value && seenMap[items[i].id]) {
-        highestSeen = i
-      }
-    }
     const rows: VisibleRow<T>[] = []
-    for (let i = 0; i <= highestSeen; i++) {
-      rows.push({ mode: 'revealed', item: items[i] })
-    }
-    const next = items[highestSeen + 1]
-    if (next && next.baseCost > costCeiling.value) {
-      rows.push({ mode: 'gated', key: `${prefix}-gated-${next.id}`, bossTitle: bossForGate(gatesBeaten.value + 1)?.title ?? '' })
-    } else if (next) {
-      rows.push({ mode: 'teaser', key: `${prefix}-teaser-${next.id}` })
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const unlocked = i === 0 || (owned[items[i - 1].id] ?? 0) > 0 || (owned[item.id] ?? 0) > 0
+      if (unlocked && item.baseCost <= costCeiling.value) {
+        rows.push({ mode: 'revealed', item })
+        continue
+      }
+      if (item.baseCost > costCeiling.value) {
+        rows.push({ mode: 'gated', key: `${prefix}-gated-${item.id}`, bossTitle: bossForGate(gatesBeaten.value + 1)?.title ?? '' })
+      } else {
+        rows.push({ mode: 'teaser', key: `${prefix}-teaser-${item.id}` })
+      }
+      break
     }
     return rows
   }
 
   const visibleJobs = computed<VisibleRow<JobDef>[]>(() =>
-    buildVisibleList(JOBS, seenItems.value.jobs, 'job')
+    buildVisibleList(JOBS, jobsPurchased.value, 'job')
   )
   const visibleBusinesses = computed<VisibleRow<BusinessDef>[]>(() =>
-    buildVisibleList(BUSINESSES, seenItems.value.businesses, 'biz')
+    buildVisibleList(BUSINESSES, businessesOwned.value, 'biz')
   )
 
   function snapshotPersisted(ts: number): PersistedSceneState {

@@ -59,9 +59,10 @@ describe('mastery automation in the store', () => {
 
   it('skips excluded items and stops while paused', () => {
     const store = fresh(100_000)
+    store.jobsPurchased['1'] = 1 // owning one reveals the next job
     store.toggleAutoBuy('jobs', '1')
     store.tick(2100)
-    expect(store.jobsPurchased['1'] ?? 0).toBe(0)
+    expect(store.jobsPurchased['1']).toBe(1)
     expect(store.jobsPurchased['19'] ?? 0).toBeGreaterThan(0)
     store.toggleAutoBuyPaused()
     const owned = store.jobsPurchased['19']

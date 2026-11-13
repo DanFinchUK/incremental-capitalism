@@ -64,8 +64,8 @@ test('a tab marks items revealed since you last looked at it', async ({ page }) 
   await newGame(page)
   const tab = page.getByTestId('tab-businesses')
   await expect(tab.getByTestId('tab-new')).toHaveCount(0)
-  // Enough net worth to reveal the next business, while on the Jobs tab
-  await withStore(page, `(s) => { s.addDebugMoney(100_000, Date.now()); s.tick(Date.now()) }`)
+  // Buying the first business reveals the next one, while on the Jobs tab
+  await withStore(page, `(s) => { s.addDebugMoney(100_000, Date.now()); s.buyItem('businesses', '1', 1); s.tick(Date.now()) }`)
   await expect(tab.getByTestId('tab-new')).toBeVisible()
   await tab.tap()
   await page.getByTestId('tab-jobs').tap()

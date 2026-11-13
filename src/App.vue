@@ -20,6 +20,7 @@
         @confirm-reset="confirmHardReset"
       />
       <FamilyTreeModal />
+      <AchievementsModal />
       <HeirDraftModal />
 
       <OverviewBar @retire="handleRetire" />
@@ -66,6 +67,9 @@
         <button type="button" class="scn-Action scn-Action-outline" data-testid="open-intro" @click="store.openIntro()">
           How to play
         </button>
+        <button type="button" class="scn-Action scn-Action-outline" data-testid="open-achievements" @click="store.achievementsOpen = true">
+          Achievements ({{ store.achievements.length }})
+        </button>
         <button type="button" class="scn-Action" @click="handleHardReset">
           Reset game
         </button>
@@ -85,6 +89,7 @@ import ConfirmModal, { type ConfirmDialogMode } from './components/ConfirmModal.
 import IntroModal from './components/IntroModal.vue'
 import HeirDraftModal from './components/HeirDraftModal.vue'
 import FamilyTreeModal from './components/FamilyTreeModal.vue'
+import AchievementsModal from './components/AchievementsModal.vue'
 import FloatingPayouts, { type FloatParticle } from './components/FloatingPayouts.vue'
 import HeroHeader from './components/HeroHeader.vue'
 import BossCard from './components/BossCard.vue'

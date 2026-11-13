@@ -4,6 +4,7 @@ import type { BulkBuyMode } from './economy'
 import { emptySplits } from './splits'
 import { TRAITS_BY_ID, type Heir } from '../data/heirs'
 import { ADVISORS_BY_ID } from '../data/advisors'
+import { ACHIEVEMENTS_BY_ID, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from './office'
 import { MAX_TREE_ENTRIES, readGenerationRecord, type GenerationRecord } from './family'
 import type { OfficeState } from '../stores/modules/office'
@@ -46,6 +47,8 @@ export interface PersistedSceneState {
   generation: number
   office: OfficeState
   familyTree: GenerationRecord[]
+  achievements: string[]
+  achievementProgress: AchievementProgress
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
   compactAutoBuy: boolean
@@ -86,6 +89,8 @@ export function createInitialSceneState(): PersistedSceneState {
     generation: 1,
     office: { seats: [], paChair: null, offer: [] },
     familyTree: [],
+    achievements: [],
+    achievementProgress: { ...EMPTY_PROGRESS },
     bulkBuyMode: 1,
     autoBuyPaused: false,
     compactAutoBuy: false,
@@ -120,6 +125,15 @@ function readBooleanMap(raw: unknown): Record<string, boolean> {
     }
   }
   return result
+}
+
+function readProgress(raw: unknown): AchievementProgress {
+  const p = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  return {
+    legendaryClaims: Math.floor(readNonNegativeNumber(p.legendaryClaims, 0)),
+    fires: Math.floor(readNonNegativeNumber(p.fires, 0)),
+    scandals: Math.floor(readNonNegativeNumber(p.scandals, 0))
+  }
 }
 
 function readAdvisor(raw: unknown): AdvisorInstance | null {
@@ -302,6 +316,10 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     heirChoices: Array.isArray(s.heirChoices) ? s.heirChoices.map(readHeir).filter((h): h is Heir => h !== null) : [],
     generation: Math.max(1, Math.floor(readNonNegativeNumber(s.generation, 1))),
     office: readOffice(s.office),
+    achievements: Array.isArray(s.achievements)
+      ? [...new Set(s.achievements.filter((id): id is string => typeof id === 'string' && !!ACHIEVEMENTS_BY_ID[id]))]
+      : [],
+    achievementProgress: readProgress(s.achievementProgress),
     familyTree: Array.isArray(s.familyTree)
       ? s.familyTree.map(readGenerationRecord).filter((r): r is GenerationRecord => r !== null).slice(-MAX_TREE_ENTRIES)
       : [],

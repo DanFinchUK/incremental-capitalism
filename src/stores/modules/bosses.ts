@@ -33,7 +33,8 @@ export interface BossModuleDeps {
   allRevealedOwned: () => boolean
   handleClassPromotion: (prevClass: number) => boolean
   announce: (msg: string) => void
-  onBossWon: (gate: number, killMs: number) => void
+  // purchases: strokes taken, for the Golf achievement
+  onBossWon: (gate: number, killMs: number, purchases: number) => void
   bestKillFor: (gate: number) => number | null
   // Called whenever an attempt ends, however it ends
   onAttemptEnded: () => void
@@ -146,7 +147,7 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
       if (!deps.handleClassPromotion(prevClass)) {
         deps.announce(`${def.title} beaten!`)
       }
-      deps.onBossWon(def.gate, killMs)
+      deps.onBossWon(def.gate, killMs, tracker.purchases)
       deps.onAttemptEnded()
     } else if (result.lost) {
       bossAttempt.value = null

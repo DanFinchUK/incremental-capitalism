@@ -57,13 +57,14 @@ import {
 } from '../engine/telemetry'
 import { formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
 import { bossForGate, conditionTarget, itemCostCeiling, legacyForDepth } from '../engine/bosses'
-import { combineModifiers } from '../engine/modifiers'
+import { combineModifiers, type ModifierSource } from '../engine/modifiers'
 import { TRAITS_BY_ID, generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationLine } from '../engine/automation'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
 import { createOfficeModule } from './modules/office'
 import { MAX_TREE_ENTRIES, type GenerationRecord } from '../engine/family'
+import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from '../engine/office'
 import { ADVISORS_BY_ID } from '../data/advisors'
 
@@ -100,6 +101,11 @@ export interface ActiveBuffView {
 
 const SAVE_THROTTLE_MS = 2000
 const AUTO_BUY_COOLDOWN_MS = 1000
+
+function achievementSource(count: number): ModifierSource {
+  const mult = 1 + ACHIEVEMENT_INCOME_BONUS * count
+  return { clickMult: mult, businessMult: mult }
+}
 
 export const useGameStore = defineStore('game', () => {
   const initial = createInitialSceneState()
@@ -155,6 +161,9 @@ export const useGameStore = defineStore('game', () => {
   const generation = ref<number>(initial.generation)
   const familyTree = ref<GenerationRecord[]>(initial.familyTree)
   const familyTreeOpen = ref(false)
+  const achievements = ref<string[]>(initial.achievements)
+  const achievementProgress = ref<AchievementProgress>(initial.achievementProgress)
+  const achievementsOpen = ref(false)
   const office = createOfficeModule({
     money,
     extraSeats: () => perks.value.officeSeats,
@@ -165,7 +174,8 @@ export const useGameStore = defineStore('game', () => {
   const modifiers = computed(() =>
     combineModifiers([
       ...(heir.value.traitId && TRAITS_BY_ID[heir.value.traitId] ? [TRAITS_BY_ID[heir.value.traitId].mods] : []),
-      ...office.officeSources.value
+      ...office.officeSources.value,
+      achievementSource(achievements.value.length)
     ])
   )
   const activeGenerationMs = ref<number>(initial.activeGenerationMs)
@@ -181,7 +191,12 @@ export const useGameStore = defineStore('game', () => {
     allRevealedOwned: () => allRevealedOwned(),
     handleClassPromotion: (prev) => handleClassPromotion(prev),
     announce: (msg) => announce(msg),
-    onBossWon: (gate, killMs) => {
+    onBossWon: (gate, killMs, purchases) => {
+      if (gate === 1) unlockAchievement('solidarity')
+      if (gate === 4 && purchases <= 10) unlockAchievement('under-par')
+      if (gate === 6) unlockAchievement('silver-service')
+      if (gate === 9) unlockAchievement('garden-party')
+      if (killMs <= 3000) unlockAchievement('no-sweat')
       splits.value = withSplit(splits.value, gate, activeGenerationMs.value)
       lastKillMs.value = withSplit(lastKillMs.value, gate, killMs)
       bestSplits.value = mergeBests(bestSplits.value, splits.value)
@@ -359,6 +374,8 @@ export const useGameStore = defineStore('game', () => {
       generation: generation.value,
       office: office.snapshot(),
       familyTree: familyTree.value,
+      achievements: achievements.value,
+      achievementProgress: achievementProgress.value,
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
@@ -409,6 +426,8 @@ export const useGameStore = defineStore('game', () => {
     generation.value = loaded.generation
     office.loadState(loaded.office)
     familyTree.value = loaded.familyTree
+    achievements.value = loaded.achievements
+    achievementProgress.value = loaded.achievementProgress
     bosses.bossAttempt.value = null
     bosses.bossCooldownUntilMs.value = 0
     bulkBuyMode.value = loaded.bulkBuyMode
@@ -712,6 +731,8 @@ export const useGameStore = defineStore('game', () => {
       activeEvent.value = null
       scheduleNextEvent(ts, rng)
       for (const o of choice.outcomes) applyScandalOutcome(o, ev.def, ts, rng)
+      achievementProgress.value = { ...achievementProgress.value, scandals: achievementProgress.value.scandals + 1 }
+      if (achievementProgress.value.scandals >= 5) unlockAchievement('spin-cycle')
       announce(`${ev.def.title.replace(/!$/, '')}: you chose to ${choice.label.charAt(0).toLowerCase()}${choice.label.slice(1)}.`)
       flushSave(ts)
       return 'scandal'
@@ -733,6 +754,10 @@ export const useGameStore = defineStore('game', () => {
     const rarityPrefix = def.rarity === 'common' ? '' : `${RARITY_LABELS[def.rarity]}! `
     const name = def.title.replace(/!$/, '')
 
+    if (def.rarity === 'legendary') {
+      achievementProgress.value = { ...achievementProgress.value, legendaryClaims: achievementProgress.value.legendaryClaims + 1 }
+      if (achievementProgress.value.legendaryClaims >= 3) unlockAchievement('lucky-streak')
+    }
     if (effect.type === 'clickBuff' || effect.type === 'businessBuff') {
       const dur = Math.round(effect.durationSec * durationMult)
       const slot = effect.type === 'clickBuff' ? clickBuff : businessBuff
@@ -818,6 +843,7 @@ export const useGameStore = defineStore('game', () => {
     }
     maybeSpawnRandomEvent(ts)
     bosses.evaluateAttempt()
+    checkStateAchievements()
 
     if (ts - lastSavedMs.value >= SAVE_THROTTLE_MS) {
       flushSave(ts)
@@ -853,6 +879,8 @@ export const useGameStore = defineStore('game', () => {
     if (gatesBeaten.value < 1 || gain < 1) {
       return false
     }
+    if (gatesBeaten.value <= 2) unlockAchievement('early-retirement')
+    achievementProgress.value = { ...EMPTY_PROGRESS }
     const payroll = [office.paChair.value, ...office.officeSeats.value].filter((a): a is AdvisorInstance => a !== null)
     familyTree.value = [
       ...familyTree.value,
@@ -915,6 +943,35 @@ export const useGameStore = defineStore('game', () => {
   function bossTarget(gate: number): number {
     const def = bossForGate(gate)
     return def ? conditionTarget(def, { targetMult: modifiers.value.bossTargetMult, timeMult: 1 }) : 0
+  }
+
+  function unlockAchievement(id: string): void {
+    const def = ACHIEVEMENTS_BY_ID[id]
+    if (!def || achievements.value.includes(id)) {
+      return
+    }
+    achievements.value = [...achievements.value, id]
+    announce(`Achievement: ${def.name}! Income +${Math.round(ACHIEVEMENT_INCOME_BONUS * 100)}% for good.`)
+  }
+
+  // Achievements that follow from the state of play, checked each tick
+  function checkStateAchievements(): void {
+    if (Object.values(jobsPurchased.value).some((n) => n > 0)) unlockAchievement('side-hustle')
+    if (Object.values(businessesOwned.value).some((n) => n > 0)) unlockAchievement('entrepreneur')
+    if (netWorth.value >= 1e6) unlockAchievement('comfortably-off')
+    if (netWorth.value >= 1e9) unlockAchievement('billionaire')
+    if (JOBS.every((j) => (jobsPurchased.value[j.id] ?? 0) > 0)) unlockAchievement('portfolio-career')
+    if (office.officeSeats.value.every((s) => s !== null)) unlockAchievement('full-house')
+    if ((office.paChair.value?.servedGenerations ?? 0) >= 3) unlockAchievement('long-service')
+    if (generation.value >= 5) unlockAchievement('dynasty')
+  }
+
+  function fireAdvisor(seat: number): void {
+    if (office.officeSeats.value[seat]) {
+      achievementProgress.value = { ...achievementProgress.value, fires: achievementProgress.value.fires + 1 }
+      if (achievementProgress.value.fires >= 5) unlockAchievement('revolving-door')
+    }
+    office.fireAdvisor(seat)
   }
 
   function openIntro(): void {
@@ -1032,7 +1089,9 @@ export const useGameStore = defineStore('game', () => {
     headhunterOffer: office.headhunterOffer,
     hireAdvisor: office.hireAdvisor,
     skipOffer: office.skipOffer,
-    fireAdvisor: office.fireAdvisor,
+    fireAdvisor,
+    achievements,
+    achievementsOpen,
     firePA: office.firePA,
     promoteToPA: office.promoteToPA,
     costCeiling,

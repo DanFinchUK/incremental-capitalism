@@ -5,6 +5,7 @@
         Hire one of the headhunter's three candidates<span v-if="store.queuedOffers > 0">, and {{ store.queuedOffers }} more shortlist{{ store.queuedOffers === 1 ? '' : 's' }} after these</span>
       </strong>
     </div>
+    <p v-if="props.locked" class="scn-AutoLine" data-testid="hire-locked">Catch your breath: choose in {{ props.lockSeconds }}s.</p>
     <p v-if="seatsFull" class="scn-AutoLine">The office is full: fire someone first, or hire straight into a seat.</p>
     <div class="scn-AdvisorGrid">
       <article v-for="(a, i) in offer" :key="a.id" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${a.rarity}`">
@@ -17,6 +18,7 @@
           type="button"
           class="scn-Action scn-Action-purple"
           data-testid="hire-advisor"
+          :disabled="props.locked"
           @click="store.hireAdvisor(i)"
         >
           Hire
@@ -28,6 +30,7 @@
             type="button"
             class="scn-Action scn-Action-outline"
             data-testid="hire-advisor"
+          :disabled="props.locked"
             @click="store.hireAdvisor(i, s)"
           >
             Replace {{ seat ? ADVISORS_BY_ID[seat.advisorId].name : 'seat' }}
@@ -45,6 +48,9 @@ import { computed } from 'vue'
 import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
 import { RARITY_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
+
+// locked: the buttons show but ignore taps (just after a boss win)
+const props = defineProps<{ locked?: boolean; lockSeconds?: number }>()
 
 const store = useGameStore()
 const offer = computed(() => store.headhunterOffer.map((id) => ADVISORS_BY_ID[id]).filter(Boolean))

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import ClassModal from '../src/components/ClassModal.vue'
@@ -6,6 +6,7 @@ import MobileDock from '../src/components/MobileDock.vue'
 import { parseSavedState, serializeState, STORAGE_KEY } from '../src/engine/migration'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
+import { VICTORY_LOCK_MS } from '../src/components/victoryLock'
 
 const T0 = 1_000_000
 
@@ -22,6 +23,10 @@ function winGate(store: ReturnType<typeof useGameStore>, gate: number, t: number
 
 describe('headhunter offers', () => {
   let pinia: ReturnType<typeof createPinia>
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
   beforeEach(() => {
     localStorage.clear()
@@ -99,6 +104,29 @@ describe('headhunter offers', () => {
     expect(parseSavedState(serializeState({ ...loaded, office: { ...loaded.office, queued: -4 } })).office.queued).toBe(0)
   })
 
+  it('the victory screen ignores taps for a moment, so fight taps cannot pick an advisor', async () => {
+    vi.useFakeTimers()
+    const store = fresh()
+    const wrapper = mount(ClassModal, { global: { plugins: [pinia] } })
+    store.addDebugMoney(gateThreshold(1) * 2, T0)
+    store.jobsPurchased['21'] = 50
+    store.tick(T0)
+    store.startBossAttempt()
+    for (let i = 0; i < 200; i++) store.manualClick(T0 + 10 + i * 20)
+    store.tick(T0 + 4500)
+    await wrapper.vm.$nextTick()
+    const hire = () => wrapper.findAll('[data-testid="victory-headhunter"] [data-testid="hire-advisor"]')
+    expect(hire().length).toBe(3)
+    expect(hire()[0].attributes('disabled')).toBeDefined()
+    await hire()[0].trigger('click')
+    expect(store.officeSeats.filter(Boolean)).toHaveLength(0)
+    vi.advanceTimersByTime(VICTORY_LOCK_MS)
+    await wrapper.vm.$nextTick()
+    expect(hire()[0].attributes('disabled')).toBeUndefined()
+    await hire()[0].trigger('click')
+    expect(store.officeSeats.filter(Boolean)).toHaveLength(1)
+  })
+
   it('the victory screen lets you hire straight away', async () => {
     const store = fresh()
     store.addDebugMoney(gateThreshold(1) * 2, T0)
@@ -107,7 +135,10 @@ describe('headhunter offers', () => {
     store.startBossAttempt()
     for (let i = 0; i < 200; i++) store.manualClick(T0 + 10 + i * 20)
     store.tick(T0 + 4500)
+    vi.useFakeTimers()
     const wrapper = mount(ClassModal, { global: { plugins: [pinia] } })
+    vi.advanceTimersByTime(VICTORY_LOCK_MS)
+    await wrapper.vm.$nextTick()
     const hire = wrapper.findAll('[data-testid="victory-headhunter"] [data-testid="hire-advisor"]')
     expect(hire.length).toBe(3)
     await hire[0].trigger('click')

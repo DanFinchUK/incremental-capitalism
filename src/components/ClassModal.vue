@@ -48,7 +48,7 @@
       </ul>
 
       <div v-if="victory && store.headhunterOffer.length > 0" data-testid="victory-headhunter">
-        <HeadhunterOffer />
+        <HeadhunterOffer :locked="lock.locked.value" :lock-seconds="lock.secondsLeft.value" />
       </div>
 
       <details class="scn-PyramidFold" data-testid="class-pyramid" :open="!victory">
@@ -124,6 +124,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
 import HeadhunterOffer from './HeadhunterOffer.vue'
+import { useVictoryLock } from './victoryLock'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
 import { bossForGate, gateThreshold, itemCostCeiling } from '../engine/bosses'
@@ -141,6 +142,9 @@ const celebratedDef = computed(() =>
 )
 
 // The boss just beaten for the first time, while its celebration is open
+// Stray taps from the fight are ignored for a moment after the win
+const lock = useVictoryLock(() => store.classModalOpen && store.lastVictory?.firstTime === true && store.celebratedClassLevel === store.lastVictory.gate)
+
 // The victory screen waits for its hire
 const hireBlocksClose = computed(() => store.celebratedClassLevel !== null && store.mustHireFirst)
 

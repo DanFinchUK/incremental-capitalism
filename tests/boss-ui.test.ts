@@ -127,3 +127,26 @@ describe('heir draft UI', () => {
     wrapper.unmount()
   })
 })
+
+describe('family office UI', () => {
+  it('shows the headhunter, hires into a seat, and promotes to PA', async () => {
+    localStorage.clear()
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro()
+    store.headhunterOffer = ['sommelier', 'lobbyist', 'proxy']
+    await wrapper.vm.$nextTick()
+    const panel = () => wrapper.find('[data-testid="family-office"]')
+    expect(panel().text()).toContain('Sommelier')
+    expect(panel().text()).toContain('Proxy with Power of Attorney')
+    await panel().findAll('[data-testid="hire-advisor"]')[1].trigger('click')
+    expect(store.officeSeats[0]?.advisorId).toBe('lobbyist')
+    expect(panel().text()).not.toContain('Proxy with Power of Attorney')
+    await panel().find('[data-testid="promote-pa"]').trigger('click')
+    expect(store.paChair?.advisorId).toBe('lobbyist')
+    expect(panel().find('[data-testid="pa-chair"]').text()).toContain('Lobbyist')
+    wrapper.unmount()
+  })
+})

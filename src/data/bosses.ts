@@ -113,7 +113,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Clicks polish silver instead of paying.',
     conditionText: 'Polish the target worth of silver. Unpaid Interns polish too.',
     twists: [{ kind: 'clicksPolish' }],
-    condition: { kind: 'polish', target: gateTarget(6, 2) },
+    condition: { kind: 'polish', target: gateTarget(6, 0.2) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 63
@@ -126,7 +126,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'The valuers want to see everything.',
     conditionText: 'Own at least one of every revealed item and reach the target net worth.',
     twists: [],
-    condition: { kind: 'ownAllRevealed', netWorth: gateTarget(7, 2) },
+    condition: { kind: 'ownAllRevealed', netWorth: gateTarget(7, 1.3) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 127
@@ -139,7 +139,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Automation is paused while you answer questions.',
     conditionText: 'Reach the target net worth by hand.',
     twists: [{ kind: 'automationPaused' }],
-    condition: { kind: 'netWorth', target: gateTarget(8, 2) },
+    condition: { kind: 'netWorth', target: gateTarget(8, 1.3) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 255
@@ -156,7 +156,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
       { kind: 'incomeTax', rate: 0.15 },
       { kind: 'purchaseCost', mult: 1.25 }
     ],
-    condition: { kind: 'netWorth', target: gateTarget(9, 2) },
+    condition: { kind: 'netWorth', target: gateTarget(9, 1.3) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 511

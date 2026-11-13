@@ -5,6 +5,7 @@ export type PerkId =
   | 'nepotism'
   | 'deregulation'
   | 'insider'
+  | 'officeSeats'
 
 export type PerkRanks = Record<PerkId, number>
 
@@ -23,7 +24,8 @@ export const EMPTY_PERKS: Readonly<PerkRanks> = {
   offshore: 0,
   nepotism: 0,
   deregulation: 0,
-  insider: 0
+  insider: 0,
+  officeSeats: 0
 }
 
 export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
@@ -74,6 +76,14 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     maxRank: 4,
     costForRank: (r) => [1, 1, 1, 2][r],
     effectSummary: (r) => `+${25 * r}% buff duration`
+  },
+  {
+    id: 'officeSeats',
+    label: 'Family Office Extension',
+    description: 'Knocks through into the orangery: one more open seat in the family office per rank.',
+    maxRank: 2,
+    costForRank: (r) => [2, 3][r],
+    effectSummary: (r) => `${3 + r} open seats`
   }
 ]
 

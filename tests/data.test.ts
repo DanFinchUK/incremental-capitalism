@@ -81,13 +81,13 @@ describe('catalogue & static data', () => {
     expect(BUSINESS_IMAGE_FILES).toHaveLength(22)
   })
 
-  it('defines 10 social classes (including 3 post-Elite secret tiers), 6 legacy perks, events, and headlines', () => {
+  it('defines 10 social classes (including 3 post-Elite secret tiers), 7 legacy perks, events, and headlines', () => {
     expect(SOCIAL_CLASSES).toHaveLength(10)
     expect(SOCIAL_CLASSES[0].threshold).toBe(0)
     expect(SOCIAL_CLASSES[7].label).toBe('Davos Regular')
     expect(SOCIAL_CLASSES[8].label).toBe('Shadow Cabinet')
     expect(SOCIAL_CLASSES[9].label).toBe('Reptilian Dynasty')
-    expect(LEGACY_PERKS).toHaveLength(6)
+    expect(LEGACY_PERKS).toHaveLength(7)
     expect(perkNextCost('autoClicker', 0)).toBe(0)
     expect(perkNextCost('autoClicker', 1)).toBe(1)
     expect(perkNextCost('autoClicker', 3)).toBe(1)
@@ -98,7 +98,7 @@ describe('catalogue & static data', () => {
     expect(perkNextCost('hustleCap', 5)).toBeNull()
     expect(perkNextCost('nepotism', 4)).toBeNull()
     // The whole finite tree costs 31 Legacy; Interns are the open-ended sink
-    expect(perkSpend({ autoClicker: 0, hustleCap: 5, offshore: 5, nepotism: 4, deregulation: 4, insider: 4 })).toBe(31)
+    expect(perkSpend({ autoClicker: 0, hustleCap: 5, offshore: 5, nepotism: 4, deregulation: 4, insider: 4, officeSeats: 0 })).toBe(31)
     expect(perkSpend({ ...EMPTY_PERKS, autoClicker: 10 })).toBe(16)
     expect(MARKET_EVENTS.some((e) => e.shady)).toBe(true)
     // Rarity tiers: 60/30/10, and the 7x Overtime only in Legendary

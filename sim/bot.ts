@@ -7,6 +7,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import type { ItemKind } from '../src/data/items'
 import type { PerkId } from '../src/data/perks'
 import { TRAITS_BY_ID } from '../src/data/heirs'
+import { ADVISORS_BY_ID } from '../src/data/advisors'
 import { useGameStore } from '../src/stores/game'
 
 export interface BotConfig {
@@ -49,7 +50,7 @@ export interface GenerationResult {
 
 type Store = ReturnType<typeof useGameStore>
 
-const PERK_PRIORITY: ReadonlyArray<PerkId> = ['autoClicker', 'hustleCap', 'deregulation']
+const PERK_PRIORITY: ReadonlyArray<PerkId> = ['officeSeats', 'autoClicker', 'hustleCap', 'deregulation']
 
 function revealedItems(store: Store): Array<{ kind: ItemKind; id: string }> {
   const items: Array<{ kind: ItemKind; id: string }> = []
@@ -76,7 +77,28 @@ function bestBuy(store: Store, cfg: BotConfig): { kind: ItemKind; id: string } |
   return best
 }
 
+// Hire the rarest candidate while there is a free seat; the first hire
+// becomes the PA so the office has continuity.
+function manageOffice(store: Store): void {
+  if (store.headhunterOffer.length > 0) {
+    if (store.officeSeats.some((s) => s === null)) {
+      let best = 0
+      store.headhunterOffer.forEach((id, i) => {
+        if (RARITY_RANK[ADVISORS_BY_ID[id].rarity] > RARITY_RANK[ADVISORS_BY_ID[store.headhunterOffer[best]].rarity]) best = i
+      })
+      store.hireAdvisor(best)
+    } else {
+      store.skipOffer()
+    }
+  }
+  if (!store.paChair) {
+    const seat = store.officeSeats.findIndex((s) => s !== null)
+    if (seat >= 0) store.promoteToPA(seat)
+  }
+}
+
 function decide(store: Store, cfg: BotConfig): void {
+  manageOffice(store)
   const ev = store.activeEvent
   if (ev && !ev.corked && !ev.def.shady) {
     store.claimMarketEvent(store.nowMs)

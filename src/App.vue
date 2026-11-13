@@ -27,6 +27,7 @@
         <BossCard />
         <SplitsPanel />
       </div>
+      <FamilyOffice />
       <TradingDesk />
 
       <div class="lyt-Columns">
@@ -86,6 +87,7 @@ import FloatingPayouts, { type FloatParticle } from './components/FloatingPayout
 import HeroHeader from './components/HeroHeader.vue'
 import BossCard from './components/BossCard.vue'
 import SplitsPanel from './components/SplitsPanel.vue'
+import FamilyOffice from './components/FamilyOffice.vue'
 import ItemCard from './components/ItemCard.vue'
 import LegacyShop from './components/LegacyShop.vue'
 import MarketEvent from './components/MarketEvent.vue'

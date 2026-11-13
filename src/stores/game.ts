@@ -61,6 +61,7 @@ import { TRAITS_BY_ID, generateSurname, heirName, rollHeirChoices, type Heir } f
 import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationLine } from '../engine/automation'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
+import { createOfficeModule } from './modules/office'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -146,9 +147,18 @@ export const useGameStore = defineStore('game', () => {
   const heir = ref<Heir>(initial.heir ?? { name: '', traitId: null })
   const heirChoices = ref<Heir[]>(initial.heirChoices)
   const generation = ref<number>(initial.generation)
-  // Every rule-bending source in play: the heir's trait (advisors and titles join later)
+  const office = createOfficeModule({
+    money,
+    extraSeats: () => perks.value.officeSeats,
+    announce: (msg) => announce(msg),
+    flushSave: () => flushSave(nowMs.value)
+  })
+  // Every rule-bending source in play: the heir's trait and the family office
   const modifiers = computed(() =>
-    combineModifiers(heir.value.traitId && TRAITS_BY_ID[heir.value.traitId] ? [TRAITS_BY_ID[heir.value.traitId].mods] : [])
+    combineModifiers([
+      ...(heir.value.traitId && TRAITS_BY_ID[heir.value.traitId] ? [TRAITS_BY_ID[heir.value.traitId].mods] : []),
+      ...office.officeSources.value
+    ])
   )
   const activeGenerationMs = ref<number>(initial.activeGenerationMs)
   const lastFloodSpawnMs = ref<number>(0)
@@ -168,6 +178,7 @@ export const useGameStore = defineStore('game', () => {
       lastKillMs.value = withSplit(lastKillMs.value, gate, killMs)
       bestSplits.value = mergeBests(bestSplits.value, splits.value)
       bestKillMs.value = mergeBests(bestKillMs.value, lastKillMs.value)
+      office.rollOffer()
     },
     bestKillFor: (gate) => bestKillMs.value[gate] ?? null,
     bossScale: () => ({ targetMult: modifiers.value.bossTargetMult, timeMult: modifiers.value.bossTimeMult }),
@@ -333,6 +344,7 @@ export const useGameStore = defineStore('game', () => {
       heir: heir.value,
       heirChoices: heirChoices.value,
       generation: generation.value,
+      office: office.snapshot(),
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
@@ -381,6 +393,7 @@ export const useGameStore = defineStore('game', () => {
     heir.value = loaded.heir ?? { name: heirName(Math.random, familySurname.value, []), traitId: null }
     heirChoices.value = loaded.heirChoices
     generation.value = loaded.generation
+    office.loadState(loaded.office)
     bosses.bossAttempt.value = null
     bosses.bossCooldownUntilMs.value = 0
     bulkBuyMode.value = loaded.bulkBuyMode
@@ -732,6 +745,7 @@ export const useGameStore = defineStore('game', () => {
         hustleBonus.value = Math.max(0, Number((hustleBonus.value - deltaSec * decayRate).toFixed(3)))
       }
       activeGenerationMs.value += Math.min(elapsedMs, 5000)
+      office.addCampaignTime(Math.min(elapsedMs, 5000))
       const { business, interns } = computeIncomeBreakdown(economyInput.value)
       creditMoney(business * deltaSec, 'passive', ts)
       creditClicks(interns * deltaSec, 'passive', ts)
@@ -790,6 +804,7 @@ export const useGameStore = defineStore('game', () => {
     gatesBeaten.value = 0
     activeGenerationMs.value = 0
     heirChoices.value = rollHeirChoices(Math.random, familySurname.value, [heir.value.name])
+    office.onRetire()
     splits.value = emptySplits()
     lastKillMs.value = emptySplits()
     bosses.bossAttempt.value = null
@@ -937,6 +952,14 @@ export const useGameStore = defineStore('game', () => {
     modifiers,
     pickHeir,
     bossTarget,
+    officeSeats: office.officeSeats,
+    paChair: office.paChair,
+    headhunterOffer: office.headhunterOffer,
+    hireAdvisor: office.hireAdvisor,
+    skipOffer: office.skipOffer,
+    fireAdvisor: office.fireAdvisor,
+    firePA: office.firePA,
+    promoteToPA: office.promoteToPA,
     costCeiling,
     activeGenerationMs,
     bossAttempt: bosses.bossAttempt,

@@ -3,6 +3,9 @@ import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } fro
 import type { BulkBuyMode } from './economy'
 import { emptySplits } from './splits'
 import { TRAITS_BY_ID, type Heir } from '../data/heirs'
+import { ADVISORS_BY_ID } from '../data/advisors'
+import type { AdvisorInstance } from './office'
+import type { OfficeState } from '../stores/modules/office'
 
 export const STORAGE_KEY = 'state'
 // Saves from any earlier schema reset to a new game.
@@ -40,6 +43,7 @@ export interface PersistedSceneState {
   heir: Heir | null
   heirChoices: Heir[]
   generation: number
+  office: OfficeState
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
   compactAutoBuy: boolean
@@ -78,6 +82,7 @@ export function createInitialSceneState(): PersistedSceneState {
     heir: null,
     heirChoices: [],
     generation: 1,
+    office: { seats: [], paChair: null, offer: [] },
     bulkBuyMode: 1,
     autoBuyPaused: false,
     compactAutoBuy: false,
@@ -112,6 +117,28 @@ function readBooleanMap(raw: unknown): Record<string, boolean> {
     }
   }
   return result
+}
+
+function readAdvisor(raw: unknown): AdvisorInstance | null {
+  if (!raw || typeof raw !== 'object') return null
+  const a = raw as Record<string, unknown>
+  if (typeof a.uid !== 'string' || typeof a.advisorId !== 'string' || !ADVISORS_BY_ID[a.advisorId]) return null
+  return {
+    uid: a.uid,
+    advisorId: a.advisorId,
+    servedGenerations: Math.floor(readNonNegativeNumber(a.servedGenerations, 0)),
+    campaignMs: readNonNegativeNumber(a.campaignMs, 0)
+  }
+}
+
+function readOffice(raw: unknown): OfficeState {
+  if (!raw || typeof raw !== 'object') return { seats: [], paChair: null, offer: [] }
+  const o = raw as Record<string, unknown>
+  return {
+    seats: Array.isArray(o.seats) ? o.seats.slice(0, 8).map(readAdvisor) : [],
+    paChair: readAdvisor(o.paChair),
+    offer: Array.isArray(o.offer) ? o.offer.filter((id): id is string => typeof id === 'string' && !!ADVISORS_BY_ID[id]).slice(0, 3) : []
+  }
 }
 
 function readHeir(raw: unknown): Heir | null {
@@ -271,6 +298,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     heir: readHeir(s.heir),
     heirChoices: Array.isArray(s.heirChoices) ? s.heirChoices.map(readHeir).filter((h): h is Heir => h !== null) : [],
     generation: Math.max(1, Math.floor(readNonNegativeNumber(s.generation, 1))),
+    office: readOffice(s.office),
     gatesBeaten: Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.gatesBeaten, 0))),
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     autoBuyPaused: Boolean(s.autoBuyPaused),

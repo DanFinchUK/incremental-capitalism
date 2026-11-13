@@ -35,7 +35,7 @@ describe('App UI integration', () => {
     wrapper.unmount()
   })
 
-  it('switches bulk-buy modes and opens the 6-perk Old Boys Network drawer', async () => {
+  it('switches bulk-buy modes and opens the 7-perk Old Boys Network drawer', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
 
@@ -48,7 +48,7 @@ describe('App UI integration', () => {
     const networkBtn = wrapper.find('[data-testid="toggle-legacy-shop"]')
     await networkBtn.trigger('click')
     expect(wrapper.find('[data-testid="legacy-modal"]').exists()).toBe(true)
-    expect(wrapper.findAll('.scn-PerkCard')).toHaveLength(6)
+    expect(wrapper.findAll('.scn-PerkCard')).toHaveLength(7)
     wrapper.unmount()
   })
 

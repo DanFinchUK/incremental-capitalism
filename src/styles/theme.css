@@ -1400,3 +1400,94 @@
   margin: 6px 0 0;
   font-size: 14px;
 }
+
+/* Family office */
+.scn-FamilyOffice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.scn-OfficeHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scn-Headhunter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  border: 2px dashed var(--color-purple);
+  border-radius: var(--radius);
+}
+
+.scn-AdvisorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.scn-AdvisorCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--color-card);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.scn-AdvisorCard .scn-MarketEventTag {
+  align-self: flex-start;
+  background: var(--color-pip-bg);
+  color: var(--color-body);
+}
+
+.scn-AdvisorCard-rare {
+  border-color: var(--color-purple);
+}
+
+.scn-AdvisorCard-rare .scn-MarketEventTag {
+  background: var(--color-purple);
+  color: #ffffff;
+}
+
+.scn-AdvisorCard-legendary {
+  border-color: var(--color-gold);
+  background: var(--color-gold-bg);
+}
+
+.scn-AdvisorCard-legendary .scn-MarketEventTag {
+  background: var(--color-gold);
+  color: #111111;
+}
+
+.scn-AdvisorCard-pa {
+  border-color: var(--color-strong-line);
+  border-width: 3px;
+}
+
+.scn-AdvisorCard-empty {
+  border-style: dashed;
+  background: transparent;
+}
+
+.scn-AdvisorCard button {
+  margin-top: auto;
+}
+
+.scn-SeatPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}

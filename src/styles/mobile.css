@@ -1,0 +1,227 @@
+/* Phone layout (max-width 720px). One section at a time, with money, the
+   next gate, Get paid and the section tabs docked under the thumb. */
+
+.lyt-ListHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mob-Dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px calc(6px + env(safe-area-inset-bottom));
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.mob-Stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+
+.mob-Money {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-body);
+}
+
+.mob-Hustle {
+  font-weight: 700;
+  color: var(--color-purple);
+}
+
+.mob-Gate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 13px;
+}
+
+.mob-GateText {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.mob-GateText strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mob-GateSep {
+  color: var(--color-muted);
+}
+
+.mob-GateBar {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-track);
+  overflow: hidden;
+}
+
+.mob-GateFill {
+  height: 100%;
+  background: var(--color-purple);
+  transition: width 0.3s ease;
+}
+
+.mob-Gate-active .mob-GateFill {
+  background: var(--color-gold);
+}
+
+.mob-Pay {
+  min-height: 56px;
+  padding: 8px 20px;
+  font-size: 26px;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.mob-Tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mob-Tab {
+  min-height: 44px;
+  padding: 4px 6px;
+  background: var(--color-btn-outline-bg);
+  color: var(--color-btn-outline-fg);
+  border: 1px solid var(--color-strong-line);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mob-Tab-active {
+  background: var(--color-purple);
+  border-color: var(--color-purple);
+  color: #ffffff;
+}
+
+@media (max-width: 720px) {
+  .ic-Shell-phone .lyt-Content {
+    padding-bottom: calc(var(--dock-h, 240px) + 16px);
+  }
+
+  .ic-Shell-phone .lyt-Columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The dock carries the headline numbers, so the bar can scroll away */
+  .ic-Shell-phone .scn-Overview {
+    position: static;
+  }
+
+  .ic-Shell-phone .scn-Overview .scn-OverviewStats,
+  .ic-Shell-phone .scn-Overview .scn-BulkGroup {
+    display: none;
+  }
+
+  .ic-Shell-phone .lyt-ListHead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 6px 0;
+    background: var(--color-bg);
+  }
+
+  .ic-Shell-phone .lyt-Footer {
+    padding-bottom: calc(var(--dock-h, 240px) + 16px);
+  }
+
+  /* Opportunities pop up just above the dock, within thumb reach */
+  .ic-Shell-phone .scn-MarketEvent {
+    top: auto !important;
+    bottom: calc(var(--dock-h, 240px) + 12px);
+    left: 50% !important;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 380px;
+  }
+
+  /* Touch targets: 44px is the comfortable minimum */
+  .scn-Action,
+  .scn-BulkBtn {
+    min-height: 44px;
+  }
+
+  .scn-BulkBtn {
+    min-width: 52px;
+    font-size: 13px;
+  }
+
+  /* Item cards: image, details, then a full-width buy button */
+  .ic-Shell-phone .scn-Card {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .ic-Shell-phone .scn-CardImage,
+  .ic-Shell-phone .scn-TeaserBox {
+    width: 48px;
+    height: 48px;
+    align-self: flex-start;
+  }
+
+  .ic-Shell-phone .scn-CardBody {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .ic-Shell-phone .scn-Card:not(.scn-Card-compact) .scn-Actions {
+    flex: 1 0 100%;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .ic-Shell-phone .scn-Card:not(.scn-Card-compact) .scn-Actions .scn-Action {
+    flex: 1;
+    min-height: 44px;
+    font-size: 15px;
+  }
+
+  /* Keep cards short so several fit between the list header and the dock.
+     The milestone badge still shows the multiplier earned. */
+  .ic-Shell-phone .scn-Pips {
+    display: none;
+  }
+
+  .ic-Shell-phone .scn-SynergyLine {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ic-Shell-phone .scn-CardBody .scn-CardMeta,
+  .ic-Shell-phone .scn-CardBody p {
+    margin: 2px 0;
+  }
+
+  .ic-Shell-phone .scn-CardTitle {
+    font-size: 16px;
+  }
+}

@@ -68,6 +68,7 @@
           </div>
 
           <button
+            v-if="!phone"
             ref="payButtonRef"
             type="button"
             class="scn-PrimaryAction"
@@ -78,7 +79,7 @@
         </div>
       </div>
 
-      <div class="lyt-Column">
+      <div v-if="!phone" class="lyt-Column">
         <div class="scn-StatsGrid">
           <div class="scn-StatBox">
             <div class="scn-DataTitle">Money</div>
@@ -126,6 +127,9 @@ import { peerageRank } from '../engine/peerage'
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
 }>()
+
+// On a phone the dock carries Get paid and the headline numbers
+defineProps<{ phone?: boolean }>()
 
 const store = useGameStore()
 const currentTrait = computed(() => (store.heir.traitId ? TRAITS_BY_ID[store.heir.traitId] : null))

@@ -7,23 +7,7 @@
     </div>
 
     <div class="scn-OverviewControls">
-      <div
-        class="scn-BulkGroup"
-        role="group"
-        aria-label="Bulk purchase amount"
-        title="How many to buy per click. Hire an Estate Manager and anything under the automation line restocks itself."
-      >
-        <button
-          v-for="opt in bulkOptions"
-          :key="String(opt.mode)"
-          type="button"
-          class="scn-BulkBtn"
-          :class="{ 'scn-BulkBtn-active': store.bulkBuyMode === opt.mode }"
-          @click="store.setBulkBuyMode(opt.mode)"
-        >
-          {{ opt.label }}
-        </button>
-      </div>
+      <BulkPicker />
 
       <button
         v-if="store.automationLine > 0"
@@ -90,8 +74,8 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import BulkPicker from './BulkPicker.vue'
 import ElevateModal from './ElevateModal.vue'
-import type { BulkBuyMode } from '../engine/economy'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
 
@@ -109,10 +93,4 @@ const networkBadgeText = computed(() => {
   return String(store.legacyAvailable)
 })
 
-const bulkOptions: ReadonlyArray<{ mode: BulkBuyMode; label: string }> = [
-  { mode: 1, label: 'x1' },
-  { mode: 10, label: 'x10' },
-  { mode: 'next', label: 'Next' },
-  { mode: 'max', label: 'Max' }
-]
 </script>

@@ -54,34 +54,37 @@ test('a new player can reach their first business by touch', async ({ page }) =>
   await expect(pay).toBeInViewport()
   await expectTappable(pay, 'Get paid')
 
-  // Tapping and buying are the whole loop, so the first job should be within
-  // one screen of Get paid, not past the office and the trading desk
-  const firstJob = page.locator('[data-item-key="jobs-1"]')
-  const gap = await page.evaluate(() => {
-    const top = (el: Element | null) => (el ? el.getBoundingClientRect().top + window.scrollY : NaN)
-    const pay = [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Get paid') ?? null
-    return top(document.querySelector('[data-item-key="jobs-1"]')) - top(pay)
-  })
-  await expect(firstJob).toBeAttached()
-  expect.soft(gap, 'scroll from Get paid down to the first job (px)').toBeLessThanOrEqual(915)
+  // Tapping and buying are the whole loop, so the first job and Get paid
+  // must be on screen together
+  await expect(page.locator('[data-item-key="jobs-1"]')).toBeInViewport()
 
+  // Shop each list in turn by its tab. Get paid should never leave the
+  // screen, and scrolling should be rare.
   const buyButtons = page.locator('[data-item-key] button.scn-Action:not(:disabled)', { hasText: /^(Get hired|Get Businessed)/ })
+  const tabs = [page.getByTestId('tab-jobs'), page.getByTestId('tab-businesses')]
+  for (const tab of tabs) await expectTappable(tab, 'Section tab')
+  let scrolled = 0
+  let round = 0
   const deadline = Date.now() + 200_000
   while ((await owned(page)).businesses === 0) {
     expect(Date.now(), 'first business bought within the time limit').toBeLessThan(deadline)
-    await pay.scrollIntoViewIfNeeded()
+    await expect(pay, 'Get paid stays on screen').toBeInViewport()
     for (let i = 0; i < 10; i++) await pay.tap()
+    await tabs[round++ % 2].tap()
     // Buy whatever is affordable, cheapest first as listed, like a new player
     const affordable = await buyButtons.count()
     for (let i = 0; i < affordable; i++) {
       const button = buyButtons.first()
       if (!(await button.isVisible())) break
+      const before = await page.evaluate(() => window.scrollY)
       await button.scrollIntoViewIfNeeded()
+      scrolled += Math.abs((await page.evaluate(() => window.scrollY)) - before)
       await expectTappable(button, 'Buy button')
       await button.tap()
     }
     await expectNoSidewaysScroll(page)
   }
+  expect.soft(scrolled, 'pixels scrolled to reach the first business').toBeLessThanOrEqual(915)
 
   expect((await owned(page)).jobs).toBeGreaterThan(0)
   await page.screenshot({ path: 'test-results/mobile-first-business.png', fullPage: true })

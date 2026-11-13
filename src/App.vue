@@ -1,5 +1,5 @@
 <template>
-  <div class="ic-Shell">
+  <div class="ic-Shell" :class="{ 'ic-Shell-phone': phone }">
     <NewsTicker />
 
     <div class="lyt-Content">
@@ -23,19 +23,24 @@
       <AchievementsModal />
       <HeirDraftModal />
 
-      <OverviewBar @retire="handleRetire" />
-      <HeroHeader ref="heroRef" @paid="handleManualClick" />
-      <div class="lyt-BossRow">
-        <BossCard />
-        <SplitsPanel />
-      </div>
-      <FamilyOffice />
-      <TradingDesk />
+      <template v-if="!phone || phoneTab === 'family'">
+        <OverviewBar @retire="handleRetire" />
+        <HeroHeader ref="heroRef" :phone="phone" @paid="handleManualClick" />
+        <div class="lyt-BossRow">
+          <BossCard />
+          <SplitsPanel />
+        </div>
+        <FamilyOffice />
+        <TradingDesk />
+      </template>
 
-      <div class="lyt-Columns">
-        <section class="lyt-Column" aria-label="Jobs">
+      <div v-if="!phone || phoneTab !== 'family'" class="lyt-Columns">
+        <section v-if="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
           <div class="lyt-Items">
-            <h2 class="scn-ColumnTitle">Jobs</h2>
+            <div class="lyt-ListHead">
+              <h2 class="scn-ColumnTitle">Jobs</h2>
+              <BulkPicker v-if="phone" />
+            </div>
             <ItemCard
               v-for="row in store.visibleJobs"
               :key="row.mode === 'revealed' ? `job-${row.item.id}` : row.key"
@@ -46,9 +51,12 @@
           </div>
         </section>
 
-        <section class="lyt-Column" aria-label="Businesses">
+        <section v-if="!phone || phoneTab === 'businesses'" class="lyt-Column" aria-label="Businesses">
           <div class="lyt-Items">
-            <h2 class="scn-ColumnTitle">Businesses</h2>
+            <div class="lyt-ListHead">
+              <h2 class="scn-ColumnTitle">Businesses</h2>
+              <BulkPicker v-if="phone" />
+            </div>
             <ItemCard
               v-for="row in store.visibleBusinesses"
               :key="row.mode === 'revealed' ? `biz-${row.item.id}` : row.key"
@@ -61,7 +69,7 @@
       </div>
     </div>
 
-    <footer class="lyt-Footer">
+    <footer v-if="!phone || phoneTab === 'family'" class="lyt-Footer">
       <span>Incremental Capitalism · Empire &amp; Privilege Edition</span>
       <div class="lyt-FooterActions">
         <button type="button" class="scn-Action scn-Action-outline" data-testid="open-intro" @click="store.openIntro()">
@@ -75,15 +83,18 @@
         </button>
       </div>
     </footer>
+
+    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { ItemKind } from './data/items'
 import type { PerkId } from './data/perks'
 import { playSfx } from './engine/audio'
 import { useGameStore } from './stores/game'
+import { PHONE_QUERY, useMediaQuery } from './utils/useMediaQuery'
 import ClassModal from './components/ClassModal.vue'
 import ConfirmModal, { type ConfirmDialogMode } from './components/ConfirmModal.vue'
 import IntroModal from './components/IntroModal.vue'
@@ -93,6 +104,8 @@ import AchievementsModal from './components/AchievementsModal.vue'
 import FloatingPayouts, { type FloatParticle } from './components/FloatingPayouts.vue'
 import HeroHeader from './components/HeroHeader.vue'
 import BossCard from './components/BossCard.vue'
+import BulkPicker from './components/BulkPicker.vue'
+import MobileDock, { type PhoneTab } from './components/MobileDock.vue'
 import SplitsPanel from './components/SplitsPanel.vue'
 import FamilyOffice from './components/FamilyOffice.vue'
 import ItemCard from './components/ItemCard.vue'
@@ -109,6 +122,27 @@ const store = useGameStore()
 store.hydrateFromStorage(Date.now())
 
 const heroRef = ref<InstanceType<typeof HeroHeader> | null>(null)
+const dockRef = ref<InstanceType<typeof MobileDock> | null>(null)
+
+// On a phone one section shows at a time and Get paid lives in the dock.
+// Each tab keeps its own scroll position.
+const phone = useMediaQuery(PHONE_QUERY)
+const phoneTab = ref<PhoneTab>('jobs')
+const tabScroll: Record<PhoneTab, number> = { jobs: 0, businesses: 0, family: 0 }
+
+function switchPhoneTab(next: PhoneTab): void {
+  if (next === phoneTab.value) {
+    window.scrollTo({ top: 0 })
+    return
+  }
+  tabScroll[phoneTab.value] = window.scrollY
+  phoneTab.value = next
+  nextTick(() => window.scrollTo({ top: tabScroll[next] }))
+}
+
+function payButton(): HTMLButtonElement | null {
+  return (phone.value ? dockRef.value?.payButtonRef : heroRef.value?.payButtonRef) ?? null
+}
 const floats = ref<FloatParticle[]>([])
 const visibleBanner = ref<string | null>(null)
 const activeDialog = ref<ConfirmDialogMode>(null)
@@ -164,7 +198,7 @@ function scheduleAutoFloats(): void {
   for (let i = 0; i < count; i++) {
     const handle = setTimeout(() => {
       pendingTimeouts.delete(handle)
-      const btn = heroRef.value?.payButtonRef
+      const btn = payButton()
       if (!btn) return
       const rect = btn.getBoundingClientRect()
       spawnFloat(rect.left + Math.random() * rect.width, rect.top + Math.random() * rect.height, amount)
@@ -178,8 +212,9 @@ function handleManualClick(ev: MouseEvent): void {
   playSfx('click', store.muted)
   let x = ev.clientX
   let y = ev.clientY
-  if (x === 0 && y === 0 && heroRef.value?.payButtonRef) {
-    const rect = heroRef.value.payButtonRef.getBoundingClientRect()
+  const btn = payButton()
+  if (x === 0 && y === 0 && btn) {
+    const rect = btn.getBoundingClientRect()
     x = rect.left + rect.width / 2
     y = rect.top + rect.height / 2
   }

@@ -70,3 +70,21 @@ test.describe('with a mouse', () => {
     expect((await taps(page)) - before).toBe(2)
   })
 })
+
+test('one finger on Get paid while another scrolls the list', async ({ page }) => {
+  await newGame(page)
+  // Enough items revealed that the Jobs list scrolls
+  await withStore(page, `(s) => { s.addDebugMoney(1e8, Date.now()); s.tick(Date.now()) }`)
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 400)).toBe(true)
+  const pay = await centre(page, '.mob-Pay', 1)
+  const cdp = await page.context().newCDPSession(page)
+  const start = { x: 200, y: 600, id: 2 }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pay] })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [pay, start] })
+  for (let step = 1; step <= 10; step++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [pay, { ...start, y: 600 - step * 40 }] })
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  await cdp.detach()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
+})

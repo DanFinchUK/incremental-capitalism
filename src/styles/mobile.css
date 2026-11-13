@@ -1,13 +1,14 @@
-/* Scrolling only: no pinch or double-tap zoom. Without pinch, a second
-   finger is its own press rather than half of a gesture. */
+/* No double-tap zoom. Pinch stays allowed here: Chrome only scrolls with a
+   second finger down when pinch is allowed, and the viewport tag already
+   stops the page zooming. Buttons act on pointer events per finger, so a
+   second finger no longer swallows taps. */
 html {
-  touch-action: pan-x pan-y;
+  touch-action: manipulation;
 }
 
-/* Get paid is only ever tapped, never scrolled from */
-.scn-PrimaryAction {
-  touch-action: none;
-}
+/* Get paid keeps the page's scroll-only touch setting. Chrome combines
+   the settings of every finger down, so blocking gestures here would stop
+   another finger scrolling the list. Taps still count as each finger lands. */
 
 /* Phone layout (max-width 720px). One section at a time, with money, the
    next gate, Get paid and the section tabs docked under the thumb. */

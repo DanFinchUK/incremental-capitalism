@@ -86,9 +86,10 @@ export function createPlayLogModule(initial: PlayLog, deps: PlayLogDeps) {
     log(ts, 'boss-end', { gate: ended.gate, result: ended.result, ms: Math.round(ended.ms), progress: Number(ended.progress.toFixed(4)) })
   }
 
-  // A new generation, a reload or a reset: gates are counted afresh
-  function resetGateWatch(gatesBeaten: number): void {
-    lastOpenGate = gatesBeaten
+  // A new generation, a reload or a reset: gates are counted afresh. A gate
+  // that is already open (say after a reload) has been logged already.
+  function resetGateWatch(gatesBeaten: number, alreadyOpen = false): void {
+    lastOpenGate = alreadyOpen ? Math.max(gatesBeaten, deps.openGate() ?? 0) : gatesBeaten
   }
 
   return { playLog, log, onTap, onTick, onBossStart, onAttemptEnded, resetGateWatch, flush, clear }

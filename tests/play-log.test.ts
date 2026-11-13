@@ -114,6 +114,19 @@ describe('play log in the store', () => {
     expect(store.playLog.events.find((e) => e.e === 'boss-end')).toMatchObject({ gate: 1, result: 'abandoned' })
   })
 
+  it('a reload with a gate already open does not log it opening again', () => {
+    const store = fresh()
+    store.addDebugMoney(gateThreshold(1) * 1.1, T0)
+    store.tick(T0 + 1000)
+    store.flushAll(T0 + 1000)
+    setActivePinia(createPinia())
+    const again = useGameStore()
+    again.hydrateFromStorage(T0 + 2000)
+    again.tick(T0 + 3000)
+    again.tick(T0 + 4000)
+    expect(again.playLog.events.filter((e) => e.e === 'gate-open')).toHaveLength(1)
+  })
+
   it('keeps the log across retirement and reloads', () => {
     const store = fresh()
     store.manualClick(T0 + 10)

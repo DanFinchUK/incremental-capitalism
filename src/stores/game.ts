@@ -448,7 +448,7 @@ export const useGameStore = defineStore('game', () => {
     introOpen.value = !loaded.introSeen
     tradingDeskCollapsed.value = loaded.tradingDeskCollapsed
     lastUpdate.value = loaded.lastUpdate
-    plays.resetGateWatch(loaded.gatesBeaten)
+    plays.resetGateWatch(loaded.gatesBeaten, true)
     nowMs.value = ts
     lastTickMs.value = ts
     lastAutoBuyAt.value = 0

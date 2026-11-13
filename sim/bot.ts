@@ -34,6 +34,14 @@ export const HUMAN_PACE: BotConfig = {
   firstGenerationStallMinutes: 40
 }
 
+// A steady player who taps once a second, start to finish, and still buys,
+// fights bosses and claims opportunities. Used for minimum stage times.
+export const ONE_TAP_PACE: BotConfig = {
+  ...HUMAN_PACE,
+  clicksPerSec: 1,
+  casualClicksPerSec: 1
+}
+
 export interface GenerationResult {
   generation: number
   activeMinutes: number
@@ -186,6 +194,31 @@ export function runCampaign(hours: number, cfg: BotConfig = HUMAN_PACE, seed = 1
   } finally {
     Math.random = realRandom
   }
+}
+
+export interface TapOnlyResult {
+  // Units of any Job or Business the player ended up owning
+  itemsOwned: number
+  netWorth: number
+}
+
+// A player who taps Get Paid once a second and touches nothing else: no
+// purchases, no bosses, no opportunities. Any growth comes from the game.
+export function runTapOnly(minutes: number, tapsPerSec = 1): TapOnlyResult {
+  localStorage.clear()
+  setActivePinia(createPinia())
+  const store = useGameStore()
+  let ts = 1_000_000
+  store.hydrateFromStorage(ts)
+  store.closeIntro(ts)
+  store.tick(ts)
+  for (let sec = 0; sec < minutes * 60; sec++) {
+    for (let c = 0; c < tapsPerSec; c++) store.manualClick(ts + Math.floor((c * 1000) / tapsPerSec))
+    ts += 1000
+    store.tick(ts)
+  }
+  const count = (m: Record<string, number>) => Object.values(m).reduce((a, b) => a + b, 0)
+  return { itemsOwned: count(store.jobsPurchased) + count(store.businessesOwned), netWorth: store.netWorth }
 }
 
 function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {

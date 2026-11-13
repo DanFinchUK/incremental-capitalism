@@ -21,6 +21,7 @@ import {
   autoBuyThreshold,
   bulkBuyQuote,
   computeClickIncome,
+  computeIncomeBreakdown,
   computeLegacyBracket,
   computeLegacyGain,
   heirInheritance,
@@ -63,6 +64,7 @@ import {
 } from '../engine/telemetry'
 import { formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
 import { bossForGate, itemCostCeiling } from '../engine/bosses'
+import { createBossModule } from './modules/bosses'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -75,9 +77,11 @@ export interface ActiveMarketEvent {
   expiresAt: number
   xPct: number
   yPct: number
+  // A bad bottle during the Champagne Tasting boss
+  corked: boolean
 }
 
-export type ClaimEventOutcome = 'golden' | 'shadyWin' | 'shadyFreeze' | null
+export type ClaimEventOutcome = 'golden' | 'shadyWin' | 'shadyFreeze' | 'corked' | null
 
 export interface TimedBuff {
   kind: MarketEventKind
@@ -142,6 +146,19 @@ export const useGameStore = defineStore('game', () => {
 
   const netWorth = computed(() => money.value + spentThisRun.value)
   const gatesBeaten = ref<number>(initial.gatesBeaten)
+  const activeGenerationMs = ref<number>(initial.activeGenerationMs)
+  const lastFloodSpawnMs = ref<number>(0)
+  const bosses = createBossModule({
+    gatesBeaten,
+    netWorth: () => netWorth.value,
+    activeMs: () => activeGenerationMs.value,
+    allRevealedOwned: () => allRevealedOwned(),
+    handleClassPromotion: (prev) => handleClassPromotion(prev),
+    announce: (msg) => announce(msg),
+    onBossWon: () => {},
+    bestKillFor: () => null
+  })
+  const twist = bosses.twist
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
   const costCeiling = computed(() => itemCostCeiling(gatesBeaten.value))
   const heirInheritancePreview = computed(() => heirInheritance(netWorth.value))
@@ -182,7 +199,7 @@ export const useGameStore = defineStore('game', () => {
     deregulationRank: perks.value.deregulation,
     autoClickers: autoClickers.value,
     businessBuffMultiplier: activeBusinessBuff.value?.mult ?? 1,
-    clickBuffMultiplier: activeClickBuff.value?.mult ?? 1,
+    clickBuffMultiplier: (activeClickBuff.value?.mult ?? 1) * twist.value.clickPayMult,
     hustleMultiplier: hustleMultiplier.value
   }))
 
@@ -295,6 +312,7 @@ export const useGameStore = defineStore('game', () => {
       lifetimeEarned: lifetimeEarned.value,
       highestClassReached: highestClassReached.value,
       gatesBeaten: gatesBeaten.value,
+      activeGenerationMs: activeGenerationMs.value,
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
@@ -334,6 +352,9 @@ export const useGameStore = defineStore('game', () => {
     lifetimeEarned.value = loaded.lifetimeEarned
     highestClassReached.value = loaded.highestClassReached
     gatesBeaten.value = loaded.gatesBeaten
+    activeGenerationMs.value = loaded.activeGenerationMs
+    bosses.bossAttempt.value = null
+    bosses.bossCooldownUntilMs.value = 0
     bulkBuyMode.value = loaded.bulkBuyMode
     autoBuyPaused.value = loaded.autoBuyPaused
     compactAutoBuy.value = loaded.compactAutoBuy
@@ -385,6 +406,11 @@ export const useGameStore = defineStore('game', () => {
     if (amount <= 0) {
       return
     }
+    // Boss rent comes off every credit
+    amount *= 1 - twist.value.incomeTaxRate
+    if (bosses.bossAttempt.value) {
+      bosses.bossAttempt.value.earnedAfterTax += amount
+    }
     money.value += amount
     lifetimeEarned.value += amount
     if (source) {
@@ -435,7 +461,7 @@ export const useGameStore = defineStore('game', () => {
       def.baseCost,
       def.scaleFactor,
       owned,
-      classStatus.value.costDiscount,
+      classStatus.value.costDiscount * twist.value.purchaseCostMult,
       modeOverride ?? bulkBuyMode.value,
       money.value,
       autoBuyRemaining
@@ -457,6 +483,10 @@ export const useGameStore = defineStore('game', () => {
     const nextOwned = prevOwned + quote.count
     money.value -= quote.cost
     spentThisRun.value += quote.cost
+    if (bosses.bossAttempt.value) {
+      // Every purchase is a stroke in the Charity Golf Match
+      bosses.bossAttempt.value.purchases += 1
+    }
     map[id] = nextOwned
     lifeMap[id] = (lifeMap[id] ?? 0) + quote.count
     observeBalance(telemetry.value, nowMs.value, money.value)
@@ -480,7 +510,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function runAutoBuy(ts: number): void {
-    if (isAutoBuyFrozen.value || autoBuyPaused.value) {
+    if (isAutoBuyFrozen.value || autoBuyPaused.value || twist.value.automationPaused) {
       return
     }
     if (lastAutoBuyAt.value > 0 && ts - lastAutoBuyAt.value < AUTO_BUY_COOLDOWN_MS) {
@@ -507,29 +537,56 @@ export const useGameStore = defineStore('game', () => {
     hustleBonus.value = Math.min(maxBonus, Number((hustleBonus.value + step).toFixed(2)))
     lastManualClickAt.value = ts
     const amount = moneyPerClick.value
-    creditMoney(amount, 'manual', ts)
+    creditClicks(amount, 'manual', ts)
     refreshSeenItems()
     return amount
+  }
+
+  // Click income (manual or Interns) during a boss can count towards the
+  // Walkout or be diverted into polishing the family silver.
+  function creditClicks(amount: number, source: IncomeSource, ts: number): void {
+    const attempt = bosses.bossAttempt.value
+    if (attempt && hustleMultiplier.value >= maxHustle.value - 0.01) {
+      attempt.clickEarningsAtFullHustle += amount
+    }
+    if (attempt && twist.value.clicksPolish) {
+      attempt.polish += amount
+      return
+    }
+    creditMoney(amount, source, ts)
+  }
+
+  function allRevealedOwned(): boolean {
+    const jobsOk = visibleJobs.value.every((r) => r.mode !== 'revealed' || (jobsPurchased.value[r.item.id] ?? 0) > 0)
+    const bizOk = visibleBusinesses.value.every((r) => r.mode !== 'revealed' || (businessesOwned.value[r.item.id] ?? 0) > 0)
+    return jobsOk && bizOk
   }
 
   function spawnSpecificEvent(kind: MarketEventKind, ts = nowMs.value, rng: () => number = Math.random): void {
     showMarketEvent(MARKET_EVENTS_BY_KIND[kind], ts, rng)
   }
 
-  function showMarketEvent(def: MarketEventDef, ts: number, rng: () => number): void {
+  function showMarketEvent(def: MarketEventDef, ts: number, rng: () => number, corked = false): void {
     nextEventSeq.value += 1
     activeEvent.value = {
       id: nextEventSeq.value,
       def,
       expiresAt: ts + 12_000,
       xPct: 18 + rng() * 64,
-      yPct: 18 + rng() * 55
+      yPct: 18 + rng() * 55,
+      corked
     }
   }
 
   function maybeSpawnRandomEvent(ts: number, rng: () => number = Math.random): void {
     if (activeEvent.value && ts >= activeEvent.value.expiresAt) {
       activeEvent.value = null
+    }
+    const flood = twist.value.flood
+    if (flood && !activeEvent.value && ts - lastFloodSpawnMs.value >= flood.intervalSec * 1000) {
+      lastFloodSpawnMs.value = ts
+      showMarketEvent(pickMarketEvent(rng), ts, rng, rng() < flood.corkedChance)
+      return
     }
     if (!activeEvent.value && !introOpen.value && nextEventAt.value > 0 && ts >= nextEventAt.value) {
       showMarketEvent(pickMarketEvent(rng), ts, rng)
@@ -545,6 +602,11 @@ export const useGameStore = defineStore('game', () => {
     }
     activeEvent.value = null
     scheduleNextEvent(ts, rng)
+    if (ev.corked) {
+      money.value *= 0.95
+      announce('Corked! The sommelier sniffs, and 5% of your cash evaporates.')
+      return 'corked'
+    }
     const durationMult = 1 + 0.25 * perks.value.insider
     const def = ev.def
     const effect = def.effect
@@ -615,7 +677,10 @@ export const useGameStore = defineStore('game', () => {
         const decayRate = Math.max(1, (maxHustle.value - 1) / 2.5)
         hustleBonus.value = Math.max(0, Number((hustleBonus.value - deltaSec * decayRate).toFixed(3)))
       }
-      creditMoney(moneyPerSecond.value * deltaSec, 'passive', ts)
+      activeGenerationMs.value += Math.min(elapsedMs, 5000)
+      const { business, interns } = computeIncomeBreakdown(economyInput.value)
+      creditMoney(business * deltaSec, 'passive', ts)
+      creditClicks(interns * deltaSec, 'passive', ts)
     }
 
     refreshSeenItems()
@@ -625,6 +690,7 @@ export const useGameStore = defineStore('game', () => {
       sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value)
     }
     maybeSpawnRandomEvent(ts)
+    bosses.evaluateAttempt()
 
     if (ts - lastSavedMs.value >= SAVE_THROTTLE_MS) {
       flushSave(ts)
@@ -817,6 +883,12 @@ export const useGameStore = defineStore('game', () => {
     gatesBeaten,
     handleClassPromotion,
     costCeiling,
+    activeGenerationMs,
+    bossAttempt: bosses.bossAttempt,
+    twist,
+    nextBoss: bosses.nextBoss,
+    startBossAttempt: bosses.startBossAttempt,
+    abandonBossAttempt: bosses.abandonBossAttempt,
     classStatus,
     legacyMultiplier,
     legacyAvailable,

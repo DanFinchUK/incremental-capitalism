@@ -270,7 +270,17 @@ export function computeClickIncome(input: EconomySnapshotInput, includeHustle: b
   return includeHustle ? baseClick * input.hustleMultiplier : baseClick
 }
 
+export interface IncomeBreakdown {
+  business: number
+  interns: number
+}
+
 export function computePassivePerSecond(input: EconomySnapshotInput): number {
+  const { business, interns } = computeIncomeBreakdown(input)
+  return business + interns
+}
+
+export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreakdown {
   let rawBusinesses = 0
   for (const biz of BUSINESSES) {
     const n = input.businessesOwned[biz.id] ?? 0
@@ -284,7 +294,7 @@ export function computePassivePerSecond(input: EconomySnapshotInput): number {
   const bizIncome =
     rawBusinesses * classMult * legacyMultiplier(input.legacyPoints) * input.businessBuffMultiplier
   const autoClickIncome = input.autoClickers * computeClickIncome(input, true)
-  return bizIncome + autoClickIncome
+  return { business: bizIncome, interns: autoClickIncome }
 }
 
 export interface IncomeDeltaQuote {

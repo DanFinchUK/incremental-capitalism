@@ -29,6 +29,7 @@ export interface PersistedSceneState {
   lifetimeEarned: number
   highestClassReached: number
   gatesBeaten: number
+  activeGenerationMs: number
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
   compactAutoBuy: boolean
@@ -58,6 +59,7 @@ export function createInitialSceneState(): PersistedSceneState {
     lifetimeEarned: 0,
     highestClassReached: 0,
     gatesBeaten: 0,
+    activeGenerationMs: 0,
     bulkBuyMode: 1,
     autoBuyPaused: false,
     compactAutoBuy: false,
@@ -223,6 +225,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     },
     lifetimeEarned,
     highestClassReached,
+    activeGenerationMs: readNonNegativeNumber(s.activeGenerationMs, 0),
     gatesBeaten: Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.gatesBeaten, 0))),
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     autoBuyPaused: Boolean(s.autoBuyPaused),

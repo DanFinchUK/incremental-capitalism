@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { gateThreshold } from '../src/engine/bosses'
 import { computeIncomeBreakdown, computePassivePerSecond } from '../src/engine/economy'
@@ -14,7 +14,8 @@ function readyFor(gate: number) {
   store.gatesBeaten = gate - 1
   // A little over the threshold: automation spends from the first tick, and
   // float rounding could otherwise leave net worth a hair under it
-  store.addDebugMoney(gateThreshold(gate) * 1.01, T0)
+  // (and an ignored scandal can cost a little cash during long tests)
+  store.addDebugMoney(gateThreshold(gate) * 1.1, T0)
   store.tick(T0)
   return store
 }
@@ -23,6 +24,10 @@ describe('boss attempts', () => {
   beforeEach(() => {
     localStorage.clear()
     setActivePinia(createPinia())
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   it('only the next gate can be attempted, once unlocked', () => {
@@ -132,6 +137,8 @@ describe('boss attempts', () => {
   })
 
   it('a loss starts a cooldown measured in active time', () => {
+    // Four minutes of play: pin chance so a random scandal can't move net worth
+    vi.spyOn(Math, 'random').mockReturnValue(0.99)
     const store = readyFor(1)
     store.startBossAttempt()
     let t = T0

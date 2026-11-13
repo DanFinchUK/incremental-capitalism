@@ -194,10 +194,10 @@ export const ADVISORS: ReadonlyArray<AdvisorDef> = [
     name: 'Family Lawyer',
     rarity: 'rare',
     roles: ['fixer'],
-    effectText: 'Boss targets are 15% lower, on a technicality.',
+    effectText: 'Scandals settle out of court: their cash costs, freezes and penalties are halved.',
     costText: 'Takes 2% of all income.',
     hireFeeShare: FEE.rare,
-    mods: { bossTargetMult: 0.85 },
+    mods: { scandalSeverity: 0.5 },
     upkeep: { incomeDrain: 0.02 }
   },
   {

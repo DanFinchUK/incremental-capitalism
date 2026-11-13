@@ -13,7 +13,7 @@
         <h2 id="heir-draft-title">Who inherits the estate?</h2>
       </div>
       <p class="scn-CardMeta">
-        Three heirs, one family firm. Each brings a quirk that bends the rules for their whole generation.
+        {{ countWord }} heirs, one family firm. Each brings a quirk that bends the rules for their whole generation.
       </p>
       <div class="scn-HeirGrid">
         <article
@@ -43,6 +43,7 @@ import { TRAITS_BY_ID } from '../data/heirs'
 import { useGameStore } from '../stores/game'
 
 const store = useGameStore()
+const countWord = computed(() => ['Two', 'Three', 'Four', 'Five'][store.heirChoices.length - 2] ?? String(store.heirChoices.length))
 
 const options = computed(() =>
   store.heirChoices.map((h) => ({ name: h.name, trait: h.traitId ? TRAITS_BY_ID[h.traitId] : null }))

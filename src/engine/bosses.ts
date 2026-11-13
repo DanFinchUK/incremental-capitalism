@@ -70,10 +70,12 @@ export interface BossTracker {
   earnedAfterTax: number
   polish: number
   purchases: number
+  // Time-limit multiplier from heir traits and advisors, fixed at the start
+  timeMult: number
 }
 
-export function newTracker(gate: number, activeMs: number): BossTracker {
-  return { gate, startedActiveMs: activeMs, clickEarningsAtFullHustle: 0, earnedAfterTax: 0, polish: 0, purchases: 0 }
+export function newTracker(gate: number, activeMs: number, timeMult = 1): BossTracker {
+  return { gate, startedActiveMs: activeMs, clickEarningsAtFullHustle: 0, earnedAfterTax: 0, polish: 0, purchases: 0, timeMult }
 }
 
 export interface BossSnapshot {
@@ -91,28 +93,21 @@ function ratio(value: number, target: number): number {
   return target <= 0 ? 1 : Math.min(1, Math.max(0, value / target))
 }
 
-export interface BossScale {
-  targetMult: number
-  timeMult: number
-}
-
-export const NO_BOSS_SCALE: Readonly<BossScale> = Object.freeze({ targetMult: 1, timeMult: 1 })
-
-// The condition's headline target (the net worth for ownAllRevealed).
-export function conditionTarget(def: BossDef, scale: BossScale = NO_BOSS_SCALE): number {
+// Boss targets are fixed (spec: they never scale with the player's power);
+// only the time limit can stretch, and it is fixed when the fight starts.
+export function conditionTarget(def: BossDef): number {
   const c = def.condition
-  return (c.kind === 'ownAllRevealed' ? c.netWorth : c.target) * scale.targetMult
+  return c.kind === 'ownAllRevealed' ? c.netWorth : c.target
 }
 
 export function evaluateBoss(
   def: BossDef,
   t: BossTracker,
   s: BossSnapshot,
-  activeMs: number,
-  scale: BossScale = NO_BOSS_SCALE
+  activeMs: number
 ): BossEvaluation {
   const c = def.condition
-  const target = conditionTarget(def, scale)
+  const target = conditionTarget(def)
   let progress: number
   let won: boolean
   let bust = false
@@ -143,7 +138,7 @@ export function evaluateBoss(
       progress = won ? 1 : Math.min(ratio(s.netWorth, target), 0.99)
       break
   }
-  const timedOut = activeMs - t.startedActiveMs >= def.timeLimitSec * scale.timeMult * 1000
+  const timedOut = activeMs - t.startedActiveMs >= def.timeLimitSec * t.timeMult * 1000
   return { progress, won, lost: !won && (bust || timedOut) }
 }
 

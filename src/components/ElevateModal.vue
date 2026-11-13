@@ -45,11 +45,13 @@
 import { computed } from 'vue'
 import { peerageRank } from '../engine/peerage'
 import { useGameStore } from '../stores/game'
+import { useEscapeKey } from '../utils/useEscapeKey'
 
-defineProps<{ open: boolean }>()
+const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
 
 const store = useGameStore()
+useEscapeKey(() => props.open, () => emit('close'))
 const nextTitles = computed(() => store.titles + store.titlesOnElevation)
 
 function confirm(): void {

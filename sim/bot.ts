@@ -100,7 +100,10 @@ function manageOffice(store: Store): void {
 function decide(store: Store, cfg: BotConfig): void {
   manageOffice(store)
   const ev = store.activeEvent
-  if (ev && !ev.corked && !ev.def.shady) {
+  if (ev && ev.def.effect.type === 'scandal') {
+    // Ignoring a scandal costs something, so the bot pays the first option
+    store.claimMarketEvent(store.nowMs, Math.random, 0)
+  } else if (ev && !ev.corked && !ev.def.shady) {
     store.claimMarketEvent(store.nowMs)
   }
 

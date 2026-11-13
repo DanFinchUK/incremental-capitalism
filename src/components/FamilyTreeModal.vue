@@ -28,7 +28,7 @@
             {{ formatClock(store.activeGenerationMs) }} played
           </p>
         </li>
-        <li v-for="rec in newestFirst" :key="rec.generation" class="scn-TreeEntry">
+        <li v-for="(rec, i) in newestFirst" :key="`${i}-${rec.generation}`" class="scn-TreeEntry">
           <div class="scn-TreeHead">
             <strong>{{ rec.name }}</strong>
             <span class="scn-StatHint">Generation {{ rec.generation }} · +{{ rec.legacyEarned }} Legacy</span>
@@ -37,6 +37,7 @@
             {{ traitName(rec.traitId) }} · reached {{ gateName(rec.deepestGate) }} · {{ formatClock(rec.activeMs) }} played
           </p>
           <p v-if="rec.advisors.length > 0" class="scn-StatHint">Advisors: {{ rec.advisors.join(', ') }}</p>
+          <p v-if="splitText(rec.splits)" class="scn-StatHint" data-testid="tree-splits">Splits: {{ splitText(rec.splits) }}</p>
         </li>
       </ol>
       <p v-if="store.familyTree.length === 0" class="scn-AutoLine">
@@ -52,13 +53,22 @@ import { TRAITS_BY_ID } from '../data/heirs'
 import { bossForGate } from '../engine/bosses'
 import { useGameStore } from '../stores/game'
 import { formatClock } from '../utils/format'
+import { useEscapeKey } from '../utils/useEscapeKey'
 
 const store = useGameStore()
+useEscapeKey(() => store.familyTreeOpen, () => (store.familyTreeOpen = false))
 
 const newestFirst = computed(() => [...store.familyTree].reverse())
 
 function traitName(id: string | null): string {
   return id && TRAITS_BY_ID[id] ? TRAITS_BY_ID[id].name : 'The founder'
+}
+
+function splitText(splits: ReadonlyArray<number | null>): string {
+  return splits
+    .map((ms, gate) => (ms === null || gate === 0 ? null : `G${gate} ${formatClock(ms)}`))
+    .filter((x): x is string => x !== null)
+    .join(' · ')
 }
 
 function gateName(gate: number): string {

@@ -44,8 +44,8 @@ describe('office modifiers', () => {
   it('a long-serving PA is stronger and better paid', () => {
     const pa = inst('productivity-guru', 2)
     const m = combineModifiers(officeModifierSources([pa], pa.uid))
-    // Seniority: +25% of the effect per generation; payrise: +20% upkeep per generation
-    expect(m.clickMult).toBeCloseTo(1 + 0.5 * 1.5)
+    // Seniority scales the effect geometrically by 1 + 25% per generation; payrise adds 20% upkeep per generation
+    expect(m.clickMult).toBeCloseTo(1.5 ** 1.5)
     expect(m.incomeDrain).toBeCloseTo(0.01 * 1.4)
     // Not the PA: no seniority even if they had served
     const plain = combineModifiers(officeModifierSources([pa], null))

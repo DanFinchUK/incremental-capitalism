@@ -87,6 +87,7 @@ describe('Legacy by depth and retirement', () => {
     expect(store.bestKillMs[1]).toBe(5000)
     expect(store.nextBoss!.def.gate).toBe(2)
     store.retire(t)
+    store.pickHeir(0)
 
     store.tick((t += 1000))
     store.addDebugMoney(gateThreshold(1) * 10, t)

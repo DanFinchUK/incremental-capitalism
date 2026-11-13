@@ -153,9 +153,17 @@ function readAdvisor(raw: unknown): AdvisorInstance | null {
 function readOffice(raw: unknown): OfficeState {
   if (!raw || typeof raw !== 'object') return { seats: [], paChair: null, offer: [] }
   const o = raw as Record<string, unknown>
+  const paChair = readAdvisor(o.paChair)
+  // Each advisor exists once: drop repeated uids and any seat copy of the PA
+  const seen = new Set<string>(paChair ? [paChair.uid] : [])
+  const seats = (Array.isArray(o.seats) ? o.seats.slice(0, 8).map(readAdvisor) : []).map((a) => {
+    if (!a || seen.has(a.uid)) return null
+    seen.add(a.uid)
+    return a
+  })
   return {
-    seats: Array.isArray(o.seats) ? o.seats.slice(0, 8).map(readAdvisor) : [],
-    paChair: readAdvisor(o.paChair),
+    seats,
+    paChair,
     offer: Array.isArray(o.offer) ? o.offer.filter((id): id is string => typeof id === 'string' && !!ADVISORS_BY_ID[id]).slice(0, 3) : []
   }
 }

@@ -36,8 +36,10 @@
 import { computed } from 'vue'
 import { ACHIEVEMENTS, ACHIEVEMENT_INCOME_BONUS } from '../data/achievements'
 import { useGameStore } from '../stores/game'
+import { useEscapeKey } from '../utils/useEscapeKey'
 
 const store = useGameStore()
+useEscapeKey(() => store.achievementsOpen, () => (store.achievementsOpen = false))
 const bonusPct = Math.round(ACHIEVEMENT_INCOME_BONUS * 100)
 const earned = computed(() => store.achievements.length)
 

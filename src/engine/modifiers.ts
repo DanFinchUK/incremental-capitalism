@@ -23,7 +23,8 @@ export interface Modifiers {
   // Extra chance that a spawned opportunity is the shady deal
   shadyBonus: number
   bossTimeMult: number
-  bossTargetMult: number
+  // Scales scandal cash losses, freezes and penalty lengths
+  scandalSeverity: number
   // 1 is full strength; 0.75 is a quarter weaker
   twistStrength: number
   automationShareBonus: number
@@ -47,7 +48,7 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   eventIntervalMult: 1,
   shadyBonus: 0,
   bossTimeMult: 1,
-  bossTargetMult: 1,
+  scandalSeverity: 1,
   twistStrength: 1,
   automationShareBonus: 0,
   windfallMult: 1
@@ -61,7 +62,7 @@ const PRODUCT_KEYS = [
   'trustFundMult',
   'eventIntervalMult',
   'bossTimeMult',
-  'bossTargetMult',
+  'scandalSeverity',
   'twistStrength',
   'windfallMult'
 ] as const
@@ -69,6 +70,8 @@ const PRODUCT_KEYS = [
 const SUM_KEYS = ['incomeDrain', 'milestoneStepBonus', 'trustFundShareAdd', 'shadyBonus', 'automationShareBonus'] as const
 
 export const MAX_INCOME_DRAIN = 0.9
+// No multiplier may fall below this, however much stacks up
+export const MIN_PRODUCT = 0.05
 
 function mergeSectorMults(
   into: Partial<Record<Sector, number>>,
@@ -93,6 +96,9 @@ export function combineModifiers(sources: ReadonlyArray<ModifierSource>): Modifi
     if (src.internsDisabled) m.internsDisabled = true
     m.sectorBusinessMult = mergeSectorMults(m.sectorBusinessMult, src.sectorBusinessMult)
     m.sectorCostMult = mergeSectorMults(m.sectorCostMult, src.sectorCostMult)
+  }
+  for (const key of PRODUCT_KEYS) {
+    m[key] = Math.max(MIN_PRODUCT, m[key])
   }
   m.incomeDrain = Math.min(MAX_INCOME_DRAIN, Math.max(0, m.incomeDrain))
   return m

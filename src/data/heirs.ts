@@ -22,8 +22,8 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     id: 'old-etonian',
     name: 'Old Etonian',
     rarity: 'common',
-    description: 'The old school tie opens every door: boss targets are 40% lower. The hands have never done a day\'s work, so clicks pay 25% less.',
-    mods: { bossTargetMult: 0.6, clickMult: 0.75 }
+    description: 'The old school tie opens every door: boss twists bite 40% less. The hands have never done a day\'s work, so clicks pay 25% less.',
+    mods: { twistStrength: 0.6, clickMult: 0.75 }
   },
   {
     id: 'black-sheep',

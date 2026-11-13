@@ -180,9 +180,9 @@ watch(
 
 const gain = computed(() => store.legacyOnRetire)
 const nextPoints = computed(() => store.legacyPoints + gain.value)
-const inheritancePct = Math.round(HEIR_INHERITANCE_SHARE * 100)
+const inheritancePct = computed(() => Math.round((HEIR_INHERITANCE_SHARE + store.modifiers.trustFundShareAdd) * 100))
 const currMult = computed(() => formatMultiplier(store.legacyMultiplier))
-const nextMult = computed(() => formatMultiplier(legacyMultiplier(nextPoints.value)))
+const nextMult = computed(() => formatMultiplier(legacyMultiplier(nextPoints.value, store.modifiers.legacyScale)))
 async function copySaveBackup(): Promise<void> {
   store.flushSave(Date.now())
   const raw = localStorage.getItem(STORAGE_KEY) ?? ''

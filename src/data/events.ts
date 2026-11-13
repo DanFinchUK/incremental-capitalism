@@ -19,7 +19,13 @@ export type MarketEventEffect =
   | { type: 'businessBuff'; mult: number; durationSec: number }
   | { type: 'windfall'; seconds: number }
   | { type: 'shady'; winSeconds: number; freezeSec: number }
-  | { type: 'scandal'; options: readonly [ScandalOption, ScandalOption] }
+  | {
+      type: 'scandal'
+      options: readonly [ScandalOption, ScandalOption]
+      // What happens if the player lets it run without answering
+      ignored: ReadonlyArray<ScandalOutcome>
+      ignoredText: string
+    }
 
 // What one choice in a scandal does. A gamble picks win or lose by chance.
 export type ScandalOutcome =
@@ -149,6 +155,8 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
     shady: true,
     effect: {
       type: 'scandal',
+      ignored: [{ type: 'penalty', mult: 0.5, durationSec: 60 }],
+      ignoredText: 'No comment was taken as a comment. The story runs and income halves for 60s.',
       options: [
         { label: 'Pay the hush money', detail: 'Costs 10% of cash.', outcomes: [{ type: 'cashLoss', share: 0.1 }] },
         {
@@ -175,6 +183,8 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
     shady: true,
     effect: {
       type: 'scandal',
+      ignored: [{ type: 'cashLoss', share: 0.08 }],
+      ignoredText: 'HMRC decided for you: 8% of your cash, with interest.',
       options: [
         {
           label: 'Move it all offshore',
@@ -204,6 +214,8 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
     shady: true,
     effect: {
       type: 'scandal',
+      ignored: [{ type: 'freeze', sec: 20 }],
+      ignoredText: 'Nobody answered the phone. The loss adjuster froze everything for 20s.',
       options: [
         { label: 'Claim on the insurance', detail: '60s windfall.', outcomes: [{ type: 'windfall', seconds: 60 }] },
         {
@@ -230,6 +242,8 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
     shady: true,
     effect: {
       type: 'scandal',
+      ignored: [{ type: 'penalty', mult: 0.5, durationSec: 45 }],
+      ignoredText: 'Silence looked worse. Income halves for 45s while the story trends.',
       options: [
         {
           label: 'Pay them, finally',
@@ -267,8 +281,8 @@ export function pickEventRarity(roll: number): EventRarity {
   return 'legendary'
 }
 
-export function pickMarketEvent(rng: () => number = Math.random): MarketEventDef {
+export function pickMarketEvent(rng: () => number = Math.random, includeScandals = true): MarketEventDef {
   const rarity = pickEventRarity(rng())
-  const pool = MARKET_EVENTS.filter((e) => e.rarity === rarity)
+  const pool = MARKET_EVENTS.filter((e) => e.rarity === rarity && (includeScandals || e.effect.type !== 'scandal'))
   return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))]
 }

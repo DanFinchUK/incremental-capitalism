@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { HEIR_TRAITS, TRAITS_BY_ID, rollHeirChoices } from '../src/data/heirs'
+import { HEIR_TRAITS, rollHeirChoices } from '../src/data/heirs'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
@@ -99,11 +99,11 @@ describe('heirs in the store', () => {
     expect(store.twist.clickPayMult).toBeCloseTo(0.75) // Walkout's 0.5 at half strength
   })
 
-  it('Old Etonian lowers boss targets', () => {
+  it('Old Etonian softens boss twists instead of moving targets', () => {
     const store = retiredStore()
     store.heir = { name: 'Hugo Test', traitId: 'old-etonian' }
-    expect(TRAITS_BY_ID['old-etonian'].mods.bossTargetMult).toBeLessThan(1)
-    expect(store.bossTarget(3)).toBeCloseTo(gateThreshold(3) * 1.5 * TRAITS_BY_ID['old-etonian'].mods.bossTargetMult!)
+    expect(store.modifiers.twistStrength).toBeCloseTo(0.6)
+    expect(store.bossTarget(3)).toBeCloseTo(gateThreshold(3) * 1.5)
   })
 
   it('keeps the family, heir and pending choices through a reload', () => {

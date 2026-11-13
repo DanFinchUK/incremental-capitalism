@@ -210,7 +210,7 @@ export const useGameStore = defineStore('game', () => {
       office.rollOffer()
     },
     bestKillFor: (gate) => bestKillMs.value[gate] ?? null,
-    bossScale: () => ({ targetMult: modifiers.value.bossTargetMult, timeMult: modifiers.value.bossTimeMult }),
+    bossTimeMult: () => modifiers.value.bossTimeMult,
     twistStrength: () => modifiers.value.twistStrength,
     onAttemptEnded: () => {
       // Corked bottles belong to the tasting; they leave with the sommelier
@@ -223,7 +223,7 @@ export const useGameStore = defineStore('game', () => {
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
   const costCeiling = computed(() => itemCostCeiling(gatesBeaten.value))
   const heirInheritancePreview = computed(() => heirInheritance(netWorth.value, modifiers.value.trustFundShareAdd))
-  const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value))
+  const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value, modifiers.value.legacyScale))
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
   const legacyOnRetire = computed(() => legacyForDepth(gatesBeaten.value))
   const autoClickers = computed(() => (modifiers.value.internsDisabled ? 0 : perks.value.autoClicker))
@@ -436,6 +436,7 @@ export const useGameStore = defineStore('game', () => {
     achievements.value = loaded.achievements
     titles.value = loaded.titles
     achievementProgress.value = loaded.achievementProgress
+    penalty.value = null
     bosses.bossAttempt.value = null
     bosses.bossCooldownUntilMs.value = 0
     bulkBuyMode.value = loaded.bulkBuyMode
@@ -471,11 +472,12 @@ export const useGameStore = defineStore('game', () => {
     const loaded = parseSavedState(raw)
     applyLoadedState(loaded, ts)
 
-    if (loaded.lastUpdate !== null && ts > loaded.lastUpdate) {
+    // No catch-up while the succession is undecided: the family is in mourning
+    if (loaded.lastUpdate !== null && ts > loaded.lastUpdate && heirChoices.value.length === 0) {
       const catchUp = computeOfflineCatchUp(ts - loaded.lastUpdate, moneyPerSecond.value, perks.value.offshore)
       if (catchUp) {
-        money.value += catchUp.moneyEarned
-        lifetimeEarned.value += catchUp.moneyEarned
+        // Through creditMoney, so advisor drain applies offline too
+        creditMoney(catchUp.moneyEarned, undefined, ts)
         highestClassReached.value = Math.max(highestClassReached.value, classStatus.value.current.level)
         offlineReport.value = catchUp
         resetTelemetry(telemetry.value, ts, money.value)
@@ -573,9 +575,10 @@ export const useGameStore = defineStore('game', () => {
 
     const crossedMilestone = itemMilestones(def.scaleFactor).filter((m) => prevOwned < m && nextOwned >= m).pop() ?? null
     const promoted = false
-    if (crossedMilestone !== null) {
+    // Automation crosses milestones quietly; only your own purchases get a banner
+    if (crossedMilestone !== null && save) {
       markTelemetryEvent(telemetry.value, 'M')
-      const step = (2 + 0.25 * perks.value.deregulation).toFixed(2).replace(/\.00$/, '')
+      const step = (2 + 0.25 * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned: ${step}x output milestone!`)
     }
 
@@ -590,7 +593,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function isAutomated(kind: ItemKind, id: string): boolean {
-    if (autoBuyDisabled.value[kind][id]) {
+    if (autoBuyDisabled.value[kind][id] || twist.value.automationPaused || isAutoBuyFrozen.value) {
       return false
     }
     const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
@@ -681,12 +684,18 @@ export const useGameStore = defineStore('game', () => {
 
   function maybeSpawnRandomEvent(ts: number, rng: () => number = Math.random): void {
     if (activeEvent.value && ts >= activeEvent.value.expiresAt) {
+      const expired = activeEvent.value
       activeEvent.value = null
+      if (expired.def.effect.type === 'scandal') {
+        // Letting a scandal run is a choice too
+        for (const o of expired.def.effect.ignored) applyScandalOutcome(o, expired.def, ts, rng)
+        announce(`${expired.def.title.replace(/!$/, '')}: ${expired.def.effect.ignoredText}`)
+      }
     }
     const flood = twist.value.flood
     if (flood && !activeEvent.value && !introOpen.value && ts - lastFloodSpawnMs.value >= flood.intervalSec * 1000) {
       lastFloodSpawnMs.value = ts
-      showMarketEvent(pickMarketEvent(rng), ts, rng, rng() < flood.corkedChance)
+      showMarketEvent(pickMarketEvent(rng, false), ts, rng, rng() < flood.corkedChance)
       return
     }
     if (!activeEvent.value && !introOpen.value && nextEventAt.value > 0 && ts >= nextEventAt.value) {
@@ -699,7 +708,7 @@ export const useGameStore = defineStore('game', () => {
   function applyScandalOutcome(o: ScandalOutcome, def: MarketEventDef, ts: number, rng: () => number): void {
     switch (o.type) {
       case 'cashLoss':
-        money.value -= money.value * o.share
+        money.value -= money.value * Math.min(1, o.share * modifiers.value.scandalSeverity)
         break
       case 'windfall':
         creditMoney(unbuffedMoneyPerSecond.value * o.seconds * modifiers.value.windfallMult, 'windfall', ts)
@@ -713,10 +722,13 @@ export const useGameStore = defineStore('game', () => {
         break
       }
       case 'freeze':
-        autoBuyFrozenUntil.value = Math.max(autoBuyFrozenUntil.value, ts + o.sec * 1000)
+        autoBuyFrozenUntil.value = Math.max(autoBuyFrozenUntil.value, ts + o.sec * 1000 * modifiers.value.scandalSeverity)
         break
       case 'penalty':
-        penalty.value = { mult: o.mult, until: ts + o.durationSec * 1000 }
+        // A harsher penalty that is still running is kept
+        if (!incomePenalty.value || incomePenalty.value.mult >= o.mult) {
+          penalty.value = { mult: o.mult, until: ts + o.durationSec * 1000 * modifiers.value.scandalSeverity }
+        }
         break
       case 'gamble':
         for (const next of rng() < o.chance ? o.win : o.lose) applyScandalOutcome(next, def, ts, rng)
@@ -818,6 +830,10 @@ export const useGameStore = defineStore('game', () => {
     }
     const elapsedMs = Math.max(0, ts - lastTickMs.value)
     lastTickMs.value = ts
+    if (heirChoices.value.length > 0) {
+      // The family waits for the succession to be settled
+      return
+    }
 
     if (elapsedMs >= 60_000) {
       // Time away abandons a boss fight (no cooldown), so offline income
@@ -884,7 +900,7 @@ export const useGameStore = defineStore('game', () => {
   function retire(ts = Date.now()): boolean {
     nowMs.value = ts
     const gain = legacyOnRetire.value
-    if (gatesBeaten.value < 1 || gain < 1) {
+    if (gatesBeaten.value < 1 || gain < 1 || heirChoices.value.length > 0) {
       return false
     }
     if (gatesBeaten.value <= 2) unlockAchievement('early-retirement')
@@ -923,6 +939,7 @@ export const useGameStore = defineStore('game', () => {
     businessesOwned.value = {}
     gatesBeaten.value = 0
     activeGenerationMs.value = 0
+    penalty.value = null
     heirChoices.value = rollHeirChoices(
       Math.random,
       familySurname.value,
@@ -950,7 +967,7 @@ export const useGameStore = defineStore('game', () => {
   function elevateToLords(ts = Date.now()): boolean {
     nowMs.value = ts
     const gain = titlesOnElevation.value
-    if (!canElevate.value) {
+    if (!canElevate.value || heirChoices.value.length > 0) {
       return false
     }
     titles.value += gain
@@ -981,7 +998,7 @@ export const useGameStore = defineStore('game', () => {
   // The current target for a gate's boss, after the heir's trait and advisors
   function bossTarget(gate: number): number {
     const def = bossForGate(gate)
-    return def ? conditionTarget(def, { targetMult: modifiers.value.bossTargetMult, timeMult: 1 }) : 0
+    return def ? conditionTarget(def) : 0
   }
 
   function unlockAchievement(id: string): void {
@@ -1142,7 +1159,7 @@ export const useGameStore = defineStore('game', () => {
     bossAttempt: bosses.bossAttempt,
     twist,
     nextBoss: bosses.nextBoss,
-    startBossAttempt: bosses.startBossAttempt,
+    startBossAttempt: () => (heirChoices.value.length > 0 ? false : bosses.startBossAttempt()),
     abandonBossAttempt: bosses.abandonBossAttempt,
     classStatus,
     legacyMultiplier,

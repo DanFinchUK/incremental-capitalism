@@ -88,7 +88,7 @@
       </div>
     </footer>
 
-    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" @hire="showHeadhunter" />
+    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" @hire="showHeadhunter" @retire="handleRetire" />
   </div>
 </template>
 

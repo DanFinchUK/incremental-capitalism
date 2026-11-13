@@ -45,6 +45,9 @@
         <li v-if="victory.nextBoss">
           Next: {{ victory.nextBoss.title }}, at {{ formatCurrency(victory.nextThreshold) }} net worth.
         </li>
+        <li>
+          Retire now for +{{ victory.legacyNow }} Legacy<template v-if="victory.nextBoss">, or beat {{ victory.nextBoss.title }} first for +{{ victory.legacyNext }}</template>.
+        </li>
       </ul>
 
       <div v-if="victory && store.headhunterOffer.length > 0" data-testid="victory-headhunter">
@@ -127,7 +130,7 @@ import HeadhunterOffer from './HeadhunterOffer.vue'
 import { useVictoryLock } from './victoryLock'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
-import { bossForGate, gateThreshold, itemCostCeiling } from '../engine/bosses'
+import { bossForGate, gateThreshold, itemCostCeiling, legacyForDepth } from '../engine/bosses'
 import { useGameStore } from '../stores/game'
 import { formatClock, formatCurrency } from '../utils/format'
 
@@ -163,7 +166,9 @@ const victory = computed(() => {
     newJobs: JOBS.filter((j) => opened(j.baseCost)).length,
     newBusinesses: BUSINESSES.filter((b) => opened(b.baseCost)).length,
     nextBoss,
-    nextThreshold: nextBoss ? gateThreshold(nextBoss.gate) : 0
+    nextThreshold: nextBoss ? gateThreshold(nextBoss.gate) : 0,
+    legacyNow: legacyForDepth(win.gate),
+    legacyNext: legacyForDepth(win.gate + 1)
   }
 })
 

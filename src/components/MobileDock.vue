@@ -20,7 +20,13 @@
         <span v-else-if="boss.status === 'cooldown'">Regrouping, {{ boss.cooldownSec }}s</span>
         <span v-else>Gate {{ boss.def.gate }} · ready when you are</span>
       </div>
-      <div v-if="boss.status !== 'locked'" class="mob-GateActions">
+      <!-- Between gates, retiring is the other choice: keep it in sight -->
+      <div v-if="canRetireHere" class="mob-GateActions">
+        <button type="button" class="scn-Action scn-Action-outline" data-testid="dock-retire" @click="emit('retire')">
+          Retire +{{ store.legacyOnRetire }}
+        </button>
+      </div>
+      <div v-else-if="boss.status !== 'locked'" class="mob-GateActions">
         <button type="button" class="scn-Action scn-Action-outline" data-testid="dock-boss-rules" @click="emit('rules')">
           Rules
         </button>
@@ -45,6 +51,18 @@
       </div>
       <div class="mob-GateBar" role="progressbar" :aria-valuenow="pct" aria-valuemin="0" aria-valuemax="100">
         <div class="mob-GateFill" :style="{ width: `${pct}%` }"></div>
+      </div>
+    </div>
+
+    <div v-if="!boss && store.legacyOnRetire >= 1" class="mob-Gate" data-testid="dock-gate">
+      <div class="mob-GateText">
+        <strong>Every gate beaten</strong>
+        <span>Hand it all on to the next heir</span>
+      </div>
+      <div class="mob-GateActions">
+        <button type="button" class="scn-Action scn-Action-purple" data-testid="dock-retire" @click="emit('retire')">
+          Retire +{{ store.legacyOnRetire }}
+        </button>
       </div>
     </div>
 
@@ -92,6 +110,7 @@ const emit = defineEmits<{
   (e: 'tab', tab: PhoneTab): void
   (e: 'rules'): void
   (e: 'hire'): void
+  (e: 'retire'): void
 }>()
 
 const store = useGameStore()
@@ -158,6 +177,11 @@ watch(
     if (kind) for (const id of revealedIds(kind)) viewed[kind].add(id)
   },
   { immediate: true }
+)
+
+// While climbing towards a locked or regrouping gate, with Legacy to claim
+const canRetireHere = computed(
+  () => store.legacyOnRetire >= 1 && (boss.value?.status === 'locked' || boss.value?.status === 'cooldown')
 )
 
 function startBoss(): void {

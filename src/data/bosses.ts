@@ -84,7 +84,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     id: 'golf',
     title: 'Charity Golf Match',
     blurb: 'Eighteen holes for the children\'s hospital, sponsored by the firms that closed its funding. The real handicap is the small talk.',
-    twistText: 'Every purchase is a stroke.',
+    twistText: 'Every purchase is a stroke, auto-buys included.',
     conditionText: 'Reach the target net worth in 15 purchases or fewer.',
     twists: [],
     condition: { kind: 'netWorthWithinPar', target: gateTarget(4, 2), par: 15 },

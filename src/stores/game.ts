@@ -511,7 +511,7 @@ export const useGameStore = defineStore('game', () => {
     if (crossedMilestone !== null) {
       markTelemetryEvent(telemetry.value, 'M')
       const step = (2 + 0.25 * perks.value.deregulation).toFixed(2).replace(/\.00$/, '')
-      announce(`${def.label} hit ${crossedMilestone} owned — ${step}x output milestone!`)
+      announce(`${def.label} hit ${crossedMilestone} owned: ${step}x output milestone!`)
     }
 
     flushSave(nowMs.value)
@@ -677,6 +677,9 @@ export const useGameStore = defineStore('game', () => {
     lastTickMs.value = ts
 
     if (elapsedMs >= 60_000) {
+      // Time away abandons a boss fight (no cooldown), so offline income
+      // can never win it
+      bosses.bossAttempt.value = null
       const catchUp = computeOfflineCatchUp(elapsedMs, moneyPerSecond.value, perks.value.offshore)
       if (catchUp) {
         creditMoney(catchUp.moneyEarned, undefined, ts)

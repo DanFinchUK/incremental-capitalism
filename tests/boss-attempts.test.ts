@@ -164,6 +164,22 @@ describe('boss attempts', () => {
     expect(store.activeGenerationMs).toBe(start + 1000)
   })
 
+  it('time away mid-attempt abandons the fight before crediting offline income', () => {
+    const store = readyFor(2)
+    store.businessesOwned['1'] = 50
+    store.startBossAttempt()
+    store.tick(T0 + 3600 * 1000)
+    expect(store.offlineReport).not.toBeNull()
+    expect(store.bossAttempt).toBeNull()
+    expect(store.gatesBeaten).toBe(1)
+    expect(store.nextBoss!.status).toBe('available')
+  })
+
+  it('Golf tells the player that auto-buys count as strokes', () => {
+    const store = readyFor(4)
+    expect(store.nextBoss!.def.twistText.toLowerCase()).toContain('auto-buy')
+  })
+
   it('Champagne floods opportunities, and a corked one costs 5% of cash', () => {
     const store = readyFor(5)
     store.startBossAttempt()

@@ -10,6 +10,33 @@ import { TRAITS_BY_ID } from '../src/data/heirs'
 import { ADVISORS_BY_ID } from '../src/data/advisors'
 import { useGameStore } from '../src/stores/game'
 
+// The sim plays hours in one synchronous loop. jsdom's localStorage queues a
+// storage event (holding the old and new values) for every write, and those
+// never run until the loop yields, so memory climbs until the process dies.
+// A plain in-memory store has the same interface without the queue.
+class MemoryStorage {
+  private items = new Map<string, string>()
+  get length(): number {
+    return this.items.size
+  }
+  clear(): void {
+    this.items.clear()
+  }
+  getItem(key: string): string | null {
+    return this.items.get(key) ?? null
+  }
+  key(index: number): string | null {
+    return [...this.items.keys()][index] ?? null
+  }
+  removeItem(key: string): void {
+    this.items.delete(key)
+  }
+  setItem(key: string, value: string): void {
+    this.items.set(key, String(value))
+  }
+}
+Object.defineProperty(globalThis, 'localStorage', { value: new MemoryStorage(), configurable: true })
+
 export interface BotConfig {
   // Clicking hard: the opening minutes of a generation and every boss fight
   clicksPerSec: number

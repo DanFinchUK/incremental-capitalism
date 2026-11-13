@@ -49,11 +49,10 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     wrapper.unmount()
   })
 
-  it('replaces broken ? retire help icon with a next-Legacy progress bar inside Lifetime earnings', () => {
+  it('shows what retiring would pay inside Lifetime earnings', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     expect(wrapper.find('.scn-Help').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Next Legacy (+1) at £450,000,000,000')
-    expect(wrapper.find('[data-testid="legacy-progress-bar"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Retiring now pays +0 Legacy')
     wrapper.unmount()
   })
 })

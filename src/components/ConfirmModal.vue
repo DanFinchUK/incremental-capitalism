@@ -61,7 +61,7 @@
       </div>
 
       <p class="scn-AutoLine">
-        Progress toward +{{ gain + 1 }} Legacy: {{ bracketPct }}% ({{ formatCurrency(remainingToNext) }} more lifetime earnings needed).
+        Deepest gate this generation: {{ store.gatesBeaten }} of 9.
       </p>
 
       <div class="scn-ModalFooter">
@@ -180,7 +180,7 @@ watch(
   }
 )
 
-const gain = computed(() => store.legacyGain)
+const gain = computed(() => store.legacyOnRetire)
 const nextPoints = computed(() => store.legacyPoints + gain.value)
 const inheritancePct = Math.round(HEIR_INHERITANCE_SHARE * 100)
 const currMult = computed(() => formatMultiplier(store.legacyMultiplier))
@@ -200,8 +200,6 @@ const readyAutoBuyCount = computed(() => {
   }
   return ready
 })
-const bracketPct = computed(() => Math.round(store.legacyBracket.progress * 100))
-const remainingToNext = computed(() => Math.max(0, store.legacyBracket.nextThreshold - store.lifetimeEarned))
 
 async function copySaveBackup(): Promise<void> {
   store.flushSave(Date.now())

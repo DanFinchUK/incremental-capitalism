@@ -1,6 +1,7 @@
 import { SOCIAL_CLASSES } from '../data/classes'
 import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } from '../data/perks'
 import type { BulkBuyMode } from './economy'
+import { emptySplits } from './splits'
 
 export const STORAGE_KEY = 'state'
 // Saves from any earlier schema reset to a new game.
@@ -30,6 +31,10 @@ export interface PersistedSceneState {
   highestClassReached: number
   gatesBeaten: number
   activeGenerationMs: number
+  splits: (number | null)[]
+  bestSplits: (number | null)[]
+  lastKillMs: (number | null)[]
+  bestKillMs: (number | null)[]
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
   compactAutoBuy: boolean
@@ -60,6 +65,10 @@ export function createInitialSceneState(): PersistedSceneState {
     highestClassReached: 0,
     gatesBeaten: 0,
     activeGenerationMs: 0,
+    splits: emptySplits(),
+    bestSplits: emptySplits(),
+    lastKillMs: emptySplits(),
+    bestKillMs: emptySplits(),
     bulkBuyMode: 1,
     autoBuyPaused: false,
     compactAutoBuy: false,
@@ -91,6 +100,17 @@ function readBooleanMap(raw: unknown): Record<string, boolean> {
   for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
     if (typeof val === 'boolean') {
       result[key] = val
+    }
+  }
+  return result
+}
+
+function readSplits(raw: unknown): (number | null)[] {
+  const result = emptySplits()
+  if (Array.isArray(raw)) {
+    for (let i = 0; i < result.length; i++) {
+      const v = raw[i]
+      result[i] = typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null
     }
   }
   return result
@@ -226,6 +246,10 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     lifetimeEarned,
     highestClassReached,
     activeGenerationMs: readNonNegativeNumber(s.activeGenerationMs, 0),
+    splits: readSplits(s.splits),
+    bestSplits: readSplits(s.bestSplits),
+    lastKillMs: readSplits(s.lastKillMs),
+    bestKillMs: readSplits(s.bestKillMs),
     gatesBeaten: Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.gatesBeaten, 0))),
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     autoBuyPaused: Boolean(s.autoBuyPaused),

@@ -59,10 +59,10 @@
       <button
         type="button"
         class="scn-Action"
-        :disabled="store.legacyGain < 1"
+        :disabled="store.legacyOnRetire < 1"
         @click="emit('retire')"
       >
-        Retire for +{{ store.legacyGain }}
+        Retire for +{{ store.legacyOnRetire }}
       </button>
 
       <button

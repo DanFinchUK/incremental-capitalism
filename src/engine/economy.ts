@@ -6,13 +6,9 @@ const MILESTONES_MODERATE: ReadonlyArray<number> = [10, 20, 40, 75, 125]
 const MILESTONES_STEEP: ReadonlyArray<number> = [5, 10, 25, 50, 75]
 const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35]
 
-export const FIRST_LEGACY_LIFETIME = 4.5e11
-// Each Legacy point multiplies income by LEGACY_INCOME_RATIO, and each point
-// needs LEGACY_THRESHOLD_RATIO times more lifetime earnings than the last.
-// Tuned by simulation so retiring at +1..+3 is near-optimal and waiting
-// for +4 or more loses ground.
+// Each Legacy point multiplies income by LEGACY_INCOME_RATIO. Legacy is
+// earned by depth (see legacyForDepth in engine/bosses.ts).
 export const LEGACY_INCOME_RATIO = 1.5
-export const LEGACY_THRESHOLD_RATIO = 2.7
 // Share of the retiring run's net worth the heir starts with as cash.
 // Simulated: any share up to 20% leaves the +1..+3 retire balance intact,
 // so this is tuned for feel (skip the penny-clicking, keep the mid game).
@@ -177,53 +173,6 @@ export function classInfoForLevel(level: number, netWorth: number): SocialClassS
 
 export function legacyMultiplier(legacyPoints: number): number {
   return Math.pow(LEGACY_INCOME_RATIO, Math.max(0, legacyPoints))
-}
-
-export function legacyLifetimeThreshold(points: number): number {
-  if (points <= 0) {
-    return 0
-  }
-  const r = LEGACY_THRESHOLD_RATIO
-  return (FIRST_LEGACY_LIFETIME * (Math.pow(r, points) - 1)) / (r - 1)
-}
-
-export function computeLegacyGain(lifetimeEarned: number, legacyPoints: number): number {
-  const safe = Math.max(0, lifetimeEarned)
-  let totalEarnedPoints = Math.max(
-    0,
-    Math.floor(
-      Math.log(1 + (safe * (LEGACY_THRESHOLD_RATIO - 1)) / FIRST_LEGACY_LIFETIME) / Math.log(LEGACY_THRESHOLD_RATIO)
-    )
-  )
-  while (legacyLifetimeThreshold(totalEarnedPoints + 1) <= safe) {
-    totalEarnedPoints += 1
-  }
-  while (totalEarnedPoints > 0 && legacyLifetimeThreshold(totalEarnedPoints) > safe) {
-    totalEarnedPoints -= 1
-  }
-  return Math.max(0, totalEarnedPoints - legacyPoints)
-}
-
-export function nextLegacyLifetimeThreshold(legacyPoints: number): number {
-  return legacyLifetimeThreshold(legacyPoints + 1)
-}
-
-export interface LegacyBracketProgress {
-  pendingGain: number
-  currentFloor: number
-  nextThreshold: number
-  progress: number
-}
-
-export function computeLegacyBracket(lifetimeEarned: number, legacyPoints: number): LegacyBracketProgress {
-  const safeLifetime = Math.max(0, lifetimeEarned)
-  const pendingGain = computeLegacyGain(safeLifetime, legacyPoints)
-  const totalPointsReached = legacyPoints + pendingGain
-  const currentFloor = legacyLifetimeThreshold(totalPointsReached)
-  const nextThreshold = legacyLifetimeThreshold(totalPointsReached + 1)
-  const span = Math.max(1, nextThreshold - currentFloor)
-  const progress = Math.min(1, Math.max(0, (safeLifetime - currentFloor) / span))
-  return { pendingGain, currentFloor, nextThreshold, progress }
 }
 
 export function maxHustleMultiplier(rank: number): number {

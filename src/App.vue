@@ -192,7 +192,7 @@ function handleClaimEvent(): void {
 }
 
 function handleRetire(): void {
-  if (store.legacyGain < 1) return
+  if (store.legacyOnRetire < 1) return
   activeDialog.value = 'retire'
 }
 

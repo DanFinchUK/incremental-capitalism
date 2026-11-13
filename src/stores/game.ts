@@ -22,8 +22,6 @@ import {
   bulkBuyQuote,
   computeClickIncome,
   computeIncomeBreakdown,
-  computeLegacyBracket,
-  computeLegacyGain,
   heirInheritance,
   computeOfflineCatchUp,
   computePassivePerSecond,
@@ -33,7 +31,6 @@ import {
   itemMilestones,
   legacyMultiplier as calcLegacyMultiplier,
   maxHustleMultiplier,
-  nextLegacyLifetimeThreshold,
   quoteIncomeDelta,
   selectAutoBuyTarget,
   classInfoForLevel,
@@ -63,7 +60,8 @@ import {
   type TelemetryState
 } from '../engine/telemetry'
 import { formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
-import { bossForGate, itemCostCeiling } from '../engine/bosses'
+import { bossForGate, itemCostCeiling, legacyForDepth } from '../engine/bosses'
+import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
 
 export type VisibleRow<T> =
@@ -148,6 +146,10 @@ export const useGameStore = defineStore('game', () => {
   const gatesBeaten = ref<number>(initial.gatesBeaten)
   const activeGenerationMs = ref<number>(initial.activeGenerationMs)
   const lastFloodSpawnMs = ref<number>(0)
+  const splits = ref<(number | null)[]>(initial.splits)
+  const bestSplits = ref<(number | null)[]>(initial.bestSplits)
+  const lastKillMs = ref<(number | null)[]>(initial.lastKillMs)
+  const bestKillMs = ref<(number | null)[]>(initial.bestKillMs)
   const bosses = createBossModule({
     gatesBeaten,
     netWorth: () => netWorth.value,
@@ -155,8 +157,13 @@ export const useGameStore = defineStore('game', () => {
     allRevealedOwned: () => allRevealedOwned(),
     handleClassPromotion: (prev) => handleClassPromotion(prev),
     announce: (msg) => announce(msg),
-    onBossWon: () => {},
-    bestKillFor: () => null
+    onBossWon: (gate, killMs) => {
+      splits.value = withSplit(splits.value, gate, activeGenerationMs.value)
+      lastKillMs.value = withSplit(lastKillMs.value, gate, killMs)
+      bestSplits.value = mergeBests(bestSplits.value, splits.value)
+      bestKillMs.value = mergeBests(bestKillMs.value, lastKillMs.value)
+    },
+    bestKillFor: (gate) => bestKillMs.value[gate] ?? null
   })
   const twist = bosses.twist
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
@@ -164,9 +171,7 @@ export const useGameStore = defineStore('game', () => {
   const heirInheritancePreview = computed(() => heirInheritance(netWorth.value))
   const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value))
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
-  const legacyGain = computed(() => computeLegacyGain(lifetimeEarned.value, legacyPoints.value))
-  const nextLegacyAt = computed(() => nextLegacyLifetimeThreshold(legacyPoints.value))
-  const legacyBracket = computed(() => computeLegacyBracket(lifetimeEarned.value, legacyPoints.value))
+  const legacyOnRetire = computed(() => legacyForDepth(gatesBeaten.value))
   const autoClickers = computed(() => perks.value.autoClicker)
   const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
   const hustleMultiplier = computed(() => 1 + hustleBonus.value)
@@ -313,6 +318,10 @@ export const useGameStore = defineStore('game', () => {
       highestClassReached: highestClassReached.value,
       gatesBeaten: gatesBeaten.value,
       activeGenerationMs: activeGenerationMs.value,
+      splits: splits.value,
+      bestSplits: bestSplits.value,
+      lastKillMs: lastKillMs.value,
+      bestKillMs: bestKillMs.value,
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
@@ -353,6 +362,10 @@ export const useGameStore = defineStore('game', () => {
     highestClassReached.value = loaded.highestClassReached
     gatesBeaten.value = loaded.gatesBeaten
     activeGenerationMs.value = loaded.activeGenerationMs
+    splits.value = loaded.splits
+    bestSplits.value = loaded.bestSplits
+    lastKillMs.value = loaded.lastKillMs
+    bestKillMs.value = loaded.bestKillMs
     bosses.bossAttempt.value = null
     bosses.bossCooldownUntilMs.value = 0
     bulkBuyMode.value = loaded.bulkBuyMode
@@ -755,8 +768,8 @@ export const useGameStore = defineStore('game', () => {
 
   function retire(ts = Date.now()): boolean {
     nowMs.value = ts
-    const gain = legacyGain.value
-    if (gain < 1) {
+    const gain = legacyOnRetire.value
+    if (gatesBeaten.value < 1 || gain < 1) {
       return false
     }
     // Inheritance isn't earned, so it doesn't count toward lifetime earnings
@@ -766,6 +779,12 @@ export const useGameStore = defineStore('game', () => {
     spentThisRun.value = 0
     jobsPurchased.value = {}
     businessesOwned.value = {}
+    gatesBeaten.value = 0
+    activeGenerationMs.value = 0
+    splits.value = emptySplits()
+    lastKillMs.value = emptySplits()
+    bosses.bossAttempt.value = null
+    bosses.bossCooldownUntilMs.value = 0
     hustleBonus.value = 0
     clickBuff.value = null
     businessBuff.value = null
@@ -892,9 +911,11 @@ export const useGameStore = defineStore('game', () => {
     classStatus,
     legacyMultiplier,
     legacyAvailable,
-    legacyGain,
-    nextLegacyAt,
-    legacyBracket,
+    legacyOnRetire,
+    splits,
+    bestSplits,
+    lastKillMs,
+    bestKillMs,
     heirInheritancePreview,
     autoClickers,
     hustleMultiplier,

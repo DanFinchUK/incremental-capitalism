@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { FIRST_LEGACY_LIFETIME } from '../src/engine/economy'
 import { useGameStore } from '../src/stores/game'
 
 describe('useGameStore', () => {
@@ -46,8 +45,9 @@ describe('useGameStore', () => {
     // Cannot claim free 0-cost Intern before earning at least 1 Legacy
     expect(store.buyPerk('autoClicker')).toBe(false)
 
-    store.addDebugMoney(FIRST_LEGACY_LIFETIME * 27, 1000) // Between P=3 (10.99 * 450B) and P=4 (30.67 * 450B)
-    expect(store.legacyGain).toBe(3)
+    store.addDebugMoney(1e12, 1000)
+    store.gatesBeaten = 2 // deepest gate 2 pays legacyForDepth(2) = 3
+    expect(store.legacyOnRetire).toBe(3)
     const estate = store.netWorth
     const lifetimeBefore = store.lifetimeEarned
     expect(store.heirInheritancePreview).toBe(Math.floor(estate * 0.05))

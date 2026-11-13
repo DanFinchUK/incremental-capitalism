@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  FIRST_LEGACY_LIFETIME,
   autoBuyThreshold,
   bulkBuyQuote,
   computeClickIncome,
-  computeLegacyGain,
-  legacyLifetimeThreshold,
   legacyMultiplier,
   computeOfflineCatchUp,
   computePassivePerSecond,
@@ -185,23 +182,7 @@ describe('economy engine', () => {
     expect(withLegacy?.id).toBe('1')
   })
 
-  it('uses a geometric Legacy curve (each point x2.7 lifetime, x1.5 income), +1x/rank Hustle cap, and offline catch-up', () => {
-    expect(FIRST_LEGACY_LIFETIME).toBe(4.5e11)
-    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME * 0.99, 0)).toBe(0)
-    expect(computeLegacyGain(FIRST_LEGACY_LIFETIME, 0)).toBe(1)
-    // P=2 needs another 2.7 * £450B: £450B * 3.7 = £1.665T
-    expect(computeLegacyGain(1.66e12, 1)).toBe(0)
-    expect(computeLegacyGain(1.665e12, 1)).toBe(1)
-    // P=3 needs another 2.7^2 * £450B: £450B * 10.99 = £4.9455T
-    expect(computeLegacyGain(4.94e12, 1)).toBe(1)
-    expect(legacyLifetimeThreshold(3)).toBeCloseTo(4.9455e12, -3)
-    expect(computeLegacyGain(legacyLifetimeThreshold(3), 1)).toBe(2)
-    // Float logs must not drop or add a point at exact thresholds
-    for (const p of [5, 10, 30, 60]) {
-      const at = legacyLifetimeThreshold(p)
-      expect(computeLegacyGain(at, 0)).toBe(p)
-      expect(computeLegacyGain(at * (1 - 1e-9), 0)).toBe(p - 1)
-    }
+  it('compounds Legacy at x1.5 per point, +1x/rank Hustle cap, and offline catch-up', () => {
     expect(legacyMultiplier(0)).toBe(1)
     expect(legacyMultiplier(1)).toBe(1.5)
     expect(legacyMultiplier(4)).toBeCloseTo(5.0625, 10)

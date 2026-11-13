@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { FIRST_LEGACY_LIFETIME, computeLegacyBracket, computeSectorSlices } from '../src/engine/economy'
+import { computeSectorSlices } from '../src/engine/economy'
 import { createTelemetryState, observeBalance, recordIncome, resetTelemetry, sampleTelemetry } from '../src/engine/telemetry'
 import { useGameStore } from '../src/stores/game'
 
@@ -82,14 +82,6 @@ describe('telemetry engine & sector breakdown', () => {
     const pctSum = slices.reduce((acc, s) => acc + s.pct, 0)
     expect(pctSum).toBeCloseTo(100, 2)
 
-    const bracketHalf = computeLegacyBracket(FIRST_LEGACY_LIFETIME * 0.5, 0)
-    expect(bracketHalf.pendingGain).toBe(0)
-    expect(bracketHalf.progress).toBeCloseTo(0.5, 4)
-
-    const bracketNext = computeLegacyBracket(FIRST_LEGACY_LIFETIME * 3.025, 0)
-    // Geometric: pendingGain = 1 (floor 1*B, next 3.7*B, span 2.7*B -> (3.025 - 1)/2.7 = 0.75)
-    expect(bracketNext.pendingGain).toBe(1)
-    expect(bracketNext.progress).toBeCloseTo(0.75, 4)
   })
 
   describe('store telemetry integration', () => {

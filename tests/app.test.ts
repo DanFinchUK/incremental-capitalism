@@ -149,7 +149,8 @@ describe('App UI integration', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
 
-    store.addDebugMoney(600_000_000_000, 1000) // > £500B -> +1 Legacy
+    store.addDebugMoney(600_000_000_000, 1000)
+    store.gatesBeaten = 1 // beating gate 1 pays +1 Legacy
     await wrapper.vm.$nextTick()
 
     const retireTrigger = wrapper.findAll('button').find((b) => b.text().includes('Retire for +1'))

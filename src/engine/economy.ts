@@ -159,13 +159,10 @@ export interface SocialClassStatus {
   bracketProgress: number
 }
 
-export function socialClassInfo(netWorth: number): SocialClassStatus {
-  let level = 0
-  for (let i = 1; i < SOCIAL_CLASSES.length; i++) {
-    if (netWorth > SOCIAL_CLASSES[i].threshold) {
-      level = i
-    }
-  }
+// Class comes from the gates beaten; net worth only fills the progress bar
+// towards the next gate.
+export function classInfoForLevel(level: number, netWorth: number): SocialClassStatus {
+  level = Math.min(SOCIAL_CLASSES.length - 1, Math.max(0, Math.floor(level)))
   const current = SOCIAL_CLASSES[level]
   const next = level + 1 < SOCIAL_CLASSES.length ? SOCIAL_CLASSES[level + 1] : null
   const incomeMultiplier = 1 + 0.15 * level
@@ -336,6 +333,8 @@ export interface AutoBuySelectionInput extends EconomySnapshotInput {
     businesses: Readonly<Record<string, boolean>>
   }
   nepotismRank: number
+  // Items priced above this are behind an unbeaten class gate
+  itemCostCeiling: number
 }
 
 export interface AutoBuyTarget {
@@ -369,6 +368,10 @@ export function isItemAutoBuyActive(
     return false
   }
   if (input.autoBuyDisabled[kind][id]) {
+    return false
+  }
+  const def = (kind === 'jobs' ? JOBS : BUSINESSES).find((d) => d.id === id)
+  if (!def || def.baseCost > input.itemCostCeiling) {
     return false
   }
   return isItemAutoBuyUnlocked(kind, id, scaleFactor, input.lifetimePurchases, input.nepotismRank, input.legacyPoints)

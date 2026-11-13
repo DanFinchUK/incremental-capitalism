@@ -10,6 +10,16 @@
     </div>
   </div>
 
+  <div v-else-if="row.mode === 'gated'" class="scn-Card scn-Card-teaser" data-testid="gated-row">
+    <div class="scn-TeaserBox">🔒</div>
+    <div class="scn-CardBody">
+      <div class="scn-CardHeader">
+        <h4 class="scn-CardTitle">Locked</h4>
+      </div>
+      <p class="scn-AutoLine">Locked until you beat {{ row.bossTitle }}</p>
+    </div>
+  </div>
+
   <div
     v-else
     class="scn-Card"

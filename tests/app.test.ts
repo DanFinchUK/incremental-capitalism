@@ -17,8 +17,10 @@ describe('App UI integration', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const cardTitles = wrapper.findAll('.scn-CardTitle').map((el) => el.text())
     expect(cardTitles).toContain('Gig delivery rider (0)')
-    expect(cardTitles).toContain('Etsy store (0)')
     expect(cardTitles).toContain('???')
+    // Businesses sit behind the first class gate on a new game
+    expect(cardTitles.some((t) => t.includes('Etsy store'))).toBe(false)
+    expect(wrapper.find('[data-testid="gated-row"]').text()).toContain('Locked until you beat Zero-Hours Walkout')
     expect(cardTitles.some((t) => t.includes('Artisanal sourdough bakery'))).toBe(false)
     expect(cardTitles.some((t) => t.includes('Multi-national conglomerate'))).toBe(false)
     wrapper.unmount()
@@ -110,6 +112,7 @@ describe('App UI integration', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
 
+    store.gatesBeaten = 9
     store.legacyPoints = 1
     store.businessesOwned = { '1': 10, '20': 2 }
     store.lifetimePurchases.businesses = { '1': 50, '20': 2 }

@@ -56,7 +56,6 @@ describe('useGameStore', () => {
     // Heir starts with 5% of the estate as cash; it isn't counted as earned
     expect(store.money).toBe(Math.floor(estate * 0.05))
     expect(store.lifetimeEarned).toBe(lifetimeBefore)
-    expect(store.classStatus.current.level).toBeGreaterThan(0)
     expect(store.legacyAvailable).toBe(3)
 
     // 1st Intern costs 0, 2nd Intern costs 1, Grindset Coaching I ('hustleCap') costs 1
@@ -161,35 +160,6 @@ describe('useGameStore', () => {
     expect(reloaded.compactAutoBuy).toBe(true)
   })
 
-  it('triggers ClassModal once per class per save and uses banner on repeat runs', () => {
-    const store = useGameStore()
-    store.hydrateFromStorage(1000)
-    expect(store.highestClassReached).toBe(0)
-    expect(store.classModalOpen).toBe(false)
-
-    // Earning £6,000 crosses Class 1 (Emergent service worker, threshold £4,999) for the first time
-    store.businessesOwned['1'] = 3 // >£7,800/s
-    store.tick(1000)
-    store.tick(2000)
-    expect(store.highestClassReached).toBe(1)
-    expect(store.classModalOpen).toBe(true)
-    expect(store.celebratedClassLevel).toBe(1)
-
-    store.closeClassModal()
-    expect(store.classModalOpen).toBe(false)
-
-    // Simulate retiring and climbing past Class 1 again: no repeat modal, only banner
-    store.addDebugMoney(600_000_000_000, 3000) // reaches Class 5 on debug credit (not tick), let's reset money & test Class 1 repeat
-    store.retire(4000)
-    store.closeClassModal()
-    // highestClassReached is now >= 1; crossing Class 1 again on Run #2 does NOT re-open modal
-    store.businessesOwned['1'] = 3
-    store.tick(4000)
-    store.tick(5000)
-    expect(store.classStatus.current.level).toBeGreaterThanOrEqual(1)
-    expect(store.classModalOpen).toBe(false)
-  })
-
   it('includes business auto-buy unlock threshold as a stop in Next bulk-buy mode', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
@@ -208,6 +178,7 @@ describe('useGameStore', () => {
   it('enforces a 1-second auto-buy cooldown, follows the bulk-buy mode, and supports master autoBuyPaused toggle', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
+    store.gatesBeaten = 9
     store.legacyPoints = 1
     store.lifetimePurchases.businesses = { '1': 50 }
     store.money = 10_000_000

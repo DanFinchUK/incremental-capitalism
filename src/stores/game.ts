@@ -35,7 +35,7 @@ import {
   nextLegacyLifetimeThreshold,
   quoteIncomeDelta,
   selectAutoBuyTarget,
-  socialClassInfo,
+  classInfoForLevel,
   type AutoBuySelectionInput,
   type BulkBuyMode,
   type EconomySnapshotInput,
@@ -62,10 +62,12 @@ import {
   type TelemetryState
 } from '../engine/telemetry'
 import { formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
+import { bossForGate, itemCostCeiling } from '../engine/bosses'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
   | { mode: 'teaser'; key: string }
+  | { mode: 'gated'; key: string; bossTitle: string }
 
 export interface ActiveMarketEvent {
   id: number
@@ -139,7 +141,9 @@ export const useGameStore = defineStore('game', () => {
   const celebratedClassLevel = ref<number | null>(null)
 
   const netWorth = computed(() => money.value + spentThisRun.value)
-  const classStatus = computed(() => socialClassInfo(netWorth.value))
+  const gatesBeaten = ref<number>(initial.gatesBeaten)
+  const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
+  const costCeiling = computed(() => itemCostCeiling(gatesBeaten.value))
   const heirInheritancePreview = computed(() => heirInheritance(netWorth.value))
   const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value))
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
@@ -186,7 +190,8 @@ export const useGameStore = defineStore('game', () => {
     ...economyInput.value,
     lifetimePurchases: lifetimePurchases.value,
     autoBuyDisabled: autoBuyDisabled.value,
-    nepotismRank: perks.value.nepotism
+    nepotismRank: perks.value.nepotism,
+    itemCostCeiling: costCeiling.value
   }))
 
   const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
@@ -208,6 +213,9 @@ export const useGameStore = defineStore('game', () => {
       const job = JOBS[i]
       const prev = i > 0 ? JOBS[i - 1] : null
       const prevOwned = prev ? ((jobsPurchased.value[prev.id] ?? 0) > 0 || (lifetimePurchases.value.jobs[prev.id] ?? 0) > 0) : false
+      if (job.baseCost > costCeiling.value) {
+        continue
+      }
       if (
         i === 0 ||
         (jobsPurchased.value[job.id] ?? 0) > 0 ||
@@ -224,6 +232,9 @@ export const useGameStore = defineStore('game', () => {
       const prevOwned = prev
         ? ((businessesOwned.value[biz.id] ?? 0) > 0 || (lifetimePurchases.value.businesses[biz.id] ?? 0) > 0)
         : false
+      if (biz.baseCost > costCeiling.value) {
+        continue
+      }
       if (
         i === 0 ||
         (businessesOwned.value[biz.id] ?? 0) > 0 ||
@@ -236,14 +247,16 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  function buildVisibleList<T extends { id: string }>(
+  function buildVisibleList<T extends { id: string; baseCost: number }>(
     items: ReadonlyArray<T>,
     seenMap: Readonly<Record<string, boolean>>,
     prefix: string
   ): VisibleRow<T>[] {
-    let highestSeen = 0
+    // Items are listed cheapest first, so everything up to the last seen
+    // item under the ceiling is revealed.
+    let highestSeen = -1
     for (let i = 0; i < items.length; i++) {
-      if (seenMap[items[i].id]) {
+      if (items[i].baseCost <= costCeiling.value && seenMap[items[i].id]) {
         highestSeen = i
       }
     }
@@ -251,8 +264,11 @@ export const useGameStore = defineStore('game', () => {
     for (let i = 0; i <= highestSeen; i++) {
       rows.push({ mode: 'revealed', item: items[i] })
     }
-    if (highestSeen + 1 < items.length) {
-      rows.push({ mode: 'teaser', key: `${prefix}-teaser-${items[highestSeen + 1].id}` })
+    const next = items[highestSeen + 1]
+    if (next && next.baseCost > costCeiling.value) {
+      rows.push({ mode: 'gated', key: `${prefix}-gated-${next.id}`, bossTitle: bossForGate(gatesBeaten.value + 1)?.title ?? '' })
+    } else if (next) {
+      rows.push({ mode: 'teaser', key: `${prefix}-teaser-${next.id}` })
     }
     return rows
   }
@@ -278,6 +294,7 @@ export const useGameStore = defineStore('game', () => {
       seenItems: seenItems.value,
       lifetimeEarned: lifetimeEarned.value,
       highestClassReached: highestClassReached.value,
+      gatesBeaten: gatesBeaten.value,
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
@@ -316,6 +333,7 @@ export const useGameStore = defineStore('game', () => {
     seenItems.value = loaded.seenItems
     lifetimeEarned.value = loaded.lifetimeEarned
     highestClassReached.value = loaded.highestClassReached
+    gatesBeaten.value = loaded.gatesBeaten
     bulkBuyMode.value = loaded.bulkBuyMode
     autoBuyPaused.value = loaded.autoBuyPaused
     compactAutoBuy.value = loaded.compactAutoBuy
@@ -425,9 +443,9 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function buyItem(kind: ItemKind, id: string, modeOverride?: BulkBuyMode): { bought: number; hitMilestone: boolean; promotedClass: boolean } {
-    const prevClass = classStatus.value.current.level
     const quote = itemQuote(kind, id, modeOverride)
-    if (!quote.canAfford || quote.count < 1) {
+    const gatedDef = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
+    if (!quote.canAfford || quote.count < 1 || !gatedDef || gatedDef.baseCost > costCeiling.value) {
       return { bought: 0, hitMilestone: false, promotedClass: false }
     }
 
@@ -446,8 +464,8 @@ export const useGameStore = defineStore('game', () => {
     refreshSeenItems()
 
     const crossedMilestone = itemMilestones(def.scaleFactor).filter((m) => prevOwned < m && nextOwned >= m).pop() ?? null
-    const promoted = handleClassPromotion(prevClass)
-    if (!promoted && crossedMilestone !== null) {
+    const promoted = false
+    if (crossedMilestone !== null) {
       markTelemetryEvent(telemetry.value, 'M')
       const step = (2 + 0.25 * perks.value.deregulation).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned — ${step}x output milestone!`)
@@ -488,11 +506,9 @@ export const useGameStore = defineStore('game', () => {
     const step = maxBonus / 20
     hustleBonus.value = Math.min(maxBonus, Number((hustleBonus.value + step).toFixed(2)))
     lastManualClickAt.value = ts
-    const prevClass = classStatus.value.current.level
     const amount = moneyPerClick.value
     creditMoney(amount, 'manual', ts)
     refreshSeenItems()
-    handleClassPromotion(prevClass)
     return amount
   }
 
@@ -552,27 +568,21 @@ export const useGameStore = defineStore('game', () => {
       return 'golden'
     }
     if (effect.type === 'windfall') {
-      const prevClass = classStatus.value.current.level
       const windfall = Math.max(500, unbuffedMoneyPerSecond.value * effect.seconds)
       markTelemetryEvent(telemetry.value, '★')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
-      if (!handleClassPromotion(prevClass)) {
-        announce(`${rarityPrefix}${name}: ${formatDuration(effect.seconds)} of passive income wired offshore!`)
-      }
+      announce(`${rarityPrefix}${name}: ${formatDuration(effect.seconds)} of passive income wired offshore!`)
       flushSave(ts)
       return 'golden'
     }
     // Shady Deal: 50/50 windfall vs auto-buy freeze
     if (rng() < 0.5) {
-      const prevClass = classStatus.value.current.level
       const windfall = Math.max(1500, unbuffedMoneyPerSecond.value * effect.winSeconds)
       markTelemetryEvent(telemetry.value, '★')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
-      if (!handleClassPromotion(prevClass)) {
-        announce(`VIP-Lane Contract Approved! ${formatDuration(effect.winSeconds)} passive windfall!`)
-      }
+      announce(`VIP-Lane Contract Approved! ${formatDuration(effect.winSeconds)} passive windfall!`)
       flushSave(ts)
       return 'shadyWin'
     }
@@ -605,9 +615,7 @@ export const useGameStore = defineStore('game', () => {
         const decayRate = Math.max(1, (maxHustle.value - 1) / 2.5)
         hustleBonus.value = Math.max(0, Number((hustleBonus.value - deltaSec * decayRate).toFixed(3)))
       }
-      const prevClass = classStatus.value.current.level
       creditMoney(moneyPerSecond.value * deltaSec, 'passive', ts)
-      handleClassPromotion(prevClass)
     }
 
     refreshSeenItems()
@@ -806,6 +814,9 @@ export const useGameStore = defineStore('game', () => {
     classModalOpen,
     celebratedClassLevel,
     netWorth,
+    gatesBeaten,
+    handleClassPromotion,
+    costCeiling,
     classStatus,
     legacyMultiplier,
     legacyAvailable,

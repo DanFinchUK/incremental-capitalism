@@ -48,6 +48,7 @@ export interface PersistedSceneState {
   office: OfficeState
   familyTree: GenerationRecord[]
   achievements: string[]
+  titles: number
   achievementProgress: AchievementProgress
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
@@ -90,6 +91,7 @@ export function createInitialSceneState(): PersistedSceneState {
     office: { seats: [], paChair: null, offer: [] },
     familyTree: [],
     achievements: [],
+    titles: 0,
     achievementProgress: { ...EMPTY_PROGRESS },
     bulkBuyMode: 1,
     autoBuyPaused: false,
@@ -320,6 +322,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       ? [...new Set(s.achievements.filter((id): id is string => typeof id === 'string' && !!ACHIEVEMENTS_BY_ID[id]))]
       : [],
     achievementProgress: readProgress(s.achievementProgress),
+    titles: Math.floor(readNonNegativeNumber(s.titles, 0)),
     familyTree: Array.isArray(s.familyTree)
       ? s.familyTree.map(readGenerationRecord).filter((r): r is GenerationRecord => r !== null).slice(-MAX_TREE_ENTRIES)
       : [],

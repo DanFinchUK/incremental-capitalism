@@ -17,7 +17,7 @@ import {
   type MarketEventKind,
   type ScandalOutcome
 } from '../data/events'
-import { perkNextCost, type PerkId, type PerkRanks } from '../data/perks'
+import { EMPTY_PERKS, perkNextCost, type PerkId, type PerkRanks } from '../data/perks'
 import {
   bulkBuyQuote,
   computeClickIncome,
@@ -64,6 +64,7 @@ import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
 import { createOfficeModule } from './modules/office'
 import { MAX_TREE_ENTRIES, type GenerationRecord } from '../engine/family'
+import { heirChoiceCount, peerageRank, titleExtraSeats, titleSource, titlesFor } from '../engine/peerage'
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from '../engine/office'
 import { ADVISORS_BY_ID } from '../data/advisors'
@@ -164,9 +165,13 @@ export const useGameStore = defineStore('game', () => {
   const achievements = ref<string[]>(initial.achievements)
   const achievementProgress = ref<AchievementProgress>(initial.achievementProgress)
   const achievementsOpen = ref(false)
+  const titles = ref<number>(initial.titles)
+  // Elevation needs the Royal Garden Party beaten at least once, ever
+  const titlesOnElevation = computed(() => titlesFor(legacyPoints.value))
+  const canElevate = computed(() => bestSplits.value[9] != null && titlesOnElevation.value >= 1)
   const office = createOfficeModule({
     money,
-    extraSeats: () => perks.value.officeSeats,
+    extraSeats: () => perks.value.officeSeats + titleExtraSeats(titles.value),
     announce: (msg) => announce(msg),
     flushSave: () => flushSave(nowMs.value)
   })
@@ -175,7 +180,8 @@ export const useGameStore = defineStore('game', () => {
     combineModifiers([
       ...(heir.value.traitId && TRAITS_BY_ID[heir.value.traitId] ? [TRAITS_BY_ID[heir.value.traitId].mods] : []),
       ...office.officeSources.value,
-      achievementSource(achievements.value.length)
+      achievementSource(achievements.value.length),
+      titleSource(titles.value)
     ])
   )
   const activeGenerationMs = ref<number>(initial.activeGenerationMs)
@@ -375,6 +381,7 @@ export const useGameStore = defineStore('game', () => {
       office: office.snapshot(),
       familyTree: familyTree.value,
       achievements: achievements.value,
+      titles: titles.value,
       achievementProgress: achievementProgress.value,
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
@@ -427,6 +434,7 @@ export const useGameStore = defineStore('game', () => {
     office.loadState(loaded.office)
     familyTree.value = loaded.familyTree
     achievements.value = loaded.achievements
+    titles.value = loaded.titles
     achievementProgress.value = loaded.achievementProgress
     bosses.bossAttempt.value = null
     bosses.bossCooldownUntilMs.value = 0
@@ -880,6 +888,17 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
     if (gatesBeaten.value <= 2) unlockAchievement('early-retirement')
+    const inheritance = endGeneration(ts, gain)
+    announce(
+      `Retired with +${gain} Legacy! Your heir inherits ${formatCurrency(inheritance)} and a x${formatMultiplier(legacyMultiplier.value)} income multiplier.`
+    )
+    flushSave(ts)
+    return true
+  }
+
+  // Close the current generation: record it, pay out Legacy and the trust
+  // fund, clear the run and draft the next heirs. Returns the trust fund.
+  function endGeneration(ts: number, gain: number): number {
     achievementProgress.value = { ...EMPTY_PROGRESS }
     const payroll = [office.paChair.value, ...office.officeSeats.value].filter((a): a is AdvisorInstance => a !== null)
     familyTree.value = [
@@ -904,7 +923,12 @@ export const useGameStore = defineStore('game', () => {
     businessesOwned.value = {}
     gatesBeaten.value = 0
     activeGenerationMs.value = 0
-    heirChoices.value = rollHeirChoices(Math.random, familySurname.value, [...familyTree.value.map((r) => r.name), heir.value.name])
+    heirChoices.value = rollHeirChoices(
+      Math.random,
+      familySurname.value,
+      [...familyTree.value.map((r) => r.name), heir.value.name],
+      heirChoiceCount(titles.value)
+    )
     office.onRetire()
     splits.value = emptySplits()
     lastKillMs.value = emptySplits()
@@ -918,9 +942,24 @@ export const useGameStore = defineStore('game', () => {
     activeEvent.value = null
     resetTelemetry(telemetry.value, ts, money.value)
     refreshSeenItems()
-    announce(
-      `Retired with +${gain} Legacy! Your heir inherits ${formatCurrency(inheritance)} and a x${formatMultiplier(legacyMultiplier.value)} income multiplier.`
-    )
+    return inheritance
+  }
+
+  // Trade Legacy, perks and the office for permanent Titles. The family
+  // name and its records carry on; the PA retires with the old line.
+  function elevateToLords(ts = Date.now()): boolean {
+    nowMs.value = ts
+    const gain = titlesOnElevation.value
+    if (!canElevate.value) {
+      return false
+    }
+    titles.value += gain
+    endGeneration(ts, 0)
+    legacyPoints.value = 0
+    legacySpent.value = 0
+    perks.value = { ...EMPTY_PERKS }
+    office.firePA()
+    announce(`Elevated to the Lords! The family now holds ${titles.value} title${titles.value === 1 ? '' : 's'}: ${peerageRank(titles.value)}.`)
     flushSave(ts)
     return true
   }
@@ -1092,6 +1131,10 @@ export const useGameStore = defineStore('game', () => {
     fireAdvisor,
     achievements,
     achievementsOpen,
+    titles,
+    titlesOnElevation,
+    canElevate,
+    elevateToLords,
     firePA: office.firePA,
     promoteToPA: office.promoteToPA,
     costCeiling,

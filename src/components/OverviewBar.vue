@@ -65,6 +65,17 @@
       </button>
 
       <button
+        v-if="store.canElevate"
+        type="button"
+        class="scn-Action scn-Action-purple"
+        data-testid="elevate"
+        @click="elevateOpen = true"
+      >
+        Elevate to the Lords (+{{ store.titlesOnElevation }} titles)
+      </button>
+      <ElevateModal :open="elevateOpen" @close="elevateOpen = false" />
+
+      <button
         type="button"
         class="scn-Action scn-Action-outline"
         @click="store.toggleMute()"
@@ -76,7 +87,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import ElevateModal from './ElevateModal.vue'
 import type { BulkBuyMode } from '../engine/economy'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
@@ -86,6 +98,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useGameStore()
+const elevateOpen = ref(false)
 
 const networkBadgeText = computed(() => {
   if (store.legacyAvailable === 0 && store.legacyPoints >= 1 && store.perks.autoClicker === 0) {

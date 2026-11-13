@@ -42,6 +42,7 @@
             Head of the family: <strong>{{ store.heir.name }}</strong>
             <span v-if="currentTrait"> · {{ currentTrait.name }}</span>
             <span v-else> · the founder</span>
+            <span v-if="store.titles > 0"> · {{ peerageRank(store.titles) }} ({{ store.titles }} titles)</span>
             <span class="scn-StatHint"> (generation {{ store.generation }})</span>
             <button type="button" class="scn-LinkButton" data-testid="open-family-tree" @click="store.familyTreeOpen = true">
               Family tree
@@ -120,6 +121,7 @@ import { SOCIAL_CLASSES } from '../data/classes'
 import { useGameStore } from '../stores/game'
 import { formatCurrency, formatMultiplier } from '../utils/format'
 import { TRAITS_BY_ID } from '../data/heirs'
+import { peerageRank } from '../engine/peerage'
 
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void

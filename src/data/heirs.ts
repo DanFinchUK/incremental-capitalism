@@ -138,11 +138,11 @@ export function heirName(rng: () => number, surname: string, takenNames: Readonl
   return `${base}${NUMERALS[Math.min(repeats, NUMERALS.length - 1)]}`
 }
 
-export function rollHeirChoices(rng: () => number, surname: string, takenNames: ReadonlyArray<string>): Heir[] {
+export function rollHeirChoices(rng: () => number, surname: string, takenNames: ReadonlyArray<string>, count = 3): Heir[] {
   const choices: Heir[] = []
   const usedTraits = new Set<string>()
   const usedNames = [...takenNames]
-  for (let guard = 0; choices.length < 3 && guard < 50; guard++) {
+  for (let guard = 0; choices.length < count && guard < 50; guard++) {
     const rarity = pickEventRarity(rng())
     const pool = HEIR_TRAITS.filter((t) => t.rarity === rarity && !usedTraits.has(t.id))
     if (pool.length === 0) continue

@@ -180,7 +180,12 @@ About 15 achievements, each granting a small permanent income bonus (+2% each, a
 
 ### Peerage (endgame)
 
-After beating the Royal Garden Party at least once, the player can be elevated to the Lords. This resets Legacy, perks and the family tree's current line in exchange for Titles, a new permanent currency for large multipliers and unlocks (for example an extra office seat, rarer heirs, or starting a class higher). This phase gets its own short design pass once phases 1 to 6 have been played, because its numbers depend on them.
+Built overnight with Claude's calls, as Dan asked ("make sensible decisions").
+
+- Unlock: once the family has beaten the Royal Garden Party at least once, ever, and holds enough Legacy for one title.
+- Elevation converts Legacy into Titles: floor(sqrt(Legacy / 100)). It ends the current generation (recorded in the family tree), then gives up Legacy points, perks and the whole family office including the PA. The family name, tree, achievements and best times carry on.
+- Each title adds 50% to all income, for good. One title adds an office seat, two bring a fourth heir to the succession draft, three make Legacy worth 50% more, and five move automation 5% further.
+- Ranks by titles held: Baron, Viscount, Earl, Marquess, Duke.
 
 ### Tone audit
 

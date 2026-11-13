@@ -17,10 +17,8 @@ describe('App UI integration', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const cardTitles = wrapper.findAll('.scn-CardTitle').map((el) => el.text())
     expect(cardTitles).toContain('Gig delivery rider (0)')
+    expect(cardTitles).toContain('Etsy store (0)')
     expect(cardTitles).toContain('???')
-    // Businesses sit behind the first class gate on a new game
-    expect(cardTitles.some((t) => t.includes('Etsy store'))).toBe(false)
-    expect(wrapper.find('[data-testid="gated-row"]').text()).toContain('Locked until you beat Zero-Hours Walkout')
     expect(cardTitles.some((t) => t.includes('Artisanal sourdough bakery'))).toBe(false)
     expect(cardTitles.some((t) => t.includes('Multi-national conglomerate'))).toBe(false)
     wrapper.unmount()
@@ -159,7 +157,7 @@ describe('App UI integration', () => {
 
     const modal = wrapper.find('[data-testid="retire-modal"]')
     expect(modal.exists()).toBe(true)
-    expect(modal.text()).toContain('x1 → x1.5')
+    expect(modal.text()).toContain('x1 → x1.05')
     expect(modal.find('[data-testid="heir-inheritance"]').text()).toContain('£30,000,000,000')
     expect(modal.text()).toContain('Business Auto-buy')
 

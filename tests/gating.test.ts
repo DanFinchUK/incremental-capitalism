@@ -50,19 +50,21 @@ describe('class gates in the store', () => {
     store.money = 1e12
     store.tick(1000)
     store.tick(2000)
-    const revealed = store.visibleJobs.flatMap((r) => (r.mode === 'revealed' ? [r.item.baseCost] : []))
-    expect(Math.max(...revealed)).toBeLessThanOrEqual(store.costCeiling)
-    expect(store.visibleJobs.at(-1)).toMatchObject({ mode: 'gated', bossTitle: 'Zero-Hours Walkout' })
-    expect(store.visibleBusinesses.some((r) => r.mode === 'revealed')).toBe(false)
+    for (const list of [store.visibleJobs, store.visibleBusinesses]) {
+      const revealed = list.flatMap((r) => (r.mode === 'revealed' ? [r.item.baseCost] : []))
+      expect(Math.max(...revealed)).toBeLessThanOrEqual(store.costCeiling)
+      expect(list.at(-1)).toMatchObject({ mode: 'gated', bossTitle: 'Zero-Hours Walkout' })
+    }
   })
 
   it('hides items owned in earlier generations if they are above the ceiling', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
-    store.lifetimePurchases.jobs[JOBS[5].id] = 40
+    const above = JOBS.find((j) => j.baseCost > store.costCeiling)!
+    store.lifetimePurchases.jobs[above.id] = 40
     store.tick(1000)
     store.tick(2000)
-    expect(store.visibleJobs.some((r) => r.mode === 'revealed' && r.item.id === JOBS[5].id)).toBe(false)
+    expect(store.visibleJobs.some((r) => r.mode === 'revealed' && r.item.id === above.id)).toBe(false)
   })
 
   it('never buys an item above the ceiling, by hand or with Max', () => {
@@ -71,7 +73,8 @@ describe('class gates in the store', () => {
     store.money = 1e15
     const above = JOBS.find((j) => j.baseCost > store.costCeiling)!
     expect(store.buyItem('jobs', above.id).bought).toBe(0)
-    expect(store.buyItem('businesses', BUSINESSES[0].id).bought).toBe(0)
+    const bizAbove = BUSINESSES.find((b) => b.baseCost > store.costCeiling)!
+    expect(store.buyItem('businesses', bizAbove.id).bought).toBe(0)
     store.setBulkBuyMode('max')
     expect(store.buyItem('jobs', JOBS[0].id).bought).toBeGreaterThan(0)
     expect(store.jobsPurchased[above.id] ?? 0).toBe(0)
@@ -84,7 +87,9 @@ describe('class gates in the store', () => {
     for (const b of BUSINESSES) store.lifetimePurchases.businesses[b.id] = 500
     store.money = 1e15
     for (let i = 1; i <= 5; i++) store.tick(1000 + i * 1100)
-    for (const b of BUSINESSES) expect(store.businessesOwned[b.id] ?? 0).toBe(0)
+    for (const b of BUSINESSES.filter((x) => x.baseCost > store.costCeiling)) {
+      expect(store.businessesOwned[b.id] ?? 0).toBe(0)
+    }
   })
 
   it('does not promote on net worth alone', () => {

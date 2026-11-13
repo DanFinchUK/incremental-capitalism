@@ -6,9 +6,10 @@ const MILESTONES_MODERATE: ReadonlyArray<number> = [10, 20, 40, 75, 125]
 const MILESTONES_STEEP: ReadonlyArray<number> = [5, 10, 25, 50, 75]
 const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35]
 
-// Each Legacy point multiplies income by LEGACY_INCOME_RATIO. Legacy is
-// earned by depth (see legacyForDepth in engine/bosses.ts).
-export const LEGACY_INCOME_RATIO = 1.5
+// Each Legacy point adds LEGACY_INCOME_PER_POINT to the income multiplier.
+// Legacy is earned by depth (see legacyForDepth in engine/bosses.ts), which
+// roughly doubles per gate, so a compounding multiplier would overflow.
+export const LEGACY_INCOME_PER_POINT = 0.05
 // Share of the retiring run's net worth the heir starts with as cash.
 // Simulated: any share up to 20% leaves the +1..+3 retire balance intact,
 // so this is tuned for feel (skip the penny-clicking, keep the mid game).
@@ -172,7 +173,7 @@ export function classInfoForLevel(level: number, netWorth: number): SocialClassS
 }
 
 export function legacyMultiplier(legacyPoints: number): number {
-  return Math.pow(LEGACY_INCOME_RATIO, Math.max(0, legacyPoints))
+  return 1 + LEGACY_INCOME_PER_POINT * Math.max(0, legacyPoints)
 }
 
 export function maxHustleMultiplier(rank: number): number {

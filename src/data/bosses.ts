@@ -48,7 +48,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'The app halves your click pay.',
     conditionText: 'Earn the target from clicks while your Hustle streak is full. Nobody strikes alone.',
     twists: [{ kind: 'clickPay', mult: 0.5 }],
-    condition: { kind: 'clickEarningsAtFullHustle', target: gateTarget(1, 3) },
+    condition: { kind: 'clickEarningsAtFullHustle', target: gateTarget(1, 1.5) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 1
@@ -61,7 +61,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Rent takes 30% of all income.',
     conditionText: 'Earn the target after rent.',
     twists: [{ kind: 'incomeTax', rate: 0.3 }],
-    condition: { kind: 'earnedAfterTax', target: gateTarget(2, 3) },
+    condition: { kind: 'earnedAfterTax', target: gateTarget(2, 1.5) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 3
@@ -74,7 +74,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Every purchase costs 50% more while the council deliberates.',
     conditionText: 'Reach the target net worth.',
     twists: [{ kind: 'purchaseCost', mult: 1.5 }],
-    condition: { kind: 'netWorth', target: gateTarget(3, 3) },
+    condition: { kind: 'netWorth', target: gateTarget(3, 1.5) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 7
@@ -87,7 +87,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Every purchase is a stroke.',
     conditionText: 'Reach the target net worth in 15 purchases or fewer.',
     twists: [],
-    condition: { kind: 'netWorthWithinPar', target: gateTarget(4, 3), par: 15 },
+    condition: { kind: 'netWorthWithinPar', target: gateTarget(4, 2), par: 15 },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 15
@@ -100,7 +100,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Opportunities pour in every few seconds, and some are corked.',
     conditionText: 'Reach the target net worth. Corked tastings cost you 5% of your cash.',
     twists: [{ kind: 'eventFlood', intervalSec: 6, corkedChance: 0.3 }],
-    condition: { kind: 'netWorth', target: gateTarget(5, 3) },
+    condition: { kind: 'netWorth', target: gateTarget(5, 2) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 31
@@ -113,7 +113,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Clicks polish silver instead of paying.',
     conditionText: 'Polish the target worth of silver. Unpaid Interns polish too.',
     twists: [{ kind: 'clicksPolish' }],
-    condition: { kind: 'polish', target: gateTarget(6, 3) },
+    condition: { kind: 'polish', target: gateTarget(6, 2) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 63
@@ -126,7 +126,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'The valuers want to see everything.',
     conditionText: 'Own at least one of every revealed item and reach the target net worth.',
     twists: [],
-    condition: { kind: 'ownAllRevealed', netWorth: gateTarget(7, 3) },
+    condition: { kind: 'ownAllRevealed', netWorth: gateTarget(7, 2) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 127
@@ -139,7 +139,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twistText: 'Automation is paused while you answer questions.',
     conditionText: 'Reach the target net worth by hand.',
     twists: [{ kind: 'automationPaused' }],
-    condition: { kind: 'netWorth', target: gateTarget(8, 3) },
+    condition: { kind: 'netWorth', target: gateTarget(8, 2) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 255
@@ -156,7 +156,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
       { kind: 'incomeTax', rate: 0.15 },
       { kind: 'purchaseCost', mult: 1.25 }
     ],
-    condition: { kind: 'netWorth', target: gateTarget(9, 3) },
+    condition: { kind: 'netWorth', target: gateTarget(9, 2) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC,
     legacyReward: 511

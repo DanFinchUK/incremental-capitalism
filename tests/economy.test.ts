@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SOCIAL_CLASSES } from '../src/data/classes'
 import {
   autoBuyThreshold,
   bulkBuyQuote,
@@ -91,7 +92,7 @@ describe('economy engine', () => {
 
     const mid = classInfoForLevel(0, 2500)
     expect(mid.current.level).toBe(0)
-    expect(mid.bracketProgress).toBeCloseTo(2500 / 4999, 3)
+    expect(mid.bracketProgress).toBeCloseTo(2500 / SOCIAL_CLASSES[1].threshold, 6)
 
     const elite = classInfoForLevel(6, 9e12)
     expect(elite.current.level).toBe(6)
@@ -107,11 +108,11 @@ describe('economy engine', () => {
     expect(reptilian.bracketProgress).toBe(1)
   })
 
-  it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, compounding legacy, and intern hustle benefit', () => {
+  it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, legacy, and intern hustle benefit', () => {
     const base = {
       jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 2x milestone + +10% to Etsy store ('1')
       businessesOwned: { '1': 9 }, // Etsy store x9 -> £2,600/s * 1.10 = £2,860/s each
-      legacyPoints: 2, // 1.5^2 = 2.25x legacy
+      legacyPoints: 25, // 1 + 0.05 * 25 = 2.25x legacy
       classLevel: 0,
       deregulationRank: 0,
       autoClickers: 0,
@@ -182,10 +183,10 @@ describe('economy engine', () => {
     expect(withLegacy?.id).toBe('1')
   })
 
-  it('compounds Legacy at x1.5 per point, +1x/rank Hustle cap, and offline catch-up', () => {
+  it('adds 5% income per Legacy point, +1x/rank Hustle cap, and offline catch-up', () => {
     expect(legacyMultiplier(0)).toBe(1)
-    expect(legacyMultiplier(1)).toBe(1.5)
-    expect(legacyMultiplier(4)).toBeCloseTo(5.0625, 10)
+    expect(legacyMultiplier(1)).toBeCloseTo(1.05)
+    expect(legacyMultiplier(20)).toBeCloseTo(2)
     expect(maxHustleMultiplier(0)).toBe(3)
     expect(maxHustleMultiplier(1)).toBe(4)
     expect(maxHustleMultiplier(5)).toBe(8)

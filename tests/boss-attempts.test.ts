@@ -96,7 +96,8 @@ describe('boss attempts', () => {
     const { business, interns } = computeIncomeBreakdown(store.economyInput)
     const polishBefore = store.bossAttempt!.polish
     store.tick(T0 + 1000)
-    expect(store.money - before).toBeCloseTo(business, 0)
+    // Money is around 1e17 here, so allow for float spacing
+    expect(store.money - before).toBeCloseTo(business, -2)
     expect(store.bossAttempt!.polish - polishBefore).toBeGreaterThan(interns * 0.9)
   })
 

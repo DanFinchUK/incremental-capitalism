@@ -60,6 +60,7 @@
       >
         {{ t.label }}
         <span v-if="hasNew(t.id)" class="mob-TabNew" data-testid="tab-new">New</span>
+        <span v-if="t.id === 'family' && store.headhunterOffer.length > 0" class="mob-TabNew" data-testid="tab-hire">Hire</span>
         <span v-if="affordable(t.id) > 0" class="mob-TabCount" data-testid="tab-affordable" :aria-label="`${affordable(t.id)} you can afford`">{{ affordable(t.id) }}</span>
       </button>
     </div>

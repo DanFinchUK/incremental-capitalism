@@ -88,7 +88,7 @@ export function createInitialSceneState(): PersistedSceneState {
     heir: null,
     heirChoices: [],
     generation: 1,
-    office: { seats: [], paChair: null, offer: [] },
+    office: { seats: [], paChair: null, offer: [], queued: 0 },
     familyTree: [],
     achievements: [],
     titles: 0,
@@ -151,7 +151,7 @@ function readAdvisor(raw: unknown): AdvisorInstance | null {
 }
 
 function readOffice(raw: unknown): OfficeState {
-  if (!raw || typeof raw !== 'object') return { seats: [], paChair: null, offer: [] }
+  if (!raw || typeof raw !== 'object') return { seats: [], paChair: null, offer: [], queued: 0 }
   const o = raw as Record<string, unknown>
   const paChair = readAdvisor(o.paChair)
   // Each advisor exists once: drop repeated uids and any seat copy of the PA
@@ -164,7 +164,8 @@ function readOffice(raw: unknown): OfficeState {
   return {
     seats,
     paChair,
-    offer: Array.isArray(o.offer) ? o.offer.filter((id): id is string => typeof id === 'string' && !!ADVISORS_BY_ID[id]).slice(0, 3) : []
+    offer: Array.isArray(o.offer) ? o.offer.filter((id): id is string => typeof id === 'string' && !!ADVISORS_BY_ID[id]).slice(0, 3) : [],
+    queued: typeof o.queued === 'number' && Number.isFinite(o.queued) ? Math.min(9, Math.max(0, Math.floor(o.queued))) : 0
   }
 }
 

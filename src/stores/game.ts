@@ -1250,6 +1250,7 @@ export const useGameStore = defineStore('game', () => {
     officeSeats: office.officeSeats,
     paChair: office.paChair,
     headhunterOffer: office.headhunterOffer,
+    queuedOffers: office.queuedOffers,
     hireAdvisor,
     playLog: plays.playLog,
     flushAll,

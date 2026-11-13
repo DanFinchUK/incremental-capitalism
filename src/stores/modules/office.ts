@@ -14,12 +14,15 @@ export interface OfficeState {
   seats: (AdvisorInstance | null)[]
   paChair: AdvisorInstance | null
   offer: string[]
+  // Offers earned by boss wins while another offer was still open
+  queued: number
 }
 
 export interface OfficeModule {
   officeSeats: ComputedRef<(AdvisorInstance | null)[]>
   paChair: Ref<AdvisorInstance | null>
   headhunterOffer: Ref<string[]>
+  queuedOffers: Ref<number>
   officeSources: ComputedRef<ModifierSource[]>
   hireAdvisor: (offerIndex: number, replaceSeat?: number) => boolean
   skipOffer: () => void
@@ -37,7 +40,17 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   const seatStore = ref<(AdvisorInstance | null)[]>([])
   const paChair = ref<AdvisorInstance | null>(null)
   const headhunterOffer = ref<string[]>([])
+  const queuedOffers = ref(0)
   let nextUid = 1
+
+  // The current offer is settled: bring forward the next one owed, if any
+  function nextOffer(): void {
+    headhunterOffer.value = []
+    if (queuedOffers.value > 0) {
+      queuedOffers.value -= 1
+      headhunterOffer.value = rollAdvisorOffer(Math.random)
+    }
+  }
 
   // Seat count follows the perk; extra stored seats beyond it are kept but hidden.
   const officeSeats = computed(() => {
@@ -65,14 +78,14 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     if (seat < 0 || seat >= officeSeats.value.length) return false
     deps.money.value -= deps.money.value * def.hireFeeShare
     setSeat(seat, { uid: `a${Date.now().toString(36)}${nextUid++}`, advisorId, servedGenerations: 0, campaignMs: 0 })
-    headhunterOffer.value = []
+    nextOffer()
     deps.announce(`${def.name} joins the family office.`)
     deps.flushSave()
     return true
   }
 
   function skipOffer(): void {
-    headhunterOffer.value = []
+    nextOffer()
   }
 
   function fireAdvisor(seat: number): void {
@@ -95,7 +108,12 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     deps.flushSave()
   }
 
+  // Each boss win earns one offer. If one is already open, the new one waits.
   function rollOffer(rng: () => number = Math.random): void {
+    if (headhunterOffer.value.length > 0) {
+      queuedOffers.value += 1
+      return
+    }
     headhunterOffer.value = rollAdvisorOffer(rng)
   }
 
@@ -104,6 +122,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   function onRetire(): void {
     seatStore.value = []
     headhunterOffer.value = []
+    queuedOffers.value = 0
     if (paChair.value) {
       paChair.value = { ...paChair.value, servedGenerations: paChair.value.servedGenerations + 1 }
     }
@@ -124,16 +143,18 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     seatStore.value = state.seats
     paChair.value = state.paChair
     headhunterOffer.value = state.offer
+    queuedOffers.value = state.queued
   }
 
   function snapshot(): OfficeState {
-    return { seats: seatStore.value, paChair: paChair.value, offer: headhunterOffer.value }
+    return { seats: seatStore.value, paChair: paChair.value, offer: headhunterOffer.value, queued: queuedOffers.value }
   }
 
   return {
     officeSeats,
     paChair,
     headhunterOffer,
+    queuedOffers,
     officeSources,
     hireAdvisor,
     skipOffer,

@@ -42,11 +42,14 @@
         <li v-if="victory.newJobs > 0 || victory.newBusinesses > 0">
           Now open: {{ unlockText }}
         </li>
-        <li v-if="store.headhunterOffer.length > 0">A headhunter is waiting in the family office with {{ store.headhunterOffer.length }} advisors to meet.</li>
         <li v-if="victory.nextBoss">
           Next: {{ victory.nextBoss.title }}, at {{ formatCurrency(victory.nextThreshold) }} net worth.
         </li>
       </ul>
+
+      <div v-if="victory && store.headhunterOffer.length > 0" data-testid="victory-headhunter">
+        <HeadhunterOffer />
+      </div>
 
       <details class="scn-PyramidFold" data-testid="class-pyramid" :open="!victory">
         <summary v-if="victory">Class pyramid</summary>
@@ -118,6 +121,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
+import HeadhunterOffer from './HeadhunterOffer.vue'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
 import { bossForGate, gateThreshold, itemCostCeiling } from '../engine/bosses'

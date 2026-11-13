@@ -20,56 +20,63 @@
         :mode="activeDialog"
         @close="activeDialog = null"
         @confirm-retire="confirmRetire"
+        @confirm-bloodline="confirmNewBloodline"
         @confirm-reset="confirmHardReset"
       />
       <FamilyTreeModal />
       <AchievementsModal />
       <HeirDraftModal />
+      <DisgraceModal />
 
-      <template v-if="!phone || phoneTab === 'family'">
-        <OverviewBar @retire="handleRetire" />
-        <HeroHeader ref="heroRef" :phone="phone" @paid="handleManualClick" />
-        <div class="lyt-BossRow">
+      <OverviewBar v-if="!phone || phoneTab === 'family'" @retire="handleRetire" />
+
+      <div class="lyt-Cockpit">
+        <aside v-if="!phone || phoneTab === 'family'" class="lyt-CommandPane" aria-label="Command deck">
+          <HeroHeader ref="heroRef" :phone="phone" @paid="handleManualClick" />
           <BossCard />
+          <FamilyOffice />
           <SplitsPanel />
+          <TradingDesk v-if="phone" />
+        </aside>
+
+        <!-- v-show keeps both lists alive, so switching tabs doesn't reload them -->
+        <div v-show="!phone || phoneTab !== 'family'" class="lyt-MarketPane">
+          <div class="lyt-Columns">
+            <section v-show="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
+              <div class="lyt-Items">
+                <div class="lyt-ListHead">
+                  <h2 class="scn-ColumnTitle">Jobs</h2>
+                  <BulkPicker v-if="phone" />
+                </div>
+                <ItemCard
+                  v-for="row in store.visibleJobs"
+                  :key="row.mode === 'revealed' ? `job-${row.item.id}` : row.key"
+                  kind="jobs"
+                  :row="row"
+                  @buy="handleBuyItem"
+                />
+              </div>
+            </section>
+
+            <section v-show="!phone || phoneTab === 'businesses'" class="lyt-Column" aria-label="Businesses">
+              <div class="lyt-Items">
+                <div class="lyt-ListHead">
+                  <h2 class="scn-ColumnTitle">Businesses</h2>
+                  <BulkPicker v-if="phone" />
+                </div>
+                <ItemCard
+                  v-for="row in store.visibleBusinesses"
+                  :key="row.mode === 'revealed' ? `biz-${row.item.id}` : row.key"
+                  kind="businesses"
+                  :row="row"
+                  @buy="handleBuyItem"
+                />
+              </div>
+            </section>
+          </div>
+
+          <TradingDesk v-if="!phone" />
         </div>
-        <FamilyOffice />
-        <TradingDesk />
-      </template>
-
-      <!-- v-show keeps both lists alive, so switching tabs doesn't reload them -->
-      <div v-show="!phone || phoneTab !== 'family'" class="lyt-Columns">
-        <section v-show="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
-          <div class="lyt-Items">
-            <div class="lyt-ListHead">
-              <h2 class="scn-ColumnTitle">Jobs</h2>
-              <BulkPicker v-if="phone" />
-            </div>
-            <ItemCard
-              v-for="row in store.visibleJobs"
-              :key="row.mode === 'revealed' ? `job-${row.item.id}` : row.key"
-              kind="jobs"
-              :row="row"
-              @buy="handleBuyItem"
-            />
-          </div>
-        </section>
-
-        <section v-show="!phone || phoneTab === 'businesses'" class="lyt-Column" aria-label="Businesses">
-          <div class="lyt-Items">
-            <div class="lyt-ListHead">
-              <h2 class="scn-ColumnTitle">Businesses</h2>
-              <BulkPicker v-if="phone" />
-            </div>
-            <ItemCard
-              v-for="row in store.visibleBusinesses"
-              :key="row.mode === 'revealed' ? `biz-${row.item.id}` : row.key"
-              kind="businesses"
-              :row="row"
-              @buy="handleBuyItem"
-            />
-          </div>
-        </section>
       </div>
     </div>
 
@@ -81,6 +88,9 @@
         </button>
         <button type="button" class="scn-Action scn-Action-outline" data-testid="open-achievements" @click="store.achievementsOpen = true">
           Achievements ({{ store.achievements.length }})
+        </button>
+        <button type="button" class="scn-Action scn-Action-outline" data-testid="open-new-bloodline" @click="handleNewBloodline">
+          New bloodline
         </button>
         <button type="button" class="scn-Action" @click="handleHardReset">
           Reset game
@@ -101,6 +111,7 @@ import { useGameStore } from './stores/game'
 import { PHONE_QUERY, useMediaQuery } from './utils/useMediaQuery'
 import ClassModal from './components/ClassModal.vue'
 import ConfirmModal, { type ConfirmDialogMode } from './components/ConfirmModal.vue'
+import DisgraceModal from './components/DisgraceModal.vue'
 import IntroModal from './components/IntroModal.vue'
 import HeirDraftModal from './components/HeirDraftModal.vue'
 import FamilyTreeModal from './components/FamilyTreeModal.vue'
@@ -266,7 +277,7 @@ function handleClaimEvent(): void {
 }
 
 function handleRetire(): void {
-  if (store.legacyOnRetire < 1) return
+  if (!store.canRetire) return
   activeDialog.value = 'retire'
 }
 
@@ -278,6 +289,15 @@ function confirmRetire(): void {
     }
     playSfx('milestone', store.muted)
   }
+}
+
+function handleNewBloodline(): void {
+  activeDialog.value = 'bloodline'
+}
+
+function confirmNewBloodline(): void {
+  activeDialog.value = null
+  store.startNewBloodline(Date.now())
 }
 
 function handleHardReset(): void {

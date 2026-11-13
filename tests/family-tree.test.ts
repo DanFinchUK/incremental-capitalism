@@ -51,22 +51,39 @@ describe('family tree', () => {
     expect(again.familyTree).toHaveLength(1)
   })
 
-  it('opens from the header and lists the generations', async () => {
+  it('opens from the header and lists the generations and stacked bloodline traits', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
     store.closeIntro()
+    store.perks.autoClicker = 3
     store.familyTree = [
-      { generation: 1, name: 'Hugo Ashcombe-Blythe', traitId: null, deepestGate: 3, legacyEarned: 7, activeMs: 1_800_000, advisors: ['Sommelier'], splits: [] }
+      { generation: 1, name: 'Hugo Ashcombe-Blythe', traitId: 'nepo-baby', deepestGate: 4, legacyEarned: 15, activeMs: 1_800_000, advisors: ['Sommelier'], splits: [] }
     ]
+    store.heir = { name: 'Cressida Ashcombe-Blythe', traitId: 'black-sheep' }
     await wrapper.vm.$nextTick()
+
+    // Ancestor Nepo Baby + current Black Sheep both stack permanently
+    expect(store.modifiers.internsDisabled).toBe(true)
+    expect(store.autoClickers).toBe(0)
+    expect(store.modifiers.businessMult).toBeCloseTo(2)
+    expect(store.modifiers.clickMult).toBeCloseTo(0.5)
+
+    // Having reached Gate 4 previously, retiring requires at least Gate 3
+    expect(store.minRetireGate).toBe(3)
+    store.gatesBeaten = 2
+    expect(store.canRetire).toBe(false)
+    store.gatesBeaten = 3
+    expect(store.canRetire).toBe(true)
+
     await wrapper.find('[data-testid="open-family-tree"]').trigger('click')
     const modal = wrapper.find('[data-testid="family-tree"]')
     expect(modal.exists()).toBe(true)
     expect(modal.text()).toContain('Hugo Ashcombe-Blythe')
-    expect(modal.text()).toContain('Garden Office Planning Permission')
-    expect(modal.text()).toContain(store.heir.name) // the current head, still writing their chapter
+    expect(modal.text()).toContain('Charity Golf Match')
+    expect(modal.text()).toContain(store.heir.name)
+    expect(modal.find('[data-testid="bloodline-traits"]').text()).toContain('Interns barred')
     wrapper.unmount()
   })
 })

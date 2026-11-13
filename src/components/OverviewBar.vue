@@ -44,10 +44,11 @@
       <button
         type="button"
         class="scn-Action"
-        :disabled="store.legacyOnRetire < 1"
+        :disabled="!store.canRetire"
+        :title="retireHint"
         @click="emit('retire')"
       >
-        Retire for +{{ store.legacyOnRetire }}
+        {{ retireLabel }}
       </button>
 
       <button
@@ -91,6 +92,20 @@ const networkBadgeText = computed(() => {
     return 'FREE'
   }
   return String(store.legacyAvailable)
+})
+
+const retireLabel = computed(() => {
+  if (store.gatesBeaten > 0 && store.gatesBeaten < store.minRetireGate) {
+    return `Retire at Gate ${store.minRetireGate}`
+  }
+  return `Retire for +${store.legacyOnRetire}`
+})
+
+const retireHint = computed(() => {
+  if (store.gatesBeaten < store.minRetireGate) {
+    return `Beat Gate ${store.minRetireGate} to retire this generation`
+  }
+  return ''
 })
 
 </script>

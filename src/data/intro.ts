@@ -10,34 +10,32 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     kicker: 'Orientation',
     title: 'Welcome to Incremental Capitalism',
     body: [
-      'You start with a delivery bag and a dream. Hit Get paid to earn your first few quid.',
-      'Spend it on Jobs. Every Job you hold adds to what each click pays, so the grind gets better the more you take on.'
-    ],
-    tip: 'Click quickly to build a Hustle streak. It multiplies click pay, but cools off if you stop.'
+      'Tap Get paid to earn your first cash, then spend it on Jobs to boost every click.',
+      'Click fast to build a Hustle streak for multiplied click pay.'
+    ]
   },
   {
     kicker: 'Passive income',
     title: 'Businesses earn while you sleep',
     body: [
-      'Businesses pay out every second without a single click, and keep earning at a reduced rate while the game is closed.',
-      'Each purchase costs a little more than the last. Reaching ownership milestones doubles that item\'s output, and the Buy amount buttons (x1, x10, Next, Max) let you buy in bulk.'
+      'Businesses pay out every second automatically, even at a reduced rate while offline.',
+      'Ownership milestones multiply an item\'s output. Use x1, x10, Next and Max to buy in bulk.'
     ]
   },
   {
-    kicker: 'Getting ahead',
-    title: 'Climb the class ladder',
+    kicker: 'High stakes',
+    title: 'Climb the nine class gates',
     body: [
-      'Every class is guarded by a boss. Reach the gate\'s net worth to unlock the fight, then win under its twist to move up. Each new class boosts your income, gets you mates\' rates, and unlocks the next tier of Jobs and Businesses.',
-      'Market Opportunities pop up on screen from time to time. Click them before they vanish for income boosts or instant windfalls. Rare and Legendary ones hit harder, and shady ones are a gamble.'
+      'Each social class is guarded by a boss with its own twist. Beating a boss promotes your class, unlocks new items, and brings the headhunter.',
+      'Choose your moment carefully: failing a boss brings ruin on the family name and ends your bloodline.'
     ]
   },
   {
-    kicker: 'The long game',
+    kicker: 'The dynasty',
     title: 'Retire and let your heir take over',
     body: [
-      'Once you have beaten your first boss you can retire and hand the estate to your heir. Legacy is paid for the deepest gate you beat, and one gate deeper is worth far more than the same depth twice. Your heir starts over with a trust fund worth 5% of your net worth, and every Legacy point adds 5% to their income for good.',
-      'Legacy also buys perks in the Old Boys\' Network, starting with a free Unpaid Intern.'
-    ],
-    tip: 'Each generation, try to beat your best split times, then push one gate further.'
+      'Retire to bank Legacy (paid steeply by your deepest gate), pass 5% of net worth to an heir, and keep your Personal Assistant.',
+      'Every heir\'s trait stacks permanently onto the bloodline, upsides and downsides alike.'
+    ]
   }
 ]

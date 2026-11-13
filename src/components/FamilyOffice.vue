@@ -2,23 +2,33 @@
   <section class="scn-FamilyOffice" data-testid="family-office" aria-label="Family office">
     <div class="scn-OfficeHeader">
       <h2 class="scn-ColumnTitle">The family office</h2>
-      <span class="scn-StatHint">Advisors drain {{ drainPct }}% of income</span>
+      <span class="scn-StatHint">Drain: {{ drainPct }}%</span>
     </div>
 
     <HeadhunterOffer />
     <div class="scn-AdvisorGrid">
-      <article class="scn-AdvisorCard scn-AdvisorCard-pa" data-testid="pa-chair">
-        <span class="scn-MarketEventTag">Personal Assistant</span>
+      <article
+        class="scn-AdvisorCard scn-AdvisorCard-pa"
+        :class="pa ? `scn-AdvisorCard-${pa.def.rarity}` : 'scn-AdvisorCard-empty'"
+        data-testid="pa-chair"
+      >
         <template v-if="pa">
+          <div class="scn-AdvisorTags">
+            <span class="scn-PaBadge">PA</span>
+            <span class="scn-MarketEventTag">{{ RARITY_LABELS[pa.def.rarity] }} · {{ pa.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
+          </div>
           <strong>{{ pa.def.name }}</strong>
           <p class="scn-AutoLine">{{ pa.def.effectText }}</p>
+          <p v-if="pa.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(pa.inst.campaignMs / 60000) }} min</p>
           <p class="scn-StatHint">
-            Served {{ pa.inst.servedGenerations }} generation{{ pa.inst.servedGenerations === 1 ? '' : 's' }}:
-            effect +{{ pa.inst.servedGenerations * 25 }}%, pay +{{ pa.inst.servedGenerations * 20 }}%.
+            Served {{ pa.inst.servedGenerations }} gen: +{{ pa.inst.servedGenerations * 25 }}% effect, +{{ pa.inst.servedGenerations * 20 }}% pay
           </p>
           <button type="button" class="scn-Action scn-Action-outline" @click="store.firePA()">Let go</button>
         </template>
-        <p v-else class="scn-AutoLine">Empty. Whoever sits here stays with the family when you retire.</p>
+        <template v-else>
+          <span class="scn-PaBadge">Personal Assistant</span>
+          <p class="scn-AutoLine">Empty. Stays with the family on retirement.</p>
+        </template>
       </article>
 
       <article
@@ -37,7 +47,7 @@
             <button type="button" class="scn-Action scn-Action-outline" @click="store.fireAdvisor(s)">Fire</button>
           </div>
         </template>
-        <p v-else class="scn-AutoLine">Open seat. Beat a boss to meet the headhunter.</p>
+        <p v-else class="scn-AutoLine">Open seat. Beat a boss to recruit.</p>
       </article>
     </div>
   </section>

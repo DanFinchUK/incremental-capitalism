@@ -111,15 +111,25 @@ describe('boss attempts', () => {
     expect(store.bossAttempt!.polish - polishBefore).toBeGreaterThan(interns * 0.9)
   })
 
-  it('Golf is lost once purchases exceed par', () => {
+  it('Golf is lost once purchases exceed par, ending the bloodline in disgrace', () => {
     const store = readyFor(4)
+    const oldSurname = store.familySurname
+    store.legacyPoints = 7
     store.money = 1e15
     store.startBossAttempt()
     for (let i = 0; i < 16; i++) store.buyItem('jobs', '1', 1)
     expect(store.bossAttempt!.purchases).toBe(16)
     store.tick(T0 + 1000)
     expect(store.bossAttempt).toBeNull()
-    expect(store.nextBoss!.status).toBe('cooldown')
+    expect(store.disgraceReport).toMatchObject({
+      familySurname: oldSurname,
+      gate: 4,
+      bossTitle: 'Charity Golf Match',
+      legacyLost: 7
+    })
+    expect(store.legacyPoints).toBe(0)
+    expect(store.gatesBeaten).toBe(0)
+    expect(store.familySurname).not.toBe(oldSurname)
   })
 
   it('a win promotes, opens the class modal on first reach, and clears the twist', () => {
@@ -139,20 +149,32 @@ describe('boss attempts', () => {
     expect(store.nextBoss!.def.gate).toBe(2)
   })
 
-  it('a loss starts a cooldown measured in active time', () => {
-    // Four minutes of play: pin chance so a random scandal can't move net worth
-    vi.spyOn(Math, 'random').mockReturnValue(0.99)
+  it('a timeout loss wipes the bloodline while preserving achievements, titles and best splits', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.42)
     const store = readyFor(1)
+    store.legacyPoints = 5
+    store.perks.hustleCap = 2
+    store.titles = 2
+    store.achievements = ['side-hustle']
+    store.bestSplits = [null, 45_000, null, null, null, null, null, null, null, null]
+    const oldSurname = store.familySurname
     store.startBossAttempt()
     let t = T0
     for (let i = 0; i < 181; i++) store.tick((t += 1000))
     expect(store.bossAttempt).toBeNull()
-    expect(store.nextBoss!.status).toBe('cooldown')
-    expect(store.nextBoss!.cooldownSec).toBeGreaterThan(55)
-    store.tick((t += 2 * 3600 * 1000))
-    expect(store.nextBoss!.status).toBe('cooldown')
-    for (let i = 0; i < 61; i++) store.tick((t += 1000))
-    expect(store.nextBoss!.status).toBe('available')
+    expect(store.disgraceReport?.familySurname).toBe(oldSurname)
+    expect(store.legacyPoints).toBe(0)
+    expect(store.perks.hustleCap).toBe(0)
+    expect(store.gatesBeaten).toBe(0)
+    expect(store.titles).toBe(2)
+    expect(store.achievements).toContain('side-hustle')
+    expect(store.bestSplits[1]).toBe(45_000)
+    // Game stays paused while the disgrace modal is open
+    const genMs = store.activeGenerationMs
+    store.tick((t += 1000))
+    expect(store.activeGenerationMs).toBe(genMs)
+    store.dismissDisgrace()
+    expect(store.disgraceReport).toBeNull()
   })
 
   it('reload mid-attempt abandons it with no cooldown and no lingering twist', () => {
@@ -195,16 +217,20 @@ describe('boss attempts', () => {
     expect(store.nextBoss!.def.twistText.toLowerCase()).toContain('automation')
   })
 
-  it('abandoning after the first few seconds still costs the cooldown', () => {
-    const store = readyFor(1)
+  it('allows backing out only during the initial misclick window before any Golf stroke', () => {
+    const store = readyFor(4)
+    store.money = 1e15
     store.startBossAttempt()
+    expect(store.canBackOut).toBe(true)
+    store.buyItem('jobs', '1', 1)
+    expect(store.canBackOut).toBe(false)
     store.abandonBossAttempt()
-    expect(store.nextBoss!.status).toBe('available') // a misclick is free
+
     store.startBossAttempt()
+    expect(store.canBackOut).toBe(true)
     let t = T0
-    for (let i = 0; i < 15; i++) store.tick((t += 1000))
-    store.abandonBossAttempt()
-    expect(store.nextBoss!.status).toBe('cooldown')
+    for (let i = 0; i < 11; i++) store.tick((t += 1000))
+    expect(store.canBackOut).toBe(false)
   })
 
   it('a corked bottle leaves with the sommelier when the fight ends', () => {

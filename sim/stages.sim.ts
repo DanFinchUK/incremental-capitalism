@@ -24,15 +24,15 @@ describe('minimum stage times for a player tapping once a second', () => {
   const firstGens = SEEDS.map((seed) => runCampaign(1.5, ONE_TAP_PACE, seed)[0])
   const earliest = (gate: number) => Math.min(...firstGens.map((g) => g.splitsMs[gate] ?? Infinity)) / MINUTE
 
-  it('gate 1 takes at least 3 minutes', () => {
-    expect(earliest(1)).toBeGreaterThanOrEqual(3)
+  it('gate 1 takes at least 2 minutes', () => {
+    expect(earliest(1)).toBeGreaterThanOrEqual(2)
   })
 
-  it('gate 2 takes at least 10 minutes', () => {
-    expect(earliest(2)).toBeGreaterThanOrEqual(10)
+  it('gate 2 takes at least 8 minutes', () => {
+    expect(earliest(2)).toBeGreaterThanOrEqual(8)
   })
 
-  it('gate 3 takes at least 25 minutes', () => {
-    expect(earliest(3)).toBeGreaterThanOrEqual(25)
+  it('gate 3 takes at least 15 minutes', () => {
+    expect(earliest(3)).toBeGreaterThanOrEqual(15)
   })
 })

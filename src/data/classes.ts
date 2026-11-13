@@ -8,8 +8,8 @@ export interface SocialClassDef {
 }
 
 // Net worth that unlocks each class gate's boss (index = class level).
-// Tuned with the pacing simulator (npm run sim).
-export const GATE_NET_WORTH: ReadonlyArray<number> = [0, 3e8, 6e9, 1.1e11, 2e13, 8e15, 4e18, 1.5e19, 1.6e20, 2.4e21]
+// Tuned with the pacing simulator (npm run sim) for ~60-90m bloodline runs.
+export const GATE_NET_WORTH: ReadonlyArray<number> = [0, 1.2e8, 1.8e9, 2.5e10, 5e11, 1.2e13, 3.5e14, 1.2e16, 4.5e17, 1.8e19]
 
 export const SOCIAL_CLASSES: ReadonlyArray<SocialClassDef> = [
   {

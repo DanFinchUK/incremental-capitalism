@@ -2,17 +2,26 @@
   <div v-if="offer.length > 0" class="scn-Headhunter" data-testid="headhunter">
     <div class="scn-OfficeHeader">
       <strong>
-        Hire one of the headhunter's three candidates<span v-if="store.queuedOffers > 0">, and {{ store.queuedOffers }} more shortlist{{ store.queuedOffers === 1 ? '' : 's' }} after these</span>
+        Headhunter shortlist<span v-if="store.queuedOffers > 0"> (+{{ store.queuedOffers }} queued)</span>
       </strong>
+      <button
+        type="button"
+        class="scn-Action scn-Action-outline"
+        data-testid="skip-advisor"
+        :disabled="props.locked"
+        @click="store.skipAdvisorOffer()"
+      >
+        Pass
+      </button>
     </div>
     <p v-if="props.locked" class="scn-AutoLine" data-testid="hire-locked">Catch your breath: choose in {{ props.lockSeconds }}s.</p>
-    <p v-if="seatsFull" class="scn-AutoLine">The office is full: fire someone first, or hire straight into a seat.</p>
+    <p v-else-if="seatsFull" class="scn-AutoLine">Office full: replace a seat below or pass.</p>
     <div class="scn-AdvisorGrid">
       <article v-for="(a, i) in offer" :key="a.id" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${a.rarity}`">
         <span class="scn-MarketEventTag">{{ RARITY_LABELS[a.rarity] }} · {{ a.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
         <strong>{{ a.name }}</strong>
         <p class="scn-AutoLine">{{ a.effectText }}</p>
-        <p class="scn-StatHint">{{ a.costText }} Hiring fee: {{ Math.round(a.hireFeeShare * 100) }}% of cash.</p>
+        <p class="scn-StatHint">{{ a.costText }} Fee: {{ Math.round(a.hireFeeShare * 100) }}% cash.</p>
         <button
           v-if="!seatsFull"
           type="button"
@@ -30,7 +39,7 @@
             type="button"
             class="scn-Action scn-Action-outline"
             data-testid="hire-advisor"
-          :disabled="props.locked"
+            :disabled="props.locked"
             @click="store.hireAdvisor(i, s)"
           >
             Replace {{ seat ? ADVISORS_BY_ID[seat.advisorId].name : 'seat' }}

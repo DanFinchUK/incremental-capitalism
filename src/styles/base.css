@@ -128,19 +128,61 @@ button {
 }
 
 .lyt-Content {
-  max-width: 1410px;
+  max-width: 1760px;
   margin: 0 auto;
   padding: 0 var(--gutter) 48px;
+}
+
+.lyt-Cockpit {
+  display: grid;
+  grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.lyt-CommandPane {
+  position: sticky;
+  top: 68px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  scrollbar-width: thin;
+}
+
+.lyt-MarketPane {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
 }
 
 .lyt-Columns {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 18px;
   align-items: start;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
+  .lyt-MarketPane .lyt-Columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 920px) {
+  .lyt-Cockpit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lyt-CommandPane {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+
   .lyt-Columns {
     grid-template-columns: 1fr;
   }
@@ -153,15 +195,17 @@ button {
 .lyt-Items {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .lyt-Footer {
-  max-width: 1410px;
+  max-width: 1760px;
   margin: 28px auto 0;
   padding: 16px var(--gutter) 36px;
   border-top: 1px solid var(--color-border);
   display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   justify-content: space-between;
   align-items: center;
   color: var(--color-muted);

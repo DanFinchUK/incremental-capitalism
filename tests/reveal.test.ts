@@ -47,14 +47,30 @@ describe('items reveal one at a time, by buying the one before', () => {
     expect(revealed(store.visibleBusinesses)).toEqual([BUSINESSES[0].id, BUSINESSES[1].id])
   })
 
-  it('a new generation starts the climb again', () => {
+  it('prestige generations keep previously seen items available within the gate ceiling, while a new bloodline resets discovery', () => {
     const store = fresh()
-    store.addDebugMoney(1e7, T0)
+    store.addDebugMoney(gateThresholdForTest(), T0)
     store.buyItem('jobs', JOBS[0].id, 1)
     store.buyItem('jobs', JOBS[1].id, 1)
-    store.gatesBeaten = 1
+    store.gatesBeaten = 2
+    // Buy an item that sits above Gate 1's ceiling so it is seen, then retire
+    const gate2Job = JOBS.find((j) => j.baseCost > store.costCeiling) ?? JOBS[12]
+    store.seenItems.jobs[gate2Job.id] = true
     store.retire(T0 + 100)
     store.pickHeir(0)
+    // Seen items under Gate 1's ceiling are immediately ready without rebuying earlier tiers
+    expect(revealed(store.visibleJobs)).toContain(JOBS[0].id)
+    expect(revealed(store.visibleJobs)).toContain(JOBS[1].id)
+    expect(revealed(store.visibleJobs)).toContain(JOBS[2].id)
+    // Items above Gate 1's ceiling remain gated behind the boss
+    expect(revealed(store.visibleJobs)).not.toContain(gate2Job.id)
+
+    // Starting a brand-new bloodline starts discovery afresh
+    store.startNewBloodline(T0 + 200)
     expect(revealed(store.visibleJobs)).toEqual([JOBS[0].id])
   })
 })
+
+function gateThresholdForTest(): number {
+  return 1e11
+}

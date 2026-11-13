@@ -6,7 +6,7 @@
         <h4 class="scn-CardTitle">???</h4>
       </div>
       <p class="scn-CardMeta">Cost: ???</p>
-      <p class="scn-AutoLine">Expand your portfolio to reveal this tier</p>
+      <p class="scn-AutoLine">Buy the tier above to reveal</p>
     </div>
   </div>
 
@@ -16,7 +16,7 @@
       <div class="scn-CardHeader">
         <h4 class="scn-CardTitle">Locked</h4>
       </div>
-      <p class="scn-AutoLine">Locked until you beat {{ row.bossTitle }}</p>
+      <p class="scn-AutoLine">Beat {{ row.bossTitle }} to unlock</p>
     </div>
   </div>
 
@@ -68,7 +68,7 @@
         <div class="scn-CardHeader">
           <h4 class="scn-CardTitle">{{ row.item.label }} ({{ owned }})</h4>
           <span v-if="mMultiplier > 1" class="scn-MilestoneBadge">
-            x{{ formatMult(mMultiplier) }} milestone
+            x{{ formatMult(mMultiplier) }}
           </span>
           <button
             v-if="canRefold"
@@ -81,7 +81,7 @@
         </div>
 
         <p class="scn-CardMeta scn-CostLine">
-          {{ kind === 'jobs' ? 'Cost to apply' : 'Cost to start' }}<span v-if="quote.count > 1"> (x{{ quote.count }})</span>:
+          Cost<span v-if="quote.count > 1"> (x{{ quote.count }})</span>:
           {{ formatCurrency(quote.cost) }}
           <span v-if="deltaText" class="scn-DeltaInline">{{ deltaText }}</span>
         </p>
@@ -278,14 +278,14 @@ const autoStatusText = computed(() => {
   if (props.row.mode !== 'revealed' || store.automationLine <= 0) return ''
   const linePct = Math.round(store.automationLine * 100)
   if (!store.isAutoBuyEnabled(props.kind, props.row.item.id)) {
-    return 'Automation off for this item'
+    return 'Auto off'
   }
   if (store.autoBuyPaused) {
-    return 'Automation paused (resume in top bar)'
+    return 'Auto paused'
   }
   return isAutoActive.value
-    ? `Automated: restocks itself while it costs under ${linePct}% of your cash`
-    : `Automates once it costs under ${linePct}% of your cash`
+    ? `Auto: restocks under ${linePct}% of your cash`
+    : `Auto once under ${linePct}% of your cash`
 })
 
 // Nothing automates until an advisor, heir or title brings it

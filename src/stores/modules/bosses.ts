@@ -42,6 +42,7 @@ export interface BossModuleDeps {
   announce: (msg: string) => void
   // purchases: strokes taken, for the Golf achievement
   onBossWon: (gate: number, killMs: number, purchases: number) => void
+  onBossLost: (gate: number) => void
   bestKillFor: (gate: number) => number | null
   // Called whenever an attempt ends, however it ends
   onAttemptEnded: (ended: AttemptEnded) => void
@@ -58,6 +59,8 @@ export interface BossModule {
   bossCooldownUntilMs: Ref<number>
   twist: ComputedRef<TwistEffects>
   nextBoss: ComputedRef<BossView | null>
+  canBackOut: ComputedRef<boolean>
+  backOutSec: ComputedRef<number>
   startBossAttempt: () => boolean
   abandonBossAttempt: () => void
   evaluateAttempt: () => void
@@ -115,6 +118,18 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
     return { ...base, status: 'locked', progress: Math.min(1, deps.netWorth() / threshold) }
   })
 
+  const canBackOut = computed(() => {
+    const tracker = bossAttempt.value
+    if (!tracker || tracker.purchases > 0) return false
+    return deps.activeMs() - tracker.startedActiveMs < FREE_ABANDON_MS
+  })
+
+  const backOutSec = computed(() => {
+    const tracker = bossAttempt.value
+    if (!tracker || tracker.purchases > 0) return 0
+    return Math.max(0, Math.ceil((FREE_ABANDON_MS - (deps.activeMs() - tracker.startedActiveMs)) / 1000))
+  })
+
   function startBossAttempt(): boolean {
     if (nextBoss.value?.status !== 'available') {
       return false
@@ -133,9 +148,6 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
     }
     const progress = currentEvaluation(def, tracker).progress
     bossAttempt.value = null
-    if (deps.activeMs() - tracker.startedActiveMs >= FREE_ABANDON_MS) {
-      bossCooldownUntilMs.value = deps.activeMs() + def.cooldownSec * 1000
-    }
     deps.onAttemptEnded({ gate: def.gate, result: 'abandoned', ms: deps.activeMs() - tracker.startedActiveMs, progress })
   }
 
@@ -157,12 +169,12 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
       deps.onBossWon(def.gate, killMs, tracker.purchases)
       deps.onAttemptEnded({ gate: def.gate, result: 'won', ms: killMs, progress: 1 })
     } else if (result.lost) {
+      const elapsedMs = deps.activeMs() - tracker.startedActiveMs
       bossAttempt.value = null
-      bossCooldownUntilMs.value = deps.activeMs() + def.cooldownSec * 1000
-      deps.announce(`${def.title} got the better of you this time. Regroup and try again.`)
-      deps.onAttemptEnded({ gate: def.gate, result: 'lost', ms: deps.activeMs() - tracker.startedActiveMs, progress: result.progress })
+      deps.onAttemptEnded({ gate: def.gate, result: 'lost', ms: elapsedMs, progress: result.progress })
+      deps.onBossLost(def.gate)
     }
   }
 
-  return { bossAttempt, bossCooldownUntilMs, twist, nextBoss, startBossAttempt, abandonBossAttempt, evaluateAttempt }
+  return { bossAttempt, bossCooldownUntilMs, twist, nextBoss, canBackOut, backOutSec, startBossAttempt, abandonBossAttempt, evaluateAttempt }
 }

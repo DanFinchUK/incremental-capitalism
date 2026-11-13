@@ -19,6 +19,7 @@ function boss(condition: BossDef['condition'], timeLimitSec = 100): BossDef {
     title: 'Test',
     blurb: '',
     victoryText: '',
+    disgraceText: '',
     twistText: '',
     conditionText: '',
     twists: [],
@@ -45,6 +46,7 @@ describe('boss data', () => {
     ])
     for (const b of BOSSES) {
       expect(b.blurb.length).toBeGreaterThan(10)
+      expect(b.disgraceText.length).toBeGreaterThan(20)
       expect(b.twistText.length).toBeGreaterThan(5)
       expect(b.conditionText.length).toBeGreaterThan(5)
     }

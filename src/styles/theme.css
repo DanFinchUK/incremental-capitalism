@@ -172,22 +172,36 @@
 
 /* Hero Header */
 .lyt-Header {
-  margin-bottom: 24px;
-  padding: 18px;
+  padding: 12px 14px;
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-}
-
-.scn-ClassCard {
-  text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+}
+
+.scn-ClassRung {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.scn-LadderDivider {
+  border-top: 1px solid var(--color-border-subtle);
+  margin: 2px 0;
+}
+
+.scn-ClassTopRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
 }
 
 .scn-ClassCard-clickable {
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: var(--color-surface);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius);
@@ -202,24 +216,65 @@
 }
 
 .scn-ClassTitle {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .scn-ClassDesc {
   color: var(--color-muted);
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .scn-ClassPerk {
   display: inline-block;
-  align-self: center;
-  padding: 3px 10px;
+  align-self: flex-start;
+  padding: 2px 8px;
   background: var(--color-perk-pill-bg);
   color: var(--color-perk-pill-fg);
   border-radius: var(--radius);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+}
+
+.scn-DynastyStrip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scn-CompactStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 460px) {
+  .scn-CompactStats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.scn-TraitPillRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.scn-TraitPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--color-milestone-badge-bg);
+  color: var(--color-milestone-badge-fg);
+}
+
+.scn-TraitPill-neg {
+  background: var(--color-danger-bg);
+  color: var(--color-danger-fg);
 }
 
 .scn-ProgressTrack {
@@ -260,11 +315,11 @@
 
 .scn-HustleRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  min-height: 24px;
-  font-size: 14px;
+  gap: 6px;
+  font-size: 13px;
 }
 
 .scn-BuffPill {
@@ -1270,20 +1325,27 @@
   border-color: var(--color-shady);
 }
 
-.scn-BossTop {
+.scn-BossTopRow {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 
 .scn-BossTitle {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .scn-BossRule {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.scn-BossStakes {
+  color: var(--color-danger-fg);
+  font-weight: 600;
 }
 
 .scn-BossActions {
@@ -1409,8 +1471,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -1435,8 +1496,8 @@
 
 .scn-AdvisorGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 8px;
 }
 
 .scn-AdvisorCard {
@@ -1449,6 +1510,29 @@
   border-radius: var(--radius);
 }
 
+.scn-AdvisorTags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.scn-AdvisorTags .scn-MarketEventTag {
+  margin-bottom: 0;
+}
+
+.scn-PaBadge {
+  align-self: flex-start;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--color-btn-bg);
+  color: var(--color-btn-fg);
+}
+
 .scn-AdvisorCard .scn-MarketEventTag {
   align-self: flex-start;
   background: var(--color-pip-bg);
@@ -1456,6 +1540,7 @@
 }
 
 .scn-AdvisorCard-rare {
+  background: var(--color-perk-pill-bg);
   border-color: var(--color-purple);
 }
 
@@ -1472,11 +1557,6 @@
 .scn-AdvisorCard-legendary .scn-MarketEventTag {
   background: var(--color-gold);
   color: #111111;
-}
-
-.scn-AdvisorCard-pa {
-  border-color: var(--color-strong-line);
-  border-width: 3px;
 }
 
 .scn-AdvisorCard-empty {

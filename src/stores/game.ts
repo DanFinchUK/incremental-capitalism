@@ -58,14 +58,20 @@ import {
 import { formatClock, formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
 import { bossForGate, conditionTarget, itemCostCeiling, legacyForDepth } from '../engine/bosses'
 import { combineModifiers, type ModifierSource } from '../engine/modifiers'
-import { TRAITS_BY_ID, generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
+import { generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { createPlayLogModule } from './modules/playLog'
 import { loadPlayLog, withPlayLog } from '../engine/playLog'
 import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationLine } from '../engine/automation'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
 import { createOfficeModule } from './modules/office'
-import { MAX_TREE_ENTRIES, type GenerationRecord } from '../engine/family'
+import {
+  MAX_TREE_ENTRIES,
+  bloodlineTraitSources,
+  currentBloodlineRecords,
+  describeBloodlineTraits,
+  type GenerationRecord
+} from '../engine/family'
 import { heirChoiceCount, peerageRank, titleExtraSeats, titleSource, titlesFor } from '../engine/peerage'
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from '../engine/office'
@@ -100,6 +106,17 @@ export interface ActiveBuffView {
   label: string
   mult: number
   remainingSec: number
+}
+
+export interface DisgraceReport {
+  familySurname: string
+  heirName: string
+  generation: number
+  gate: number
+  bossTitle: string
+  disgraceText: string
+  deepestGate: number
+  legacyLost: number
 }
 
 const SAVE_THROTTLE_MS = 2000
@@ -156,6 +173,8 @@ export const useGameStore = defineStore('game', () => {
   const bannerMessage = ref<string | null>(null)
   // The most recent boss win, for the victory screen and banner
   const lastVictory = ref<{ gate: number; killMs: number; splitMs: number; prevBestKillMs: number | null; firstTime: boolean } | null>(null)
+  // Set when a boss attempt is lost and the bloodline is forced into exile
+  const disgraceReport = ref<DisgraceReport | null>(null)
   const legacyDrawerOpen = ref<boolean>(false)
   const classModalOpen = ref<boolean>(false)
   const celebratedClassLevel = ref<number | null>(null)
@@ -181,15 +200,20 @@ export const useGameStore = defineStore('game', () => {
     announce: (msg) => announce(msg),
     flushSave: () => flushSave(nowMs.value)
   })
-  // Every rule-bending source in play: the heir's trait and the family office
+  const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value.traitId))
+  // Every rule-bending source in play: stacked bloodline traits, the family office, achievements and titles
   const modifiers = computed(() =>
     combineModifiers([
-      ...(heir.value.traitId && TRAITS_BY_ID[heir.value.traitId] ? [TRAITS_BY_ID[heir.value.traitId].mods] : []),
+      ...bloodlineTraitSources(familyTree.value, heir.value.traitId),
       ...office.officeSources.value,
       achievementSource(achievements.value.length),
       titleSource(titles.value)
     ])
   )
+  const bloodlineDeepestGate = computed(() =>
+    currentBloodlineRecords(familyTree.value).reduce((max, r) => Math.max(max, r.deepestGate), 0)
+  )
+  const minRetireGate = computed(() => Math.max(1, bloodlineDeepestGate.value - 1))
   const activeGenerationMs = ref<number>(initial.activeGenerationMs)
   const lastFloodSpawnMs = ref<number>(0)
   const splits = ref<(number | null)[]>(initial.splits)
@@ -223,6 +247,21 @@ export const useGameStore = defineStore('game', () => {
       bestSplits.value = mergeBests(bestSplits.value, splits.value)
       bestKillMs.value = mergeBests(bestKillMs.value, lastKillMs.value)
       office.rollOffer()
+    },
+    onBossLost: (gate) => {
+      const def = bossForGate(gate)
+      disgraceReport.value = {
+        familySurname: familySurname.value,
+        heirName: heir.value.name,
+        generation: generation.value,
+        gate,
+        bossTitle: def?.title ?? `Gate ${gate}`,
+        disgraceText: def?.disgraceText ?? 'The family name never recovers, and the line is wound up.',
+        deepestGate: Math.max(gatesBeaten.value, bloodlineDeepestGate.value),
+        legacyLost: legacyPoints.value
+      }
+      plays.log(nowMs.value, 'disgrace', { gate, generation: generation.value, legacy: legacyPoints.value })
+      resetBloodline(nowMs.value)
     },
     bestKillFor: (gate) => bestKillMs.value[gate] ?? null,
     bossTimeMult: () => modifiers.value.bossTimeMult,
@@ -260,6 +299,13 @@ export const useGameStore = defineStore('game', () => {
   const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value, modifiers.value.legacyScale))
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
   const legacyOnRetire = computed(() => legacyForDepth(gatesBeaten.value))
+  const canRetire = computed(
+    () =>
+      gatesBeaten.value >= minRetireGate.value &&
+      legacyOnRetire.value >= 1 &&
+      heirChoices.value.length === 0 &&
+      disgraceReport.value === null
+  )
   const autoClickers = computed(() => (modifiers.value.internsDisabled ? 0 : perks.value.autoClicker))
   const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
   const hustleMultiplier = computed(() => 1 + hustleBonus.value)
@@ -322,18 +368,19 @@ export const useGameStore = defineStore('game', () => {
     for (const row of visibleBusinesses.value) if (row.mode === 'revealed') seenItems.value.businesses[row.item.id] = true
   }
 
-  // Each item appears once you own one of the item before it in the same
-  // list this generation (the first is always there), up to the cost
-  // ceiling. The next one shows as a teaser, or as locked behind the boss.
+  // On a fresh climb, each item unlocks once you own one of the item before
+  // it. On prestige generations, items already seen in this bloodline appear
+  // straight away up to the current gate's cost ceiling.
   function buildVisibleList<T extends { id: string; baseCost: number }>(
     items: ReadonlyArray<T>,
     owned: Readonly<Record<string, number>>,
+    seen: Readonly<Record<string, boolean>>,
     prefix: string
   ): VisibleRow<T>[] {
     const rows: VisibleRow<T>[] = []
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
-      const unlocked = i === 0 || (owned[items[i - 1].id] ?? 0) > 0 || (owned[item.id] ?? 0) > 0
+      const unlocked = i === 0 || Boolean(seen[item.id]) || (owned[items[i - 1].id] ?? 0) > 0 || (owned[item.id] ?? 0) > 0
       if (unlocked && item.baseCost <= costCeiling.value) {
         rows.push({ mode: 'revealed', item })
         continue
@@ -349,10 +396,10 @@ export const useGameStore = defineStore('game', () => {
   }
 
   const visibleJobs = computed<VisibleRow<JobDef>[]>(() =>
-    buildVisibleList(JOBS, jobsPurchased.value, 'job')
+    buildVisibleList(JOBS, jobsPurchased.value, seenItems.value.jobs, 'job')
   )
   const visibleBusinesses = computed<VisibleRow<BusinessDef>[]>(() =>
-    buildVisibleList(BUSINESSES, businessesOwned.value, 'biz')
+    buildVisibleList(BUSINESSES, businessesOwned.value, seenItems.value.businesses, 'biz')
   )
 
   function snapshotPersisted(ts: number): PersistedSceneState {
@@ -457,6 +504,7 @@ export const useGameStore = defineStore('game', () => {
     businessBuff.value = null
     autoBuyFrozenUntil.value = 0
     activeEvent.value = null
+    disgraceReport.value = null
     classModalOpen.value = false
     celebratedClassLevel.value = null
     resetTelemetry(telemetry.value, ts, loaded.money)
@@ -851,8 +899,8 @@ export const useGameStore = defineStore('game', () => {
     }
     const elapsedMs = Math.max(0, ts - lastTickMs.value)
     lastTickMs.value = ts
-    if (heirChoices.value.length > 0) {
-      // The family waits for the succession to be settled
+    if (heirChoices.value.length > 0 || disgraceReport.value !== null) {
+      // The game pauses while succession or disgrace is on screen
       return
     }
 
@@ -951,8 +999,14 @@ export const useGameStore = defineStore('game', () => {
     return hired
   }
 
+  function skipAdvisorOffer(): boolean {
+    const skipped = office.skipOffer()
+    if (skipped) plays.log(nowMs.value, 'skip-hire', {})
+    return skipped
+  }
+
   function startBossAttempt(): boolean {
-    if (heirChoices.value.length > 0 || mustHireFirst.value || !bosses.startBossAttempt()) {
+    if (heirChoices.value.length > 0 || disgraceReport.value !== null || mustHireFirst.value || !bosses.startBossAttempt()) {
       return false
     }
     const gate = bosses.bossAttempt.value!.gate
@@ -969,7 +1023,7 @@ export const useGameStore = defineStore('game', () => {
   function retire(ts = Date.now()): boolean {
     nowMs.value = ts
     const gain = legacyOnRetire.value
-    if (gatesBeaten.value < 1 || gain < 1 || heirChoices.value.length > 0) {
+    if (!canRetire.value) {
       return false
     }
     if (gatesBeaten.value <= 2) unlockAchievement('early-retirement')
@@ -983,9 +1037,69 @@ export const useGameStore = defineStore('game', () => {
     return true
   }
 
+  // Wipe the active bloodline (on boss disgrace or voluntary restart),
+  // preserving lifetime meta-progress: achievements, titles and best splits.
+  function resetBloodline(ts: number): void {
+    const oldSurname = familySurname.value
+    let nextSurname = generateSurname(Math.random)
+    for (let guard = 0; nextSurname === oldSurname && guard < 10; guard++) {
+      nextSurname = generateSurname(Math.random)
+    }
+    familySurname.value = nextSurname
+    heir.value = { name: heirName(Math.random, nextSurname, []), traitId: null }
+    heirChoices.value = []
+    generation.value = 1
+    familyTree.value = []
+    legacyPoints.value = 0
+    legacySpent.value = 0
+    perks.value = { ...EMPTY_PERKS }
+    office.loadState({ seats: [], paChair: null, offer: [], queued: 0 })
+    money.value = 0
+    spentThisRun.value = 0
+    jobsPurchased.value = {}
+    businessesOwned.value = {}
+    seenItems.value = { jobs: { '1': true }, businesses: { '1': true } }
+    gatesBeaten.value = 0
+    activeGenerationMs.value = 0
+    splits.value = emptySplits()
+    lastKillMs.value = emptySplits()
+    bosses.bossAttempt.value = null
+    bosses.bossCooldownUntilMs.value = 0
+    hustleBonus.value = 0
+    penalty.value = null
+    clickBuff.value = null
+    businessBuff.value = null
+    autoBuyFrozenUntil.value = 0
+    lastAutoBuyAt.value = 0
+    activeEvent.value = null
+    classModalOpen.value = false
+    celebratedClassLevel.value = null
+    legacyDrawerOpen.value = false
+    achievementProgress.value = { ...EMPTY_PROGRESS }
+    plays.resetGateWatch(0)
+    resetTelemetry(telemetry.value, ts, 0)
+    refreshSeenItems()
+    scheduleNextEvent(ts)
+    flushSave(ts)
+  }
+
+  function dismissDisgrace(): void {
+    if (!disgraceReport.value) return
+    disgraceReport.value = null
+    announce(`The ${familySurname.value} bloodline begins from scratch.`)
+  }
+
+  function startNewBloodline(ts = Date.now()): void {
+    nowMs.value = ts
+    disgraceReport.value = null
+    plays.log(ts, 'new-bloodline', { generation: generation.value, legacy: legacyPoints.value })
+    resetBloodline(ts)
+    announce(`New bloodline: the ${familySurname.value} family enters the market.`)
+  }
+
   // Close the current generation: record it, pay out Legacy and the trust
   // fund, clear the run and draft the next heirs. Returns the trust fund.
-  function endGeneration(ts: number, gain: number): number {
+  function endGeneration(ts: number, gain: number, elevated = false): number {
     achievementProgress.value = { ...EMPTY_PROGRESS }
     const payroll = [office.paChair.value, ...office.officeSeats.value].filter((a): a is AdvisorInstance => a !== null)
     familyTree.value = [
@@ -998,11 +1112,14 @@ export const useGameStore = defineStore('game', () => {
         legacyEarned: gain,
         activeMs: activeGenerationMs.value,
         advisors: payroll.map((a) => ADVISORS_BY_ID[a.advisorId]?.name ?? a.advisorId),
-        splits: [...splits.value]
+        splits: [...splits.value],
+        ...(elevated ? { elevated: true } : {})
       }
     ].slice(-MAX_TREE_ENTRIES)
     // Inheritance isn't earned, so it doesn't count toward lifetime earnings
     const inheritance = heirInheritance(netWorth.value, modifiers.value.trustFundShareAdd)
+    // Outgoing head's trait now lives on familyTree; clear it here until pickHeir sets the next head
+    heir.value = { name: heir.value.name, traitId: null }
     legacyPoints.value += gain
     money.value = inheritance
     spentThisRun.value = 0
@@ -1043,7 +1160,7 @@ export const useGameStore = defineStore('game', () => {
     }
     titles.value += gain
     plays.log(ts, 'elevate', { titles: gain })
-    endGeneration(ts, 0)
+    endGeneration(ts, 0, true)
     plays.resetGateWatch(0)
     legacyPoints.value = 0
     legacySpent.value = 0
@@ -1205,16 +1322,23 @@ export const useGameStore = defineStore('game', () => {
     offlineReport,
     bannerMessage,
     lastVictory,
+    disgraceReport,
+    dismissDisgrace,
+    startNewBloodline,
     legacyDrawerOpen,
     classModalOpen,
     celebratedClassLevel,
     netWorth,
     gatesBeaten,
+    bloodlineDeepestGate,
+    minRetireGate,
+    canRetire,
     handleClassPromotion,
     familySurname,
     heir,
     heirChoices,
     generation,
+    bloodlineTraitPills,
     modifiers,
     pickHeir,
     bossTarget,
@@ -1225,6 +1349,7 @@ export const useGameStore = defineStore('game', () => {
     headhunterOffer: office.headhunterOffer,
     queuedOffers: office.queuedOffers,
     hireAdvisor,
+    skipAdvisorOffer,
     playLog: plays.playLog,
     flushAll,
     exportSave,
@@ -1244,6 +1369,8 @@ export const useGameStore = defineStore('game', () => {
     bossAttempt: bosses.bossAttempt,
     twist,
     nextBoss: bosses.nextBoss,
+    canBackOut: bosses.canBackOut,
+    backOutSec: bosses.backOutSec,
     startBossAttempt,
     abandonBossAttempt: bosses.abandonBossAttempt,
     classStatus,
@@ -1256,6 +1383,7 @@ export const useGameStore = defineStore('game', () => {
     bestKillMs,
     heirInheritancePreview,
     autoClickers,
+    maxHustle,
     hustleMultiplier,
     activeClickBuff,
     activeBusinessBuff,

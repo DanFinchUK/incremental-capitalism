@@ -13,8 +13,19 @@
         <h2 id="heir-draft-title">Who inherits the estate?</h2>
       </div>
       <p class="scn-CardMeta">
-        {{ countWord }} heirs, one family firm. Each brings a quirk that bends the rules for their whole generation.
+        Pick one of {{ countWord.toLowerCase() }} heirs. Their trait stacks permanently onto the {{ store.familySurname }} bloodline.
       </p>
+      <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow">
+        <span class="scn-StatHint">Current bloodline:</span>
+        <span
+          v-for="pill in store.bloodlineTraitPills"
+          :key="pill.label"
+          class="scn-TraitPill"
+          :class="{ 'scn-TraitPill-neg': pill.negative }"
+        >
+          {{ pill.label }}
+        </span>
+      </div>
       <div class="scn-HeirGrid">
         <article
           v-for="(choice, i) in options"

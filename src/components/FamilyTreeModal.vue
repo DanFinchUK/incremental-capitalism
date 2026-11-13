@@ -17,6 +17,21 @@
         <button type="button" class="scn-Action scn-Action-outline" @click="store.familyTreeOpen = false">Close</button>
       </div>
 
+      <div class="scn-ModalCallout scn-ModalCallout-perk" data-testid="bloodline-traits">
+        <strong>Inherited bloodline traits (all stack permanently):</strong>
+        <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow">
+          <span
+            v-for="pill in store.bloodlineTraitPills"
+            :key="pill.label"
+            class="scn-TraitPill"
+            :class="{ 'scn-TraitPill-neg': pill.negative }"
+          >
+            {{ pill.label }}
+          </span>
+        </div>
+        <span v-else class="scn-AutoLine">None yet. Each heir's trait joins the bloodline for good.</span>
+      </div>
+
       <ol class="scn-TreeList" reversed>
         <li class="scn-TreeEntry scn-TreeEntry-current">
           <div class="scn-TreeHead">

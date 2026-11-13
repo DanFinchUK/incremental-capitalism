@@ -54,7 +54,7 @@
       </div>
     </div>
 
-    <div v-if="!boss && store.legacyOnRetire >= 1" class="mob-Gate" data-testid="dock-gate">
+    <div v-if="!boss && store.canRetire" class="mob-Gate" data-testid="dock-gate">
       <div class="mob-GateText">
         <strong>Every gate beaten</strong>
         <span>Hand it all on to the next heir</span>
@@ -181,7 +181,7 @@ watch(
 
 // While climbing towards a locked or regrouping gate, with Legacy to claim
 const canRetireHere = computed(
-  () => store.legacyOnRetire >= 1 && (boss.value?.status === 'locked' || boss.value?.status === 'cooldown')
+  () => store.canRetire && (boss.value?.status === 'locked' || boss.value?.status === 'cooldown')
 )
 
 function startBoss(): void {

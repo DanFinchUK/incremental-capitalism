@@ -55,10 +55,10 @@ export interface BotConfig {
 export const HUMAN_PACE: BotConfig = {
   clicksPerSec: 4,
   casualClicksPerSec: 0.3,
-  openingMinutes: 5,
+  openingMinutes: 2.5,
   decideEverySec: 2,
-  stallMinutes: 20,
-  firstGenerationStallMinutes: 40
+  stallMinutes: 4,
+  firstGenerationStallMinutes: 10
 }
 
 // A steady player who taps once a second, start to finish, and still buys,
@@ -75,7 +75,7 @@ export interface GenerationResult {
   deepestGate: number
   splitsMs: (number | null)[]
   killMs: (number | null)[]
-  netWorthAt10Min: number
+  netWorthAt4Min: number
   legacyEarned: number
   // Active time played before this generation started
   cumulativeActiveMs: number
@@ -99,11 +99,15 @@ function revealedItems(store: Store): Array<{ kind: ItemKind; id: string }> {
 function bestBuy(store: Store, cfg: BotConfig): { kind: ItemKind; id: string } | null {
   let best: { kind: ItemKind; id: string } | null = null
   let bestScore = 0
+  const boss = store.nextBoss
+  const clickBossOpen =
+    boss && boss.status !== 'locked' && (boss.def.condition.kind === 'clickEarningsAtFullHustle' || boss.def.condition.kind === 'polish')
+  const clickWeight = clickBossOpen ? cfg.clicksPerSec * store.maxHustle : cfg.casualClicksPerSec
   for (const item of revealedItems(store)) {
     const quote = store.itemQuote(item.kind, item.id, 1)
     if (!quote.canAfford) continue
     const delta = store.itemIncomeDelta(item.kind, item.id, 1)
-    const score = (delta.deltaPerSec + delta.deltaPerClick * cfg.casualClicksPerSec) / quote.cost
+    const score = (delta.deltaPerSec + delta.deltaPerClick * clickWeight) / quote.cost
     if (score > bestScore) {
       bestScore = score
       best = item
@@ -123,18 +127,71 @@ function manageOffice(store: Store): void {
     if (store.officeSeats.some((s) => s === null)) {
       store.hireAdvisor(best)
     } else {
-      // Hiring is required, so replace the least rare advisor in the office
       let seat = 0
       store.officeSeats.forEach((inst, i) => {
         const rank = (x: typeof inst) => (x ? RARITY_RANK[ADVISORS_BY_ID[x.advisorId].rarity] : -1)
         if (rank(inst) < rank(store.officeSeats[seat])) seat = i
       })
-      store.hireAdvisor(best, seat)
+      const existingRank = store.officeSeats[seat] ? RARITY_RANK[ADVISORS_BY_ID[store.officeSeats[seat]!.advisorId].rarity] : -1
+      const candidateRank = RARITY_RANK[ADVISORS_BY_ID[store.headhunterOffer[best]].rarity]
+      if (candidateRank > existingRank) {
+        store.hireAdvisor(best, seat)
+      } else {
+        store.skipAdvisorOffer()
+      }
     }
   }
   if (!store.paChair) {
     const seat = store.officeSeats.findIndex((s) => s !== null)
     if (seat >= 0) store.promoteToPA(seat)
+  }
+}
+
+// Because losing a boss ends the bloodline, wait until income can comfortably
+// clear the boss condition within the time limit before pressing Start.
+function readyToChallengeBoss(store: Store, cfg: BotConfig): boolean {
+  const boss = store.nextBoss
+  if (!boss || boss.status !== 'available') return false
+  const timeSec = boss.def.timeLimitSec * store.modifiers.bossTimeMult
+  const target = store.bossTarget(boss.def.gate)
+  const fullHustleFactor = store.maxHustle / Math.max(1, store.hustleMultiplier)
+  const clickRate = (cfg.clicksPerSec + store.autoClickers) * store.moneyPerClick * fullHustleFactor
+  const cond = boss.def.condition
+
+  switch (cond.kind) {
+    case 'clickEarningsAtFullHustle': {
+      const twistMult = 1 - (1 - 0.5) * store.modifiers.twistStrength
+      return clickRate * twistMult * (timeSec * 0.65) >= target * 1.15
+    }
+    case 'earnedAfterTax': {
+      const rent = 0.3 * store.modifiers.twistStrength
+      const gross = store.moneyPerSecond + cfg.clicksPerSec * store.moneyPerClick * fullHustleFactor
+      return gross * (1 - rent) * (timeSec * 0.7) >= target * 1.15
+    }
+    case 'polish': {
+      return clickRate * (timeSec * 0.65) >= target * 1.15
+    }
+    case 'ownAllRevealed': {
+      let missingCost = 0
+      for (const item of revealedItems(store)) {
+        const owned = item.kind === 'jobs' ? store.jobsPurchased[item.id] : store.businessesOwned[item.id]
+        if (!owned) missingCost += store.itemQuote(item.kind, item.id, 1).cost
+      }
+      if (store.money < missingCost * 1.1) return false
+      const gap = Math.max(0, target - store.netWorth)
+      const flow = store.moneyPerSecond + cfg.clicksPerSec * store.moneyPerClick * fullHustleFactor
+      return gap <= flow * (timeSec * 0.65)
+    }
+    case 'netWorthWithinPar': {
+      const gap = Math.max(0, target - store.netWorth)
+      const flow = store.moneyPerSecond + cfg.clicksPerSec * store.moneyPerClick * fullHustleFactor
+      return gap <= flow * (timeSec * 0.55)
+    }
+    case 'netWorth': {
+      const gap = Math.max(0, target - store.netWorth)
+      const flow = (store.moneyPerSecond + cfg.clicksPerSec * store.moneyPerClick * fullHustleFactor) * 0.85
+      return gap <= flow * (timeSec * 0.65)
+    }
   }
 }
 
@@ -148,7 +205,7 @@ function decide(store: Store, cfg: BotConfig): void {
     store.claimMarketEvent(store.nowMs)
   }
 
-  if (store.nextBoss?.status === 'available') {
+  if (readyToChallengeBoss(store, cfg)) {
     store.startBossAttempt()
   }
 
@@ -183,12 +240,20 @@ function decide(store: Store, cfg: BotConfig): void {
 
 const RARITY_RANK: Readonly<Record<string, number>> = { legendary: 3, rare: 2, common: 1 }
 
-// The bot takes the rarest heir on offer, first one on a tie.
+// The bot avoids stacking mutually ruinous downsides (e.g. Nepo Baby + click
+// penalties before Silver is cleared), picking the strongest heir otherwise.
 function pickHeir(store: Store): void {
   let best = 0
+  let bestScore = -Infinity
   store.heirChoices.forEach((h, i) => {
-    const rank = (id: string | null) => (id ? RARITY_RANK[TRAITS_BY_ID[id].rarity] : 0)
-    if (rank(h.traitId) > rank(store.heirChoices[best].traitId)) best = i
+    const trait = h.traitId ? TRAITS_BY_ID[h.traitId] : null
+    let score = trait ? RARITY_RANK[trait.rarity] * 10 : 0
+    if (h.traitId === 'nepo-baby' && store.modifiers.clickMult < 0.8) score -= 25
+    if (trait?.mods.clickMult !== undefined && trait.mods.clickMult < 1 && store.modifiers.clickMult < 0.6) score -= 15
+    if (score > bestScore) {
+      bestScore = score
+      best = i
+    }
   })
   store.pickHeir(best)
 }
@@ -267,7 +332,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
   const limitMs = hours * 3600 * 1000
   let cumulativeMs = 0
   let generation = 1
-  let netWorthAt10Min = 0
+  let netWorthAt4Min = 0
   let lastGateAtMs = 0
   let lastGates = 0
   let stayedFinite = true
@@ -280,7 +345,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       deepestGate: store.gatesBeaten,
       splitsMs: [...store.splits],
       killMs: [...store.lastKillMs],
-      netWorthAt10Min,
+      netWorthAt4Min,
       legacyEarned: store.legacyOnRetire,
       cumulativeActiveMs: cumulativeMs,
       stayedFinite
@@ -303,8 +368,8 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       stayedFinite = false
       break
     }
-    if (netWorthAt10Min === 0 && genMs >= 600_000) {
-      netWorthAt10Min = store.netWorth
+    if (netWorthAt4Min === 0 && genMs >= 240_000) {
+      netWorthAt4Min = store.netWorth
     }
     if (store.gatesBeaten > lastGates) {
       lastGates = store.gatesBeaten
@@ -315,18 +380,30 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       decide(store, cfg)
     }
 
+    if (store.disgraceReport) {
+      finishGeneration()
+      cumulativeMs += genMs
+      store.dismissDisgrace()
+      generation = 1
+      netWorthAt4Min = 0
+      lastGateAtMs = 0
+      lastGates = 0
+      continue
+    }
+
     const patience = generation === 1 ? cfg.firstGenerationStallMinutes : cfg.stallMinutes
     const stalled = genMs - lastGateAtMs >= patience * 60_000
-    if (store.gatesBeaten >= 1 && stalled && !store.bossAttempt) {
+    if (store.canRetire && (store.gatesBeaten >= 9 || stalled) && !store.bossAttempt) {
       finishGeneration()
       cumulativeMs += genMs
       store.retire(ts)
       pickHeir(store)
       buyPerks(store)
       generation += 1
-      netWorthAt10Min = 0
+      netWorthAt4Min = 0
       lastGateAtMs = 0
       lastGates = 0
+      if (results.at(-1)?.deepestGate === 9) break
     }
   }
   finishGeneration()

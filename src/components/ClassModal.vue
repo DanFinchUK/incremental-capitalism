@@ -45,8 +45,11 @@
         <li v-if="victory.nextBoss">
           Next: {{ victory.nextBoss.title }}, at {{ formatCurrency(victory.nextThreshold) }} net worth.
         </li>
-        <li>
+        <li v-if="victory.canRetireNow">
           Retire now for +{{ victory.legacyNow }} Legacy<template v-if="victory.nextBoss">, or beat {{ victory.nextBoss.title }} first for +{{ victory.legacyNext }}</template>.
+        </li>
+        <li v-else-if="victory.nextBoss">
+          Beat Gate {{ store.minRetireGate }} to unlock retirement (+{{ victory.legacyNext }} Legacy at {{ victory.nextBoss.title }}).
         </li>
       </ul>
 
@@ -110,7 +113,7 @@
       </details>
 
       <div class="scn-ModalFooter">
-        <p v-if="hireBlocksClose" class="scn-AutoLine">Hire one of the candidates above to carry on.</p>
+        <p v-if="hireBlocksClose" class="scn-AutoLine">Hire a candidate or pass above to carry on.</p>
         <button
           v-else
           type="button"
@@ -167,6 +170,7 @@ const victory = computed(() => {
     newBusinesses: BUSINESSES.filter((b) => opened(b.baseCost)).length,
     nextBoss,
     nextThreshold: nextBoss ? gateThreshold(nextBoss.gate) : 0,
+    canRetireNow: win.gate >= store.minRetireGate,
     legacyNow: legacyForDepth(win.gate),
     legacyNext: legacyForDepth(win.gate + 1)
   }

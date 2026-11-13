@@ -4,7 +4,7 @@
     class="scn-ModalBackdrop"
     role="dialog"
     aria-modal="true"
-    :aria-labelledby="mode === 'retire' ? 'retire-modal-title' : 'reset-modal-title'"
+    :aria-labelledby="mode === 'retire' ? 'retire-modal-title' : mode === 'bloodline' ? 'bloodline-modal-title' : 'reset-modal-title'"
     @click.self="emit('close')"
   >
     <div
@@ -18,9 +18,7 @@
       </div>
 
       <p class="scn-CardMeta">
-        Hand the estate to your heir. Your Jobs and Businesses are wound up, and after some creative
-        accounting your heir starts with {{ inheritancePct }}% of your net worth in cash. Legacy, perks,
-        and lifetime purchase counts carry forward.
+        Wind up Jobs and Businesses and hand {{ inheritancePct }}% of net worth to your chosen heir. Legacy, perks, your Personal Assistant, and all bloodline traits carry forward.
       </p>
 
       <div class="scn-ModalGrid">
@@ -78,6 +76,44 @@
           @click="emit('confirm-retire')"
         >
           Take Golden Parachute (+{{ gain }})
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-else-if="mode === 'bloodline'"
+      class="scn-Modal scn-Modal-wide scn-Modal-danger"
+      data-testid="bloodline-modal"
+    >
+      <div class="scn-ModalTop">
+        <span class="scn-ModalKicker scn-ModalKicker-danger">Quiet Emigration</span>
+        <h2 id="bloodline-modal-title">Fold the {{ store.familySurname }} Bloodline</h2>
+      </div>
+
+      <p class="scn-CardMeta">
+        Retire this disgraced or dead-end family line and begin Generation 1 with a fresh founder. Achievements, Peerage titles and best split times stay intact.
+      </p>
+
+      <div class="scn-ModalCallout scn-ModalCallout-danger">
+        <div><strong>Left behind with this family:</strong></div>
+        <div>• {{ store.legacyPoints }} Legacy, perks, family office and stacked traits</div>
+      </div>
+
+      <div class="scn-ModalFooter">
+        <button
+          type="button"
+          class="scn-Action scn-Action-outline"
+          @click="emit('close')"
+        >
+          Keep going
+        </button>
+        <button
+          type="button"
+          class="scn-Action scn-Action-danger"
+          data-testid="confirm-bloodline-btn"
+          @click="emit('confirm-bloodline')"
+        >
+          Start new bloodline
         </button>
       </div>
     </div>
@@ -152,7 +188,7 @@ import { HEIR_INHERITANCE_SHARE, legacyMultiplier } from '../engine/economy'
 import { useGameStore } from '../stores/game'
 import { formatCurrency, formatMultiplier } from '../utils/format'
 
-export type ConfirmDialogMode = 'retire' | 'reset' | null
+export type ConfirmDialogMode = 'retire' | 'bloodline' | 'reset' | null
 
 const props = defineProps<{
   mode: ConfirmDialogMode
@@ -161,6 +197,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'confirm-retire'): void
+  (e: 'confirm-bloodline'): void
   (e: 'confirm-reset'): void
 }>()
 

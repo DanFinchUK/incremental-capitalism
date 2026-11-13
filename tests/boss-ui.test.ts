@@ -129,24 +129,53 @@ describe('heir draft UI', () => {
 })
 
 describe('family office UI', () => {
-  it('shows the headhunter, hires into a seat, and promotes to PA', async () => {
+  it('shows the headhunter, passes or hires into a seat, and preserves rarity styling and campaign timer on the PA chair', async () => {
     localStorage.clear()
     const pinia = createPinia()
     setActivePinia(pinia)
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
     store.closeIntro()
-    store.headhunterOffer = ['sommelier', 'lobbyist', 'proxy']
+    store.headhunterOffer = ['sommelier', 'planning-lobby', 'proxy']
     await wrapper.vm.$nextTick()
     const panel = () => wrapper.find('[data-testid="family-office"]')
     expect(panel().text()).toContain('Sommelier')
     expect(panel().text()).toContain('Proxy with Power of Attorney')
+    expect(panel().find('[data-testid="skip-advisor"]').exists()).toBe(true)
     await panel().findAll('[data-testid="hire-advisor"]')[1].trigger('click')
-    expect(store.officeSeats[0]?.advisorId).toBe('lobbyist')
-    expect(panel().text()).not.toContain('Proxy with Power of Attorney')
+    expect(store.officeSeats[0]?.advisorId).toBe('planning-lobby')
+    store.officeSeats[0]!.campaignMs = 9 * 60_000
     await panel().find('[data-testid="promote-pa"]').trigger('click')
-    expect(store.paChair?.advisorId).toBe('lobbyist')
-    expect(panel().find('[data-testid="pa-chair"]').text()).toContain('Lobbyist')
+    expect(store.paChair?.advisorId).toBe('planning-lobby')
+    const paChair = panel().find('[data-testid="pa-chair"]')
+    expect(paChair.classes()).toContain('scn-AdvisorCard-legendary')
+    expect(paChair.text()).toContain('Legendary')
+    expect(paChair.text()).toContain('Campaigning for 9 min')
+    wrapper.unmount()
+  })
+
+  it('shows the disgrace modal when a boss fails and starts a fresh bloodline on dismiss', async () => {
+    localStorage.clear()
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro()
+    store.gatesBeaten = 3
+    store.addDebugMoney(gateThreshold(4) * 1.2, 1000)
+    store.money = 1e15
+    store.tick(1000)
+    store.startBossAttempt()
+    for (let i = 0; i < 16; i++) store.buyItem('jobs', '1', 1)
+    store.tick(2000)
+    await wrapper.vm.$nextTick()
+
+    const modal = wrapper.find('[data-testid="disgrace-modal"]')
+    expect(modal.exists()).toBe(true)
+    expect(modal.text()).toContain('Bruges')
+    await modal.find('[data-testid="dismiss-disgrace"]').trigger('click')
+    expect(wrapper.find('[data-testid="disgrace-modal"]').exists()).toBe(false)
+    expect(store.generation).toBe(1)
     wrapper.unmount()
   })
 })

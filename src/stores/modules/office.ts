@@ -25,6 +25,7 @@ export interface OfficeModule {
   queuedOffers: Ref<number>
   officeSources: ComputedRef<ModifierSource[]>
   hireAdvisor: (offerIndex: number, replaceSeat?: number) => boolean
+  skipOffer: () => boolean
   fireAdvisor: (seat: number) => void
   firePA: () => void
   promoteToPA: (seat: number) => void
@@ -79,6 +80,14 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     setSeat(seat, { uid: `a${Date.now().toString(36)}${nextUid++}`, advisorId, servedGenerations: 0, campaignMs: 0 })
     nextOffer()
     deps.announce(`${def.name} joins the family office.`)
+    deps.flushSave()
+    return true
+  }
+
+  function skipOffer(): boolean {
+    if (headhunterOffer.value.length === 0) return false
+    nextOffer()
+    deps.announce('Sent the headhunter packing.')
     deps.flushSave()
     return true
   }
@@ -152,6 +161,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     queuedOffers,
     officeSources,
     hireAdvisor,
+    skipOffer,
     fireAdvisor,
     firePA,
     promoteToPA,

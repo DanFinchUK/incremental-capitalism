@@ -53,16 +53,18 @@ describe('headhunter offers', () => {
     expect(store.queuedOffers).toBe(0)
   })
 
-  it('hiring is required: there is no skipping, and the next boss waits until you hire', () => {
+  it('the next boss waits until the headhunter offer is hired or passed', async () => {
     const store = fresh()
     const t = winGate(store, 1, T0)
-    expect('skipOffer' in store).toBe(false)
     store.addDebugMoney(gateThreshold(2) * 2, t)
     store.tick(t)
     expect(store.nextBoss?.status).toBe('available')
     expect(store.mustHireFirst).toBe(true)
     expect(store.startBossAttempt()).toBe(false)
-    store.hireAdvisor(0)
+    const cashBefore = store.money
+    expect(store.skipAdvisorOffer()).toBe(true)
+    expect(store.money).toBe(cashBefore)
+    expect(store.officeSeats.filter(Boolean)).toHaveLength(0)
     expect(store.mustHireFirst).toBe(false)
     expect(store.startBossAttempt()).toBe(true)
   })

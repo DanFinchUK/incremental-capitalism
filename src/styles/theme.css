@@ -1228,3 +1228,108 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* Class gate boss card and splits */
+.lyt-BossRow {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 720px) {
+  .lyt-BossRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.scn-BossCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--color-card);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.scn-BossCard-available {
+  border-color: var(--color-purple);
+}
+
+.scn-BossCard-active {
+  border-color: var(--color-gold);
+  background: var(--color-gold-bg);
+}
+
+.scn-BossCard-cooldown {
+  border-color: var(--color-shady);
+}
+
+.scn-BossTop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scn-BossTitle {
+  margin: 0;
+  font-size: 20px;
+}
+
+.scn-BossRule {
+  margin: 0;
+  font-size: 14px;
+}
+
+.scn-BossActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scn-SplitsPanel {
+  padding: 14px 16px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+}
+
+.scn-SplitsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.scn-SplitsTable th,
+.scn-SplitsTable td {
+  padding: 3px 6px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.scn-SplitsTable tbody th {
+  text-align: left;
+  font-family: inherit;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.scn-SplitAhead {
+  color: var(--color-green-text);
+  font-weight: 700;
+}
+
+.scn-SplitBehind {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.scn-Corked {
+  font-style: italic;
+  color: var(--color-shady-fg);
+}

@@ -22,6 +22,10 @@
 
       <OverviewBar @retire="handleRetire" />
       <HeroHeader ref="heroRef" @paid="handleManualClick" />
+      <div class="lyt-BossRow">
+        <BossCard />
+        <SplitsPanel />
+      </div>
       <TradingDesk />
 
       <div class="lyt-Columns">
@@ -78,6 +82,8 @@ import ConfirmModal, { type ConfirmDialogMode } from './components/ConfirmModal.
 import IntroModal from './components/IntroModal.vue'
 import FloatingPayouts, { type FloatParticle } from './components/FloatingPayouts.vue'
 import HeroHeader from './components/HeroHeader.vue'
+import BossCard from './components/BossCard.vue'
+import SplitsPanel from './components/SplitsPanel.vue'
 import ItemCard from './components/ItemCard.vue'
 import LegacyShop from './components/LegacyShop.vue'
 import MarketEvent from './components/MarketEvent.vue'

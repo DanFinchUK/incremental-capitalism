@@ -13,6 +13,7 @@
     </span>
     <div class="scn-CardTitle">{{ store.activeEvent.def.title }}</div>
     <div class="scn-AutoLine">{{ store.activeEvent.def.subtitle }}</div>
+    <div v-if="store.activeEvent.corked" class="scn-AutoLine scn-Corked">This one smells a bit off...</div>
   </button>
 </template>
 

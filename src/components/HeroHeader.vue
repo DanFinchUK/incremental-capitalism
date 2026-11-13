@@ -26,9 +26,12 @@
               ></div>
             </div>
 
-            <p v-if="store.classStatus.next">
-              Next social class ({{ store.classStatus.next.label }}) in
-              {{ formatCurrency(Math.max(0, store.classStatus.next.threshold - store.netWorth)) }}
+            <p v-if="store.classStatus.next && store.nextBoss">
+              Next social class ({{ store.classStatus.next.label }}):
+              <template v-if="store.netWorth < store.classStatus.next.threshold">
+                {{ formatCurrency(store.classStatus.next.threshold - store.netWorth) }} to unlock {{ store.nextBoss.def.title }}
+              </template>
+              <template v-else>beat {{ store.nextBoss.def.title }} to join</template>
             </p>
             <p v-else>Top of the British class pyramid reached.</p>
             <span class="scn-StatHint">

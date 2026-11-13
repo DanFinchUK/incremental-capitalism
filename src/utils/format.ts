@@ -71,3 +71,14 @@ export function formatMultiplier(value: number): string {
   }
   return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
 }
+
+// Clock-style time for splits and kill times: m:ss, or h:mm:ss past an
+// hour. Signed mode prefixes + or - for split deltas.
+export function formatClock(ms: number, signed = false): string {
+  const sign = signed ? (ms < 0 ? '-' : '+') : ms < 0 ? '-' : ''
+  const total = Math.floor(Math.abs(ms) / 1000)
+  const h = Math.floor(total / 3600)
+  const m = Math.floor((total % 3600) / 60)
+  const s = String(total % 60).padStart(2, '0')
+  return h > 0 ? `${sign}${h}:${String(m).padStart(2, '0')}:${s}` : `${sign}${m}:${s}`
+}

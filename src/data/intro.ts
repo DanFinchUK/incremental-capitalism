@@ -27,7 +27,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     kicker: 'Getting ahead',
     title: 'Climb the class ladder',
     body: [
-      'Your net worth moves you up the British class system. Each new class boosts your income and gets you mates\' rates on purchases.',
+      'Every class is guarded by a boss. Reach the gate\'s net worth to unlock the fight, then win under its twist to move up. Each new class boosts your income, gets you mates\' rates, and unlocks the next tier of Jobs and Businesses.',
       'Market Opportunities pop up on screen from time to time. Click them before they vanish for income boosts or instant windfalls. Rare and Legendary ones hit harder, and shady ones are a gamble.'
     ]
   },
@@ -35,9 +35,9 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     kicker: 'The long game',
     title: 'Retire and let your heir take over',
     body: [
-      'Once your lifetime earnings reach £450B you can retire for Legacy and hand the estate to your heir. They start over without your Jobs and Businesses, but with a trust fund worth 5% of your net worth, and every Legacy point multiplies their income by 1.5x for good.',
+      'Once you have beaten your first boss you can retire and hand the estate to your heir. Legacy is paid for the deepest gate you beat, and one gate deeper is worth far more than the same depth twice. Your heir starts over with a trust fund worth 5% of your net worth, and every Legacy point multiplies their income by 1.5x for good.',
       'Your first retirement unlocks Business auto-buy, and Legacy buys perks in the Old Boys\' Network, starting with a free Unpaid Intern.'
     ],
-    tip: 'Retiring as soon as you can get +1 to +3 Legacy is usually the fastest way up.'
+    tip: 'Each generation, try to beat your best split times, then push one gate further.'
   }
 ]

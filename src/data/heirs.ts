@@ -85,8 +85,8 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     id: 'landed-gentry',
     name: 'Landed Gentry',
     rarity: 'rare',
-    description: 'Has staff for the staff. Automation reaches 5% further towards the frontier, but clicks pay 20% less.',
-    mods: { automationShareBonus: 0.05, clickMult: 0.8 }
+    description: 'Has staff for the staff. The staff restock anything whose next unit costs under 3% of your cash, but clicks pay 20% less.',
+    mods: { automationShareBonus: 0.03, clickMult: 0.8 }
   },
   {
     id: 'the-favourite',

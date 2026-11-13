@@ -56,10 +56,10 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'nepotism',
     label: 'Old School Tie',
-    description: 'Moves the automation line: items costing up to 1% more of your cash per rank restock themselves.',
+    description: 'Once an advisor, heir or title brings automation, each rank lets items costing up to 1% more of your cash restock themselves.',
     maxRank: 4,
     costForRank: (r) => [1, 1, 2, 2][r],
-    effectSummary: (r) => `Automation line at ${1 + r}% of cash`
+    effectSummary: (r) => `+${r}% to the automation line`
   },
   {
     id: 'deregulation',

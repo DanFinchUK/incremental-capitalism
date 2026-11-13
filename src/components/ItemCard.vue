@@ -101,7 +101,7 @@
           </span>
         </div>
 
-        <p class="scn-AutoLine">{{ autoStatusText }}</p>
+        <p v-if="autoStatusText" class="scn-AutoLine">{{ autoStatusText }}</p>
       </div>
 
       <div class="scn-Actions" @click.stop>
@@ -231,7 +231,7 @@ const empireSharePct = computed(() => {
 const unitSuffix = computed(() => (props.kind === 'jobs' ? 'click' : 's'))
 
 const incomeLineText = computed(() => {
-  if (props.row.mode !== 'revealed') return ''
+  if (props.row.mode !== 'revealed' || store.automationLine <= 0) return ''
   if (owned.value > 0) {
     return `Income: ${formatCurrency(effectiveUnitIncome.value)}/${unitSuffix.value} each · ${formatCurrency(stackTotal.value)}/${unitSuffix.value} total (${empireSharePct.value.toFixed(1)}%)`
   }
@@ -287,7 +287,8 @@ const autoStatusText = computed(() => {
     : `Automates once it costs under ${linePct}% of your cash`
 })
 
-const showAutoBuyCheckbox = computed(() => props.row.mode === 'revealed')
+// Nothing automates until an advisor, heir or title brings it
+const showAutoBuyCheckbox = computed(() => props.row.mode === 'revealed' && store.automationLine > 0)
 
 const buyButtonLabel = computed(() => {
   const verb = props.kind === 'jobs' ? 'Get hired' : 'Get Businessed'

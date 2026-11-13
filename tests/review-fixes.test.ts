@@ -6,6 +6,7 @@ import { gateThreshold } from '../src/engine/bosses'
 import { MARKET_EVENTS } from '../src/data/events'
 import { HEIR_TRAITS } from '../src/data/heirs'
 import { ADVISORS } from '../src/data/advisors'
+import { hireEstateManager } from './helpers'
 import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
@@ -56,6 +57,7 @@ describe('review fixes', () => {
     const store = fresh()
     store.tick(T0)
     store.money = 10_000_000
+    hireEstateManager(store)
     expect(store.isAutomated('jobs', '1')).toBe(true)
     store.spawnSpecificEvent('shadyDeal', T0)
     store.claimMarketEvent(T0, () => 0.9) // loses: automation frozen

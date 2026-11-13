@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { gateThreshold } from '../src/engine/bosses'
 import { computeIncomeBreakdown, computePassivePerSecond } from '../src/engine/economy'
+import { hireEstateManager } from './helpers'
 import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
@@ -65,6 +66,7 @@ describe('boss attempts', () => {
 
   it('Grilling pauses automation only during the attempt', () => {
     const store = readyFor(8)
+    hireEstateManager(store)
     const units = () => Object.values(store.jobsPurchased).reduce((a, b) => a + b, 0) + Object.values(store.businessesOwned).reduce((a, b) => a + b, 0)
     store.startBossAttempt()
     const during = units()

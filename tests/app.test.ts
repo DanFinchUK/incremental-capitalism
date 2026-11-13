@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
+import { hireEstateManager } from './helpers'
 import { useGameStore } from '../src/stores/game'
 
 describe('App UI integration', () => {
@@ -116,6 +117,7 @@ describe('App UI integration', () => {
     // Etsy's next unit (~£124k) is under 1% of £15M cash, so it is automated;
     // the Phone kiosk's (~£516k) is not, so it keeps its buy button and delta
     store.money = 15_000_000
+    hireEstateManager(store)
     store.seenItems.jobs = { '1': true, '19': true, '2': true, '3': true, '4': true, '5': true }
     store.seenItems.businesses = { '1': true, '20': true }
     await wrapper.vm.$nextTick()

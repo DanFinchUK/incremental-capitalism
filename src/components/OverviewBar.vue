@@ -11,7 +11,7 @@
         class="scn-BulkGroup"
         role="group"
         aria-label="Bulk purchase amount"
-        title="How many to buy per click. Automation restocks anything that costs under the automation line on its own."
+        title="How many to buy per click. Hire an Estate Manager and anything under the automation line restocks itself."
       >
         <button
           v-for="opt in bulkOptions"
@@ -26,6 +26,7 @@
       </div>
 
       <button
+        v-if="store.automationLine > 0"
         type="button"
         class="scn-Action scn-Action-outline"
         :class="{ 'scn-Action-pausedToggle': store.autoBuyPaused }"
@@ -36,6 +37,7 @@
       </button>
 
       <button
+        v-if="store.automationLine > 0"
         type="button"
         class="scn-Action scn-Action-outline"
         :class="{ 'scn-Action-activeToggle': store.compactAutoBuy }"

@@ -116,10 +116,10 @@ export const ADVISORS: ReadonlyArray<AdvisorDef> = [
     name: 'Estate Manager',
     rarity: 'common',
     roles: ['buyer'],
-    effectText: 'Automation reaches 2% further towards the frontier.',
+    effectText: 'Keeps the estate stocked: anything whose next unit costs under 1% of your cash restocks itself. Each one hired adds another 1%.',
     costText: 'Takes 1% of all income.',
     hireFeeShare: FEE.common,
-    mods: { automationShareBonus: 0.02 },
+    mods: { automationShareBonus: 0.01 },
     upkeep: { incomeDrain: 0.01 }
   },
   {
@@ -216,10 +216,10 @@ export const ADVISORS: ReadonlyArray<AdvisorDef> = [
     name: 'Proxy with Power of Attorney',
     rarity: 'legendary',
     roles: ['buyer'],
-    effectText: 'Automation reaches 15% further towards the frontier.',
+    effectText: 'Signs for everything: anything whose next unit costs under 5% of your cash restocks itself.',
     costText: 'Commission: purchases cost 3% more.',
     hireFeeShare: FEE.legendary,
-    mods: { automationShareBonus: 0.15 },
+    mods: { automationShareBonus: 0.05 },
     upkeep: { purchaseCostMult: 1.03 }
   },
   {

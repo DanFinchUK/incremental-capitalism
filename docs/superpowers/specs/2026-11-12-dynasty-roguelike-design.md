@@ -138,15 +138,19 @@ Examples to anchor the list (the builder fills it out to about 20 to 25):
 - Wealth Manager (Rare, Finance): the heir's trust fund share rises by 5 points. Commission: 1% of every purchase.
 - Lobbyist (Rare, Fixer): bosses' twists are 25% weaker. Retainer.
 - Flour Duty Campaigner (Legendary, Fixer, Hospitality): the Flour Duty Relief campaign above. Retainer.
-- Proxy with Power of Attorney (Legendary, Buyer): the automation line moves much closer to the frontier (see below). Commission: 3% of all income.
+- Proxy with Power of Attorney (Legendary, Buyer): brings automation up to 5% of cash (see below). Commission: 3% of all income.
 
-### Mastery automation
+### Automation is hired
 
-Automation replaces today's auto-buy. An item keeps itself stocked once it is far behind the player's frontier: when its next unit costs at most a small fraction of current cash (start at 1%, tuned by simulator). Automated buying happens on the existing one-second cadence and buys only automated items. Items near the frontier are always bought by hand.
+Revised 2026-11-13 after play-testing: a free baseline let a player who only tapped Get Paid watch the game buy hundreds of items for them, which is the decision-removal this design exists to avoid.
 
-What moves the automation line: the Old School Tie perk (repurposed from lowering auto-buy unlock counts), the Proxy advisor, and some heir traits. The per-item auto-buy checkboxes stay, so a player can exclude an item. The master pause stays.
+Nothing buys itself by default. Automation comes from whoever the family brings in: the Estate Manager (common advisor, 1% of cash per copy, stacking), the Proxy with Power of Attorney (legendary, 5%), the "Has staff for the staff" heir trait (3%) and five Titles (5%, for good). While at least one of those is present, items whose next unit costs at most that share of current cash keep themselves stocked on the one-second cadence. Items near the frontier are always bought by hand.
 
-Removed: return-on-investment target selection (`selectAutoBuyTarget`), the "next auto-buy" card highlight, the lifetime-purchase unlock counts, and Business auto-buy as a first-retirement unlock. Unpaid Interns remain auto-clickers and no longer gate Job automation.
+The Old School Tie perk adds 1% per rank, but only to automation something else already brings. The per-item checkboxes and the master pause stay, and they are hidden until automation exists.
+
+Bosses that pause automation (Golf, Select Committee) now bite automation builds specifically.
+
+Removed: return-on-investment target selection (`selectAutoBuyTarget`), the "next auto-buy" card highlight, the lifetime-purchase unlock counts, and Business auto-buy as a first-retirement unlock. Unpaid Interns remain auto-clickers.
 
 ### Heirs and traits
 
@@ -184,7 +188,7 @@ Built overnight with Claude's calls, as Dan asked ("make sensible decisions").
 
 - Unlock: once the family has beaten the Royal Garden Party at least once, ever, and holds enough Legacy for one title.
 - Elevation converts Legacy into Titles: floor(sqrt(Legacy / 100)). It ends the current generation (recorded in the family tree), then gives up Legacy points, perks and the whole family office including the PA. The family name, tree, achievements and best times carry on.
-- Each title adds 50% to all income, for good. One title adds an office seat, two bring a fourth heir to the succession draft, three make Legacy worth 50% more, and five move automation 5% further.
+- Each title adds 50% to all income, for good. One title adds an office seat, two bring a fourth heir to the succession draft, three make Legacy worth 50% more, and five bring automation for good (5% of cash).
 - Ranks by titles held: Baron, Viscount, Earl, Marquess, Duke.
 
 ### Tone audit

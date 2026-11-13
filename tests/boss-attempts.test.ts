@@ -125,6 +125,7 @@ describe('boss attempts', () => {
   it('a win promotes, opens the class modal on first reach, and clears the twist', () => {
     const store = readyFor(1)
     store.jobsPurchased['1'] = 400
+    store.jobsPurchased['21'] = 3 // enough pay per click to clear the raised gate 1 target in 60 clicks
     store.startBossAttempt()
     const halfClick = store.moneyPerClick
     for (let i = 0; i < 60; i++) store.manualClick(T0 + 10 + i * 20)

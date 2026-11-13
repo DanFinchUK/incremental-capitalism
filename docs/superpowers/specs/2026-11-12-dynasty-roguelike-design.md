@@ -216,7 +216,8 @@ Each phase ships playable, tested, and committed on its own.
 
 The balance simulator used so far lives outside the repo. It moves into the repo as a dev-only suite with its own command (for example `npm run sim`), kept out of `npm test` because it takes longer. It models a scripted player (buying, clicking, attempting bosses, hiring advisors, picking heirs, retiring) well enough to check the pacing goals, and it states those goals as assertions on specific times and cash milestones, so a balance change that breaks pacing fails loudly. For example:
 
-- Generation 1 beats gate 3 within 30 to 45 simulated minutes of human-paced play.
+- Generation 1 beats gate 1 within 3 to 8 minutes, gate 2 within 8 to 20, and gate 3 within 30 to 45, at human pace.
+- Minimum stage times for a player tapping once a second: gate 1 takes at least 3 minutes, gate 2 at least 10, gate 3 at least 25. A player who only taps and buys nothing owns nothing after 30 minutes.
 - Generation 2 reaches generation 1's deepest gate at least 20% sooner.
 - Net worth at the 10-minute mark of generation 2 is at least a set multiple of generation 1's.
 - The first gate 6 kill happens between hours 5 and 6, and the first gate 9 kill between hours 15 and 20.

@@ -24,6 +24,18 @@ function firstKillHours(gens: GenerationResult[], gate: number): number {
 }
 
 describe('pacing (median of three campaigns)', () => {
+  it('generation 1 beats gate 1 within 3 to 8 minutes', () => {
+    const minutes = median(campaigns.map((gens) => (gens[0].splitsMs[1] ?? Infinity) / MINUTE))
+    expect(minutes).toBeGreaterThanOrEqual(3)
+    expect(minutes).toBeLessThanOrEqual(8)
+  })
+
+  it('generation 1 beats gate 2 within 8 to 20 minutes', () => {
+    const minutes = median(campaigns.map((gens) => (gens[0].splitsMs[2] ?? Infinity) / MINUTE))
+    expect(minutes).toBeGreaterThanOrEqual(8)
+    expect(minutes).toBeLessThanOrEqual(20)
+  })
+
   it('generation 1 beats gate 3 within 30 to 45 minutes', () => {
     const minutes = median(campaigns.map((gens) => (gens[0].splitsMs[3] ?? Infinity) / MINUTE))
     expect(minutes).toBeGreaterThanOrEqual(30)

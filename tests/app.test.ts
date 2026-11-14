@@ -4,6 +4,8 @@ import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
 import { hireEstateManager } from './helpers'
 import { useGameStore } from '../src/stores/game'
+import { legacyMultiplier } from '../src/engine/economy'
+import { formatMultiplier } from '../src/utils/format'
 
 describe('App UI integration', () => {
   let pinia: ReturnType<typeof createPinia>
@@ -161,7 +163,7 @@ describe('App UI integration', () => {
 
     const modal = wrapper.find('[data-testid="retire-modal"]')
     expect(modal.exists()).toBe(true)
-    expect(modal.text()).toContain('x1 → x1.05')
+    expect(modal.text()).toContain(`x1 → x${formatMultiplier(legacyMultiplier(1))}`)
     // A trust fund of 5%, under the cap
     expect(modal.find('[data-testid="heir-inheritance"]').text()).toContain('£30,000,000')
     expect(modal.text()).toContain('Free Unpaid Intern')

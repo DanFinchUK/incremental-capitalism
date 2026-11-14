@@ -8,6 +8,7 @@ import { HEIR_TRAITS } from '../src/data/heirs'
 import { ADVISORS } from '../src/data/advisors'
 import { hireEstateManager } from './helpers'
 import { useGameStore } from '../src/stores/game'
+import { legacyMultiplier } from '../src/engine/economy'
 
 const T0 = 1_000_000
 const inst = (advisorId: string, servedGenerations = 0, campaignMs = 0, uid = advisorId) => ({ uid, advisorId, servedGenerations, campaignMs })
@@ -110,9 +111,10 @@ describe('review fixes', () => {
   it('shows the Legacy multiplier after traits and titles', () => {
     const store = fresh()
     store.legacyPoints = 20
-    expect(store.legacyMultiplier).toBeCloseTo(2)
+    expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(20))
+    // Reformed Socialist halves Legacy's worth
     store.heir = { name: 'Red Test', traitId: 'reformed-socialist' }
-    expect(store.legacyMultiplier).toBeCloseTo(1.5)
+    expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(10))
   })
 
   it('duplicate campaigners reach the cap sooner but share it', () => {

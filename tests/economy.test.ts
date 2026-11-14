@@ -3,6 +3,7 @@ import { GATE_NET_WORTH, SOCIAL_CLASSES } from '../src/data/classes'
 import { BUSINESSES_BY_ID, JOBS_BY_ID } from '../src/data/items'
 import {
   BASE_CLICK_VALUE,
+  LEGACY_EXPONENT,
   bulkBuyQuote,
   heirInheritance,
   computeClickIncome,
@@ -97,7 +98,7 @@ describe('economy engine', () => {
     const base = {
       jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 2x milestone + +10% to Etsy store ('1')
       businessesOwned: { '1': 9 }, // Etsy store x9, each +10% from the Teaching assistants
-      legacyPoints: 25, // 1 + 0.05 * 25 = 2.25x legacy
+      legacyPoints: 25,
       classLevel: 0,
       deregulationRank: 0,
       autoClickers: 0,
@@ -105,14 +106,15 @@ describe('economy engine', () => {
       clickBuffMultiplier: 1,
       hustleMultiplier: 2
     }
-    // Base click + (10 Teaching assistants * 2 milestone), * 2.25 legacy, then * 2 hustle
+    // Base click + (10 Teaching assistants * 2 milestone), * legacy, then * 2 hustle
+    const legacy = legacyMultiplier(25)
     const ta = JOBS_BY_ID['5'].moneyPerClick
     const etsy = BUSINESSES_BY_ID['1'].moneyPerSecond
-    const click = (BASE_CLICK_VALUE + 10 * ta * 2) * 2.25
+    const click = (BASE_CLICK_VALUE + 10 * ta * 2) * legacy
     expect(computeClickIncome(base, false)).toBeCloseTo(click, 5)
     expect(computeClickIncome(base, true)).toBeCloseTo(click * 2, 5)
-    // 9 Etsy stores * 1.10 synergy * 2.25 legacy
-    const passive = 9 * etsy * 1.1 * 2.25
+    // 9 Etsy stores * 1.10 synergy * legacy
+    const passive = 9 * etsy * 1.1 * legacy
     expect(computePassivePerSecond(base)).toBeCloseTo(passive, 5)
 
     // With 2 Unpaid Interns: idle (hustle 1) adds 2 clicks a second; hustling (hustle 2) doubles them
@@ -121,7 +123,7 @@ describe('economy engine', () => {
 
     // Buying the 10th Etsy store crosses milestone 10, doubling all ten units
     const deltaBiz = quoteIncomeDelta('businesses', '1', 1, base)
-    expect(deltaBiz.deltaPerSec).toBeCloseTo(10 * etsy * 2 * 1.1 * 2.25 - passive, 5)
+    expect(deltaBiz.deltaPerSec).toBeCloseTo(10 * etsy * 2 * 1.1 * legacy - passive, 5)
 
     // Buying 1 more Teaching assistant boosts both click income AND Etsy passive synergy!
     const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)
@@ -133,17 +135,23 @@ describe('economy engine', () => {
     // A small estate passes on 5%
     expect(heirInheritance(1000, 3)).toBe(50)
     // A deep estate passes on the threshold of the gate before the deepest
-    expect(heirInheritance(1e60, 3)).toBe(GATE_NET_WORTH[2])
-    expect(heirInheritance(1e60, 9)).toBe(GATE_NET_WORTH[8])
+    expect(heirInheritance(1e60, 3) / GATE_NET_WORTH[2]).toBeCloseTo(1, 9)
+    expect(heirInheritance(1e60, 9) / GATE_NET_WORTH[8]).toBeCloseTo(1, 9)
     // Retiring after gate 1 still caps at gate 1, and a bigger share scales the cap
-    expect(heirInheritance(1e60, 1)).toBe(GATE_NET_WORTH[1])
-    expect(heirInheritance(1e60, 3, 0.05)).toBe(GATE_NET_WORTH[2] * 2)
+    expect(heirInheritance(1e60, 1) / GATE_NET_WORTH[1]).toBeCloseTo(1, 9)
+    expect(heirInheritance(1e60, 3, 0.05) / GATE_NET_WORTH[2]).toBeCloseTo(2, 9)
   })
 
-  it('adds 5% income per Legacy point, +1x/rank Hustle cap, and offline catch-up', () => {
+  it('multiplies income by (1 + Legacy)^exponent, +1x/rank Hustle cap, and offline catch-up', () => {
     expect(legacyMultiplier(0)).toBe(1)
-    expect(legacyMultiplier(1)).toBeCloseTo(1.05)
-    expect(legacyMultiplier(20)).toBeCloseTo(2)
+    expect(legacyMultiplier(1)).toBeCloseTo(Math.pow(2, LEGACY_EXPONENT))
+    expect(legacyMultiplier(7)).toBeCloseTo(Math.pow(8, LEGACY_EXPONENT))
+    // Legacy roughly doubles per gate, so the multiplier grows close to 4x a gate
+    const perGate = legacyMultiplier(15) / legacyMultiplier(7)
+    expect(perGate).toBeGreaterThan(3.5)
+    expect(perGate).toBeLessThan(4.5)
+    // A scale applies to the points: half the points' worth
+    expect(legacyMultiplier(14, 0.5)).toBeCloseTo(legacyMultiplier(7))
     expect(maxHustleMultiplier(0)).toBe(3)
     expect(maxHustleMultiplier(1)).toBe(4)
     expect(maxHustleMultiplier(5)).toBe(8)

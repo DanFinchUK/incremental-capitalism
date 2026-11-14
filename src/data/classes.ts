@@ -8,11 +8,11 @@ export interface SocialClassDef {
 }
 
 // Net worth that unlocks each class gate's boss (index = class level). Each
-// sits at the price of a Job rung (see data/items.ts): gates 1 to 9 at rungs
-// 2.4, 6.0, 8.6, 11.5, 13.8, 15.9, 17.8, 19.6 and 21.3. A gate also caps what
-// you can buy before you beat it. Tuned with the pacing simulator
-// (npm run sim) for ~60-90m bloodline runs.
-export const GATE_NET_WORTH: ReadonlyArray<number> = [0, 6.8e07, 3.1e16, 6.4e22, 7.9e29, 3.7e35, 5.9e40, 3.2e45, 1e50, 1.9e54]
+// sits at the price of a Job rung (see data/items.ts): gate 1 at rung 2.4,
+// then every 2.3 rungs to gate 9 at 20.8. Even spacing keeps every gate the
+// same step harder than the last (docs/pacing.md). A gate also caps what you
+// can buy before you beat it. Checked by the pacing simulator (npm run sim).
+export const GATE_NET_WORTH: ReadonlyArray<number> = [0, 2.4e08, 2.6e14, 2.8e20, 3.1e26, 3.6e32, 4.1e38, 5e44, 6.1e50, 7.6e56]
 
 export const SOCIAL_CLASSES: ReadonlyArray<SocialClassDef> = [
   {

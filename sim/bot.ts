@@ -48,17 +48,22 @@ export interface BotConfig {
   stallMinutes: number
   // A first-time player has no feel yet for when retiring pays, so pushes on
   firstGenerationStallMinutes: number
+  // From this generation on, play with this patience instead (for probing how
+  // long gates past the bloodline's best take when the player never gives up)
+  probe?: { fromGeneration: number; stallMinutes: number }
 }
 
 // The player the pacing targets are set for: taps about five times a second
 // the whole way through, as playtesters actually do, so Hustle never drops.
+// Retires after 12 minutes without a new gate, which by the prestige rule
+// (docs/pacing.md) lands most generations at +1 to +3.
 export const FAST_TAPPER: BotConfig = {
   clicksPerSec: 5,
   casualClicksPerSec: 5,
   openingMinutes: 0,
   decideEverySec: 2,
-  stallMinutes: 4,
-  firstGenerationStallMinutes: 10
+  stallMinutes: 12,
+  firstGenerationStallMinutes: 12
 }
 
 // A mostly idle player: four clicks a second to get going, then the odd
@@ -83,6 +88,9 @@ export interface GenerationResult {
   generation: number
   activeMinutes: number
   deepestGate: number
+  // The deepest gate the bloodline had beaten before this generation began.
+  // Gate bestBefore + k is this generation's "+k".
+  bestBefore: number
   splitsMs: (number | null)[]
   killMs: (number | null)[]
   netWorthAt4Min: number
@@ -166,6 +174,9 @@ function manageOffice(store: Store): void {
 function readyToChallengeBoss(store: Store, cfg: BotConfig): boolean {
   const boss = store.nextBoss
   if (!boss || boss.status !== 'available') return false
+  // A running buff inflates income for a few seconds only; judge on the
+  // income the fight will actually see
+  if (store.activeClickBuff || store.activeBusinessBuff) return false
   const timeSec = boss.def.timeLimitSec * store.modifiers.bossTimeMult
   const target = store.bossTarget(boss.def.gate)
   const fullHustleFactor = store.maxHustle / Math.max(1, store.hustleMultiplier)
@@ -346,6 +357,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
   const limitMs = hours * 3600 * 1000
   let cumulativeMs = 0
   let generation = 1
+  let bloodlineBest = 0
   let netWorthAt4Min = 0
   let lastGateAtMs = 0
   let lastGates = 0
@@ -357,6 +369,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       generation,
       activeMinutes: store.activeGenerationMs / 60_000,
       deepestGate: store.gatesBeaten,
+      bestBefore: bloodlineBest,
       splitsMs: [...store.splits],
       killMs: [...store.lastKillMs],
       netWorthAt4Min,
@@ -422,16 +435,23 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       cumulativeMs += genMs
       store.dismissDisgrace()
       generation = 1
+      bloodlineBest = 0
       netWorthAt4Min = 0
       lastGateAtMs = 0
       lastGates = 0
       continue
     }
 
-    const patience = generation === 1 ? cfg.firstGenerationStallMinutes : cfg.stallMinutes
+    const patience =
+      cfg.probe && generation >= cfg.probe.fromGeneration
+        ? cfg.probe.stallMinutes
+        : generation === 1
+          ? cfg.firstGenerationStallMinutes
+          : cfg.stallMinutes
     const stalled = genMs - lastGateAtMs >= patience * 60_000
     if (store.canRetire && (store.gatesBeaten >= 9 || stalled) && !store.bossAttempt) {
       finishGeneration()
+      bloodlineBest = Math.max(bloodlineBest, store.gatesBeaten)
       cumulativeMs += genMs
       store.retire(ts)
       pickHeir(store)

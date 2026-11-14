@@ -3,7 +3,7 @@ import { GATE_NET_WORTH, SOCIAL_CLASSES } from '../src/data/classes'
 import { BUSINESSES_BY_ID, JOBS_BY_ID } from '../src/data/items'
 import {
   BASE_CLICK_VALUE,
-  LEGACY_EXPONENT,
+  LEGACY_INCOME_PER_POINT,
   bulkBuyQuote,
   heirInheritance,
   computeClickIncome,
@@ -98,7 +98,7 @@ describe('economy engine', () => {
     const base = {
       jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 2x milestone + +10% to Etsy store ('1')
       businessesOwned: { '1': 9 }, // Etsy store x9, each +10% from the Teaching assistants
-      legacyPoints: 25,
+      legacyPoints: 2,
       classLevel: 0,
       deregulationRank: 0,
       autoClickers: 0,
@@ -107,7 +107,7 @@ describe('economy engine', () => {
       hustleMultiplier: 2
     }
     // Base click + (10 Teaching assistants * 2 milestone), * legacy, then * 2 hustle
-    const legacy = legacyMultiplier(25)
+    const legacy = legacyMultiplier(2)
     const ta = JOBS_BY_ID['5'].moneyPerClick
     const etsy = BUSINESSES_BY_ID['1'].moneyPerSecond
     const click = (BASE_CLICK_VALUE + 10 * ta * 2) * legacy
@@ -142,16 +142,15 @@ describe('economy engine', () => {
     expect(heirInheritance(1e60, 3, 0.05) / GATE_NET_WORTH[2]).toBeCloseTo(2, 9)
   })
 
-  it('multiplies income by (1 + Legacy)^exponent, +1x/rank Hustle cap, and offline catch-up', () => {
+  it('multiplies income by 4.5 per Legacy point, +1x/rank Hustle cap, and offline catch-up', () => {
     expect(legacyMultiplier(0)).toBe(1)
-    expect(legacyMultiplier(1)).toBeCloseTo(Math.pow(2, LEGACY_EXPONENT))
-    expect(legacyMultiplier(7)).toBeCloseTo(Math.pow(8, LEGACY_EXPONENT))
-    // Legacy roughly doubles per gate, so the multiplier grows close to 4x a gate
-    const perGate = legacyMultiplier(15) / legacyMultiplier(7)
-    expect(perGate).toBeGreaterThan(3.5)
-    expect(perGate).toBeLessThan(4.5)
+    expect(legacyMultiplier(1)).toBeCloseTo(LEGACY_INCOME_PER_POINT)
+    expect(legacyMultiplier(3)).toBeCloseTo(Math.pow(LEGACY_INCOME_PER_POINT, 3))
+    // A point is a gate past the family's best: about as much stronger as the next gate is harder
+    expect(LEGACY_INCOME_PER_POINT).toBeGreaterThanOrEqual(3.5)
+    expect(LEGACY_INCOME_PER_POINT).toBeLessThanOrEqual(5.5)
     // A scale applies to the points: half the points' worth
-    expect(legacyMultiplier(14, 0.5)).toBeCloseTo(legacyMultiplier(7))
+    expect(legacyMultiplier(4, 0.5)).toBeCloseTo(legacyMultiplier(2))
     expect(maxHustleMultiplier(0)).toBe(3)
     expect(maxHustleMultiplier(1)).toBe(4)
     expect(maxHustleMultiplier(5)).toBe(8)

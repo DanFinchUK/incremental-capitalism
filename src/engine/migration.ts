@@ -6,12 +6,15 @@ import { TRAITS_BY_ID, type Heir } from '../data/heirs'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ACHIEVEMENTS_BY_ID, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from './office'
-import { MAX_TREE_ENTRIES, readGenerationRecord, type GenerationRecord } from './family'
+import { MAX_TREE_ENTRIES, currentBloodlineRecords, readGenerationRecord, type GenerationRecord } from './family'
 import type { OfficeState } from '../stores/modules/office'
 
 export const STORAGE_KEY = 'state'
 // Saves from any earlier schema reset to a new game.
-export const SCHEMA_VERSION = 7
+// 8: Legacy became one point per gate past the bloodline's best, at 1 Legacy a
+// perk rank. A schema 7 save is converted: Legacy becomes the bloodline's
+// deepest gate and perks are refunded.
+export const SCHEMA_VERSION = 8
 
 export interface PersistedSceneState {
   money: number
@@ -217,9 +220,10 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   }
 
   const envelope = parsed as Record<string, unknown>
-  if (envelope.schemaVersion !== SCHEMA_VERSION) {
+  if (envelope.schemaVersion !== SCHEMA_VERSION && envelope.schemaVersion !== 7) {
     return initial
   }
+  const fromSchema7 = envelope.schemaVersion === 7
   const sceneRaw = envelope.scene
   if (!sceneRaw || typeof sceneRaw !== 'object') {
     return initial
@@ -229,7 +233,11 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   const money = readNonNegativeNumber(s.money, 0)
   const jobsPurchased = readNumberMap(s.jobsPurchased)
   const businessesOwned = readNumberMap(s.businessesOwned)
-  const legacyPoints = Math.floor(readNonNegativeNumber(s.legacyPoints, 0))
+  const familyTree: GenerationRecord[] = Array.isArray(s.familyTree)
+    ? s.familyTree.map(readGenerationRecord).filter((r): r is GenerationRecord => r !== null).slice(-MAX_TREE_ENTRIES)
+    : []
+  const bloodlineBest = currentBloodlineRecords(familyTree).reduce((max, r) => Math.max(max, r.deepestGate), 0)
+  const legacyPoints = fromSchema7 ? bloodlineBest : Math.floor(readNonNegativeNumber(s.legacyPoints, 0))
 
   const lpRaw = s.lifetimePurchases && typeof s.lifetimePurchases === 'object'
     ? (s.lifetimePurchases as Record<string, unknown>)
@@ -252,7 +260,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   }
 
   const perks: PerkRanks = { ...EMPTY_PERKS }
-  if (s.perks && typeof s.perks === 'object') {
+  if (!fromSchema7 && s.perks && typeof s.perks === 'object') {
     const pRaw = s.perks as Record<string, unknown>
     for (const key of Object.keys(EMPTY_PERKS) as PerkId[]) {
       perks[key] = Math.floor(readNonNegativeNumber(pRaw[key], 0))
@@ -332,9 +340,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       : [],
     achievementProgress: readProgress(s.achievementProgress),
     titles: Math.floor(readNonNegativeNumber(s.titles, 0)),
-    familyTree: Array.isArray(s.familyTree)
-      ? s.familyTree.map(readGenerationRecord).filter((r): r is GenerationRecord => r !== null).slice(-MAX_TREE_ENTRIES)
-      : [],
+    familyTree,
     gatesBeaten: Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.gatesBeaten, 0))),
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     autoBuyPaused: Boolean(s.autoBuyPaused),

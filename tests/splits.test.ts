@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { emptySplits, mergeBests, splitDelta, withSplit } from '../src/engine/splits'
-import { gateThreshold, legacyForDepth } from '../src/engine/bosses'
+import { gateThreshold, legacyForRetiring } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
 const nulls = (n: number) => Array(n).fill(null)
@@ -58,14 +58,14 @@ describe('Legacy by depth and retirement', () => {
     let t = T0
     for (let i = 0; i < 3; i++) t = beatNextGate(store, t)
     expect(store.gatesBeaten).toBe(3)
-    expect(store.legacyOnRetire).toBe(legacyForDepth(3))
+    expect(store.legacyOnRetire).toBe(legacyForRetiring(3, 0))
     expect(store.splits[1]).not.toBeNull()
     expect(store.splits[3]).toBe(store.activeGenerationMs)
     const best = [...store.bestSplits]
     expect(best[3]).toBe(store.splits[3])
 
     expect(store.retire(t)).toBe(true)
-    expect(store.legacyPoints).toBe(legacyForDepth(3))
+    expect(store.legacyPoints).toBe(legacyForRetiring(3, 0))
     expect(store.gatesBeaten).toBe(0)
     expect(store.activeGenerationMs).toBe(0)
     expect(store.splits).toEqual(nulls(10))

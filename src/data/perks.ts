@@ -34,7 +34,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Unpaid Interns (Auto-Clicker)',
     description: 'Each rank clicks Get Paid once per second, riding your manual Hustle streak. First intern is literally unpaid!',
     maxRank: null,
-    costForRank: (r) => Math.floor(Math.sqrt(r)),
+    costForRank: (r) => (r === 0 ? 0 : 1),
     effectSummary: (r) => `${r} auto-click${r === 1 ? '' : 's'}/sec`
   },
   {
@@ -42,7 +42,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Grindset Coaching',
     description: 'Raises max Hustle click multiplier by +1x per rank (3x up to 8x) and scales streak build-up, boosting both manual clicks and Unpaid Interns.',
     maxRank: 5,
-    costForRank: (r) => [1, 1, 1, 2, 2][r],
+    costForRank: () => 1,
     effectSummary: (r) => `${3 + r}x max Hustle`
   },
   {
@@ -58,7 +58,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Old School Tie',
     description: 'Once an advisor, heir or title brings automation, each rank lets items costing up to 1% more of your cash restock themselves.',
     maxRank: 4,
-    costForRank: (r) => [1, 1, 2, 2][r],
+    costForRank: () => 1,
     effectSummary: (r) => `+${r}% to the automation line`
   },
   {
@@ -66,7 +66,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Light-Touch Regulation',
     description: 'Boosts each ownership milestone multiplier by +0.25x per rank.',
     maxRank: 4,
-    costForRank: (r) => [1, 2, 2, 3][r],
+    costForRank: () => 1,
     effectSummary: (r) => `${(2 + 0.25 * r).toFixed(2)}x per milestone`
   },
   {
@@ -74,7 +74,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Chancellor on Speed Dial',
     description: 'Market Opportunities spawn 15% faster and active frenzies last 25% longer per rank.',
     maxRank: 4,
-    costForRank: (r) => [1, 1, 1, 2][r],
+    costForRank: () => 1,
     effectSummary: (r) => `+${25 * r}% buff duration`
   },
   {
@@ -82,7 +82,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     label: 'Family Office Extension',
     description: 'Knocks through into the orangery: one more open seat in the family office per rank.',
     maxRank: 2,
-    costForRank: (r) => [2, 3][r],
+    costForRank: () => 1,
     effectSummary: (r) => `${3 + r} open seats`
   }
 ]

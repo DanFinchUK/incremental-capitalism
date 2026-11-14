@@ -32,8 +32,6 @@ export interface BossDef {
   condition: BossCondition
   timeLimitSec: number
   cooldownSec: number
-  // Legacy paid on retirement when this is the deepest gate beaten
-  legacyReward: number
 }
 
 function gateTarget(gate: number, mult: number): number {
@@ -56,8 +54,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twists: [{ kind: 'clickPay', mult: 0.5 }],
     condition: { kind: 'clickEarningsAtFullHustle', target: gateTarget(1, 0.5) },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 1
+    cooldownSec: COOLDOWN_SEC
   },
   {
     gate: 2,
@@ -71,8 +68,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twists: [{ kind: 'incomeTax', rate: 0.3 }],
     condition: { kind: 'earnedAfterTax', target: gateTarget(2, 1.5) },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 3
+    cooldownSec: COOLDOWN_SEC
   },
   {
     gate: 3,
@@ -86,8 +82,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twists: [{ kind: 'purchaseCost', mult: 1.5 }],
     condition: { kind: 'netWorth', target: gateTarget(3, 1.5) },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 7
+    cooldownSec: COOLDOWN_SEC
   },
   {
     gate: 4,
@@ -101,8 +96,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twists: [{ kind: 'automationPaused' }],
     condition: { kind: 'netWorthWithinPar', target: gateTarget(4, 2), par: 15 },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 15
+    cooldownSec: COOLDOWN_SEC
   },
   {
     gate: 5,
@@ -116,8 +110,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twists: [{ kind: 'eventFlood', intervalSec: 6, corkedChance: 0.3 }],
     condition: { kind: 'netWorth', target: gateTarget(5, 2) },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 31
+    cooldownSec: COOLDOWN_SEC
   },
   {
     gate: 6,
@@ -131,8 +124,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twists: [{ kind: 'clicksPolish' }],
     condition: { kind: 'polish', target: gateTarget(6, 0.2) },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 63
+    cooldownSec: COOLDOWN_SEC
   },
   {
     gate: 7,
@@ -146,8 +138,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twists: [],
     condition: { kind: 'ownAllRevealed', netWorth: gateTarget(7, 1.3) },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 127
+    cooldownSec: COOLDOWN_SEC
   },
   {
     gate: 8,
@@ -161,8 +152,7 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     twists: [{ kind: 'automationPaused' }],
     condition: { kind: 'netWorth', target: gateTarget(8, 1.3) },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 255
+    cooldownSec: COOLDOWN_SEC
   },
   {
     gate: 9,
@@ -180,7 +170,6 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     ],
     condition: { kind: 'netWorth', target: gateTarget(9, 1.3) },
     timeLimitSec: TIME_LIMIT_SEC,
-    cooldownSec: COOLDOWN_SEC,
-    legacyReward: 511
+    cooldownSec: COOLDOWN_SEC
   }
 ]

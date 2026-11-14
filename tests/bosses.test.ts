@@ -8,7 +8,7 @@ import {
   evaluateBoss,
   gateThreshold,
   itemCostCeiling,
-  legacyForDepth,
+  legacyForRetiring,
   newTracker
 } from '../src/engine/bosses'
 
@@ -25,8 +25,7 @@ function boss(condition: BossDef['condition'], timeLimitSec = 100): BossDef {
     twists: [],
     condition,
     timeLimitSec,
-    cooldownSec: 10,
-    legacyReward: 1
+    cooldownSec: 10
   }
 }
 
@@ -52,11 +51,13 @@ describe('boss data', () => {
     }
   })
 
-  it('pays more for one gate deeper than for repeating a depth twice', () => {
-    expect(legacyForDepth(0)).toBe(0)
-    for (let g = 1; g < 9; g++) {
-      expect(legacyForDepth(g + 1)).toBeGreaterThan(2 * legacyForDepth(g))
-    }
+  it('pays one Legacy for each gate past the bloodline best, and nothing for repeating it', () => {
+    expect(legacyForRetiring(0, 0)).toBe(0)
+    expect(legacyForRetiring(1, 0)).toBe(1)
+    expect(legacyForRetiring(3, 0)).toBe(3)
+    expect(legacyForRetiring(5, 3)).toBe(2)
+    expect(legacyForRetiring(3, 3)).toBe(0)
+    expect(legacyForRetiring(2, 3)).toBe(0)
   })
 
   it('looks bosses up by gate', () => {

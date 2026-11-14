@@ -95,7 +95,7 @@ Lifetime-earnings Legacy is retired. On retirement, the generation pays Legacy b
 
 The income multiplier per Legacy point (x1.5, compounding) and the perk costs stay as they are unless the simulator shows they must move. The "progress to next Legacy" bar becomes progress to the next gate.
 
-Superseded (2026-11-14): pacing now follows the prestige rule in `docs/pacing.md` (+1 past the bloodline's best is easy, +2 more effort, +3 quite hard, +4 about a day, so players retire 1 to 3 gates past their best). Legacy multiplies income by (1 + Legacy)^1.95 to match, and the heir's trust fund is capped about one gate short of the parent. Where the goals below disagree, `docs/pacing.md` wins.
+Superseded (2026-11-14): pacing now follows the prestige rule in `docs/pacing.md`. Retiring pays one Legacy for each gate past the bloodline's best (the Retire button reads +1, +2, +3), and repeating the best pays nothing. +1 is easy, +2 more effort, +3 quite hard, +4 about a day, so players retire for +1 to +3. Each Legacy point multiplies income by 4.5, perks cost 1 Legacy a rank, Elevation gives one title per 9 Legacy, and the heir's trust fund is capped about one gate short of the parent. Where the goals below disagree, `docs/pacing.md` wins.
 
 Pacing goals for the builder to hit with the simulator:
 

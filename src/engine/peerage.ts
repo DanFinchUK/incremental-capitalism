@@ -2,11 +2,13 @@
 // be elevated to the Lords, trading Legacy for permanent Titles.
 import type { ModifierSource } from './modifiers'
 
-export const LEGACY_PER_TITLE_SQUARED = 100
+// Legacy is one point per gate past the family's best, so a bloodline that
+// has climbed all nine gates holds nine: one title
+export const LEGACY_PER_TITLE = 9
 export const INCOME_PER_TITLE = 0.5
 
 export function titlesFor(legacyPoints: number): number {
-  return Math.floor(Math.sqrt(Math.max(0, legacyPoints) / LEGACY_PER_TITLE_SQUARED))
+  return Math.floor(Math.max(0, legacyPoints) / LEGACY_PER_TITLE)
 }
 
 const RANKS: ReadonlyArray<string> = ['Commoner', 'Baron', 'Viscount', 'Earl', 'Marquess', 'Duke']

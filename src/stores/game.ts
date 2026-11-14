@@ -56,7 +56,7 @@ import {
   type TelemetryState
 } from '../engine/telemetry'
 import { formatClock, formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
-import { bossForGate, conditionTarget, itemCostCeiling, legacyForDepth } from '../engine/bosses'
+import { bossForGate, conditionTarget, itemCostCeiling, legacyForRetiring } from '../engine/bosses'
 import { combineModifiers, type ModifierSource } from '../engine/modifiers'
 import { generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { createPlayLogModule } from './modules/playLog'
@@ -192,7 +192,8 @@ export const useGameStore = defineStore('game', () => {
   const achievementsOpen = ref(false)
   const titles = ref<number>(initial.titles)
   // Elevation needs the Royal Garden Party beaten at least once, ever
-  const titlesOnElevation = computed(() => titlesFor(legacyPoints.value))
+  // Counts the Legacy this generation would bank, since elevating ends it
+  const titlesOnElevation = computed(() => titlesFor(legacyPoints.value + legacyOnRetire.value))
   const canElevate = computed(() => bestSplits.value[9] != null && titlesOnElevation.value >= 1)
   const office = createOfficeModule({
     money,
@@ -298,11 +299,12 @@ export const useGameStore = defineStore('game', () => {
   const heirInheritancePreview = computed(() => heirInheritance(netWorth.value, gatesBeaten.value, modifiers.value.trustFundShareAdd))
   const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value, modifiers.value.legacyScale))
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
-  const legacyOnRetire = computed(() => legacyForDepth(gatesBeaten.value))
+  const legacyOnRetire = computed(() => legacyForRetiring(gatesBeaten.value, bloodlineDeepestGate.value))
+  // Retiring without a new record pays nothing, but stays open so a family
+  // stuck behind a bad heir can draft another
   const canRetire = computed(
     () =>
       gatesBeaten.value >= minRetireGate.value &&
-      legacyOnRetire.value >= 1 &&
       heirChoices.value.length === 0 &&
       disgraceReport.value === null
   )

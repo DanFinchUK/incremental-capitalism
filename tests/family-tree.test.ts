@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
-import { legacyForDepth } from '../src/engine/bosses'
+import { legacyForRetiring } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
@@ -36,7 +36,7 @@ describe('family tree', () => {
       name: founder,
       traitId: null,
       deepestGate: 2,
-      legacyEarned: legacyForDepth(2),
+      legacyEarned: legacyForRetiring(2, 0),
       activeMs: 25 * 60_000,
       advisors: ['Sommelier']
     })

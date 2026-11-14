@@ -133,7 +133,7 @@ import HeadhunterOffer from './HeadhunterOffer.vue'
 import { useVictoryLock } from './victoryLock'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
-import { bossForGate, gateThreshold, itemCostCeiling, legacyForDepth } from '../engine/bosses'
+import { bossForGate, gateThreshold, itemCostCeiling, legacyForRetiring } from '../engine/bosses'
 import { useGameStore } from '../stores/game'
 import { formatClock, formatCurrency } from '../utils/format'
 
@@ -171,8 +171,8 @@ const victory = computed(() => {
     nextBoss,
     nextThreshold: nextBoss ? gateThreshold(nextBoss.gate) : 0,
     canRetireNow: win.gate >= store.minRetireGate,
-    legacyNow: legacyForDepth(win.gate),
-    legacyNext: legacyForDepth(win.gate + 1)
+    legacyNow: legacyForRetiring(win.gate, store.bloodlineDeepestGate),
+    legacyNext: legacyForRetiring(win.gate + 1, store.bloodlineDeepestGate)
   }
 })
 

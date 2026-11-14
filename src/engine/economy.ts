@@ -7,13 +7,12 @@ const MILESTONES_MODERATE: ReadonlyArray<number> = [10, 20, 40, 75, 125]
 const MILESTONES_STEEP: ReadonlyArray<number> = [5, 10, 25, 50, 75]
 const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35]
 
-// Legacy multiplies income by (1 + points) ^ LEGACY_EXPONENT. Legacy is
-// earned by depth (see legacyForDepth in engine/bosses.ts) and roughly doubles
-// per gate, so the multiplier grows close to 4x per gate: about as much as
-// each gate's extra difficulty. That is what makes the gate past the
-// bloodline's best easy for the next heir (see docs/pacing.md).
-export const LEGACY_INCOME_PER_POINT = 1
-export const LEGACY_EXPONENT = 1.95
+// Each Legacy point multiplies income by LEGACY_INCOME_PER_POINT. Legacy is
+// one point per gate past the bloodline's best (legacyForRetiring in
+// engine/bosses.ts), so each new gate makes the family about as much stronger
+// as the next gate is harder. That keeps the gate past the family's best easy
+// for the next heir (see docs/pacing.md).
+export const LEGACY_INCOME_PER_POINT = 4.5
 // Share of the retiring run's net worth the heir starts with as cash.
 export const HEIR_INHERITANCE_SHARE = 0.05
 // Each rung of the item ladder is worth about a hundred times the one before,
@@ -170,7 +169,7 @@ export function classInfoForLevel(level: number, netWorth: number): SocialClassS
 }
 
 export function legacyMultiplier(legacyPoints: number, scale = 1): number {
-  return Math.pow(1 + LEGACY_INCOME_PER_POINT * Math.max(0, legacyPoints) * scale, LEGACY_EXPONENT)
+  return Math.pow(LEGACY_INCOME_PER_POINT, Math.max(0, legacyPoints) * scale)
 }
 
 export function maxHustleMultiplier(rank: number): number {

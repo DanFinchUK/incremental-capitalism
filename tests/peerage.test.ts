@@ -8,10 +8,10 @@ import { useGameStore } from '../src/stores/game'
 const T0 = 1_000_000
 
 describe('peerage rules', () => {
-  it('converts Legacy into titles with a square root', () => {
-    expect(titlesFor(99)).toBe(0)
-    expect(titlesFor(100)).toBe(1)
-    expect(titlesFor(2000)).toBe(4)
+  it('converts Legacy into titles: one for every 9, a whole bloodline\'s worth', () => {
+    expect(titlesFor(8)).toBe(0)
+    expect(titlesFor(9)).toBe(1)
+    expect(titlesFor(36)).toBe(4)
   })
 
   it('names ranks from Baron to Duke', () => {
@@ -39,8 +39,9 @@ describe('elevation in the store', () => {
     store.hydrateFromStorage(T0)
     store.closeIntro(T0)
     store.bestSplits = [null, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    store.legacyPoints = 2000
-    store.legacySpent = 100
+    // 27 banked plus the 9 this generation would bank: 4 titles
+    store.legacyPoints = 27
+    store.legacySpent = 10
     store.perks.hustleCap = 3
     store.gatesBeaten = 9
     store.addDebugMoney(1e21, T0)
@@ -54,7 +55,7 @@ describe('elevation in the store', () => {
   it('cannot elevate before the Royal Garden Party has ever fallen', () => {
     const store = useGameStore()
     store.hydrateFromStorage(T0)
-    store.legacyPoints = 5000
+    store.legacyPoints = 50
     expect(store.canElevate).toBe(false)
     expect(store.elevateToLords(T0)).toBe(false)
   })
@@ -102,7 +103,7 @@ describe('elevation in the store', () => {
     store.closeIntro()
     expect(wrapper.find('[data-testid="elevate"]').exists()).toBe(false)
     store.bestSplits = [null, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    store.legacyPoints = 400
+    store.legacyPoints = 18
     await wrapper.vm.$nextTick()
     const btn = wrapper.find('[data-testid="elevate"]')
     expect(btn.text()).toContain('2')

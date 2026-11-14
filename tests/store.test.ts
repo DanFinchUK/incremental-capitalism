@@ -42,15 +42,15 @@ describe('useGameStore', () => {
     expect(store.hustleMultiplier).toBeLessThan(1.5)
   })
 
-  it('supports Retire, free 1st Intern, stepped Intern costs, and +1x/rank Grindset Hustle cap', () => {
+  it('supports Retire, free 1st Intern, one Legacy per perk rank, and +1x/rank Grindset Hustle cap', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
     // Cannot claim free 0-cost Intern before earning at least 1 Legacy
     expect(store.buyPerk('autoClicker')).toBe(false)
 
     store.addDebugMoney(1e12, 1000)
-    store.gatesBeaten = 2 // deepest gate 2 pays legacyForDepth(2) = 3
-    expect(store.legacyOnRetire).toBe(3)
+    store.gatesBeaten = 2 // two gates past a fresh bloodline's best of 0: +2
+    expect(store.legacyOnRetire).toBe(2)
     const estate = store.netWorth
     const lifetimeBefore = store.lifetimeEarned
     // The trust fund is 5% of the estate, but a deep estate is capped so the
@@ -58,24 +58,25 @@ describe('useGameStore', () => {
     expect(estate * 0.05).toBeGreaterThan(GATE_NET_WORTH[1])
     expect(store.heirInheritancePreview).toBe(GATE_NET_WORTH[1])
     store.retire(2000)
-    expect(store.legacyPoints).toBe(3)
+    expect(store.legacyPoints).toBe(2)
     // The trust fund isn't counted as earned
     expect(store.money).toBe(GATE_NET_WORTH[1])
     expect(store.lifetimeEarned).toBe(lifetimeBefore)
-    expect(store.legacyAvailable).toBe(3)
+    expect(store.legacyAvailable).toBe(2)
 
-    // 1st Intern costs 0, 2nd Intern costs 1, Grindset Coaching I ('hustleCap') costs 1
+    // 1st Intern costs 0, then every rank costs 1
     expect(store.buyPerk('autoClicker')).toBe(true)
     expect(store.perks.autoClicker).toBe(1)
-    expect(store.legacyAvailable).toBe(3)
+    expect(store.legacyAvailable).toBe(2)
 
     expect(store.buyPerk('autoClicker')).toBe(true)
     expect(store.perks.autoClicker).toBe(2)
-    expect(store.legacyAvailable).toBe(2)
+    expect(store.legacyAvailable).toBe(1)
 
     expect(store.buyPerk('hustleCap')).toBe(true) // costs 1 -> raises max Hustle to 4x!
     expect(store.perks.hustleCap).toBe(1)
-    expect(store.legacyAvailable).toBe(1)
+    expect(store.legacyAvailable).toBe(0)
+    expect(store.buyPerk('hustleCap')).toBe(false)
 
     for (let i = 0; i < 25; i++) {
       store.manualClick(2100 + i * 40)

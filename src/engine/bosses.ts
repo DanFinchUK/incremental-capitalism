@@ -142,6 +142,8 @@ export function evaluateBoss(
   return { progress, won, lost: !won && (bust || timedOut) }
 }
 
-export function legacyForDepth(depth: number): number {
-  return depth <= 0 ? 0 : (bossForGate(depth)?.legacyReward ?? 0)
+// Legacy paid on retiring: one point for each gate past the deepest gate the
+// bloodline had already beaten. Repeating the family's best pays nothing.
+export function legacyForRetiring(depth: number, bloodlineBest: number): number {
+  return Math.max(0, Math.floor(depth) - Math.max(0, Math.floor(bloodlineBest)))
 }

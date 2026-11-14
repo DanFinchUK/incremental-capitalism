@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import MobileDock from '../src/components/MobileDock.vue'
 import ClassModal from '../src/components/ClassModal.vue'
-import { gateThreshold, legacyForDepth } from '../src/engine/bosses'
+import { gateThreshold, legacyForRetiring } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
@@ -31,7 +31,7 @@ describe('retiring is visible on a phone', () => {
     store.gatesBeaten = 3
     await dock.vm.$nextTick()
     const retire = dock.find('[data-testid="dock-retire"]')
-    expect(retire.text()).toContain(`+${legacyForDepth(3)}`)
+    expect(retire.text()).toContain(`+${legacyForRetiring(3, 0)}`)
     await retire.trigger('click')
     expect(dock.emitted('retire')).toHaveLength(1)
   })
@@ -46,7 +46,7 @@ describe('retiring is visible on a phone', () => {
     store.tick(T0 + 4500)
     const wrapper = mount(ClassModal, { global: { plugins: [pinia] } })
     const text = wrapper.find('[data-testid="victory-unlocks"]').text()
-    expect(text).toContain(`Retire now for +${legacyForDepth(1)} Legacy`)
-    expect(text).toContain(`+${legacyForDepth(2)}`)
+    expect(text).toContain(`Retire now for +${legacyForRetiring(1, 0)} Legacy`)
+    expect(text).toContain(`+${legacyForRetiring(2, 0)}`)
   })
 })

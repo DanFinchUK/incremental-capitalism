@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
 import { useGameStore } from '../src/stores/game'
-import { gateThreshold, legacyForDepth } from '../src/engine/bosses'
+import { gateThreshold, legacyForRetiring } from '../src/engine/bosses'
 import { BOSSES } from '../src/data/bosses'
 import { formatClock } from '../src/utils/format'
 
@@ -71,7 +71,7 @@ describe('boss and splits UI', () => {
     expect(retire().attributes('disabled')).toBeDefined()
     store.gatesBeaten = 3
     await wrapper.vm.$nextTick()
-    expect(retire().text()).toContain(`Retire for +${legacyForDepth(3)}`)
+    expect(retire().text()).toContain(`Retire for +${legacyForRetiring(3, 0)}`)
     expect(retire().attributes('disabled')).toBeUndefined()
     wrapper.unmount()
   })

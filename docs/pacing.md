@@ -6,8 +6,11 @@ so a balance change that breaks it fails loudly.
 
 ## The prestige rule
 
-Count gates from the deepest gate the bloodline has ever beaten. In each
-generation, the first gate past that is **+1**, the next **+2**, and so on.
+Retiring pays one Legacy point for each gate past the deepest gate the
+bloodline has ever beaten, so the Retire button reads **+1**, **+2**, **+3**.
+In each generation, the first gate past the family's best is +1, the next +2,
+and so on. Retiring without a new record pays nothing (+0), but stays open so a
+family stuck behind a bad heir can draft another.
 
 | Gate past the best | Should feel | Sim target (fast tapper) |
 |---|---|---|
@@ -16,9 +19,9 @@ generation, the first gate past that is **+1**, the next **+2**, and so on.
 | +3 | Quite hard | 30 to 150 minutes, for a player who never gives up |
 | +4 | About a day of progress | 2 hours or more of non-stop play, often never in 8 hours |
 
-So the player should retire 1 to 3 gates past their best, and the heir picks
-up from there. A generation that retires after 12 minutes without a new gate
-should land at +1 to +3, and never +4.
+So the player should retire for +1 to +3, and the heir picks up from there.
+A generation that retires after 12 minutes without a new gate should land at
++1 to +3, and never +4.
 
 The first generation follows the same rule with a best of 0: gate 1 is easy,
 gate 2 takes some effort, gate 3 is quite hard, and gate 4 is out of reach.
@@ -39,11 +42,11 @@ The rule needs two things to match:
    and each rung pays back about twice as slowly as the one below it (the
    ladder rule at the top of `src/data/items.ts`). Beating a gate also raises
    the cap on what you can buy, so the next gate is always a real climb.
-2. **Each new gate makes the bloodline about as much stronger.** Legacy is
-   paid by depth (1, 3, 7, 15 ... points, roughly doubling per gate) and income
-   is multiplied by `(1 + Legacy) ^ 1.95` (`legacyMultiplier` in
-   `src/engine/economy.ts`), close to 4x per gate. Perks, advisors and stacked
-   heir traits add a little more.
+2. **Each new gate makes the bloodline about as much stronger.** Each Legacy
+   point multiplies income by 4.5 (`legacyMultiplier` in
+   `src/engine/economy.ts`), and a bloodline holds one point per gate it has
+   reached, so its strength tracks its depth. Perks, advisors and stacked heir
+   traits add a little more.
 
 If gates got harder faster than the bloodline got stronger, heirs would stall
 at their parent's depth. If the bloodline got stronger faster, heirs would race
@@ -52,6 +55,11 @@ several gates past it. Retuning one side means retuning the other.
 The heir's trust fund (5% of the estate, capped at about one gate short of the
 parent's deepest) skips the re-climb, so most of a generation is spent at the
 frontier rather than repeating old gates.
+
+A whole bloodline earns 9 Legacy, so perks cost 1 point a rank (the first
+Intern is free) and the full tree (24) is more than one bloodline can buy:
+which perks to take is a real choice. Elevating to the Lords gives one title
+per 9 Legacy, one per completed bloodline.
 
 ## Other targets
 

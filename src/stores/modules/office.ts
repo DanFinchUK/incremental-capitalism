@@ -74,10 +74,21 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     const advisorId = headhunterOffer.value[offerIndex]
     const def = advisorId ? ADVISORS_BY_ID[advisorId] : undefined
     if (!def) return false
+    const inst: AdvisorInstance = { uid: `a${Date.now().toString(36)}${nextUid++}`, advisorId, servedGenerations: 0, campaignMs: 0 }
+    // An empty PA chair is filled first, so the family's first advisor
+    // isn't lost on retirement by accident
+    if (replaceSeat === undefined && paChair.value === null) {
+      deps.money.value -= deps.money.value * def.hireFeeShare
+      paChair.value = inst
+      nextOffer()
+      deps.announce(`${def.name} joins the family office as your Personal Assistant.`)
+      deps.flushSave()
+      return true
+    }
     const seat = replaceSeat ?? officeSeats.value.findIndex((s) => s === null)
     if (seat < 0 || seat >= officeSeats.value.length) return false
     deps.money.value -= deps.money.value * def.hireFeeShare
-    setSeat(seat, { uid: `a${Date.now().toString(36)}${nextUid++}`, advisorId, servedGenerations: 0, campaignMs: 0 })
+    setSeat(seat, inst)
     nextOffer()
     deps.announce(`${def.name} joins the family office.`)
     deps.flushSave()

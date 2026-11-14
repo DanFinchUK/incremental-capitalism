@@ -66,7 +66,8 @@ const props = defineProps<{ locked?: boolean; lockSeconds?: number }>()
 
 const store = useGameStore()
 const offer = computed(() => store.headhunterOffer.map((id) => ADVISORS_BY_ID[id]).filter(Boolean))
-const seatsFull = computed(() => store.officeSeats.every((s) => s !== null))
+// An empty PA chair takes the next hire, so the office isn't full yet
+const seatsFull = computed(() => store.paChair !== null && store.officeSeats.every((s) => s !== null))
 const seated = computed(() => store.officeSeats.map((s) => (s ? ADVISORS_BY_ID[s.advisorId] : null)).filter((a) => a !== null))
 
 // With the office full, Hire first asks who makes way, showing what each

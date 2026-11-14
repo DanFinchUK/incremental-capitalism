@@ -143,10 +143,10 @@ describe('family office UI', () => {
     expect(panel().text()).toContain('Proxy with Power of Attorney')
     expect(panel().find('[data-testid="skip-advisor"]').exists()).toBe(true)
     await panel().findAll('[data-testid="hire-advisor"]')[1].trigger('click')
-    expect(store.officeSeats[0]?.advisorId).toBe('planning-lobby')
-    store.officeSeats[0]!.campaignMs = 9 * 60_000
-    await panel().find('[data-testid="promote-pa"]').trigger('click')
+    // The first hire takes the empty PA chair
     expect(store.paChair?.advisorId).toBe('planning-lobby')
+    store.paChair!.campaignMs = 9 * 60_000
+    await wrapper.vm.$nextTick()
     const paChair = panel().find('[data-testid="pa-chair"]')
     expect(paChair.classes()).toContain('scn-AdvisorCard-legendary')
     expect(paChair.text()).toContain('Legendary')

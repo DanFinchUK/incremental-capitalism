@@ -92,8 +92,21 @@ describe('the family office in the store', () => {
     expect(store.headhunterOffer).toHaveLength(3)
   })
 
+  it('the first hire takes the empty PA chair, so retiring cannot lose it', () => {
+    const store = winGate1()
+    store.headhunterOffer = ['sommelier', 'accountant', 'lobbyist']
+    expect(store.hireAdvisor(0)).toBe(true)
+    expect(store.paChair?.advisorId).toBe('sommelier')
+    expect(store.officeSeats.filter(Boolean)).toHaveLength(0)
+    store.retire(T0 + 2000)
+    store.pickHeir(0)
+    expect(store.paChair?.advisorId).toBe('sommelier')
+  })
+
   it('hiring pays the fee from cash, fills a seat and applies the effect', () => {
     const store = winGate1()
+    store.headhunterOffer = ['accountant']
+    store.hireAdvisor(0) // into the PA chair
     store.headhunterOffer = ['sommelier', 'accountant', 'lobbyist']
     const cash = store.money
     expect(store.hireAdvisor(0)).toBe(true)
@@ -105,7 +118,7 @@ describe('the family office in the store', () => {
 
   it('a full office needs a seat freed or a replacement named', () => {
     const store = winGate1()
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
       expect(store.hireAdvisor(0)).toBe(true)
     }
@@ -120,10 +133,10 @@ describe('the family office in the store', () => {
   it('the PA stays through retirement with a payrise; the rest leave', () => {
     const store = winGate1()
     store.headhunterOffer = ['productivity-guru', 'accountant', 'lobbyist']
-    store.hireAdvisor(0)
+    store.hireAdvisor(0) // into the PA chair
     store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
     store.hireAdvisor(0)
-    store.promoteToPA(0)
+    expect(store.officeSeats[0]?.advisorId).toBe('accountant')
     expect(store.paChair?.advisorId).toBe('productivity-guru')
     store.retire(T0 + 2000)
     store.pickHeir(0)

@@ -123,12 +123,12 @@ describe('headhunter offers', () => {
     expect(hire().length).toBe(3)
     expect(hire()[0].attributes('disabled')).toBeDefined()
     await hire()[0].trigger('click')
-    expect(store.officeSeats.filter(Boolean)).toHaveLength(0)
+    expect(store.paChair).toBeNull()
     vi.advanceTimersByTime(VICTORY_LOCK_MS)
     await wrapper.vm.$nextTick()
     expect(hire()[0].attributes('disabled')).toBeUndefined()
     await hire()[0].trigger('click')
-    expect(store.officeSeats.filter(Boolean)).toHaveLength(1)
+    expect(store.paChair).not.toBeNull()
   })
 
   it('the victory screen lets you hire straight away', async () => {
@@ -146,7 +146,7 @@ describe('headhunter offers', () => {
     const hire = wrapper.findAll('[data-testid="victory-headhunter"] [data-testid="hire-advisor"]')
     expect(hire.length).toBe(3)
     await hire[0].trigger('click')
-    expect(store.officeSeats.filter(Boolean)).toHaveLength(1)
+    expect(store.paChair).not.toBeNull()
   })
 
   it('the Family & gates tab is flagged while an offer waits', async () => {
@@ -160,7 +160,7 @@ describe('headhunter offers', () => {
 
   it('with the office full, shows what each seated advisor gives before you replace one', async () => {
     const store = fresh()
-    for (const id of ['lobbyist', 'sommelier', 'accountant']) {
+    for (const id of ['proxy', 'lobbyist', 'sommelier', 'accountant']) {
       store.headhunterOffer = [id]
       store.hireAdvisor(0)
     }

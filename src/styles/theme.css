@@ -1570,9 +1570,34 @@
 
 .scn-SeatPicker {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
   margin-top: auto;
+}
+
+.scn-SeatOption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.scn-SeatOption span {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+
+.scn-SeatOption:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* Family tree */

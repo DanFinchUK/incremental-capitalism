@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import ClassModal from '../src/components/ClassModal.vue'
 import { BOSSES } from '../src/data/bosses'
+import { SOCIAL_CLASSES } from '../src/data/classes'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
@@ -60,6 +61,16 @@ describe('beating a boss', () => {
     const pyramid = wrapper.find('details[data-testid="class-pyramid"]')
     expect(pyramid.exists()).toBe(true)
     expect(pyramid.attributes('open')).toBeUndefined()
+  })
+
+  it('keeps the new class to one line: its name and perks, with the welcome pack left to the pyramid', () => {
+    const store = fresh()
+    winGate1(store, T0)
+    const wrapper = mount(ClassModal, { global: { plugins: [pinia] } })
+    const callout = wrapper.find('[data-testid="victory-class"]')
+    expect(callout.text()).toContain(SOCIAL_CLASSES[1].label)
+    expect(callout.text()).toContain(SOCIAL_CLASSES[1].perkSummary)
+    expect(callout.text()).not.toContain(SOCIAL_CLASSES[1].initiationNote)
   })
 
   it('opening the pyramid from the class card shows it in full, with no victory', () => {

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import ClassModal from '../src/components/ClassModal.vue'
+import HeadhunterOffer from '../src/components/HeadhunterOffer.vue'
+import { ADVISORS_BY_ID } from '../src/data/advisors'
 import MobileDock from '../src/components/MobileDock.vue'
 import { parseSavedState, serializeState, STORAGE_KEY } from '../src/engine/migration'
 import { gateThreshold } from '../src/engine/bosses'
@@ -154,5 +156,30 @@ describe('headhunter offers', () => {
     store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
     await dock.vm.$nextTick()
     expect(dock.find('[data-testid="tab-family"] [data-testid="tab-hire"]').exists()).toBe(true)
+  })
+
+  it('with the office full, shows what each seated advisor gives before you replace one', async () => {
+    const store = fresh()
+    for (const id of ['lobbyist', 'sommelier', 'accountant']) {
+      store.headhunterOffer = [id]
+      store.hireAdvisor(0)
+    }
+    store.headhunterOffer = ['spin-doctor']
+    const wrapper = mount(HeadhunterOffer, { global: { plugins: [pinia] } })
+    // One Hire per candidate; with the office full it asks who makes way
+    expect(wrapper.findAll('[data-testid="hire-advisor"]')).toHaveLength(1)
+    expect(wrapper.find('[data-testid="seat-picker"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="hire-advisor"]').trigger('click')
+    const picker = wrapper.find('[data-testid="seat-picker"]')
+    const seated = store.officeSeats.map((seat) => ADVISORS_BY_ID[seat!.advisorId])
+    for (const a of seated) {
+      expect(picker.text()).toContain(a.name)
+      expect(picker.text()).toContain(a.effectText)
+    }
+    const options = wrapper.findAll('[data-testid="replace-seat"]')
+    expect(options).toHaveLength(3)
+    await options[1].trigger('click')
+    expect(store.officeSeats[1]!.advisorId).toBe('spin-doctor')
+    expect(store.headhunterOffer).toHaveLength(0)
   })
 })

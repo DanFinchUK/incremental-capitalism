@@ -28,29 +28,26 @@
       <template v-if="victory">
         <p class="scn-VictoryStory">{{ victory.boss.victoryText }}</p>
         <p class="scn-StatHint" data-testid="victory-time">
-          Won in {{ formatClock(victory.killMs) }}, {{ formatClock(victory.splitMs) }} into this generation
+          Won in {{ formatClock(victory.killMs) }} · {{ formatClock(victory.splitMs) }} into the generation
         </p>
+        <!-- One line; the welcome pack lives in the class pyramid below -->
+        <div v-if="celebratedDef" class="scn-ModalCallout scn-ModalCallout-perk" data-testid="victory-class">
+          <div>New class: <strong>{{ celebratedDef.label }}</strong> · {{ celebratedDef.perkSummary }}</div>
+        </div>
       </template>
 
-      <div v-if="celebratedDef" class="scn-ModalCallout scn-ModalCallout-perk">
-        <div v-if="victory">Your new class: <strong>{{ celebratedDef.label }}</strong></div>
+      <div v-else-if="celebratedDef" class="scn-ModalCallout scn-ModalCallout-perk">
         <div><strong>{{ celebratedDef.perkSummary }}</strong></div>
         <div>{{ celebratedDef.initiationNote }}</div>
       </div>
 
       <ul v-if="victory" class="scn-VictoryUnlocks" data-testid="victory-unlocks">
-        <li v-if="victory.newJobs > 0 || victory.newBusinesses > 0">
-          Now open: {{ unlockText }}
-        </li>
-        <li v-if="victory.nextBoss">
-          Next: {{ victory.nextBoss.title }}, at {{ formatCurrency(victory.nextThreshold) }} net worth.
-        </li>
+        <li v-if="victory.newJobs > 0 || victory.newBusinesses > 0">Unlocked: {{ unlockText }}</li>
+        <li v-if="victory.nextBoss">Next: {{ victory.nextBoss.title }} at {{ formatCurrency(victory.nextThreshold) }}</li>
         <li v-if="victory.canRetireNow">
-          Retire now for +{{ victory.legacyNow }} Legacy<template v-if="victory.nextBoss">, or beat {{ victory.nextBoss.title }} first for +{{ victory.legacyNext }}</template>.
+          Retire now for +{{ victory.legacyNow }} Legacy<template v-if="victory.nextBoss">, or +{{ victory.legacyNext }} after the next gate</template>
         </li>
-        <li v-else-if="victory.nextBoss">
-          Beat Gate {{ store.minRetireGate }} to unlock retirement (+{{ victory.legacyNext }} Legacy at {{ victory.nextBoss.title }}).
-        </li>
+        <li v-else-if="victory.nextBoss">Retiring opens at Gate {{ store.minRetireGate }}</li>
       </ul>
 
       <div v-if="victory && store.headhunterOffer.length > 0" data-testid="victory-headhunter">

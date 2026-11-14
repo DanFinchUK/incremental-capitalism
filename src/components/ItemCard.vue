@@ -185,27 +185,15 @@ const isAutoActive = computed(() =>
   props.row.mode === 'revealed' ? store.isAutomationShown(props.kind, props.row.item.id) : false
 )
 
-// Once automated, a card stays compact while Automate is ticked, so spending
-// your cash down doesn't unfold every card at once. A new generation (owned
-// falls) or unticking Automate lets it go.
-const stickyCompact = ref(false)
-watch(isAutoActive, (active) => {
-  if (active) stickyCompact.value = true
-}, { immediate: true })
-watch(
-  () => [store.compactAutoBuy, props.row.mode === 'revealed' && store.isAutoBuyEnabled(props.kind, props.row.item.id)],
-  () => {
-    stickyCompact.value = isAutoActive.value
-  }
-)
-
+// Compact follows the Automate tick (and the global pause), never the price,
+// so cards don't fold and unfold as cash moves
 const compactEligible = computed(
   () =>
     props.row.mode === 'revealed' &&
     store.compactAutoBuy &&
     store.automationLine > 0 &&
-    store.isAutoBuyEnabled(props.kind, props.row.item.id) &&
-    (isAutoActive.value || stickyCompact.value)
+    !store.autoBuyPaused &&
+    store.isAutoBuyEnabled(props.kind, props.row.item.id)
 )
 
 const isCompact = computed(() => compactEligible.value && !manualExpand.value)
@@ -223,10 +211,6 @@ const owned = computed(() => {
   return props.kind === 'jobs'
     ? (store.jobsPurchased[props.row.item.id] ?? 0)
     : (store.businessesOwned[props.row.item.id] ?? 0)
-})
-
-watch(owned, (now, before) => {
-  if (now < before) stickyCompact.value = isAutoActive.value
 })
 
 const milestones = computed(() =>

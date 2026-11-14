@@ -64,20 +64,20 @@ describe('item card without automation', () => {
     expect(wrapper.find('.scn-CostLine').text()).not.toContain('/click')
   })
 
-  it('stays compact once automated, even after cash is spent down', async () => {
+  it('collapses whenever Automate is ticked, whatever the price', async () => {
     const { store, wrapper } = card()
     hireEstateManager(store)
     store.compactAutoBuy = true
-    store.money = JOBS_BY_ID['1'].baseCost * 1e6
-    store.tick(2000)
-    await wrapper.vm.$nextTick()
-    expect(wrapper.classes()).toContain('scn-Card-compact')
-
-    store.money = 0
+    store.money = 0 // nothing is under the line
     await wrapper.vm.$nextTick()
     expect(store.isAutomationShown('jobs', '1')).toBe(false)
     expect(wrapper.classes()).toContain('scn-Card-compact')
     expect(wrapper.find('.scn-Action-compact').exists()).toBe(true)
+
+    store.money = JOBS_BY_ID['1'].baseCost * 1e6
+    store.tick(2000)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.classes()).toContain('scn-Card-compact')
 
     // Unticking Automate unfolds it
     store.toggleAutoBuy('jobs', '1')

@@ -106,7 +106,6 @@
 
       <div class="scn-Actions" @click.stop>
         <button
-          v-if="!isAutoActive"
           type="button"
           class="scn-Action"
           :disabled="!quote.canAfford"
@@ -170,7 +169,8 @@ watch(
   }
 )
 
-// Steadied in the store, so the buy button doesn't blink as cash moves
+// Steadied in the store, so the dashed style and compact cards don't blink as
+// cash moves. The buy button shows either way: you can always top up by hand.
 const isAutoActive = computed(() =>
   props.row.mode === 'revealed' ? store.isAutomationShown(props.kind, props.row.item.id) : false
 )
@@ -246,7 +246,7 @@ const compactIncomeText = computed(() => {
 })
 
 const deltaText = computed(() => {
-  if (props.row.mode !== 'revealed' || isAutoActive.value) return ''
+  if (props.row.mode !== 'revealed') return ''
   const d = store.itemIncomeDelta(props.kind, props.row.item.id, quote.value.count)
   if (props.kind === 'businesses') {
     return d.deltaPerSec > 0 ? `(+${formatCurrency(d.deltaPerSec)}/s)` : ''

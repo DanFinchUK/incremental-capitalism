@@ -123,7 +123,7 @@ const SAVE_THROTTLE_MS = 2000
 const AUTO_BUY_COOLDOWN_MS = 1000
 // An automated item stays shown that way until its next unit costs more than
 // this many times the automation line. One restock only makes the next unit a
-// little over 1x, so restocking never brings the buy button back.
+// little over 1x, so restocking never flips the card back.
 const AUTOMATION_DISPLAY_SLACK = 3
 // Income multiplier while a freeze lands on a family with no automation
 const FREEZE_INCOME_MULT = 0.5
@@ -661,12 +661,13 @@ export const useGameStore = defineStore('game', () => {
     return isWithinAutomationLine(itemQuote(kind, id, 1).cost, money.value, automationLine.value)
   }
 
-  // What an item card shows. Automation spends cash every second and income
-  // refills it, so an item near the line crosses it back and forth; showing
-  // that would make its buy button blink in and out. Once automated, an item
+  // Whether an item card shows as automated (dashed, and collapsed in compact
+  // mode). Automation spends cash every second and income refills it, so an
+  // item near the line crosses it back and forth; showing that would make the
+  // card blink between styles and sizes. Once automated, an item
   // stays shown that way until its next unit is well past the line (a big
-  // drop in cash, say). Switching automation off, or a boss pausing it, shows
-  // the button at once.
+  // drop in cash, say). Switching automation off, or a boss pausing it,
+  // shows at once.
   function automationDisplayAllowed(kind: ItemKind, id: string): boolean {
     return !autoBuyPaused.value && isAutoBuyEnabled(kind, id) && !twist.value.automationPaused && !isAutoBuyFrozen.value
   }

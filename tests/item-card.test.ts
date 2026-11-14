@@ -40,4 +40,17 @@ describe('item card without automation', () => {
     expect(wrapper.text()).toContain('Income:')
     expect(wrapper.text()).toContain('under 1% of your cash')
   })
+
+  it('keeps the buy button and its income preview on an automated item', async () => {
+    const { store, wrapper } = card()
+    hireEstateManager(store)
+    store.money = JOBS_BY_ID['1'].baseCost * 1e6 // far under the line: automated
+    store.tick(2000)
+    await wrapper.vm.$nextTick()
+    expect(store.isAutomationShown('jobs', '1')).toBe(true)
+    expect(wrapper.text()).toContain('restocks under 1% of your cash')
+    const buy = wrapper.find('.scn-Actions button.scn-Action')
+    expect(buy.exists()).toBe(true)
+    expect(wrapper.text()).toMatch(/\(\+£[\d.,]+[A-Za-z]*\/click/)
+  })
 })

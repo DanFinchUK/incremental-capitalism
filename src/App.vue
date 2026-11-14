@@ -41,6 +41,7 @@
 
         <!-- v-show keeps both lists alive, so switching tabs doesn't reload them -->
         <div v-show="!phone || phoneTab !== 'family'" class="lyt-MarketPane">
+          <TradingDesk v-if="!phone" />
           <div class="lyt-Columns">
             <section v-show="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
               <div class="lyt-Items">
@@ -75,7 +76,6 @@
             </section>
           </div>
 
-          <TradingDesk v-if="!phone" />
         </div>
       </div>
     </div>

@@ -197,7 +197,7 @@ import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
 
 const SVG_W = 560
-const SVG_H = 148
+const SVG_H = 112
 const PAD_TOP = 12
 const PAD_BOT = 10
 const PLOT_H = SVG_H - PAD_TOP - PAD_BOT

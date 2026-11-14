@@ -216,7 +216,7 @@ const mMultiplier = computed(() =>
 const effectiveUnitIncome = computed(() => {
   if (props.row.mode !== 'revealed') return 0
   if (props.kind === 'jobs') {
-    return jobUnitClickIncome(props.row.item as JobDef, owned.value, store.economyInput) * store.hustleMultiplier
+    return jobUnitClickIncome(props.row.item as JobDef, owned.value, store.jobBaseEconomyInput)
   }
   return businessUnitPerSecond(props.row.item as BusinessDef, owned.value, store.economyInput)
 })
@@ -225,7 +225,7 @@ const stackTotal = computed(() => effectiveUnitIncome.value * owned.value)
 
 const empireSharePct = computed(() => {
   if (owned.value <= 0) return 0
-  const denom = props.kind === 'jobs' ? store.moneyPerClick : store.moneyPerSecond
+  const denom = props.kind === 'jobs' ? store.jobBaseMoneyPerClick : store.moneyPerSecond
   if (denom <= 0) return 0
   return Math.min(100, (stackTotal.value / denom) * 100)
 })
@@ -251,10 +251,8 @@ const deltaText = computed(() => {
   if (props.kind === 'businesses') {
     return d.deltaPerSec > 0 ? `(+${formatCurrency(d.deltaPerSec)}/s)` : ''
   }
-  if (d.deltaPerSec > 0) {
-    return `(+${formatCurrency(d.deltaPerClick)}/click, +${formatCurrency(d.deltaPerSec)}/s)`
-  }
-  return d.deltaPerClick > 0 ? `(+${formatCurrency(d.deltaPerClick)}/click)` : ''
+  // The per-click gain is already on the Income line below
+  return d.deltaPerSec > 0 ? `(+${formatCurrency(d.deltaPerSec)}/s)` : ''
 })
 
 const synergyText = computed(() => {

@@ -361,6 +361,12 @@ export const useGameStore = defineStore('game', () => {
 
   const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
   const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
+  // Job cards show base rates: no Hustle and no Market Opportunity click buff
+  const jobBaseEconomyInput = computed<EconomySnapshotInput>(() => ({
+    ...economyInput.value,
+    clickBuffMultiplier: twist.value.clickPayMult
+  }))
+  const jobBaseMoneyPerClick = computed(() => computeClickIncome(jobBaseEconomyInput.value, false))
   const moneyPerSecond = computed(() => computePassivePerSecond(economyInput.value))
   // Income ignoring Market Opportunity buffs, so windfalls can't stack on them
   const unbuffedMoneyPerSecond = computed(() =>
@@ -1441,6 +1447,8 @@ export const useGameStore = defineStore('game', () => {
     economyInput,
     moneyPerClick,
     baseMoneyPerClick,
+    jobBaseEconomyInput,
+    jobBaseMoneyPerClick,
     moneyPerSecond,
     realisedPerSecond,
     manualRealisedPerSecond,

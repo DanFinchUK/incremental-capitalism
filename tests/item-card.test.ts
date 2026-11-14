@@ -41,7 +41,16 @@ describe('item card without automation', () => {
     expect(wrapper.text()).toContain('under 1% of your cash')
   })
 
-  it('keeps the buy button and its income preview on an automated item', async () => {
+  it('shows job income at the base rate, ignoring Hustle', async () => {
+    const { store, wrapper } = card()
+    const before = wrapper.find('.scn-IncomeLine').text()
+    store.hustleBonus = 1.5
+    await wrapper.vm.$nextTick()
+    expect(store.moneyPerClick).toBeGreaterThan(store.jobBaseMoneyPerClick)
+    expect(wrapper.find('.scn-IncomeLine').text()).toBe(before)
+  })
+
+  it('keeps the buy button on an automated item', async () => {
     const { store, wrapper } = card()
     hireEstateManager(store)
     store.money = JOBS_BY_ID['1'].baseCost * 1e6 // far under the line: automated
@@ -51,6 +60,7 @@ describe('item card without automation', () => {
     expect(wrapper.text()).toContain('restocks under 1% of your cash')
     const buy = wrapper.find('.scn-Actions button.scn-Action')
     expect(buy.exists()).toBe(true)
-    expect(wrapper.text()).toMatch(/\(\+£[\d.,]+[A-Za-z]*\/click/)
+    // The per-click gain is on the Income line, so the cost line doesn't repeat it
+    expect(wrapper.find('.scn-CostLine').text()).not.toContain('/click')
   })
 })

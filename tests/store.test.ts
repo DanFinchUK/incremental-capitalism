@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useGameStore } from '../src/stores/game'
+import { GATE_NET_WORTH } from '../src/data/classes'
+import { BUSINESSES_BY_ID } from '../src/data/items'
+import { BASE_CLICK_VALUE } from '../src/engine/economy'
 
 describe('useGameStore', () => {
   beforeEach(() => {
@@ -28,7 +31,7 @@ describe('useGameStore', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
     const first = store.manualClick(1000)
-    expect(first).toBeGreaterThan(30)
+    expect(first).toBeGreaterThan(BASE_CLICK_VALUE)
     for (let i = 0; i < 25; i++) {
       store.manualClick(1000 + i * 50)
     }
@@ -50,11 +53,14 @@ describe('useGameStore', () => {
     expect(store.legacyOnRetire).toBe(3)
     const estate = store.netWorth
     const lifetimeBefore = store.lifetimeEarned
-    expect(store.heirInheritancePreview).toBe(Math.floor(estate * 0.05))
+    // The trust fund is 5% of the estate, but a deep estate is capped so the
+    // heir lands one gate short of the parent: here, at the gate 1 threshold
+    expect(estate * 0.05).toBeGreaterThan(GATE_NET_WORTH[1])
+    expect(store.heirInheritancePreview).toBe(GATE_NET_WORTH[1])
     store.retire(2000)
     expect(store.legacyPoints).toBe(3)
-    // Heir starts with 5% of the estate as cash; it isn't counted as earned
-    expect(store.money).toBe(Math.floor(estate * 0.05))
+    // The trust fund isn't counted as earned
+    expect(store.money).toBe(GATE_NET_WORTH[1])
     expect(store.lifetimeEarned).toBe(lifetimeBefore)
     expect(store.legacyAvailable).toBe(3)
 
@@ -100,17 +106,18 @@ describe('useGameStore', () => {
   it('pays windfalls from unbuffed income and never downgrades a stronger running buff', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
-    store.businessesOwned['1'] = 1 // £2,600/s
+    store.businessesOwned['1'] = 1
     store.money = 0
+    const etsy = BUSINESSES_BY_ID['1'].moneyPerSecond
 
     store.spawnSpecificEvent('quantitativeEasing', 2000)
     store.claimMarketEvent(2000)
-    expect(store.moneyPerSecond).toBeCloseTo(2600 * 5, 5)
+    expect(store.moneyPerSecond).toBeCloseTo(etsy * 5, 5)
 
     // Tax Rebate during 5x QE still pays 60s of *unbuffed* income
     store.spawnSpecificEvent('taxRebate', 3000)
     store.claimMarketEvent(3000)
-    expect(store.money).toBeCloseTo(2600 * 60, 5)
+    expect(store.money).toBeCloseTo(etsy * 60, 5)
 
     // A weaker 3x Stimulus doesn't replace the running 5x QE
     store.spawnSpecificEvent('stimulusCheque', 4000)
@@ -129,7 +136,7 @@ describe('useGameStore', () => {
   it('credits offline catch-up when returning after >=60s and throttles tick saves', () => {
     const store1 = useGameStore()
     store1.hydrateFromStorage(10_000)
-    store1.businessesOwned['1'] = 1 // £2,600/s
+    store1.businessesOwned['1'] = 1
     store1.flushSave(10_000)
 
     setActivePinia(createPinia())
@@ -137,7 +144,7 @@ describe('useGameStore', () => {
     store2.hydrateFromStorage(10_000 + 120_000) // 2 minutes later
     expect(store2.offlineReport).not.toBeNull()
     expect(store2.offlineReport?.efficiency).toBe(0.5)
-    expect(store2.offlineReport?.moneyEarned).toBeCloseTo(2600 * 120 * 0.5, 2)
+    expect(store2.offlineReport?.moneyEarned).toBeCloseTo(BUSINESSES_BY_ID['1'].moneyPerSecond * 120 * 0.5, 2)
 
     // Tick at +500ms does not overwrite localStorage yet; at +2500ms it flushes
     const savedBefore = localStorage.getItem('state')

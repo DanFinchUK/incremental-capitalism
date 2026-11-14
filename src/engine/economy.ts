@@ -1,5 +1,5 @@
 import { BUSINESSES, JOBS, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
-import { SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
+import { GATE_NET_WORTH, SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
 import { NEUTRAL_MODIFIERS, type Modifiers } from './modifiers'
 
 const MILESTONES_GENTLE: ReadonlyArray<number> = [10, 25, 50, 100, 200]
@@ -12,14 +12,23 @@ const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35]
 // roughly doubles per gate, so a compounding multiplier would overflow.
 export const LEGACY_INCOME_PER_POINT = 0.05
 // Share of the retiring run's net worth the heir starts with as cash.
-// Simulated: any share up to 20% leaves the +1..+3 retire balance intact,
-// so this is tuned for feel (skip the penny-clicking, keep the mid game).
 export const HEIR_INHERITANCE_SHARE = 0.05
+// Each rung of the item ladder is worth about a hundred times the one before,
+// so 5% of a deep estate would hand the heir every gate it opened. The share
+// is taken of the estate up to a cap instead: at the base share the trust
+// fund lands the heir about one gate short of where the parent got to.
+const INHERITANCE_ESTATE_CAP_GATES_BACK = 1
 
-export function heirInheritance(netWorth: number, shareAdd = 0): number {
-  return Math.floor(Math.max(0, netWorth) * (HEIR_INHERITANCE_SHARE + shareAdd))
+export function inheritableEstate(netWorth: number, deepestGate: number): number {
+  const capGate = Math.max(1, Math.floor(deepestGate) - INHERITANCE_ESTATE_CAP_GATES_BACK)
+  const cap = GATE_NET_WORTH[Math.min(capGate, GATE_NET_WORTH.length - 1)] / HEIR_INHERITANCE_SHARE
+  return Math.min(Math.max(0, netWorth), cap)
 }
-export const BASE_CLICK_VALUE = 30
+
+export function heirInheritance(netWorth: number, deepestGate: number, shareAdd = 0): number {
+  return Math.floor(inheritableEstate(netWorth, deepestGate) * (HEIR_INHERITANCE_SHARE + shareAdd))
+}
+export const BASE_CLICK_VALUE = 1
 
 export type BulkBuyMode = 1 | 10 | 'next' | 'max'
 

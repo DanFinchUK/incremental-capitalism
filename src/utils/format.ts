@@ -1,4 +1,17 @@
+// The item ladder climbs about two orders of magnitude a rung, so late-game
+// estates run past £1e57; the suffixes cover that before falling back to an
+// exponent.
 const COMPACT_TIERS: ReadonlyArray<{ threshold: number; suffix: string }> = [
+  { threshold: 1e63, suffix: 'Vg' },
+  { threshold: 1e60, suffix: 'Nod' },
+  { threshold: 1e57, suffix: 'Ocd' },
+  { threshold: 1e54, suffix: 'Spd' },
+  { threshold: 1e51, suffix: 'Sxd' },
+  { threshold: 1e48, suffix: 'Qid' },
+  { threshold: 1e45, suffix: 'Qad' },
+  { threshold: 1e42, suffix: 'Td' },
+  { threshold: 1e39, suffix: 'Dd' },
+  { threshold: 1e36, suffix: 'Ud' },
   { threshold: 1e33, suffix: 'Dc' },
   { threshold: 1e30, suffix: 'No' },
   { threshold: 1e27, suffix: 'Oc' },
@@ -16,7 +29,7 @@ export function formatCurrency(value: number): string {
   const sign = value < 0 ? '-' : ''
   const abs = Math.abs(value)
 
-  if (abs >= 1e36) {
+  if (abs >= 1e66) {
     return `${sign}£${abs.toExponential(2)}`
   }
   for (const tier of COMPACT_TIERS) {

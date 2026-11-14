@@ -163,7 +163,6 @@ describe('family office UI', () => {
     store.closeIntro()
     store.gatesBeaten = 3
     store.addDebugMoney(gateThreshold(4) * 1.2, 1000)
-    store.money = 1e15
     store.tick(1000)
     store.startBossAttempt()
     for (let i = 0; i < 16; i++) store.buyItem('jobs', '1', 1)

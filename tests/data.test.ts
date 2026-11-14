@@ -17,7 +17,7 @@ describe('catalogue & static data', () => {
   it('defines 22 jobs and 22 businesses preserving all legacy IDs plus new UK tiers', () => {
     expect(JOBS).toHaveLength(22)
     expect(BUSINESSES).toHaveLength(22)
-    expect(JOBS[0]).toMatchObject({ id: '1', label: 'Gig delivery rider', baseCost: 20 })
+    expect(JOBS[0]).toMatchObject({ id: '1', label: 'Gig delivery rider', baseCost: 130 })
     expect(JOBS[1]).toMatchObject({ id: '19', label: 'Hairdresser' })
     expect(JOBS[21]).toMatchObject({ id: '22', label: 'Non-dom peer' })
 

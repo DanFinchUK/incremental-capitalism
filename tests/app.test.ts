@@ -151,7 +151,7 @@ describe('App UI integration', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
 
-    store.addDebugMoney(600_000_000_000, 1000)
+    store.addDebugMoney(600_000_000, 1000)
     store.gatesBeaten = 1 // beating gate 1 pays +1 Legacy
     await wrapper.vm.$nextTick()
 
@@ -162,7 +162,8 @@ describe('App UI integration', () => {
     const modal = wrapper.find('[data-testid="retire-modal"]')
     expect(modal.exists()).toBe(true)
     expect(modal.text()).toContain('x1 → x1.05')
-    expect(modal.find('[data-testid="heir-inheritance"]').text()).toContain('£30,000,000,000')
+    // A trust fund of 5%, under the cap
+    expect(modal.find('[data-testid="heir-inheritance"]').text()).toContain('£30,000,000')
     expect(modal.text()).toContain('Free Unpaid Intern')
 
     await wrapper.find('[data-testid="confirm-retire-btn"]').trigger('click')

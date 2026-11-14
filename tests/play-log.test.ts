@@ -10,6 +10,7 @@ import {
   touchSession
 } from '../src/engine/playLog'
 import { gateThreshold } from '../src/engine/bosses'
+import { JOBS } from '../src/data/items'
 import { STORAGE_KEY } from '../src/engine/migration'
 import { useGameStore } from '../src/stores/game'
 
@@ -83,6 +84,7 @@ describe('play log in the store', () => {
   it('logs taps, manual buys and the session, and saves them', () => {
     const store = fresh()
     store.manualClick(T0 + 10)
+    store.money = JOBS[0].baseCost
     store.buyItem('jobs', '1')
     store.tick(T0 + 1000)
     expect(store.playLog.minutes[0][2]).toBe(1)

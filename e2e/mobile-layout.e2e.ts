@@ -9,7 +9,8 @@ const pay = (page: import('@playwright/test').Page) => page.getByRole('button', 
 
 test('a Buy button stays put after its first purchase, so the next tap lands', async ({ page }) => {
   await newGame(page)
-  await pay(page).tap()
+  // The first job takes a few dozen taps; pay for it up front
+  await withStore(page, `(s) => s.addDebugMoney(1000, Date.now())`)
   const buy = page.locator('[data-item-key="jobs-1"] .scn-Actions button')
   const before = await buy.boundingBox()
   await buy.tap()

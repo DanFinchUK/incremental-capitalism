@@ -81,6 +81,8 @@ describe('boss attempts', () => {
     const store = readyFor(2)
     store.businessesOwned['1'] = 1
     store.startBossAttempt()
+    // Gate cash is astronomical; clear it so small credits stay exact
+    store.money = 0
     const before = store.money
     store.spawnSpecificEvent('taxRebate', T0)
     store.claimMarketEvent(T0)
@@ -99,6 +101,8 @@ describe('boss attempts', () => {
     store.perks.autoClicker = 2
     store.toggleAutoBuyPaused() // keep automation's spending out of the sums
     store.startBossAttempt()
+    // Gate cash is astronomical; clear it so small credits stay exact
+    store.money = 0
     const before = store.money
     const click = store.manualClick(T0 + 10)
     expect(store.money).toBe(before)
@@ -106,8 +110,7 @@ describe('boss attempts', () => {
     const { business, interns } = computeIncomeBreakdown(store.economyInput)
     const polishBefore = store.bossAttempt!.polish
     store.tick(T0 + 1000)
-    // Money is around 1e18 here, so allow for float spacing
-    expect(store.money - before).toBeCloseTo(business, -3)
+    expect(store.money - before).toBeCloseTo(business, 3)
     expect(store.bossAttempt!.polish - polishBefore).toBeGreaterThan(interns * 0.9)
   })
 
@@ -115,7 +118,6 @@ describe('boss attempts', () => {
     const store = readyFor(4)
     const oldSurname = store.familySurname
     store.legacyPoints = 7
-    store.money = 1e15
     store.startBossAttempt()
     for (let i = 0; i < 16; i++) store.buyItem('jobs', '1', 1)
     expect(store.bossAttempt!.purchases).toBe(16)
@@ -219,7 +221,6 @@ describe('boss attempts', () => {
 
   it('allows backing out only during the initial misclick window before any Golf stroke', () => {
     const store = readyFor(4)
-    store.money = 1e15
     store.startBossAttempt()
     expect(store.canBackOut).toBe(true)
     store.buyItem('jobs', '1', 1)
@@ -246,11 +247,13 @@ describe('boss attempts', () => {
     const store = readyFor(5)
     store.businessesOwned['1'] = 10
     store.startBossAttempt()
+    // Gate cash is astronomical; clear it so the bonus stays exact
+    store.money = 0
     store.spawnSpecificEvent('paidOvertime', T0)
     const before = store.money
     store.claimMarketEvent(T0)
     const income = computePassivePerSecond({ ...store.economyInput, businessBuffMultiplier: 1, clickBuffMultiplier: 1 })
-    expect(store.money - before).toBeCloseTo(income * 20, -2)
+    expect(store.money - before).toBeCloseTo(income * 20, 3)
   })
 
   it('the Champagne flood waits while the intro is open', () => {

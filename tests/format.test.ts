@@ -18,6 +18,13 @@ describe('formatCurrency', () => {
     expect(formatCurrency(3e12)).toBe('£3.00T')
     expect(formatCurrency(15.2e15)).toBe('£15.20Qa')
     expect(formatCurrency(4.5e18)).toBe('£4.50Qi')
+    expect(formatCurrency(2e37)).toBe('£20.00Ud')
+    expect(formatCurrency(3.4e53)).toBe('£340.00Sxd')
+    expect(formatCurrency(1e63)).toBe('£1.00Vg')
+  })
+
+  it('falls back to an exponent past the last suffix', () => {
+    expect(formatCurrency(1.5e70)).toBe('£1.50e+70')
   })
 
   it('handles non-finite values safely', () => {

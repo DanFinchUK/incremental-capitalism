@@ -4,7 +4,7 @@
 // perks and retiring. Its buying choices are its own return-per-pound
 // arithmetic, not a game feature.
 import { createPinia, setActivePinia } from 'pinia'
-import type { ItemKind } from '../src/data/items'
+import { BUSINESSES, JOBS, type ItemKind } from '../src/data/items'
 import type { PerkId } from '../src/data/perks'
 import { TRAITS_BY_ID } from '../src/data/heirs'
 import { ADVISORS_BY_ID } from '../src/data/advisors'
@@ -50,21 +50,31 @@ export interface BotConfig {
   firstGenerationStallMinutes: number
 }
 
-// The human model from the original pacing test: four clicks a second to get
-// going, then the odd click. Players also hammer the button during bosses.
-export const HUMAN_PACE: BotConfig = {
-  clicksPerSec: 4,
-  casualClicksPerSec: 0.3,
-  openingMinutes: 2.5,
+// The player the pacing targets are set for: taps about five times a second
+// the whole way through, as playtesters actually do, so Hustle never drops.
+export const FAST_TAPPER: BotConfig = {
+  clicksPerSec: 5,
+  casualClicksPerSec: 5,
+  openingMinutes: 0,
   decideEverySec: 2,
   stallMinutes: 4,
   firstGenerationStallMinutes: 10
 }
 
+// A mostly idle player: four clicks a second to get going, then the odd
+// click while the businesses do the work, hammering again during bosses.
+// Slower than the fast tapper, and bounded by its own looser targets.
+export const CASUAL_PACE: BotConfig = {
+  ...FAST_TAPPER,
+  clicksPerSec: 4,
+  casualClicksPerSec: 0.3,
+  openingMinutes: 2.5
+}
+
 // A steady player who taps once a second, start to finish, and still buys,
 // fights bosses and claims opportunities. Used for minimum stage times.
 export const ONE_TAP_PACE: BotConfig = {
-  ...HUMAN_PACE,
+  ...FAST_TAPPER,
   clicksPerSec: 1,
   casualClicksPerSec: 1
 }
@@ -81,6 +91,10 @@ export interface GenerationResult {
   cumulativeActiveMs: number
   // False if money or income ever stopped being a finite number
   stayedFinite: boolean
+  // On the bloodline's first, uninherited climb: how many of the rung below
+  // the player owned when they first bought each Job or Business (index = list
+  // position; null for the first rung and for rungs never bought)
+  rungHandover: Record<ItemKind, (number | null)[]> | null
 }
 
 type Store = ReturnType<typeof useGameStore>
@@ -284,7 +298,7 @@ function seededRandom(seed: number): () => number {
   }
 }
 
-export function runCampaign(hours: number, cfg: BotConfig = HUMAN_PACE, seed = 1): GenerationResult[] {
+export function runCampaign(hours: number, cfg: BotConfig = FAST_TAPPER, seed = 1): GenerationResult[] {
   const realRandom = Math.random
   Math.random = seededRandom(seed)
   try {
@@ -348,8 +362,30 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       netWorthAt4Min,
       legacyEarned: store.legacyOnRetire,
       cumulativeActiveMs: cumulativeMs,
-      stayedFinite
+      stayedFinite,
+      rungHandover: freshClimb ? rungHandover : null
     })
+    freshClimb = false
+  }
+
+  // Only the bloodline's first generation climbs from nothing; heirs start
+  // with a trust fund and items they have seen before.
+  let freshClimb = true
+  const rungHandover: Record<ItemKind, (number | null)[]> = {
+    jobs: JOBS.map(() => null),
+    businesses: BUSINESSES.map(() => null)
+  }
+  const recordHandovers = () => {
+    for (const [kind, items, owned] of [
+      ['jobs', JOBS, store.jobsPurchased],
+      ['businesses', BUSINESSES, store.businessesOwned]
+    ] as const) {
+      for (let i = 1; i < items.length; i++) {
+        if (rungHandover[kind][i] === null && (owned[items[i].id] ?? 0) > 0) {
+          rungHandover[kind][i] = owned[items[i - 1].id] ?? 0
+        }
+      }
+    }
   }
 
   while (cumulativeMs + store.activeGenerationMs < limitMs) {
@@ -378,6 +414,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
     }
     if ((ts / 1000) % cfg.decideEverySec === 0) {
       decide(store, cfg)
+      if (freshClimb) recordHandovers()
     }
 
     if (store.disgraceReport) {
@@ -403,7 +440,8 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       netWorthAt4Min = 0
       lastGateAtMs = 0
       lastGates = 0
-      if (results.at(-1)?.deepestGate === 9) break
+      // The bloodline is complete; the heir just drafted never plays
+      if (results.at(-1)?.deepestGate === 9) return results
     }
   }
   finishGeneration()

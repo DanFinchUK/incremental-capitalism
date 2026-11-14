@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { automationShare, isWithinAutomationLine, MAX_AUTOMATION_PURCHASES_PER_TICK } from '../src/engine/automation'
 import { useGameStore } from '../src/stores/game'
+import { JOBS_BY_ID } from '../src/data/items'
 import { hireEstateManager } from './helpers'
 
 describe('automation line', () => {
@@ -45,20 +46,23 @@ describe('mastery automation in the store', () => {
     expect(Object.values(store.jobsPurchased).reduce((a, b) => a + b, 0)).toBe(0)
   })
 
+  // Cash where the line (1% of cash) sits above the Hairdresser but below the Cleaner
+  const hairdresserCash = () => JOBS_BY_ID['19'].baseCost * 150
+
   it('keeps cheap items stocked and leaves the frontier alone, with no Interns or Legacy', () => {
-    const store = fresh(100_000)
+    const store = fresh(hairdresserCash())
     store.tick(1000) // reveals the cheap jobs
     expect(store.isAutomated('jobs', '2')).toBe(false)
     store.tick(2100)
-    expect(store.jobsPurchased['1'] ?? 0).toBeGreaterThan(0) // £20 gig rider
-    expect(store.jobsPurchased['19'] ?? 0).toBeGreaterThan(0) // £350 hairdresser
-    expect(store.jobsPurchased['2'] ?? 0).toBe(0) // £2,500 cleaner is over 1% of cash
+    expect(store.jobsPurchased['1'] ?? 0).toBeGreaterThan(0) // gig rider
+    expect(store.jobsPurchased['19'] ?? 0).toBeGreaterThan(0) // hairdresser
+    expect(store.jobsPurchased['2'] ?? 0).toBe(0) // the cleaner is over 1% of cash
     // Restocked up to the line and no further
     expect(store.isAutomated('jobs', '1')).toBe(false)
   })
 
   it('skips excluded items and stops while paused', () => {
-    const store = fresh(100_000)
+    const store = fresh(hairdresserCash())
     store.jobsPurchased['1'] = 1 // owning one reveals the next job
     store.toggleAutoBuy('jobs', '1')
     store.tick(2100)
@@ -71,10 +75,11 @@ describe('mastery automation in the store', () => {
   })
 
   it('Old School Tie moves the line closer to the frontier', () => {
-    const store = fresh(300_000)
-    store.perks.nepotism = 2 // 3% of cash; 1% would stay under the £2,500 Cleaner
+    // 3% of cash clears the Cleaner twice over; 1% would stay under it
+    const store = fresh(JOBS_BY_ID['2'].baseCost / 0.015)
+    store.perks.nepotism = 2
     // The per-second cap means the cheapest items fill first
-    for (let i = 1; i <= 4; i++) store.tick(1000 + i * 1100)
+    for (let i = 1; i <= 20; i++) store.tick(1000 + i * 1100)
     expect(store.jobsPurchased['2'] ?? 0).toBeGreaterThan(0)
   })
 

@@ -41,7 +41,7 @@ describe('achievements', () => {
 
   it('unlocks from game state: first Job, net worth, every Job at once', () => {
     const store = fresh()
-    store.money = 100
+    store.money = 1000
     store.buyItem('jobs', '1', 1)
     store.tick(T0 + 1000)
     expect(store.achievements).toContain('side-hustle')

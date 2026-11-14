@@ -49,6 +49,8 @@ test('one tap is still exactly one tap, and one buy is one buy', async ({ page }
   const before = await taps(page)
   await page.locator('.mob-Pay').tap()
   expect((await taps(page)) - before).toBe(1)
+  // The first job takes a few dozen taps; pay for it up front
+  await withStore(page, `(s) => s.addDebugMoney(1000, Date.now())`)
   await page.locator('[data-item-key="jobs-1"] .scn-Actions button').tap()
   await expect(page.locator('[data-item-key="jobs-1"] .scn-CardTitle')).toContainText('(1)')
 })
@@ -73,8 +75,8 @@ test.describe('with a mouse', () => {
 
 test('one finger on Get paid while another scrolls the list', async ({ page }) => {
   await newGame(page)
-  // Own one of each early job, so the Jobs list is long enough to scroll
-  await withStore(page, `(s) => { for (const id of ['1', '19', '2', '3', '4', '5', '6']) s.jobsPurchased[id] = 1; s.tick(Date.now()) }`)
+  // Own one of each early job past gate 3, so the Jobs list is long enough to scroll
+  await withStore(page, `(s) => { s.gatesBeaten = 3; for (const id of ['1', '19', '2', '3', '4', '5', '6']) s.jobsPurchased[id] = 1; s.tick(Date.now()) }`)
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 400)).toBe(true)
   const pay = await centre(page, '.mob-Pay', 1)
   const cdp = await page.context().newCDPSession(page)

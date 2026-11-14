@@ -295,7 +295,7 @@ export const useGameStore = defineStore('game', () => {
   plays.resetGateWatch(initial.gatesBeaten)
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
   const costCeiling = computed(() => itemCostCeiling(gatesBeaten.value))
-  const heirInheritancePreview = computed(() => heirInheritance(netWorth.value, modifiers.value.trustFundShareAdd))
+  const heirInheritancePreview = computed(() => heirInheritance(netWorth.value, gatesBeaten.value, modifiers.value.trustFundShareAdd))
   const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value, modifiers.value.legacyScale))
   const legacyAvailable = computed(() => Math.max(0, legacyPoints.value - legacySpent.value))
   const legacyOnRetire = computed(() => legacyForDepth(gatesBeaten.value))
@@ -1117,7 +1117,7 @@ export const useGameStore = defineStore('game', () => {
       }
     ].slice(-MAX_TREE_ENTRIES)
     // Inheritance isn't earned, so it doesn't count toward lifetime earnings
-    const inheritance = heirInheritance(netWorth.value, modifiers.value.trustFundShareAdd)
+    const inheritance = heirInheritance(netWorth.value, gatesBeaten.value, modifiers.value.trustFundShareAdd)
     // Outgoing head's trait now lives on familyTree; clear it here until pickHeir sets the next head
     heir.value = { name: heir.value.name, traitId: null }
     legacyPoints.value += gain

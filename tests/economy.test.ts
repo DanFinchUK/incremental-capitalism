@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { SOCIAL_CLASSES } from '../src/data/classes'
+import { GATE_NET_WORTH, SOCIAL_CLASSES } from '../src/data/classes'
+import { BUSINESSES_BY_ID, JOBS_BY_ID } from '../src/data/items'
 import {
+  BASE_CLICK_VALUE,
   bulkBuyQuote,
+  heirInheritance,
   computeClickIncome,
   legacyMultiplier,
   computeOfflineCatchUp,
@@ -93,7 +96,7 @@ describe('economy engine', () => {
   it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, legacy, and intern hustle benefit', () => {
     const base = {
       jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 2x milestone + +10% to Etsy store ('1')
-      businessesOwned: { '1': 9 }, // Etsy store x9 -> £2,600/s * 1.10 = £2,860/s each
+      businessesOwned: { '1': 9 }, // Etsy store x9, each +10% from the Teaching assistants
       legacyPoints: 25, // 1 + 0.05 * 25 = 2.25x legacy
       classLevel: 0,
       deregulationRank: 0,
@@ -102,30 +105,39 @@ describe('economy engine', () => {
       clickBuffMultiplier: 1,
       hustleMultiplier: 2
     }
-    // Base click 30 + (10 * 1450 * 2 milestone) = 29,030; * 2.25 legacy = 65,317.5; * 2 hustle = 130,635
-    expect(computeClickIncome(base, false)).toBeCloseTo(65_317.5, 5)
-    expect(computeClickIncome(base, true)).toBeCloseTo(130_635, 5)
-    // 9 * 2600 * 1.10 * 2.25 legacy = 57,915/s
-    expect(computePassivePerSecond(base)).toBeCloseTo(57_915, 5)
+    // Base click + (10 Teaching assistants * 2 milestone), * 2.25 legacy, then * 2 hustle
+    const ta = JOBS_BY_ID['5'].moneyPerClick
+    const etsy = BUSINESSES_BY_ID['1'].moneyPerSecond
+    const click = (BASE_CLICK_VALUE + 10 * ta * 2) * 2.25
+    expect(computeClickIncome(base, false)).toBeCloseTo(click, 5)
+    expect(computeClickIncome(base, true)).toBeCloseTo(click * 2, 5)
+    // 9 Etsy stores * 1.10 synergy * 2.25 legacy
+    const passive = 9 * etsy * 1.1 * 2.25
+    expect(computePassivePerSecond(base)).toBeCloseTo(passive, 5)
 
-    // With 2 Unpaid Interns: when idle (hustle=1) adds 2 * 65,317.5; when manually hustling (hustle=2) adds 2 * 130,635!
-    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 1 })).toBeCloseTo(
-      57_915 + 2 * 65_317.5,
-      5
-    )
-    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 2 })).toBeCloseTo(
-      57_915 + 2 * 130_635,
-      5
-    )
+    // With 2 Unpaid Interns: idle (hustle 1) adds 2 clicks a second; hustling (hustle 2) doubles them
+    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 1 })).toBeCloseTo(passive + 2 * click, 5)
+    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 2 })).toBeCloseTo(passive + 2 * click * 2, 5)
 
-    // Buying 10th Etsy crosses milestone 10 (doubles all 10 units -> 10 * 2600 * 2 * 1.10 * 2.25 = 128,700 -> +70,785/s!)
+    // Buying the 10th Etsy store crosses milestone 10, doubling all ten units
     const deltaBiz = quoteIncomeDelta('businesses', '1', 1, base)
-    expect(deltaBiz.deltaPerSec).toBeCloseTo(70_785, 5)
+    expect(deltaBiz.deltaPerSec).toBeCloseTo(10 * etsy * 2 * 1.1 * 2.25 - passive, 5)
 
     // Buying 1 more Teaching assistant boosts both click income AND Etsy passive synergy!
     const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)
     expect(deltaJob.deltaPerClick).toBeGreaterThan(0)
     expect(deltaJob.deltaPerSec).toBeGreaterThan(0)
+  })
+
+  it('pays the heir 5% of the estate, capped one gate short of the deepest gate beaten', () => {
+    // A small estate passes on 5%
+    expect(heirInheritance(1000, 3)).toBe(50)
+    // A deep estate passes on the threshold of the gate before the deepest
+    expect(heirInheritance(1e60, 3)).toBe(GATE_NET_WORTH[2])
+    expect(heirInheritance(1e60, 9)).toBe(GATE_NET_WORTH[8])
+    // Retiring after gate 1 still caps at gate 1, and a bigger share scales the cap
+    expect(heirInheritance(1e60, 1)).toBe(GATE_NET_WORTH[1])
+    expect(heirInheritance(1e60, 3, 0.05)).toBe(GATE_NET_WORTH[2] * 2)
   })
 
   it('adds 5% income per Legacy point, +1x/rank Hustle cap, and offline catch-up', () => {

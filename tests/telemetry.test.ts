@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { computeSectorSlices } from '../src/engine/economy'
+import { BASE_CLICK_VALUE, computeSectorSlices } from '../src/engine/economy'
 import { createTelemetryState, observeBalance, recordIncome, resetTelemetry, sampleTelemetry } from '../src/engine/telemetry'
 import { useGameStore } from '../src/stores/game'
 
@@ -96,7 +96,7 @@ describe('telemetry engine & sector breakdown', () => {
       store.manualClick(1100)
       store.manualClick(1200)
       store.tick(1300)
-      expect(store.manualRealisedPerSecond).toBeGreaterThan(60)
+      expect(store.manualRealisedPerSecond).toBeGreaterThan(2 * BASE_CLICK_VALUE)
       expect(store.telemetry.candles.length).toBeGreaterThanOrEqual(1)
 
       store.toggleTradingDesk()

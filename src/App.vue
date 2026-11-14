@@ -48,6 +48,16 @@
                 <div class="lyt-ListHead">
                   <h2 class="scn-ColumnTitle">Jobs</h2>
                   <BulkPicker v-if="phone" />
+                  <button
+                    v-if="phone && store.automationLine > 0"
+                    type="button"
+                    class="scn-Action scn-Action-outline mob-CompactToggle"
+                    :class="{ 'scn-Action-activeToggle': store.compactAutoBuy }"
+                    data-testid="list-toggle-compact-autobuy"
+                    @click="store.toggleCompactAutoBuy()"
+                  >
+                    Compact auto: {{ store.compactAutoBuy ? 'On' : 'Off' }}
+                  </button>
                 </div>
                 <ItemCard
                   v-for="row in store.visibleJobs"
@@ -64,6 +74,16 @@
                 <div class="lyt-ListHead">
                   <h2 class="scn-ColumnTitle">Businesses</h2>
                   <BulkPicker v-if="phone" />
+                  <button
+                    v-if="phone && store.automationLine > 0"
+                    type="button"
+                    class="scn-Action scn-Action-outline mob-CompactToggle"
+                    :class="{ 'scn-Action-activeToggle': store.compactAutoBuy }"
+                    data-testid="list-toggle-compact-autobuy"
+                    @click="store.toggleCompactAutoBuy()"
+                  >
+                    Compact auto: {{ store.compactAutoBuy ? 'On' : 'Off' }}
+                  </button>
                 </div>
                 <ItemCard
                   v-for="row in store.visibleBusinesses"

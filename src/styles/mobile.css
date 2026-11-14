@@ -216,6 +216,11 @@ html {
     background: var(--color-bg);
   }
 
+  .ic-Shell-phone .mob-CompactToggle {
+    width: 100%;
+    min-height: 36px;
+  }
+
   .ic-Shell-phone .lyt-Footer {
     padding-bottom: calc(var(--dock-h, 240px) + 16px);
   }

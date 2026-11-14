@@ -170,8 +170,9 @@ watch(
   }
 )
 
+// Steadied in the store, so the buy button doesn't blink as cash moves
 const isAutoActive = computed(() =>
-  props.row.mode === 'revealed' && !store.autoBuyPaused ? store.isAutomated(props.kind, props.row.item.id) : false
+  props.row.mode === 'revealed' ? store.isAutomationShown(props.kind, props.row.item.id) : false
 )
 
 const isCompact = computed(

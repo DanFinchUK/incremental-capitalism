@@ -94,4 +94,37 @@ describe('mastery automation in the store', () => {
     const again = Object.values(store.jobsPurchased).reduce((a, b) => a + b, 0) + Object.values(store.businessesOwned).reduce((a, b) => a + b, 0)
     expect(again).toBe(units)
   })
+
+  // Automation spends cash each second and income refills it, so an item near
+  // the line crosses it back and forth. Its card must not flicker with it.
+  describe('what the cards show', () => {
+    function nearTheLine() {
+      return fresh(JOBS_BY_ID['1'].baseCost * 50) // the line is 1% of cash: half a gig rider
+    }
+
+    it('keeps an item shown as automated after a restock pushes it over the line, until it is well past it', () => {
+      const store = nearTheLine()
+      store.money = JOBS_BY_ID['1'].baseCost * 200 // gig rider under the line
+      store.tick(10_000) // restocks it until the next unit is over the line
+      expect(store.isAutomated('jobs', '1')).toBe(false)
+      expect(store.isAutomationShown('jobs', '1')).toBe(true)
+      store.tick(20_000)
+      expect(store.isAutomationShown('jobs', '1')).toBe(true)
+      // A big drop in cash: the next unit is now far past the line
+      store.money = JOBS_BY_ID['1'].baseCost
+      store.tick(21_000)
+      expect(store.isAutomationShown('jobs', '1')).toBe(false)
+    })
+
+    it('shows the buy button straight away when automation is switched off', () => {
+      const store = nearTheLine()
+      store.money = JOBS_BY_ID['1'].baseCost * 200
+      store.tick(10_000)
+      store.toggleAutoBuy('jobs', '1')
+      expect(store.isAutomationShown('jobs', '1')).toBe(false)
+      store.toggleAutoBuy('jobs', '1')
+      store.toggleAutoBuyPaused()
+      expect(store.isAutomationShown('jobs', '1')).toBe(false)
+    })
+  })
 })

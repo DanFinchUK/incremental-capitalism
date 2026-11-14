@@ -121,6 +121,10 @@ export interface DisgraceReport {
 
 const SAVE_THROTTLE_MS = 2000
 const AUTO_BUY_COOLDOWN_MS = 1000
+// An automated item stays shown that way until its next unit costs more than
+// this many times the automation line. One restock only makes the next unit a
+// little over 1x, so restocking never brings the buy button back.
+const AUTOMATION_DISPLAY_SLACK = 3
 // Income multiplier while a freeze lands on a family with no automation
 const FREEZE_INCOME_MULT = 0.5
 
@@ -159,6 +163,8 @@ export const useGameStore = defineStore('game', () => {
   const lastTickMs = ref<number | null>(null)
   const lastSavedMs = ref<number>(0)
   const lastAutoBuyAt = ref<number>(0)
+  // Items currently shown as automated on their cards (not saved)
+  const automationShownKeys = ref<Record<string, boolean>>({})
   const hustleBonus = ref<number>(0)
   const lastManualClickAt = ref<number>(0)
   const clickBuff = ref<TimedBuff | null>(null)
@@ -655,6 +661,42 @@ export const useGameStore = defineStore('game', () => {
     return isWithinAutomationLine(itemQuote(kind, id, 1).cost, money.value, automationLine.value)
   }
 
+  // What an item card shows. Automation spends cash every second and income
+  // refills it, so an item near the line crosses it back and forth; showing
+  // that would make its buy button blink in and out. Once automated, an item
+  // stays shown that way until its next unit is well past the line (a big
+  // drop in cash, say). Switching automation off, or a boss pausing it, shows
+  // the button at once.
+  function automationDisplayAllowed(kind: ItemKind, id: string): boolean {
+    return !autoBuyPaused.value && isAutoBuyEnabled(kind, id) && !twist.value.automationPaused && !isAutoBuyFrozen.value
+  }
+
+  function withinAutomationSlack(kind: ItemKind, id: string): boolean {
+    const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
+    if (!def || def.baseCost > costCeiling.value) return false
+    return isWithinAutomationLine(itemQuote(kind, id, 1).cost, money.value, automationLine.value * AUTOMATION_DISPLAY_SLACK)
+  }
+
+  function isAutomationShown(kind: ItemKind, id: string): boolean {
+    if (!automationDisplayAllowed(kind, id)) return false
+    if (isAutomated(kind, id)) return true
+    return Boolean(automationShownKeys.value[`${kind}-${id}`]) && withinAutomationSlack(kind, id)
+  }
+
+  function noteAutomatedItems(): void {
+    for (const [kind, rows] of [
+      ['jobs', visibleJobs.value],
+      ['businesses', visibleBusinesses.value]
+    ] as const) {
+      for (const r of rows) {
+        if (r.mode !== 'revealed') continue
+        const key = `${kind}-${r.item.id}`
+        const shown = isAutomationShown(kind, r.item.id)
+        if (shown !== Boolean(automationShownKeys.value[key])) automationShownKeys.value[key] = shown
+      }
+    }
+  }
+
   // Once a second, restock every item behind the automation line, cheapest
   // first, up to a cap so a huge bank balance can't stall a tick.
   function runAutoBuy(ts: number): void {
@@ -935,7 +977,10 @@ export const useGameStore = defineStore('game', () => {
     }
 
     refreshSeenItems()
+    // Before and after: restocking is what pushes an item back over the line
+    noteAutomatedItems()
     runAutoBuy(ts)
+    noteAutomatedItems()
     observeBalance(telemetry.value, ts, money.value)
     if (ts - telemetry.value.lastSampleTs >= 250) {
       sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value)
@@ -1414,6 +1459,7 @@ export const useGameStore = defineStore('game', () => {
     toggleAutoBuy,
     isAutoBuyEnabled,
     isAutomated,
+    isAutomationShown,
     automationLine,
     buyPerk,
     retire,

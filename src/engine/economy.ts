@@ -2,10 +2,13 @@ import { BUSINESSES, JOBS, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type Item
 import { GATE_NET_WORTH, SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
 import { NEUTRAL_MODIFIERS, type Modifiers } from './modifiers'
 
-const MILESTONES_GENTLE: ReadonlyArray<number> = [10, 25, 50, 100, 200]
-const MILESTONES_MODERATE: ReadonlyArray<number> = [10, 20, 40, 75, 125]
-const MILESTONES_STEEP: ReadonlyArray<number> = [5, 10, 25, 50, 75]
-const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35]
+// The last two milestones in each band are deliberately distant: only an old,
+// cheap rung ever gets there, so the "next" bulk buy still has a target after
+// the usual milestones without changing the main climb.
+const MILESTONES_GENTLE: ReadonlyArray<number> = [10, 25, 50, 100, 200, 500, 1000]
+const MILESTONES_MODERATE: ReadonlyArray<number> = [10, 20, 40, 75, 125, 300, 600]
+const MILESTONES_STEEP: ReadonlyArray<number> = [5, 10, 25, 50, 75, 200, 400]
+const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35, 100, 200]
 
 // Each Legacy point multiplies income by LEGACY_INCOME_PER_POINT. Legacy is
 // one point per gate past the bloodline's best (legacyForRetiring in

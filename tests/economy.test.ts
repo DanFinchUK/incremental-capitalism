@@ -20,16 +20,17 @@ import {
 } from '../src/engine/economy'
 
 describe('economy engine', () => {
-  it('tapers 5 milestone pips across 4 scaleFactor bands and scales deregulation', () => {
-    expect(itemMilestones(1.2)).toEqual([10, 25, 50, 100, 200])
-    expect(itemMilestones(1.42)).toEqual([10, 20, 40, 75, 125])
-    expect(itemMilestones(1.65)).toEqual([5, 10, 25, 50, 75])
-    expect(itemMilestones(1.98)).toEqual([3, 5, 10, 20, 35])
+  it('tapers 7 milestone pips across 4 scaleFactor bands and scales deregulation', () => {
+    expect(itemMilestones(1.2)).toEqual([10, 25, 50, 100, 200, 500, 1000])
+    expect(itemMilestones(1.42)).toEqual([10, 20, 40, 75, 125, 300, 600])
+    expect(itemMilestones(1.65)).toEqual([5, 10, 25, 50, 75, 200, 400])
+    expect(itemMilestones(1.98)).toEqual([3, 5, 10, 20, 35, 100, 200])
 
     expect(milestoneMultiplier(0, 1.2, 0)).toBe(1)
     expect(milestoneMultiplier(9, 1.2, 0)).toBe(1)
     expect(milestoneMultiplier(10, 1.2, 0)).toBe(2)
     expect(milestoneMultiplier(200, 1.2, 0)).toBe(32)
+    expect(milestoneMultiplier(1000, 1.2, 0)).toBe(128)
     expect(milestoneMultiplier(3, 1.98, 0)).toBe(2)
     expect(milestoneMultiplier(5, 1.98, 4)).toBe(9)
 

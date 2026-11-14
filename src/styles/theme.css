@@ -414,6 +414,11 @@
   height: 28px;
 }
 
+.scn-Action.scn-Action-compact {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
 .scn-CompactBody {
   flex: 1;
   min-width: 0;

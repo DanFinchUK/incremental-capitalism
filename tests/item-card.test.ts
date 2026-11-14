@@ -63,4 +63,25 @@ describe('item card without automation', () => {
     // The per-click gain is on the Income line, so the cost line doesn't repeat it
     expect(wrapper.find('.scn-CostLine').text()).not.toContain('/click')
   })
+
+  it('stays compact once automated, even after cash is spent down', async () => {
+    const { store, wrapper } = card()
+    hireEstateManager(store)
+    store.compactAutoBuy = true
+    store.money = JOBS_BY_ID['1'].baseCost * 1e6
+    store.tick(2000)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.classes()).toContain('scn-Card-compact')
+
+    store.money = 0
+    await wrapper.vm.$nextTick()
+    expect(store.isAutomationShown('jobs', '1')).toBe(false)
+    expect(wrapper.classes()).toContain('scn-Card-compact')
+    expect(wrapper.find('.scn-Action-compact').exists()).toBe(true)
+
+    // Unticking Automate unfolds it
+    store.toggleAutoBuy('jobs', '1')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.classes()).not.toContain('scn-Card-compact')
+  })
 })

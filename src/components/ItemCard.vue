@@ -43,6 +43,16 @@
         </span>
         <span class="scn-CompactIncome">{{ compactIncomeText }}</span>
       </div>
+      <span @click.stop>
+        <button
+          type="button"
+          class="scn-Action scn-Action-compact"
+          :disabled="!quote.canAfford"
+          v-on="buyPress"
+        >
+          {{ compactBuyLabel }}
+        </button>
+      </span>
       <label
         v-if="showAutoBuyCheckbox"
         class="scn-AutoBuy"
@@ -175,13 +185,32 @@ const isAutoActive = computed(() =>
   props.row.mode === 'revealed' ? store.isAutomationShown(props.kind, props.row.item.id) : false
 )
 
-const isCompact = computed(
-  () => props.row.mode === 'revealed' && store.compactAutoBuy && isAutoActive.value && !manualExpand.value
+// Once automated, a card stays compact while Automate is ticked, so spending
+// your cash down doesn't unfold every card at once. A new generation (owned
+// falls) or unticking Automate lets it go.
+const stickyCompact = ref(false)
+watch(isAutoActive, (active) => {
+  if (active) stickyCompact.value = true
+}, { immediate: true })
+watch(
+  () => [store.compactAutoBuy, props.row.mode === 'revealed' && store.isAutoBuyEnabled(props.kind, props.row.item.id)],
+  () => {
+    stickyCompact.value = isAutoActive.value
+  }
 )
 
-const canRefold = computed(
-  () => props.row.mode === 'revealed' && store.compactAutoBuy && isAutoActive.value && manualExpand.value
+const compactEligible = computed(
+  () =>
+    props.row.mode === 'revealed' &&
+    store.compactAutoBuy &&
+    store.automationLine > 0 &&
+    store.isAutoBuyEnabled(props.kind, props.row.item.id) &&
+    (isAutoActive.value || stickyCompact.value)
 )
+
+const isCompact = computed(() => compactEligible.value && !manualExpand.value)
+
+const canRefold = computed(() => compactEligible.value && manualExpand.value)
 
 function handleCardClick(): void {
   if (isCompact.value) {
@@ -194,6 +223,10 @@ const owned = computed(() => {
   return props.kind === 'jobs'
     ? (store.jobsPurchased[props.row.item.id] ?? 0)
     : (store.businessesOwned[props.row.item.id] ?? 0)
+})
+
+watch(owned, (now, before) => {
+  if (now < before) stickyCompact.value = isAutoActive.value
 })
 
 const milestones = computed(() =>
@@ -299,6 +332,8 @@ const buyButtonLabel = computed(() => {
   const verb = props.kind === 'jobs' ? 'Get hired' : 'Get Businessed'
   return quote.value.count > 1 ? `${verb} x${quote.value.count}` : verb
 })
+
+const compactBuyLabel = computed(() => (quote.value.count > 1 ? `Buy x${quote.value.count}` : 'Buy'))
 
 function formatMult(val: number): string {
   return val.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')

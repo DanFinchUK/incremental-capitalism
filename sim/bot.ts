@@ -51,6 +51,9 @@ export interface BotConfig {
   // From this generation on, play with this patience instead (for probing how
   // long gates past the bloodline's best take when the player never gives up)
   probe?: { fromGeneration: number; stallMinutes: number }
+  // The order Legacy goes into perks: the first one still buyable wins.
+  // Defaults to office seats, then Interns
+  perkPriority?: ReadonlyArray<PerkId>
 }
 
 // The player the pacing targets are set for: taps about five times a second
@@ -84,6 +87,36 @@ export const ZERO_TAP: BotConfig = {
   casualClicksPerSec: 0
 }
 
+// Other valid ways to play, checked in sim/styles.sim.ts. Some are stronger
+// than others; each must still finish a bloodline without breaking the
+// prestige rule.
+export const PLAYSTYLES: ReadonlyArray<{ name: string; cfg: BotConfig; finishWithinHours: number }> = [
+  {
+    // Taps hard and puts Legacy into compounding milestones and automation
+    name: 'tapper building milestones and automation',
+    cfg: { ...FAST_TAPPER, perkPriority: ['deregulation', 'nepotism', 'officeSeats', 'hustleCap', 'autoClicker'] },
+    finishWithinHours: 3
+  },
+  {
+    // Taps hard and makes every tap count: Hustle first, then Interns to ride it
+    name: 'tapper chasing Hustle',
+    cfg: { ...FAST_TAPPER, perkPriority: ['hustleCap', 'autoClicker'] },
+    finishWithinHours: 3
+  },
+  {
+    // Never taps; every point of Legacy goes on Interns
+    name: 'non-tapper with an Intern army',
+    cfg: { ...ZERO_TAP, perkPriority: ['autoClicker'] },
+    finishWithinHours: 4
+  },
+  {
+    // Never taps; lets the estate run itself, then builds milestones
+    name: 'non-tapper automating everything',
+    cfg: { ...ZERO_TAP, perkPriority: ['nepotism', 'officeSeats', 'deregulation', 'autoClicker'] },
+    finishWithinHours: 4
+  }
+]
+
 // A steady player who taps once a second, start to finish, and still buys,
 // fights bosses and claims opportunities. Used for minimum stage times.
 export const ONE_TAP_PACE: BotConfig = {
@@ -115,7 +148,7 @@ export interface GenerationResult {
 
 type Store = ReturnType<typeof useGameStore>
 
-const PERK_PRIORITY: ReadonlyArray<PerkId> = ['officeSeats', 'autoClicker', 'hustleCap', 'deregulation']
+const DEFAULT_PERK_PRIORITY: ReadonlyArray<PerkId> = ['officeSeats', 'autoClicker', 'hustleCap', 'deregulation']
 
 function revealedItems(store: Store): Array<{ kind: ItemKind; id: string }> {
   const items: Array<{ kind: ItemKind; id: string }> = []
@@ -295,10 +328,10 @@ function pickHeir(store: Store): void {
   store.pickHeir(best)
 }
 
-function buyPerks(store: Store): void {
+function buyPerks(store: Store, cfg: BotConfig): void {
   for (;;) {
     let bought = false
-    for (const id of PERK_PRIORITY) {
+    for (const id of cfg.perkPriority ?? DEFAULT_PERK_PRIORITY) {
       if (store.buyPerk(id)) {
         bought = true
         break
@@ -467,7 +500,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       cumulativeMs += genMs
       store.retire(ts)
       pickHeir(store)
-      buyPerks(store)
+      buyPerks(store, cfg)
       generation += 1
       netWorthAt4Min = 0
       lastGateAtMs = 0

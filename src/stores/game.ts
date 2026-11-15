@@ -374,7 +374,10 @@ export const useGameStore = defineStore('game', () => {
   )
   const realisedPerSecond = computed(() => currentRealisedPerSec(telemetry.value, nowMs.value))
   const manualRealisedPerSecond = computed(() => currentManualPerSec(telemetry.value, nowMs.value))
-  const sectorSlices = computed(() => computeSectorSlices(economyInput.value, manualRealisedPerSecond.value))
+  // The founder scrapes by on the state; heirs, born rich, get an allowance
+  const allowanceLabel = computed(() => (heir.value.traitId === null ? 'Universal Credit' : 'Allowance from Granny'))
+  const allowancePerSecond = computed(() => computeIncomeBreakdown(economyInput.value).allowance)
+  const sectorSlices = computed(() => computeSectorSlices(economyInput.value, manualRealisedPerSecond.value, allowanceLabel.value))
 
   // Keeps the saved record of what has been seen in step with what is shown
   function refreshSeenItems(): void {
@@ -538,7 +541,7 @@ export const useGameStore = defineStore('game', () => {
 
     // No catch-up while the succession is undecided: the family is in mourning
     if (loaded.lastUpdate !== null && ts > loaded.lastUpdate && heirChoices.value.length === 0) {
-      const catchUp = computeOfflineCatchUp(ts - loaded.lastUpdate, moneyPerSecond.value, perks.value.offshore)
+      const catchUp = computeOfflineCatchUp(ts - loaded.lastUpdate, moneyPerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
       if (catchUp) {
         // Through creditMoney, so advisor drain applies offline too
         creditMoney(catchUp.moneyEarned, undefined, ts)
@@ -748,11 +751,12 @@ export const useGameStore = defineStore('game', () => {
     return amount
   }
 
-  // Click income (manual or Interns) during a boss can count towards the
-  // Walkout or be diverted into polishing the family silver.
+  // Click income during a boss can count towards the Walkout or be diverted
+  // into polishing the family silver. Taps count for the Walkout only at
+  // full Hustle; Interns and the allowance always count.
   function creditClicks(amount: number, source: IncomeSource, ts: number): void {
     const attempt = bosses.bossAttempt.value
-    if (attempt && hustleMultiplier.value >= maxHustle.value - 0.01) {
+    if (attempt && (source !== 'manual' || hustleMultiplier.value >= maxHustle.value - 0.01)) {
       attempt.clickEarningsAtFullHustle += amount
     }
     if (attempt && twist.value.clicksPolish) {
@@ -963,7 +967,7 @@ export const useGameStore = defineStore('game', () => {
       }
       plays.log(ts, 'away', { ms: elapsedMs })
       bosses.bossAttempt.value = null
-      const catchUp = computeOfflineCatchUp(elapsedMs, moneyPerSecond.value, perks.value.offshore)
+      const catchUp = computeOfflineCatchUp(elapsedMs, moneyPerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
       if (catchUp) {
         creditMoney(catchUp.moneyEarned, undefined, ts)
         highestClassReached.value = Math.max(highestClassReached.value, classStatus.value.current.level)
@@ -978,9 +982,9 @@ export const useGameStore = defineStore('game', () => {
       }
       activeGenerationMs.value += Math.min(elapsedMs, 5000)
       office.addCampaignTime(Math.min(elapsedMs, 5000))
-      const { business, interns } = computeIncomeBreakdown(economyInput.value)
+      const { business, interns, allowance } = computeIncomeBreakdown(economyInput.value)
       creditMoney(business * deltaSec, 'passive', ts)
-      creditClicks(interns * deltaSec, 'passive', ts)
+      creditClicks((interns + allowance) * deltaSec, 'passive', ts)
     }
 
     refreshSeenItems()
@@ -1455,6 +1459,8 @@ export const useGameStore = defineStore('game', () => {
     realisedPerSecond,
     manualRealisedPerSecond,
     sectorSlices,
+    allowanceLabel,
+    allowancePerSecond,
     visibleJobs,
     visibleBusinesses,
     hydrateFromStorage,

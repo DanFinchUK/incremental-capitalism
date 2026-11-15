@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { GATE_NET_WORTH, SOCIAL_CLASSES } from '../src/data/classes'
 import { BUSINESSES_BY_ID, JOBS_BY_ID } from '../src/data/items'
 import {
+  ALLOWANCE_TAPS_PER_SEC,
   BASE_CLICK_VALUE,
+  computeIncomeBreakdown,
   LEGACY_INCOME_PER_POINT,
   bulkBuyQuote,
   heirInheritance,
@@ -117,17 +119,22 @@ describe('economy engine', () => {
     const click = (BASE_CLICK_VALUE + 10 * ta * 2) * legacy
     expect(computeClickIncome(base, false)).toBeCloseTo(click, 5)
     expect(computeClickIncome(base, true)).toBeCloseTo(click * 2, 5)
-    // 9 Etsy stores * 1.10 synergy * legacy
-    const passive = 9 * etsy * 1.1 * legacy
-    expect(computePassivePerSecond(base)).toBeCloseTo(passive, 5)
+    // 9 Etsy stores * 1.10 synergy * legacy, plus the allowance: taps' worth
+    // of click pay a second, without Hustle
+    const business = 9 * etsy * 1.1 * legacy
+    const allowance = ALLOWANCE_TAPS_PER_SEC * click
+    const passive = business + allowance
+    expect(computeIncomeBreakdown(base).business).toBeCloseTo(business, 5)
+    expect(computeIncomeBreakdown(base).allowance).toBeCloseTo(allowance, 5)
+    expect(computePassivePerSecond(base) / passive).toBeCloseTo(1, 9)
 
     // With 2 Unpaid Interns: idle (hustle 1) adds 2 clicks a second; hustling (hustle 2) doubles them
-    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 1 })).toBeCloseTo(passive + 2 * click, 5)
-    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 2 })).toBeCloseTo(passive + 2 * click * 2, 5)
+    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 1 }) / (passive + 2 * click)).toBeCloseTo(1, 9)
+    expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 2 }) / (passive + 2 * click * 2)).toBeCloseTo(1, 9)
 
     // Buying the 10th Etsy store crosses milestone 10, doubling all ten units
     const deltaBiz = quoteIncomeDelta('businesses', '1', 1, base)
-    expect(deltaBiz.deltaPerSec).toBeCloseTo(10 * etsy * 2 * 1.1 * legacy - passive, 5)
+    expect(deltaBiz.deltaPerSec / (10 * etsy * 2 * 1.1 * legacy - business)).toBeCloseTo(1, 6)
 
     // Buying 1 more Teaching assistant boosts both click income AND Etsy passive synergy!
     const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)

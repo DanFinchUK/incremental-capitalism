@@ -76,6 +76,14 @@ export const CASUAL_PACE: BotConfig = {
   openingMinutes: 2.5
 }
 
+// A player who never taps Get paid: the allowance, Interns and businesses do
+// all the earning. Still buys, hires, fights bosses and retires.
+export const ZERO_TAP: BotConfig = {
+  ...FAST_TAPPER,
+  clicksPerSec: 0,
+  casualClicksPerSec: 0
+}
+
 // A steady player who taps once a second, start to finish, and still buys,
 // fights bosses and claims opportunities. Used for minimum stage times.
 export const ONE_TAP_PACE: BotConfig = {
@@ -180,7 +188,8 @@ function readyToChallengeBoss(store: Store, cfg: BotConfig): boolean {
   const timeSec = boss.def.timeLimitSec * store.modifiers.bossTimeMult
   const target = store.bossTarget(boss.def.gate)
   const fullHustleFactor = store.maxHustle / Math.max(1, store.hustleMultiplier)
-  const clickRate = (cfg.clicksPerSec + store.autoClickers) * store.moneyPerClick * fullHustleFactor
+  // Taps and Interns ride Hustle; the allowance is a tap a second without it
+  const clickRate = (cfg.clicksPerSec + store.autoClickers) * store.moneyPerClick * fullHustleFactor + store.allowancePerSecond
   const cond = boss.def.condition
 
   switch (cond.kind) {
@@ -238,12 +247,15 @@ function decide(store: Store, cfg: BotConfig): void {
   const boss = store.nextBoss
   const attempt = store.bossAttempt
   const condition = boss?.status === 'active' ? boss.def.condition : null
-  if (condition?.kind === 'ownAllRevealed') {
-    // Buy one of anything still missing before optimising
+  // Gate 7 wants one of everything revealed: buy what's missing first, and
+  // while waiting for it, save up rather than spend the cash elsewhere
+  if (boss && boss.status !== 'locked' && boss.def.condition.kind === 'ownAllRevealed') {
+    let missing = false
     for (const item of revealedItems(store)) {
       const owned = item.kind === 'jobs' ? store.jobsPurchased[item.id] : store.businessesOwned[item.id]
-      if (!owned) store.buyItem(item.kind, item.id, 1)
+      if (!owned && store.buyItem(item.kind, item.id, 1).bought === 0) missing = true
     }
+    if (missing) return
   }
   if (condition?.kind === 'netWorthWithinPar' && attempt) {
     // Make each stroke count: one Max purchase per decision, within par

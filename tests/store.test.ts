@@ -113,12 +113,14 @@ describe('useGameStore', () => {
 
     store.spawnSpecificEvent('quantitativeEasing', 2000)
     store.claimMarketEvent(2000)
-    expect(store.moneyPerSecond).toBeCloseTo(etsy * 5, 5)
+    // QE boosts businesses; the allowance (click pay) isn't a business
+    const allowance = store.allowancePerSecond
+    expect(store.moneyPerSecond).toBeCloseTo(etsy * 5 + allowance, 5)
 
     // Tax Rebate during 5x QE still pays 60s of *unbuffed* income
     store.spawnSpecificEvent('taxRebate', 3000)
     store.claimMarketEvent(3000)
-    expect(store.money).toBeCloseTo(etsy * 60, 5)
+    expect(store.money).toBeCloseTo((etsy + allowance) * 60, 5)
 
     // A weaker 3x Stimulus doesn't replace the running 5x QE
     store.spawnSpecificEvent('stimulusCheque', 4000)
@@ -145,7 +147,7 @@ describe('useGameStore', () => {
     store2.hydrateFromStorage(10_000 + 120_000) // 2 minutes later
     expect(store2.offlineReport).not.toBeNull()
     expect(store2.offlineReport?.efficiency).toBe(0.5)
-    expect(store2.offlineReport?.moneyEarned).toBeCloseTo(BUSINESSES_BY_ID['1'].moneyPerSecond * 120 * 0.5, 2)
+    expect(store2.offlineReport?.moneyEarned).toBeCloseTo((BUSINESSES_BY_ID['1'].moneyPerSecond + store2.allowancePerSecond) * 120 * 0.5, 2)
 
     // Tick at +500ms does not overwrite localStorage yet; at +2500ms it flushes
     const savedBefore = localStorage.getItem('state')

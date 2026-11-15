@@ -1,13 +1,13 @@
 // Pacing checks against the prestige rule in docs/pacing.md. The player is a
-// fast tapper (about five taps a second); a mostly idle player is held to
-// looser bounds. Run with `npm run sim`.
+// fast tapper (about five taps a second); a mostly idle player and one who
+// never taps Get paid are held to looser bounds. Run with `npm run sim`.
 //
 // "+k" is the k-th gate past the deepest gate the bloodline had beaten before
 // the generation began. Heirs and advisors are rolled at random, so each goal
 // is checked on a median across three seeded campaigns.
 import { describe, expect, it } from 'vitest'
 import { JOBS } from '../src/data/items'
-import { CASUAL_PACE, FAST_TAPPER, runCampaign, type BotConfig, type GenerationResult } from './bot'
+import { CASUAL_PACE, FAST_TAPPER, ZERO_TAP, runCampaign, type BotConfig, type GenerationResult } from './bot'
 
 const HOUR = 3_600_000
 const MINUTE = 60_000
@@ -20,6 +20,7 @@ const probe = (fromGeneration: number): BotConfig => ({ ...FAST_TAPPER, probe: {
 const firstGenProbes = SEEDS.map((seed) => runCampaign(8, probe(1), seed)[0])
 const heirProbes = SEEDS.map((seed) => runCampaign(9, probe(3), seed).find((g) => g.generation === 3)!)
 const casualCampaigns: GenerationResult[][] = SEEDS.map((seed) => runCampaign(3, CASUAL_PACE, seed))
+const zeroTapCampaigns: GenerationResult[][] = SEEDS.map((seed) => runCampaign(4, ZERO_TAP, seed))
 
 function median(xs: number[]): number {
   const sorted = [...xs].sort((a, b) => a - b)
@@ -81,9 +82,13 @@ describe('pacing for a fast tapper (median of three campaigns)', () => {
     expect(minutes).toBeLessThanOrEqual(8)
   })
 
-  it('generation 1 bosses take real effort: gates 1 and 2 each take 15 seconds or more to kill', () => {
+  it('the first two boss fights take real effort: gates 1 and 2 each take 15 seconds or more on their first kill', () => {
     for (let gate = 1; gate <= 2; gate++) {
-      const kills = campaigns.map((gens) => gens[0].killMs[gate]).filter((k): k is number => k !== null)
+      // Whichever generation first beats the gate; generation 1 often retires after gate 1
+      const kills = campaigns
+        .map((gens) => gens.find((g) => g.killMs[gate] !== null)?.killMs[gate] ?? null)
+        .filter((k): k is number => k !== null)
+      expect(kills.length, `gate ${gate}`).toBeGreaterThan(0)
       expect(median(kills), `gate ${gate}`).toBeGreaterThanOrEqual(15_000)
     }
   })
@@ -156,5 +161,23 @@ describe('pacing for a mostly idle player (median of three campaigns)', () => {
 
   it('still completes the bloodline (gate 9) within 3 hours', () => {
     expect(median(casualCampaigns.map((gens) => firstKillHours(gens, 9)))).toBeLessThanOrEqual(3)
+  })
+})
+
+// Someone who can't tap quickly, or at all, can still play: the allowance,
+// Interns and businesses carry them, at about half a fast tapper's pace
+describe('pacing for a player who never taps Get paid (median of three campaigns)', () => {
+  const played = zeroTapCampaigns.flat().filter((g) => g.bestBefore < 9 && g.activeMinutes > 0)
+
+  it('the founder beats gate 1 within 15 minutes (median)', () => {
+    expect(median(zeroTapCampaigns.map((gens) => plusMinutes(gens[0], 1)))).toBeLessThanOrEqual(15)
+  })
+
+  it('gets +1 in under 15 minutes (median)', () => {
+    expect(median(played.map((g) => plusMinutes(g, 1)))).toBeLessThanOrEqual(15)
+  })
+
+  it('completes the bloodline (gate 9) within 4 hours', () => {
+    expect(median(zeroTapCampaigns.map((gens) => firstKillHours(gens, 9)))).toBeLessThanOrEqual(4)
   })
 })

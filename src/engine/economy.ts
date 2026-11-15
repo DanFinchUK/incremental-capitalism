@@ -34,6 +34,10 @@ export function heirInheritance(netWorth: number, deepestGate: number, shareAdd 
   return Math.floor(inheritableEstate(netWorth, deepestGate) * (HEIR_INHERITANCE_SHARE + shareAdd))
 }
 export const BASE_CLICK_VALUE = 1
+// Universal Credit for the founder, an allowance for heirs: every family
+// gets two taps' worth of click pay each second without tapping, so a player
+// who never taps Get paid can still play (Hustle doesn't apply)
+export const ALLOWANCE_TAPS_PER_SEC = 2
 
 export type BulkBuyMode = 1 | 10 | 'next' | 'max'
 
@@ -235,11 +239,12 @@ export function computeClickIncome(input: EconomySnapshotInput, includeHustle: b
 export interface IncomeBreakdown {
   business: number
   interns: number
+  allowance: number
 }
 
 export function computePassivePerSecond(input: EconomySnapshotInput): number {
-  const { business, interns } = computeIncomeBreakdown(input)
-  return business + interns
+  const { business, interns, allowance } = computeIncomeBreakdown(input)
+  return business + interns + allowance
 }
 
 export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreakdown {
@@ -262,7 +267,8 @@ export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreak
   const bizIncome =
     rawBusinesses * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.businessBuffMultiplier * mods.businessMult
   const autoClickIncome = input.autoClickers * computeClickIncome(input, true)
-  return { business: bizIncome, interns: autoClickIncome }
+  const allowance = (ALLOWANCE_TAPS_PER_SEC + mods.allowanceTapsAdd) * computeClickIncome(input, false)
+  return { business: bizIncome, interns: autoClickIncome, allowance }
 }
 
 export interface IncomeDeltaQuote {
@@ -310,14 +316,15 @@ export interface OfflineCatchUpResult {
 export function computeOfflineCatchUp(
   elapsedMs: number,
   passivePerSecond: number,
-  offshoreRank: number
+  offshoreRank: number,
+  efficiencyAdd = 0
 ): OfflineCatchUpResult | null {
   if (elapsedMs < 60_000 || passivePerSecond <= 0) {
     return null
   }
   const maxSeconds = (24 + 12 * offshoreRank) * 3600
   const secondsCredited = Math.min(elapsedMs / 1000, maxSeconds)
-  const efficiency = Math.min(1, 0.5 + 0.1 * offshoreRank)
+  const efficiency = Math.min(1, 0.5 + 0.1 * offshoreRank + efficiencyAdd)
   const moneyEarned = passivePerSecond * secondsCredited * efficiency
   return { secondsCredited, efficiency, moneyEarned }
 }
@@ -341,7 +348,8 @@ const SECTOR_PALETTE: ReadonlyArray<string> = [
 
 export function computeSectorSlices(
   input: EconomySnapshotInput,
-  manualClickPerSec: number
+  manualClickPerSec: number,
+  allowanceLabel = 'Allowance'
 ): SectorSlice[] {
   const rawEntries: Array<{ id: string; label: string; perSec: number }> = []
 
@@ -360,6 +368,11 @@ export function computeSectorSlices(
     if (internPerSec > 0) {
       rawEntries.push({ id: 'interns', label: 'Unpaid Interns', perSec: internPerSec })
     }
+  }
+
+  const allowancePerSec = computeIncomeBreakdown(input).allowance
+  if (allowancePerSec > 0) {
+    rawEntries.push({ id: 'allowance', label: allowanceLabel, perSec: allowancePerSec })
   }
 
   if (manualClickPerSec > 0) {

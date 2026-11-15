@@ -2,9 +2,9 @@
 // SIM_PACE (fast, casual or onetap; default fast).
 declare const process: { env: Record<string, string | undefined> }
 import { it } from 'vitest'
-import { CASUAL_PACE, FAST_TAPPER, ONE_TAP_PACE, runCampaign } from './bot'
+import { CASUAL_PACE, FAST_TAPPER, ONE_TAP_PACE, ZERO_TAP, runCampaign } from './bot'
 
-const PACES = { fast: FAST_TAPPER, casual: CASUAL_PACE, onetap: ONE_TAP_PACE }
+const PACES = { fast: FAST_TAPPER, casual: CASUAL_PACE, onetap: ONE_TAP_PACE, zero: ZERO_TAP }
 
 it('prints a campaign report', () => {
   const t0 = Date.now()

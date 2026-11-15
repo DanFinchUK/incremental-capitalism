@@ -29,6 +29,10 @@ export interface Modifiers {
   twistStrength: number
   automationShareBonus: number
   windfallMult: number
+  // Extra taps' worth a second of allowance (Universal Credit)
+  allowanceTapsAdd: number
+  // Added to the share of passive income paid while away
+  offlineEfficiencyAdd: number
 }
 
 export type ModifierSource = Partial<Modifiers>
@@ -51,7 +55,9 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   scandalSeverity: 1,
   twistStrength: 1,
   automationShareBonus: 0,
-  windfallMult: 1
+  windfallMult: 1,
+  allowanceTapsAdd: 0,
+  offlineEfficiencyAdd: 0
 })
 
 const PRODUCT_KEYS = [
@@ -67,7 +73,15 @@ const PRODUCT_KEYS = [
   'windfallMult'
 ] as const
 
-const SUM_KEYS = ['incomeDrain', 'milestoneStepBonus', 'trustFundShareAdd', 'shadyBonus', 'automationShareBonus'] as const
+const SUM_KEYS = [
+  'incomeDrain',
+  'milestoneStepBonus',
+  'trustFundShareAdd',
+  'shadyBonus',
+  'automationShareBonus',
+  'allowanceTapsAdd',
+  'offlineEfficiencyAdd'
+] as const
 
 export const MAX_INCOME_DRAIN = 0.9
 // No multiplier may fall below this, however much stacks up

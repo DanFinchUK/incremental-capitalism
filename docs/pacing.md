@@ -32,6 +32,20 @@ during bosses, otherwise about one tap every three seconds) follows the same
 shape a little slower, and is checked more loosely: +1 in under 12 minutes, the
 whole bloodline in under 3 hours.
 
+A player who never taps Get paid must still be able to finish, so someone who
+can't tap quickly, or at all, can play. Every family gets an allowance (Universal
+Credit for the founder, an allowance from Granny for heirs) worth two taps of
+click pay a second, without Hustle (`ALLOWANCE_TAPS_PER_SEC` in
+`src/engine/economy.ts`). It counts towards the click bosses at gates 1 and 6,
+and Jobs raise it, so they are worth buying without tapping. This player is
+checked at about half a fast tapper's pace: the founder beats gate 1 within 15
+minutes, +1 comes within 15 minutes, and the bloodline finishes within 4 hours.
+
+Advisors come in families of three: every effect has a common, a rare and a
+legendary advisor, and the buff (and upkeep) grows with rarity
+(`src/data/advisors.ts`). Some families exist mainly for idle play: a bigger
+allowance and better offline earnings.
+
 ## Why it works
 
 The rule needs two things to match:

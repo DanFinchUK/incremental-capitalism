@@ -11,7 +11,8 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     title: 'Welcome to Incremental Capitalism',
     body: [
       'Tap Get paid to earn your first cash, then spend it on Jobs to boost every click.',
-      'Click fast to build a Hustle streak for multiplied click pay.'
+      'Click fast to build a Hustle streak for multiplied click pay.',
+      'Tapping is optional: Universal Credit pays two taps\' worth a second on its own, so you can play without tapping at all. It\'s slower, but every gate can be won.'
     ]
   },
   {
@@ -35,7 +36,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     title: 'Retire and let your heir take over',
     body: [
       'Retire to bank Legacy (+1 for each gate past your family\'s best, each point multiplying income by 4.5), pass 5% of net worth to an heir (capped, so they start about a gate behind you), and keep your Personal Assistant.',
-      'Every heir\'s trait stacks permanently onto the bloodline, upsides and downsides alike.'
+      'Each heir has their own trait, which retires with them, and a milder one they pass down. Passed-down traits stack until the family elevates.'
     ]
   }
 ]

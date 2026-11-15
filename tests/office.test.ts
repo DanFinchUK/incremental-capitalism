@@ -15,9 +15,13 @@ const inst = (advisorId: string, servedGenerations = 0, campaignMs = 0): Advisor
 })
 
 describe('advisor data', () => {
-  it('has 20 advisors across all rarities, each with an effect and a cost line', () => {
-    expect(ADVISORS).toHaveLength(20)
-    for (const r of ['common', 'rare', 'legendary'] as const) expect(ADVISORS.some((a) => a.rarity === r)).toBe(true)
+  it('has a common, a rare and a legendary advisor in every family, each with an effect and a cost line', () => {
+    const families = new Set(ADVISORS.map((a) => a.family))
+    expect(families.size).toBeGreaterThanOrEqual(20)
+    for (const f of families) {
+      const tiers = ADVISORS.filter((a) => a.family === f).map((a) => a.rarity).sort()
+      expect(tiers, f).toEqual(['common', 'legendary', 'rare'])
+    }
     for (const a of ADVISORS) {
       expect(a.effectText.length).toBeGreaterThan(10)
       expect(a.costText.length).toBeGreaterThan(5)

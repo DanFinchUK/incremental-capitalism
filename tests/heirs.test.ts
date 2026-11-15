@@ -90,10 +90,11 @@ describe('heirs in the store', () => {
     store.gatesBeaten = 9
     store.businessesOwned = { '1': 10 }
     store.jobsPurchased = { '1': 10 }
-    const biz = store.moneyPerSecond
+    // Business income is passive income less the allowance
+    const biz = store.moneyPerSecond - store.allowancePerSecond
     const click = store.baseMoneyPerClick
     store.pickHeir(0)
-    expect(store.moneyPerSecond).toBeCloseTo(biz * 2)
+    expect(store.moneyPerSecond - store.allowancePerSecond).toBeCloseTo(biz * 2)
     expect(store.baseMoneyPerClick).toBeCloseTo(click * 0.5)
   })
 

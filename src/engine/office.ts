@@ -31,7 +31,15 @@ const PRODUCT_KEYS = [
   'windfallMult'
 ] as const
 
-const SUM_KEYS = ['incomeDrain', 'milestoneStepBonus', 'trustFundShareAdd', 'shadyBonus', 'automationShareBonus'] as const
+const SUM_KEYS = [
+  'incomeDrain',
+  'milestoneStepBonus',
+  'trustFundShareAdd',
+  'shadyBonus',
+  'automationShareBonus',
+  'allowanceTapsAdd',
+  'offlineEfficiencyAdd'
+] as const
 
 function scaleSector(map: Partial<Record<Sector, number>> | undefined, factor: number): Partial<Record<Sector, number>> | undefined {
   if (!map) return undefined

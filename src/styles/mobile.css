@@ -282,6 +282,17 @@ html {
     font-size: 15px;
   }
 
+  /* Automation is set for the whole estate on a phone: no per-item boxes */
+  .ic-Shell-phone .scn-AutoBuy {
+    display: none;
+  }
+
+  /* Wide enough for "Buy x999" whatever it says now, so counts going up
+     and down never rewrap the card beside it and make the page jump */
+  .ic-Shell-phone .scn-Action.scn-Action-compact {
+    min-width: calc(8.5ch + 24px);
+  }
+
   /* Keep cards short so several fit between the list header and the dock.
      The milestone badge still shows the multiplier earned. */
   .ic-Shell-phone .scn-Pips {

@@ -5,7 +5,7 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="class-modal-title"
-    @click.self="store.closeClassModal()"
+    @click.self="!lock.locked.value && store.closeClassModal()"
   >
     <div class="scn-Modal scn-Modal-xl" data-testid="class-modal">
       <div class="scn-DrawerHeader">
@@ -20,7 +20,7 @@
             </template>
           </h2>
         </div>
-        <button v-if="!hireBlocksClose" type="button" class="scn-Action scn-Action-outline" @click="store.closeClassModal()">
+        <button type="button" class="scn-Action scn-Action-outline" :disabled="lock.locked.value" @click="store.closeClassModal()">
           Close
         </button>
       </div>
@@ -50,9 +50,9 @@
         <li v-else-if="victory.nextBoss">Retiring opens at Gate {{ store.minRetireGate }}</li>
       </ul>
 
-      <div v-if="victory && store.headhunterOffer.length > 0" data-testid="victory-headhunter">
-        <HeadhunterOffer :locked="lock.locked.value" :lock-seconds="lock.secondsLeft.value" />
-      </div>
+      <p v-if="victory && store.headhunterOffer.length > 0" class="scn-AutoLine" data-testid="victory-hire-next">
+        The headhunter has a shortlist waiting for you.
+      </p>
 
       <details class="scn-PyramidFold" data-testid="class-pyramid" :open="!victory">
         <summary v-if="victory">Class pyramid</summary>
@@ -110,11 +110,11 @@
       </details>
 
       <div class="scn-ModalFooter">
-        <p v-if="hireBlocksClose" class="scn-AutoLine">Hire a candidate or pass above to carry on.</p>
         <button
-          v-else
           type="button"
           class="scn-Action scn-Action-purple"
+          data-testid="close-class-modal"
+          :disabled="lock.locked.value"
           @click="store.closeClassModal()"
         >
           {{ victory ? 'Back to work' : celebratedDef ? 'Assume your rightful place' : 'Back to the market' }}
@@ -126,7 +126,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted } from 'vue'
-import HeadhunterOffer from './HeadhunterOffer.vue'
 import { useVictoryLock } from './victoryLock'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
@@ -148,8 +147,6 @@ const celebratedDef = computed(() =>
 // Stray taps from the fight are ignored for a moment after the win
 const lock = useVictoryLock(() => store.classModalOpen && store.lastVictory?.firstTime === true && store.celebratedClassLevel === store.lastVictory.gate)
 
-// The victory screen waits for its hire
-const hireBlocksClose = computed(() => store.celebratedClassLevel !== null && store.mustHireFirst)
 
 const victory = computed(() => {
   const win = store.lastVictory

@@ -1404,10 +1404,6 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function closeClassModal(): void {
-    // The victory screen waits for the hire it offers
-    if (celebratedClassLevel.value !== null && mustHireFirst.value) {
-      return
-    }
     classModalOpen.value = false
     celebratedClassLevel.value = null
   }

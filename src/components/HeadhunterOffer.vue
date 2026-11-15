@@ -54,8 +54,8 @@
 </template>
 
 <script setup lang="ts">
-// The headhunter's current shortlist, with hire buttons. Shown in the family
-// office and on the victory screen after a boss win.
+// The headhunter's current shortlist, with hire buttons. Shown in the hiring
+// modal, which opens whenever a shortlist is waiting.
 import { computed, ref, watch } from 'vue'
 import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
 import { RARITY_LABELS } from '../data/events'

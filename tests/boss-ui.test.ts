@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
@@ -6,6 +6,7 @@ import { useGameStore } from '../src/stores/game'
 import { gateThreshold, legacyForRetiring } from '../src/engine/bosses'
 import { BOSSES } from '../src/data/bosses'
 import { formatClock } from '../src/utils/format'
+import { VICTORY_LOCK_MS } from '../src/components/victoryLock'
 
 const nulls = (n: number) => Array(n).fill(null)
 
@@ -129,7 +130,8 @@ describe('heir draft UI', () => {
 })
 
 describe('family office UI', () => {
-  it('shows the headhunter, passes or hires into a seat, and preserves rarity styling and campaign timer on the PA chair', async () => {
+  it('hires through the hiring modal, and keeps rarity styling and the campaign timer on the PA chair', async () => {
+    vi.useFakeTimers()
     localStorage.clear()
     const pinia = createPinia()
     setActivePinia(pinia)
@@ -139,10 +141,16 @@ describe('family office UI', () => {
     store.headhunterOffer = ['sommelier', 'planning-lobby', 'proxy']
     await wrapper.vm.$nextTick()
     const panel = () => wrapper.find('[data-testid="family-office"]')
-    expect(panel().text()).toContain('Sommelier')
-    expect(panel().text()).toContain('Proxy with Power of Attorney')
-    expect(panel().find('[data-testid="skip-advisor"]').exists()).toBe(true)
-    await panel().findAll('[data-testid="hire-advisor"]')[1].trigger('click')
+    const modal = () => wrapper.find('[data-testid="hire-modal"]')
+    // The shortlist lives in the hiring modal, not the office
+    expect(panel().find('[data-testid="hire-advisor"]').exists()).toBe(false)
+    expect(modal().text()).toContain('Sommelier')
+    expect(modal().text()).toContain('Proxy with Power of Attorney')
+    expect(modal().find('[data-testid="skip-advisor"]').exists()).toBe(true)
+    vi.advanceTimersByTime(VICTORY_LOCK_MS)
+    await wrapper.vm.$nextTick()
+    await modal().findAll('[data-testid="hire-advisor"]')[1].trigger('click')
+    vi.useRealTimers()
     // The first hire takes the empty PA chair
     expect(store.paChair?.advisorId).toBe('planning-lobby')
     store.paChair!.campaignMs = 9 * 60_000

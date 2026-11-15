@@ -27,6 +27,7 @@
       <AchievementsModal />
       <HeirDraftModal />
       <AbdicationModal />
+      <HireModal />
       <DisgraceModal />
 
       <OverviewBar v-if="!phone || phoneTab === 'family'" @retire="handleRetire" />
@@ -102,7 +103,7 @@
       </div>
     </footer>
 
-    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" @hire="showHeadhunter" @retire="handleRetire" />
+    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" @retire="handleRetire" />
   </div>
 </template>
 
@@ -132,6 +133,7 @@ import LegacyShop from './components/LegacyShop.vue'
 import MarketEvent from './components/MarketEvent.vue'
 import NewsTicker from './components/NewsTicker.vue'
 import AbdicationModal from './components/AbdicationModal.vue'
+import HireModal from './components/HireModal.vue'
 import OverviewBar from './components/OverviewBar.vue'
 import TradingDesk from './components/TradingDesk.vue'
 import WelcomeModal from './components/WelcomeModal.vue'
@@ -165,13 +167,6 @@ function showBossRules(): void {
   if (phoneTab.value !== 'family') tabScroll[phoneTab.value] = window.scrollY
   phoneTab.value = 'family'
   nextTick(() => document.querySelector('[data-testid="boss-card"]')?.scrollIntoView({ block: 'start' }))
-}
-
-// The dock's Hire first button: open Family & gates at the headhunter
-function showHeadhunter(): void {
-  if (phoneTab.value !== 'family') tabScroll[phoneTab.value] = window.scrollY
-  phoneTab.value = 'family'
-  nextTick(() => document.querySelector('[data-testid="headhunter"]')?.scrollIntoView({ block: 'start' }))
 }
 
 function payButton(): HTMLButtonElement | null {

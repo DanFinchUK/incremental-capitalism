@@ -5,7 +5,6 @@
       <span class="scn-StatHint">Drain: {{ drainPct }}%</span>
     </div>
 
-    <HeadhunterOffer />
     <div class="scn-AdvisorGrid">
       <article
         class="scn-AdvisorCard scn-AdvisorCard-pa"
@@ -55,7 +54,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import HeadhunterOffer from './HeadhunterOffer.vue'
 import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
 import { RARITY_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'

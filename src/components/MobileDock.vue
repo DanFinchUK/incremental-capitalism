@@ -31,16 +31,7 @@
           Rules
         </button>
         <button
-          v-if="boss.status === 'available' && store.mustHireFirst"
-          type="button"
-          class="scn-Action scn-Action-purple"
-          data-testid="dock-hire-first"
-          @click="emit('hire')"
-        >
-          Hire first
-        </button>
-        <button
-          v-else-if="boss.status === 'available'"
+          v-if="boss.status === 'available'"
           type="button"
           class="scn-Action scn-Action-purple"
           data-testid="dock-boss-start"
@@ -101,7 +92,6 @@
       >
         {{ t.label }}
         <span v-if="hasNew(t.id)" class="mob-TabNew" data-testid="tab-new">New</span>
-        <span v-if="t.id === 'family' && store.headhunterOffer.length > 0" class="mob-TabNew" data-testid="tab-hire">Hire</span>
         <span v-if="affordable(t.id) > 0" class="mob-TabCount" data-testid="tab-affordable" :aria-label="`${affordable(t.id)} you can afford`">{{ affordable(t.id) }}</span>
       </button>
     </div>
@@ -125,7 +115,6 @@ const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
   (e: 'tab', tab: PhoneTab): void
   (e: 'rules'): void
-  (e: 'hire'): void
   (e: 'retire'): void
 }>()
 

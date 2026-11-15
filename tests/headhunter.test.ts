@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
-import ClassModal from '../src/components/ClassModal.vue'
+import HireModal from '../src/components/HireModal.vue'
 import HeadhunterOffer from '../src/components/HeadhunterOffer.vue'
 import { ADVISORS_BY_ID } from '../src/data/advisors'
-import MobileDock from '../src/components/MobileDock.vue'
 import { parseSavedState, serializeState, STORAGE_KEY } from '../src/engine/migration'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
@@ -71,8 +70,9 @@ describe('headhunter offers', () => {
     expect(store.startBossAttempt()).toBe(true)
   })
 
-  it('the victory screen stays open until you hire', () => {
+  it('the victory screen closes freely; the hire comes next, in its own modal', async () => {
     const store = fresh()
+    const wrapper = mount(HireModal, { global: { plugins: [pinia] } })
     store.addDebugMoney(gateThreshold(1) * 2, T0)
     store.jobsPurchased['21'] = 50
     store.tick(T0)
@@ -80,11 +80,13 @@ describe('headhunter offers', () => {
     for (let i = 0; i < 200; i++) store.manualClick(T0 + 10 + i * 20)
     store.tick(T0 + 4500)
     expect(store.classModalOpen).toBe(true)
-    store.closeClassModal()
-    expect(store.classModalOpen).toBe(true)
-    store.hireAdvisor(0)
+    await wrapper.vm.$nextTick()
+    // Waits behind the victory screen
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(false)
     store.closeClassModal()
     expect(store.classModalOpen).toBe(false)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(true)
   })
 
   it('with every seat taken, the required hire replaces someone', () => {
@@ -108,18 +110,13 @@ describe('headhunter offers', () => {
     expect(parseSavedState(serializeState({ ...loaded, office: { ...loaded.office, queued: -4 } })).office.queued).toBe(0)
   })
 
-  it('the victory screen ignores taps for a moment, so fight taps cannot pick an advisor', async () => {
+  it('the hiring modal ignores taps for a moment, so fight taps cannot pick an advisor', async () => {
     vi.useFakeTimers()
     const store = fresh()
-    const wrapper = mount(ClassModal, { global: { plugins: [pinia] } })
-    store.addDebugMoney(gateThreshold(1) * 2, T0)
-    store.jobsPurchased['21'] = 50
-    store.tick(T0)
-    store.startBossAttempt()
-    for (let i = 0; i < 200; i++) store.manualClick(T0 + 10 + i * 20)
-    store.tick(T0 + 4500)
+    const wrapper = mount(HireModal, { global: { plugins: [pinia] } })
+    store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
     await wrapper.vm.$nextTick()
-    const hire = () => wrapper.findAll('[data-testid="victory-headhunter"] [data-testid="hire-advisor"]')
+    const hire = () => wrapper.findAll('[data-testid="hire-modal"] [data-testid="hire-advisor"]')
     expect(hire().length).toBe(3)
     expect(hire()[0].attributes('disabled')).toBeDefined()
     await hire()[0].trigger('click')
@@ -129,33 +126,27 @@ describe('headhunter offers', () => {
     expect(hire()[0].attributes('disabled')).toBeUndefined()
     await hire()[0].trigger('click')
     expect(store.paChair).not.toBeNull()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(false)
   })
 
-  it('the victory screen lets you hire straight away', async () => {
-    const store = fresh()
-    store.addDebugMoney(gateThreshold(1) * 2, T0)
-    store.jobsPurchased['21'] = 50
-    store.tick(T0)
-    store.startBossAttempt()
-    for (let i = 0; i < 200; i++) store.manualClick(T0 + 10 + i * 20)
-    store.tick(T0 + 4500)
+  it('any shortlist opens the hiring modal, repeat wins included, and only Hire or Pass closes it', async () => {
     vi.useFakeTimers()
-    const wrapper = mount(ClassModal, { global: { plugins: [pinia] } })
+    const store = fresh()
+    const wrapper = mount(HireModal, { global: { plugins: [pinia] } })
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(false)
+    store.rollOffer()
+    await wrapper.vm.$nextTick()
+    const modal = wrapper.find('[data-testid="hire-modal"]')
+    expect(modal.exists()).toBe(true)
+    // No close button and no backdrop dismissal
+    expect(modal.findAll('button').map((b) => b.text())).not.toContain('Close')
+    await modal.trigger('click')
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(true)
     vi.advanceTimersByTime(VICTORY_LOCK_MS)
     await wrapper.vm.$nextTick()
-    const hire = wrapper.findAll('[data-testid="victory-headhunter"] [data-testid="hire-advisor"]')
-    expect(hire.length).toBe(3)
-    await hire[0].trigger('click')
-    expect(store.paChair).not.toBeNull()
-  })
-
-  it('the Family & gates tab is flagged while an offer waits', async () => {
-    const store = fresh()
-    const dock = mount(MobileDock, { props: { tab: 'jobs' }, global: { plugins: [pinia] } })
-    expect(dock.find('[data-testid="tab-family"] [data-testid="tab-hire"]').exists()).toBe(false)
-    store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
-    await dock.vm.$nextTick()
-    expect(dock.find('[data-testid="tab-family"] [data-testid="tab-hire"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="skip-advisor"]').trigger('click')
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(false)
   })
 
   it('with the office full, shows what each seated advisor gives before you replace one', async () => {
@@ -181,5 +172,30 @@ describe('headhunter offers', () => {
     await options[1].trigger('click')
     expect(store.officeSeats[1]!.advisorId).toBe('spin-doctor')
     expect(store.headhunterOffer).toHaveLength(0)
+  })
+})
+
+describe('the hiring modal waits its turn', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('stays behind the intro and the report from time away', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    const wrapper = mount(HireModal, { global: { plugins: [pinia] } })
+    store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
+    await wrapper.vm.$nextTick()
+    expect(store.introOpen).toBe(true)
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(false)
+    store.closeIntro(T0)
+    store.offlineReport = { secondsCredited: 120, efficiency: 0.5, moneyEarned: 10 }
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(false)
+    store.dismissOfflineReport()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(true)
   })
 })

@@ -1270,7 +1270,9 @@ export const useGameStore = defineStore('game', () => {
       familySurname.value,
       [...familyTree.value.map((r) => r.name), heir.value.name],
       2,
-      'common'
+      'common',
+      // A sibling never shares the outgoing head's first name
+      [heir.value.name.split(' ')[0]]
     )
     return siblingChoices.value.length > 0
   }

@@ -13,8 +13,12 @@
         <h2 id="heir-draft-title">Who inherits the estate?</h2>
       </div>
       <p class="scn-CardMeta">
-        Pick one of {{ countWord.toLowerCase() }} heirs. Their own trait lasts their lifetime; the trait they pass down stays
-        with the {{ store.familySurname }} bloodline until the family elevates.
+        The solicitor has read the will. {{ countWord }} {{ store.familySurname }}s are waiting in the library, each quite
+        sure it should be them.
+      </p>
+      <p class="scn-StatHint" data-testid="heir-rules">
+        How inheritance works: an heir's own trait lasts their lifetime. The trait they pass down stays with the bloodline
+        until the family elevates.
       </p>
       <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow">
         <span class="scn-StatHint">Current bloodline:</span>

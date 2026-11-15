@@ -203,6 +203,17 @@ describe('abdication', () => {
     expect(store.offerAbdication()).toBe(false)
   })
 
+  it("siblings never share the outgoing head's first name", () => {
+    for (let i = 0; i < 30; i++) {
+      localStorage.clear()
+      setActivePinia(createPinia())
+      const store = withHeir()
+      store.heir = { ...store.heir, name: `Ottoline ${store.familySurname}` }
+      store.offerAbdication()
+      for (const s of store.siblingChoices) expect(s.name.split(' ')[0]).not.toBe('Ottoline')
+    }
+  })
+
   it('offers two common siblings, and backing out changes nothing', () => {
     const store = withHeir()
     expect(store.offerAbdication()).toBe(true)

@@ -208,8 +208,15 @@ export function generateSurname(rng: () => number): string {
 }
 
 // A first name already used by the family gets the next regnal numeral.
-export function heirName(rng: () => number, surname: string, takenNames: ReadonlyArray<string>): string {
-  const first = pick(rng, FIRST_NAMES)
+// avoidFirstNames: brothers and sisters don't share a first name
+export function heirName(
+  rng: () => number,
+  surname: string,
+  takenNames: ReadonlyArray<string>,
+  avoidFirstNames: ReadonlyArray<string> = []
+): string {
+  const pool = FIRST_NAMES.filter((n) => !avoidFirstNames.includes(n))
+  const first = pick(rng, pool.length > 0 ? pool : FIRST_NAMES)
   const base = `${first} ${surname}`
   const repeats = takenNames.filter((n) => n === base || n.startsWith(`${base} `)).length
   return `${base}${NUMERALS[Math.min(repeats, NUMERALS.length - 1)]}`
@@ -222,7 +229,8 @@ export function rollHeirChoices(
   surname: string,
   takenNames: ReadonlyArray<string>,
   count = 3,
-  onlyRarity?: EventRarity
+  onlyRarity?: EventRarity,
+  avoidFirstNames: ReadonlyArray<string> = []
 ): Heir[] {
   const choices: Heir[] = []
   const usedTraits = new Set<string>()
@@ -234,7 +242,7 @@ export function rollHeirChoices(
     if (pool.length === 0) continue
     const trait = pick(rng, pool)
     usedTraits.add(trait.id)
-    const name = heirName(rng, surname, usedNames)
+    const name = heirName(rng, surname, usedNames, avoidFirstNames)
     usedNames.push(name)
     const inheritPool = INHERITED_TRAITS.filter((t) => !usedInherits.has(t.id))
     const inherit = pick(rng, inheritPool.length > 0 ? inheritPool : INHERITED_TRAITS)

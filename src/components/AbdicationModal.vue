@@ -14,9 +14,13 @@
         <h2 id="abdication-title">Who steps in for {{ firstName }}?</h2>
       </div>
       <p class="scn-CardMeta">
-        {{ store.heir.name }} steps aside, taking both their traits with them. A younger sibling runs the same estate from
-        here: this generation carries on and no Legacy is paid. There is only one spare, so this can happen once a
-        generation, and the spare is never quite as impressive as the heir.
+        {{ store.heir.name }} has decided the family firm isn't for them after all, and is off to find themselves
+        somewhere warm. A younger sibling has agreed to step in. There is only ever one spare, and the spare is never
+        quite as impressive as the heir.
+      </p>
+      <p class="scn-StatHint" data-testid="abdication-rules">
+        How abdication works: both of {{ firstName }}'s traits leave with them. The estate and this generation's gates
+        stay, no Legacy is paid, and it can happen once a generation.
       </p>
       <div class="scn-HeirGrid">
         <article

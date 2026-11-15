@@ -124,8 +124,9 @@ export function bulkBuyQuote(
     return { count: mode, cost, canAfford: availableMoney >= cost }
   }
   if (mode === 'next') {
+    // Owning the first one is a step of its own, before the first milestone
     const { nextMilestone } = milestoneProgress(owned, scaleFactor)
-    const count = nextMilestone !== null && nextMilestone > owned ? nextMilestone - owned : 1
+    const count = owned > 0 && nextMilestone !== null && nextMilestone > owned ? nextMilestone - owned : 1
     const cost = seriesCost(baseCost, scaleFactor, owned, count, costDiscount)
     return { count, cost, canAfford: availableMoney >= cost }
   }

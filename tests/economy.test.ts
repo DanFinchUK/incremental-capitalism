@@ -57,6 +57,9 @@ describe('economy engine', () => {
     const nextElite = bulkBuyQuote(2_600_000_000_000, 1.98, 1, 1, 'next', 1e16)
     expect(nextElite.count).toBe(2)
 
+    // With none owned, Next buys the first one
+    expect(bulkBuyQuote(20_000, 1.2, 0, 1, 'next', 1e15).count).toBe(1)
+
     // Buy-to-let (sf 1.50, milestones [10,20,...]) at 10 owned targets the 20 milestone
     expect(bulkBuyQuote(115_000_000, 1.5, 10, 1, 'next', 1e15).count).toBe(10)
 

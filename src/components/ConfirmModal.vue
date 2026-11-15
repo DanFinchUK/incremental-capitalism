@@ -18,7 +18,7 @@
       </div>
 
       <p class="scn-CardMeta">
-        Wind up Jobs and Businesses and hand {{ inheritancePct }}% of net worth to your chosen heir, up to a cap that starts them about one gate behind you. Legacy, perks, your Personal Assistant, and every trait passed down the bloodline carry forward; your heir's own trait retires with them.
+        Wind up Jobs and Businesses and hand {{ inheritancePct }}% of net worth to your chosen heir, up to a cap that starts them about one gate behind you. Legacy, perks, your Personal Assistant, and every trait passed down the bloodline carry forward. The current head's own trait retires with them.
       </p>
 
       <div class="scn-ModalGrid">

@@ -294,7 +294,7 @@ function confirmRetire(): void {
   }
 }
 
-// Saves the save JSON (with the play log) as a file, for sharing or backup
+// Downloads the save JSON, play log included, as a file for sharing or backup
 function downloadSave(): void {
   const blob = new Blob([store.exportSave(Date.now())], { type: 'application/json' })
   const url = URL.createObjectURL(blob)

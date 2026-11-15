@@ -61,7 +61,7 @@
         <span v-else>Hand it all on to the next heir</span>
       </div>
       <div class="mob-GateActions">
-        <!-- Once the peerage is on offer it's the move to make; Retire stays in the overview bar -->
+        <!-- Once elevation is possible the dock offers it in place of Retire +0; Retire stays in the overview bar -->
         <button
           v-if="store.canElevate"
           type="button"

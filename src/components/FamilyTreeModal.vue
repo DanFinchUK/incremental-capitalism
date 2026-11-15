@@ -18,7 +18,7 @@
       </div>
 
       <div class="scn-ModalCallout scn-ModalCallout-perk" data-testid="bloodline-traits">
-        <strong>Traits in play: the head's own trait, plus what every generation passed down (it stays until the family elevates):</strong>
+        <strong>Traits in play. The head of the family's own trait lasts until they retire; what each generation passes down stays until the family elevates.</strong>
         <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow">
           <span
             v-for="pill in store.bloodlineTraitPills"

@@ -11,8 +11,8 @@ export interface HeirTrait {
 }
 
 // A quirk that runs in the family: it stays with the bloodline, stacking
-// with every ancestor's, until the family elevates. Kept mild, so a bad
-// draw slows a family down but never sinks it.
+// with every ancestor's, until the family elevates. Kept mild, so a family
+// with bad draws is slower but can still beat its gates.
 export interface InheritedTrait {
   id: string
   name: string
@@ -119,8 +119,9 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
 
 export const TRAITS_BY_ID: Readonly<Record<string, HeirTrait>> = Object.fromEntries(HEIR_TRAITS.map((t) => [t.id, t]))
 
-// Most help a little; some trade a little. None scales with Legacy, and the
-// worst downside is a few percent, so even nine bad draws stay beatable.
+// Five are plain bonuses; four trade a small downside for a larger upside.
+// None touch Legacy and no downside is over 10%, so nine bad draws still
+// leave every gate beatable.
 export const INHERITED_TRAITS: ReadonlyArray<InheritedTrait> = [
   {
     id: 'old-money',

@@ -208,9 +208,29 @@ html {
     display: none;
   }
 
-  .ic-Shell-phone .lyt-ListHead {
+  /* The wire stays in view; list headers stick just below it */
+  .ic-Shell-phone .scn-Ticker {
     position: sticky;
     top: 0;
+    z-index: 20;
+    min-height: var(--ticker-h);
+    box-sizing: border-box;
+  }
+
+  .ic-Shell-phone {
+    --ticker-h: 36px;
+  }
+
+  /* Without motion the headline wraps, so the wire is taller */
+  @media (prefers-reduced-motion: reduce) {
+    .ic-Shell-phone {
+      --ticker-h: 58px;
+    }
+  }
+
+  .ic-Shell-phone .lyt-ListHead {
+    position: sticky;
+    top: var(--ticker-h);
     z-index: 10;
     padding: 6px 0;
     background: var(--color-bg);

@@ -99,10 +99,40 @@
   flex-shrink: 0;
 }
 
-.scn-TickerText {
+.scn-TickerViewport {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.scn-TickerText {
+  display: inline-block;
   white-space: nowrap;
+}
+
+/* Rest, glide to the end of the headline, then stay there until the next */
+.scn-TickerText-scroll {
+  animation: scn-ticker-scroll var(--ticker-travel, 8s) linear var(--ticker-delay, 1.5s) 1 both;
+}
+
+@keyframes scn-ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--ticker-shift, 0));
+  }
+}
+
+/* No motion wanted: show the whole headline over two lines instead */
+@media (prefers-reduced-motion: reduce) {
+  .scn-TickerText {
+    white-space: normal;
+  }
+
+  .scn-TickerText-scroll {
+    animation: none;
+  }
 }
 
 /* Sticky Overview Bar */

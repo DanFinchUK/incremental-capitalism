@@ -199,6 +199,10 @@ export const useGameStore = defineStore('game', () => {
   const familySurname = ref<string>(initial.familySurname)
   const heir = ref<Heir>(initial.heir ?? { name: '', traitId: null })
   const heirChoices = ref<Heir[]>(initial.heirChoices)
+  // Abdication: one per generation, and the siblings on offer (not saved:
+  // nothing changes until one is picked)
+  const abdicated = ref<boolean>(initial.abdicated)
+  const siblingChoices = ref<Heir[]>([])
   const generation = ref<number>(initial.generation)
   const familyTree = ref<GenerationRecord[]>(initial.familyTree)
   const familyTreeOpen = ref(false)
@@ -451,6 +455,7 @@ export const useGameStore = defineStore('game', () => {
       familySurname: familySurname.value,
       heir: heir.value,
       heirChoices: heirChoices.value,
+      abdicated: abdicated.value,
       generation: generation.value,
       office: office.snapshot(),
       familyTree: familyTree.value,
@@ -504,6 +509,7 @@ export const useGameStore = defineStore('game', () => {
     familySurname.value = loaded.familySurname || generateSurname(Math.random)
     heir.value = loaded.heir ?? { name: heirName(Math.random, familySurname.value, []), traitId: null }
     heirChoices.value = loaded.heirChoices
+    abdicated.value = loaded.abdicated
     generation.value = loaded.generation
     office.loadState(loaded.office)
     familyTree.value = loaded.familyTree
@@ -1115,6 +1121,8 @@ export const useGameStore = defineStore('game', () => {
     familySurname.value = nextSurname
     heir.value = { name: heirName(Math.random, nextSurname, []), traitId: null }
     heirChoices.value = []
+    abdicated.value = false
+    siblingChoices.value = []
     generation.value = 1
     familyTree.value = []
     legacyPoints.value = 0
@@ -1203,6 +1211,8 @@ export const useGameStore = defineStore('game', () => {
       [...familyTree.value.map((r) => r.name), heir.value.name],
       heirChoiceCount(titles.value)
     )
+    abdicated.value = false
+    siblingChoices.value = []
     office.onRetire()
     splits.value = emptySplits()
     lastKillMs.value = emptySplits()
@@ -1238,6 +1248,47 @@ export const useGameStore = defineStore('game', () => {
     announce(`Elevated to the Lords! The family now holds ${titles.value} title${titles.value === 1 ? '' : 's'}: ${peerageRank(titles.value)}.`)
     flushSave(ts)
     return true
+  }
+
+  // Abdication: the head of the family steps aside mid-generation and a
+  // younger sibling takes over the same estate. Both of the outgoing head's
+  // traits go with them, no Legacy is paid and the generation carries on.
+  // Only one sibling waits in the wings, and the spare is only ever common.
+  const canAbdicate = computed(
+    () =>
+      heir.value.traitId !== null &&
+      !abdicated.value &&
+      heirChoices.value.length === 0 &&
+      disgraceReport.value === null &&
+      bosses.bossAttempt.value === null
+  )
+
+  function offerAbdication(): boolean {
+    if (!canAbdicate.value) return false
+    siblingChoices.value = rollHeirChoices(
+      Math.random,
+      familySurname.value,
+      [...familyTree.value.map((r) => r.name), heir.value.name],
+      2,
+      'common'
+    )
+    return siblingChoices.value.length > 0
+  }
+
+  function cancelAbdication(): void {
+    siblingChoices.value = []
+  }
+
+  function pickSibling(index: number): void {
+    const chosen = siblingChoices.value[index]
+    if (!chosen || !canAbdicate.value) return
+    const outgoing = heir.value.name
+    plays.log(nowMs.value, 'abdicate', { from: heir.value.traitId ?? 'none', to: chosen.traitId ?? 'none', inherit: chosen.inheritId ?? 'none' })
+    heir.value = chosen
+    abdicated.value = true
+    siblingChoices.value = []
+    announce(`${outgoing} abdicates. ${chosen.name} takes over the family firm.`)
+    flushSave(nowMs.value)
   }
 
   // Choose who inherits after retiring. The trait applies from now on.
@@ -1406,6 +1457,12 @@ export const useGameStore = defineStore('game', () => {
     familySurname,
     heir,
     heirChoices,
+    abdicated,
+    siblingChoices,
+    canAbdicate,
+    offerAbdication,
+    cancelAbdication,
+    pickSibling,
     generation,
     bloodlineTraitPills,
     modifiers,

@@ -39,6 +39,16 @@
         <button type="button" class="scn-LinkButton" data-testid="open-family-tree" @click="store.familyTreeOpen = true">
           Family tree
         </button>
+        <button
+          v-if="store.canAbdicate"
+          type="button"
+          class="scn-LinkButton"
+          data-testid="open-abdication"
+          title="Hand over to a younger sibling now, traits and all. Once a generation."
+          @click="store.offerAbdication()"
+        >
+          Abdicate
+        </button>
       </p>
       <p class="scn-StatHint" data-testid="allowance-line">
         {{ store.allowanceLabel }}: {{ formatCurrency(store.allowancePerSecond) }}/s, two taps' worth a second, no tapping needed

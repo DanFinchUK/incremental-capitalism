@@ -140,6 +140,8 @@ export interface GenerationResult {
   cumulativeActiveMs: number
   // False if money or income ever stopped being a finite number
   stayedFinite: boolean
+  // The generation's first head abdicated to a sibling partway through
+  abdicated: boolean
   // On the bloodline's first, uninherited climb: how many of the rung below
   // the player owned when they first bought each Job or Business (index = list
   // position; null for the first rung and for rungs never bought)
@@ -421,6 +423,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       legacyEarned: store.legacyOnRetire,
       cumulativeActiveMs: cumulativeMs,
       stayedFinite,
+      abdicated: store.abdicated,
       rungHandover: freshClimb ? rungHandover : null
     })
     freshClimb = false
@@ -494,6 +497,12 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
           ? cfg.firstGenerationStallMinutes
           : cfg.stallMinutes
     const stalled = genMs - lastGateAtMs >= patience * 60_000
+    // Stuck short of the gate retiring needs: hand over to a sibling, as a
+    // player would, and give them a fresh stretch to get going
+    if (stalled && !store.canRetire && store.canAbdicate && store.offerAbdication()) {
+      store.pickSibling(0)
+      lastGateAtMs = genMs
+    }
     if (store.canRetire && (store.gatesBeaten >= 9 || stalled) && !store.bossAttempt) {
       finishGeneration()
       bloodlineBest = Math.max(bloodlineBest, store.gatesBeaten)

@@ -23,7 +23,8 @@ for (const style of PLAYSTYLES) {
     const campaigns = SEEDS.map((seed) => runCampaign(style.finishWithinHours + 1, style.cfg, seed))
     const played = campaigns.flat().filter((g) => g.bestBefore < 9 && g.activeMinutes > 0)
     const gate9 = campaigns.map((gens) => firstKillHours(gens, 9).toFixed(2)).join(', ')
-    console.log(`${style.name}: gate 9 at ${gate9} hours`)
+    const abdications = campaigns.flat().filter((g) => g.abdicated).length
+    console.log(`${style.name}: gate 9 at ${gate9} hours; ${abdications} abdication(s)`)
 
     it(`completes the bloodline (gate 9) within ${style.finishWithinHours} hours (median)`, () => {
       expect(median(campaigns.map((gens) => firstKillHours(gens, 9)))).toBeLessThanOrEqual(style.finishWithinHours)

@@ -47,6 +47,8 @@ export interface PersistedSceneState {
   familySurname: string
   heir: Heir | null
   heirChoices: Heir[]
+  // The current head took over from a sibling who abdicated this generation
+  abdicated: boolean
   generation: number
   office: OfficeState
   familyTree: GenerationRecord[]
@@ -90,6 +92,7 @@ export function createInitialSceneState(): PersistedSceneState {
     familySurname: '',
     heir: null,
     heirChoices: [],
+    abdicated: false,
     generation: 1,
     office: { seats: [], paChair: null, offer: [], queued: 0 },
     familyTree: [],
@@ -334,6 +337,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     familySurname: typeof s.familySurname === 'string' ? s.familySurname : '',
     heir: readHeir(s.heir),
     heirChoices: Array.isArray(s.heirChoices) ? s.heirChoices.map(readHeir).filter((h): h is Heir => h !== null) : [],
+    abdicated: s.abdicated === true,
     generation: Math.max(1, Math.floor(readNonNegativeNumber(s.generation, 1))),
     office: readOffice(s.office),
     achievements: Array.isArray(s.achievements)

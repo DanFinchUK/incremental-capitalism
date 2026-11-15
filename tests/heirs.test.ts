@@ -180,3 +180,71 @@ describe('the heir picker', () => {
     expect(labels).toContain('Businesses x0.5')
   })
 })
+
+describe('abdication', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  function withHeir() {
+    const store = retiredStore()
+    store.heirChoices = [{ name: 'Red Test', traitId: 'reformed-socialist', inheritId: 'old-money' }]
+    store.pickHeir(0)
+    store.businessesOwned = { '1': 5 }
+    store.gatesBeaten = 1
+    return store
+  }
+
+  it('the founder has nobody to abdicate to', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    expect(store.canAbdicate).toBe(false)
+    expect(store.offerAbdication()).toBe(false)
+  })
+
+  it('offers two common siblings, and backing out changes nothing', () => {
+    const store = withHeir()
+    expect(store.offerAbdication()).toBe(true)
+    expect(store.siblingChoices).toHaveLength(2)
+    for (const s of store.siblingChoices) expect(HEIR_TRAITS.find((t) => t.id === s.traitId)?.rarity).toBe('common')
+    store.cancelAbdication()
+    expect(store.siblingChoices).toHaveLength(0)
+    expect(store.heir.traitId).toBe('reformed-socialist')
+    expect(store.canAbdicate).toBe(true)
+  })
+
+  it('swaps both traits mid-generation, keeps the estate, and only once a generation', () => {
+    const store = withHeir()
+    const generation = store.generation
+    const legacy = store.legacyPoints
+    const owned = { ...store.businessesOwned }
+    store.offerAbdication()
+    const sibling = store.siblingChoices[0]
+    store.pickSibling(0)
+    expect(store.heir).toEqual(sibling)
+    expect(store.modifiers.clickMult).not.toBeCloseTo(5)
+    expect(store.generation).toBe(generation)
+    expect(store.legacyPoints).toBe(legacy)
+    expect(store.gatesBeaten).toBe(1)
+    expect(store.businessesOwned).toEqual(owned)
+    expect(store.canAbdicate).toBe(false)
+    expect(store.offerAbdication()).toBe(false)
+  })
+
+  it('a new generation can abdicate again, and the limit survives a reload', () => {
+    const store = withHeir()
+    store.offerAbdication()
+    store.pickSibling(0)
+    store.flushSave(T0 + 10)
+    setActivePinia(createPinia())
+    const again = useGameStore()
+    again.hydrateFromStorage(T0 + 10)
+    expect(again.abdicated).toBe(true)
+    expect(again.canAbdicate).toBe(false)
+    again.gatesBeaten = 2
+    expect(again.retire(T0 + 20)).toBe(true)
+    again.pickHeir(0)
+    expect(again.canAbdicate).toBe(true)
+  })
+})

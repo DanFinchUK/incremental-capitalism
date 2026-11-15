@@ -26,6 +26,7 @@
       <FamilyTreeModal />
       <AchievementsModal />
       <HeirDraftModal />
+      <AbdicationModal />
       <DisgraceModal />
 
       <OverviewBar v-if="!phone || phoneTab === 'family'" @retire="handleRetire" />
@@ -130,6 +131,7 @@ import ItemCard from './components/ItemCard.vue'
 import LegacyShop from './components/LegacyShop.vue'
 import MarketEvent from './components/MarketEvent.vue'
 import NewsTicker from './components/NewsTicker.vue'
+import AbdicationModal from './components/AbdicationModal.vue'
 import OverviewBar from './components/OverviewBar.vue'
 import TradingDesk from './components/TradingDesk.vue'
 import WelcomeModal from './components/WelcomeModal.vue'

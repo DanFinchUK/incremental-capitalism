@@ -36,6 +36,22 @@ describe('retiring is visible on a phone', () => {
     expect(dock.emitted('retire')).toHaveLength(1)
   })
 
+  it('once every gate is beaten and the peerage is on offer, the dock offers Elevate', async () => {
+    const store = fresh()
+    store.gatesBeaten = 9
+    store.bestSplits[9] = 60_000
+    store.legacyPoints = 9
+    const dock = mount(MobileDock, { props: { tab: 'jobs' }, global: { plugins: [pinia] }, attachTo: document.body })
+    await dock.vm.$nextTick()
+    expect(store.canElevate).toBe(true)
+    expect(dock.find('[data-testid="dock-retire"]').exists()).toBe(false)
+    const elevate = dock.find('[data-testid="dock-elevate"]')
+    expect(elevate.text()).toContain(`+${store.titlesOnElevation}`)
+    await elevate.trigger('click')
+    expect(document.body.querySelector('[data-testid="elevate-modal"]')).not.toBeNull()
+    dock.unmount()
+  })
+
   it('the victory screen compares retiring now with the next gate', () => {
     const store = fresh()
     store.addDebugMoney(gateThreshold(1) * 2, T0)

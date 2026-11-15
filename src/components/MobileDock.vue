@@ -57,14 +57,28 @@
     <div v-if="!boss && store.canRetire" class="mob-Gate" data-testid="dock-gate">
       <div class="mob-GateText">
         <strong>Every gate beaten</strong>
-        <span>Hand it all on to the next heir</span>
+        <span v-if="store.canElevate">Take the family's seat in the Lords</span>
+        <span v-else>Hand it all on to the next heir</span>
       </div>
       <div class="mob-GateActions">
-        <button type="button" class="scn-Action scn-Action-purple" data-testid="dock-retire" @click="emit('retire')">
+        <!-- Once the peerage is on offer it's the move to make; Retire stays in the overview bar -->
+        <button
+          v-if="store.canElevate"
+          type="button"
+          class="scn-Action scn-Action-purple"
+          data-testid="dock-elevate"
+          @click="elevateOpen = true"
+        >
+          Elevate +{{ store.titlesOnElevation }}
+        </button>
+        <button v-else type="button" class="scn-Action scn-Action-purple" data-testid="dock-retire" @click="emit('retire')">
           Retire +{{ store.legacyOnRetire }}
         </button>
       </div>
     </div>
+    <Teleport to="body">
+      <ElevateModal :open="elevateOpen" @close="elevateOpen = false" />
+    </Teleport>
 
     <!-- Opportunities and scandals are teleported here on a phone -->
     <div id="dock-events" class="mob-EventSlot"></div>
@@ -99,12 +113,14 @@ import { press } from '../utils/press'
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import type { ItemKind } from '../data/items'
 import { gateThreshold } from '../engine/bosses'
+import ElevateModal from './ElevateModal.vue'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
 
 export type PhoneTab = 'jobs' | 'businesses' | 'family'
 
 const props = defineProps<{ tab: PhoneTab }>()
+const elevateOpen = ref(false)
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
   (e: 'tab', tab: PhoneTab): void

@@ -109,11 +109,13 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>, 
   return sources
 }
 
-export function rollAdvisorOffer(rng: () => number): string[] {
+// The allowance family only does anything while playing without tapping, so
+// the headhunter only brings them then
+export function rollAdvisorOffer(rng: () => number, noTap = false): string[] {
   const offer: string[] = []
   for (let guard = 0; offer.length < 3 && guard < 50; guard++) {
     const rarity = pickEventRarity(rng())
-    const pool = ADVISORS.filter((a) => a.rarity === rarity && !offer.includes(a.id))
+    const pool = ADVISORS.filter((a) => a.rarity === rarity && !offer.includes(a.id) && (noTap || a.family !== 'allowance'))
     if (pool.length === 0) continue
     offer.push(pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))].id)
   }

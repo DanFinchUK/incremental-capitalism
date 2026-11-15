@@ -8,6 +8,8 @@ export interface OfficeModuleDeps {
   extraSeats: () => number
   announce: (msg: string) => void
   flushSave: () => void
+  // Playing without tapping (the headhunter brings allowance advisors then)
+  noTap?: () => boolean
 }
 
 export interface OfficeState {
@@ -48,7 +50,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     headhunterOffer.value = []
     if (queuedOffers.value > 0) {
       queuedOffers.value -= 1
-      headhunterOffer.value = rollAdvisorOffer(Math.random)
+      headhunterOffer.value = rollAdvisorOffer(Math.random, deps.noTap?.() ?? false)
     }
   }
 
@@ -129,7 +131,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
       queuedOffers.value += 1
       return
     }
-    headhunterOffer.value = rollAdvisorOffer(rng)
+    headhunterOffer.value = rollAdvisorOffer(rng, deps.noTap?.() ?? false)
   }
 
   // Open-seat advisors leave with the outgoing generation; the PA stays on

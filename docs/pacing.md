@@ -33,13 +33,16 @@ shape a little slower, and is checked more loosely: +1 in under 12 minutes, the
 whole bloodline in under 3 hours.
 
 A player who never taps Get paid must still be able to finish, so someone who
-can't tap quickly, or at all, can play. Every family gets an allowance (Universal
-Credit for the founder, an allowance from Granny for heirs) worth two taps of
-click pay a second, without Hustle (`ALLOWANCE_TAPS_PER_SEC` in
-`src/engine/economy.ts`). It counts towards the click bosses at gates 1 and 6,
-and Jobs raise it, so they are worth buying without tapping. This player is
-checked at about half a fast tapper's pace: the founder beats gate 1 within 15
-minutes, +1 comes within 15 minutes, and the bloodline finishes within 4 hours.
+can't tap quickly, or at all, can play. The "Play without tapping" setting
+(any time, either way) removes Get paid and pays an allowance instead
+(Universal Credit for the founder, from Granny for heirs) worth two taps of
+click pay a second (`ALLOWANCE_TAPS_PER_SEC` in `src/engine/economy.ts`).
+Hustle holds steady in that mode, 1x plus 0.5x per Grindset Coaching rank, and
+the allowance and Interns ride it. Tappers get no allowance, so it never works
+as a free auto-clicker on top of tapping. The allowance counts towards the
+click bosses at gates 1 and 6, and Jobs raise it. This player is checked at
+about half a fast tapper's pace: the founder beats gate 1 within 15 minutes,
++1 comes within 15 minutes, and the bloodline finishes within 4 hours.
 
 Advisors come in families of three: every effect has a common, a rare and a
 legendary advisor, and the buff (and upkeep) grows with rarity

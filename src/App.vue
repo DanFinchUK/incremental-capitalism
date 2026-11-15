@@ -28,6 +28,7 @@
       <HeirDraftModal />
       <AbdicationModal />
       <HireModal />
+      <SettingsModal @reset="handleHardReset" />
       <DisgraceModal />
 
       <OverviewBar v-if="!phone || phoneTab === 'family'" @retire="handleRetire" />
@@ -85,20 +86,11 @@
     <footer v-if="!phone || phoneTab === 'family'" class="lyt-Footer">
       <span>Incremental Capitalism · Empire &amp; Privilege Edition</span>
       <div class="lyt-FooterActions">
-        <button type="button" class="scn-Action scn-Action-outline" data-testid="open-intro" @click="store.openIntro()">
-          How to play
-        </button>
         <button type="button" class="scn-Action scn-Action-outline" data-testid="open-achievements" @click="store.achievementsOpen = true">
           Achievements ({{ store.achievements.length }})
         </button>
-        <button type="button" class="scn-Action scn-Action-outline" data-testid="download-save" @click="downloadSave">
-          Download save
-        </button>
         <button type="button" class="scn-Action scn-Action-outline" data-testid="open-new-bloodline" @click="handleNewBloodline">
           New bloodline
-        </button>
-        <button type="button" class="scn-Action" @click="handleHardReset">
-          Reset game
         </button>
       </div>
     </footer>
@@ -134,6 +126,7 @@ import MarketEvent from './components/MarketEvent.vue'
 import NewsTicker from './components/NewsTicker.vue'
 import AbdicationModal from './components/AbdicationModal.vue'
 import HireModal from './components/HireModal.vue'
+import SettingsModal from './components/SettingsModal.vue'
 import OverviewBar from './components/OverviewBar.vue'
 import TradingDesk from './components/TradingDesk.vue'
 import WelcomeModal from './components/WelcomeModal.vue'
@@ -289,20 +282,6 @@ function confirmRetire(): void {
     }
     playSfx('milestone', store.muted)
   }
-}
-
-// Downloads the save JSON, play log included, as a file for sharing or backup
-function downloadSave(): void {
-  const blob = new Blob([store.exportSave(Date.now())], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')
-  link.href = url
-  link.download = `incremental-capitalism-${store.familySurname.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-gen${store.generation}-${stamp}.json`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 function handleNewBloodline(): void {

@@ -3,7 +3,7 @@
     <div class="mob-Stats">
       <span class="mob-Money" data-testid="dock-money">{{ formatCurrency(store.money) }}</span>
       <span>{{ formatCurrency(store.moneyPerSecond) }}/s</span>
-      <span>{{ formatCurrency(store.moneyPerClick) }}/tap</span>
+      <span v-if="!store.noTap">{{ formatCurrency(store.moneyPerClick) }}/tap</span>
       <span v-if="store.hustleMultiplier > 1.01" class="mob-Hustle">{{ store.hustleMultiplier.toFixed(1) }}x</span>
       <span v-if="store.activeClickBuff" class="mob-Buff">{{ store.activeClickBuff.label }} x{{ store.activeClickBuff.mult }} {{ store.activeClickBuff.remainingSec }}s</span>
       <span v-if="store.activeBusinessBuff" class="mob-Buff">{{ store.activeBusinessBuff.label }} x{{ store.activeBusinessBuff.mult }} {{ store.activeBusinessBuff.remainingSec }}s</span>
@@ -74,9 +74,13 @@
     <!-- Opportunities and scandals are teleported here on a phone -->
     <div id="dock-events" class="mob-EventSlot"></div>
 
-    <button ref="payButtonRef" type="button" class="scn-PrimaryAction mob-Pay" v-on="payPress">
+    <button v-if="!store.noTap" ref="payButtonRef" type="button" class="scn-PrimaryAction mob-Pay" v-on="payPress">
       Get paid
     </button>
+    <div v-else class="scn-AllowancePanel mob-Pay" data-testid="dock-allowance">
+      <span>{{ store.allowanceLabel }}</span>
+      <strong>{{ formatCurrency(store.allowancePerSecond) }}/s</strong>
+    </div>
 
     <div class="mob-Tabs" role="tablist">
       <button

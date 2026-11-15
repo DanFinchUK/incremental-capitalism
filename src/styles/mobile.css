@@ -282,6 +282,33 @@ html {
     font-size: 15px;
   }
 
+  /* Family tab and Settings: one full-width button per row, easy to hit */
+  .ic-Shell-phone .scn-Overview,
+  .ic-Shell-phone .scn-OverviewControls,
+  .ic-Shell-phone .lyt-Footer,
+  .ic-Shell-phone .lyt-FooterActions {
+    width: 100%;
+  }
+
+  .ic-Shell-phone .scn-OverviewControls,
+  .ic-Shell-phone .lyt-FooterActions,
+  .scn-SettingsActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .ic-Shell-phone .scn-OverviewControls > .scn-Action,
+  .ic-Shell-phone .lyt-FooterActions > .scn-Action,
+  .scn-SettingsActions > .scn-Action {
+    width: 100%;
+  }
+
+  .ic-Shell-phone .lyt-Footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   /* Automation is set for the whole estate on a phone: no per-item boxes */
   .ic-Shell-phone .scn-AutoBuy {
     display: none;

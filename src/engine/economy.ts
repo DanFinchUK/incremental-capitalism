@@ -39,10 +39,17 @@ export function heirInheritance(netWorth: number, deepestGate: number, shareAdd 
   return Math.floor(inheritableEstate(netWorth, deepestGate) * (HEIR_INHERITANCE_SHARE + shareAdd))
 }
 export const BASE_CLICK_VALUE = 1
-// Universal Credit for the founder, an allowance for heirs: every family
-// gets two taps' worth of click pay each second without tapping, so a player
-// who never taps Get paid can still play (Hustle doesn't apply)
+// Playing without tapping: Get paid goes, and instead the family draws an
+// allowance (Universal Credit for the founder, from Granny for heirs) of two
+// taps' worth of click pay a second, at the steady Hustle of that mode
 export const ALLOWANCE_TAPS_PER_SEC = 2
+// Without tapping, Hustle holds steady instead of building: 1x, plus this per
+// Grindset Coaching rank
+export const STEADY_HUSTLE_PER_RANK = 0.5
+
+export function steadyHustle(hustleCapRank: number): number {
+  return 1 + STEADY_HUSTLE_PER_RANK * Math.max(0, hustleCapRank)
+}
 
 export type BulkBuyMode = 1 | 10 | 'next' | 'max'
 
@@ -199,6 +206,8 @@ export interface EconomySnapshotInput {
   businessBuffMultiplier: number
   clickBuffMultiplier: number
   hustleMultiplier: number
+  // Playing without tapping: the allowance is paid (at the current Hustle)
+  noTap?: boolean
   // Heir traits, advisors and titles
   mods?: Modifiers
 }
@@ -272,7 +281,7 @@ export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreak
   const bizIncome =
     rawBusinesses * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.businessBuffMultiplier * mods.businessMult
   const autoClickIncome = input.autoClickers * computeClickIncome(input, true)
-  const allowance = (ALLOWANCE_TAPS_PER_SEC + mods.allowanceTapsAdd) * computeClickIncome(input, false)
+  const allowance = input.noTap ? (ALLOWANCE_TAPS_PER_SEC + mods.allowanceTapsAdd) * computeClickIncome(input, true) : 0
   return { business: bizIncome, interns: autoClickIncome, allowance }
 }
 

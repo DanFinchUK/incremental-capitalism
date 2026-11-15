@@ -33,6 +33,7 @@ import {
   computeIncomeBreakdown,
   heirInheritance,
   computeOfflineCatchUp,
+  steadyHustle,
   computePassivePerSecond,
   computeSectorSlices,
   itemMilestones,
@@ -160,6 +161,8 @@ export const useGameStore = defineStore('game', () => {
   const bulkBuyMode = ref<BulkBuyMode>(initial.bulkBuyMode)
   const autoBuyPaused = ref<boolean>(initial.autoBuyPaused)
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
+  const noTap = ref<boolean>(initial.noTap)
+  const settingsOpen = ref(false)
   const muted = ref<boolean>(initial.muted)
   const introSeen = ref<boolean>(initial.introSeen)
   const introOpen = ref<boolean>(!initial.introSeen)
@@ -218,7 +221,8 @@ export const useGameStore = defineStore('game', () => {
     money,
     extraSeats: () => perks.value.officeSeats + titleExtraSeats(titles.value),
     announce: (msg) => announce(msg),
-    flushSave: () => flushSave(nowMs.value)
+    flushSave: () => flushSave(nowMs.value),
+    noTap: () => noTap.value
   })
   const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value))
   // Every rule-bending source in play: stacked bloodline traits, the family office, achievements and titles
@@ -329,7 +333,9 @@ export const useGameStore = defineStore('game', () => {
   )
   const autoClickers = computed(() => (modifiers.value.internsDisabled ? 0 : perks.value.autoClicker * INTERNS_PER_RANK))
   const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
-  const hustleMultiplier = computed(() => 1 + hustleBonus.value)
+  // Without tapping, Hustle holds steady (Grindset Coaching raises it) and
+  // the allowance and Interns ride it
+  const hustleMultiplier = computed(() => (noTap.value ? steadyHustle(perks.value.hustleCap) : 1 + hustleBonus.value))
 
   function buffView(buff: TimedBuff | null): ActiveBuffView | null {
     if (!buff || nowMs.value >= buff.until) {
@@ -366,6 +372,7 @@ export const useGameStore = defineStore('game', () => {
     businessBuffMultiplier: activeBusinessBuff.value?.mult ?? 1,
     clickBuffMultiplier: (activeClickBuff.value?.mult ?? 1) * twist.value.clickPayMult,
     hustleMultiplier: hustleMultiplier.value,
+    noTap: noTap.value,
     mods: modifiers.value
   }))
 
@@ -465,6 +472,7 @@ export const useGameStore = defineStore('game', () => {
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
+      noTap: noTap.value,
       muted: muted.value,
       introSeen: introSeen.value,
       tradingDeskCollapsed: tradingDeskCollapsed.value,
@@ -522,6 +530,7 @@ export const useGameStore = defineStore('game', () => {
     bulkBuyMode.value = loaded.bulkBuyMode
     autoBuyPaused.value = loaded.autoBuyPaused
     compactAutoBuy.value = loaded.compactAutoBuy
+    noTap.value = loaded.noTap
     muted.value = loaded.muted
     introSeen.value = loaded.introSeen
     introOpen.value = !loaded.introSeen
@@ -755,6 +764,8 @@ export const useGameStore = defineStore('game', () => {
 
   function manualClick(ts = Date.now()): number {
     nowMs.value = ts
+    // There is no Get paid while playing without tapping
+    if (noTap.value) return 0
     const maxBonus = maxHustle.value - 1
     const step = maxBonus / 20
     hustleBonus.value = Math.min(maxBonus, Number((hustleBonus.value + step).toFixed(2)))
@@ -1386,6 +1397,13 @@ export const useGameStore = defineStore('game', () => {
     flushSave(nowMs.value)
   }
 
+  // Any time, either way: the allowance and tapping never come together
+  function toggleNoTap(): void {
+    noTap.value = !noTap.value
+    hustleBonus.value = 0
+    flushSave(nowMs.value)
+  }
+
   function toggleAutoBuyPaused(): void {
     autoBuyPaused.value = !autoBuyPaused.value
     flushSave(nowMs.value)
@@ -1426,6 +1444,9 @@ export const useGameStore = defineStore('game', () => {
     bulkBuyMode,
     autoBuyPaused,
     compactAutoBuy,
+    noTap,
+    toggleNoTap,
+    settingsOpen,
     muted,
     introSeen,
     introOpen,

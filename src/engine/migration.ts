@@ -58,6 +58,8 @@ export interface PersistedSceneState {
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
   compactAutoBuy: boolean
+  // Accessibility: play without tapping (no Get paid; an allowance instead)
+  noTap: boolean
   muted: boolean
   introSeen: boolean
   tradingDeskCollapsed: boolean
@@ -102,6 +104,7 @@ export function createInitialSceneState(): PersistedSceneState {
     bulkBuyMode: 1,
     autoBuyPaused: false,
     compactAutoBuy: false,
+    noTap: false,
     muted: false,
     introSeen: false,
     tradingDeskCollapsed: false,
@@ -350,6 +353,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     autoBuyPaused: Boolean(s.autoBuyPaused),
     compactAutoBuy: Boolean(s.compactAutoBuy),
+    noTap: s.noTap === true,
     muted: Boolean(s.muted),
     introSeen: Boolean(s.introSeen),
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),

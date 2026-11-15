@@ -4,14 +4,16 @@ import { ADVISORS } from '../src/data/advisors'
 import { gateThreshold } from '../src/engine/bosses'
 import { ALLOWANCE_TAPS_PER_SEC, computeOfflineCatchUp } from '../src/engine/economy'
 import { combineModifiers, type Modifiers } from '../src/engine/modifiers'
+import { rollAdvisorOffer } from '../src/engine/office'
 import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
 
-function fresh() {
+function fresh(noTap = true) {
   const store = useGameStore()
   store.hydrateFromStorage(T0)
   store.closeIntro(T0)
+  if (noTap) store.toggleNoTap()
   return store
 }
 
@@ -21,10 +23,55 @@ describe('playing without tapping', () => {
     setActivePinia(createPinia())
   })
 
+  it('a tapper gets no allowance; the setting turns it on, any time, and off again', () => {
+    const store = fresh(false)
+    expect(store.noTap).toBe(false)
+    expect(store.allowancePerSecond).toBe(0)
+    expect(store.manualClick(T0 + 10)).toBeGreaterThan(0)
+    store.toggleNoTap()
+    expect(store.allowancePerSecond).toBeGreaterThan(0)
+    store.toggleNoTap()
+    expect(store.allowancePerSecond).toBe(0)
+  })
+
+  it('without tapping there is no Get paid: taps earn nothing', () => {
+    const store = fresh()
+    expect(store.manualClick(T0 + 10)).toBe(0)
+    expect(store.money).toBe(0)
+  })
+
+  it('Hustle holds steady without tapping, and Grindset Coaching raises it', () => {
+    const store = fresh()
+    expect(store.hustleMultiplier).toBe(1)
+    const before = store.allowancePerSecond
+    store.perks.hustleCap = 2
+    expect(store.hustleMultiplier).toBe(2)
+    expect(store.allowancePerSecond).toBeCloseTo(before * 2)
+  })
+
+  it('the setting survives a reload', () => {
+    const store = fresh()
+    store.flushSave(T0 + 5)
+    setActivePinia(createPinia())
+    const again = useGameStore()
+    again.hydrateFromStorage(T0 + 5)
+    expect(again.noTap).toBe(true)
+  })
+
+  it('the headhunter only brings allowance advisors to a family that plays without tapping', () => {
+    const offers = (noTap: boolean) => {
+      const ids = new Set<string>()
+      for (let i = 0; i < 400; i++) for (const id of rollAdvisorOffer(Math.random, noTap)) ids.add(id)
+      return [...ids].map((id) => ADVISORS.find((a) => a.id === id)!.family)
+    }
+    expect(offers(false)).not.toContain('allowance')
+    expect(offers(true)).toContain('allowance')
+  })
+
   it('the founder earns Universal Credit with no taps at all', () => {
     const store = fresh()
     expect(store.allowanceLabel).toBe('Universal Credit')
-    expect(store.allowancePerSecond).toBeCloseTo(ALLOWANCE_TAPS_PER_SEC * store.baseMoneyPerClick)
+    expect(store.allowancePerSecond).toBeCloseTo(ALLOWANCE_TAPS_PER_SEC * store.moneyPerClick)
     for (let s = 1; s <= 60; s++) store.tick(T0 + s * 1000)
     expect(store.money).toBeGreaterThan(0)
     expect(store.money).toBeCloseTo(store.allowancePerSecond * 60, 0)

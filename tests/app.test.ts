@@ -81,6 +81,7 @@ describe('App UI integration', () => {
     expect(store.introSeen).toBe(true)
     expect(JSON.parse(localStorage.getItem('state')!).scene.introSeen).toBe(true)
 
+    await wrapper.find('[data-testid="open-settings"]').trigger('click')
     await wrapper.find('[data-testid="open-intro"]').trigger('click')
     expect(intro().text()).toContain('Welcome to Incremental Capitalism')
     await wrapper.find('[data-testid="intro-skip"]').trigger('click')
@@ -125,6 +126,7 @@ describe('App UI integration', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
       fileName = this.download
     })
+    await wrapper.find('[data-testid="open-settings"]').trigger('click')
     await wrapper.find('[data-testid="download-save"]').trigger('click')
     expect(fileName).toMatch(/^incremental-capitalism-.+-gen\d+-.+\.json$/)
     expect(saved).not.toBeNull()
@@ -162,6 +164,7 @@ describe('App UI integration', () => {
     expect(pageText).toContain('(+£')
 
     // Compact mode collapses the automated Etsy store into a compact row, click expands
+    await wrapper.find('[data-testid="open-settings"]').trigger('click')
     const compactBtn = wrapper.find('[data-testid="toggle-compact-autobuy"]')
     expect(compactBtn.exists()).toBe(true)
     await compactBtn.trigger('click')
@@ -215,6 +218,7 @@ describe('App UI integration', () => {
     store.money = 123_456
     await wrapper.vm.$nextTick()
 
+    await wrapper.find('[data-testid="open-settings"]').trigger('click')
     const resetTrigger = wrapper.findAll('button').find((b) => b.text() === 'Reset game')
     expect(resetTrigger).toBeDefined()
     await resetTrigger!.trigger('click')

@@ -51,6 +51,8 @@ export interface BotConfig {
   // From this generation on, play with this patience instead (for probing how
   // long gates past the bloodline's best take when the player never gives up)
   probe?: { fromGeneration: number; stallMinutes: number }
+  // Plays with the "Play without tapping" setting on
+  noTap?: boolean
   // The order Legacy goes into perks: the first one still buyable wins.
   // Defaults to office seats, then Interns
   perkPriority?: ReadonlyArray<PerkId>
@@ -84,7 +86,8 @@ export const CASUAL_PACE: BotConfig = {
 export const ZERO_TAP: BotConfig = {
   ...FAST_TAPPER,
   clicksPerSec: 0,
-  casualClicksPerSec: 0
+  casualClicksPerSec: 0,
+  noTap: true
 }
 
 // Other valid ways to play, checked in sim/styles.sim.ts. Some are stronger
@@ -398,6 +401,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
   let ts = 1_000_000
   store.hydrateFromStorage(ts)
   store.closeIntro(ts)
+  if (cfg.noTap) store.toggleNoTap()
   store.tick(ts)
 
   const results: GenerationResult[] = []

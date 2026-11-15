@@ -3,7 +3,7 @@
     <div class="scn-OverviewStats">
       <span>Money: {{ formatCurrency(store.money) }}</span>
       <span>{{ formatCurrency(store.moneyPerSecond) }} /s</span>
-      <span>{{ formatCurrency(store.moneyPerClick) }} /click</span>
+      <span v-if="!store.noTap">{{ formatCurrency(store.moneyPerClick) }} /click</span>
     </div>
 
     <div class="scn-OverviewControls">
@@ -20,16 +20,6 @@
         Automation: {{ store.autoBuyPaused ? 'Paused' : 'On' }}
       </button>
 
-      <button
-        v-if="store.automationLine > 0"
-        type="button"
-        class="scn-Action scn-Action-outline"
-        :class="{ 'scn-Action-activeToggle': store.compactAutoBuy }"
-        data-testid="toggle-compact-autobuy"
-        @click="store.toggleCompactAutoBuy()"
-      >
-        Compact auto: {{ store.compactAutoBuy ? 'On' : 'Off' }}
-      </button>
 
       <button
         type="button"
@@ -65,9 +55,10 @@
       <button
         type="button"
         class="scn-Action scn-Action-outline"
-        @click="store.toggleMute()"
+        data-testid="open-settings"
+        @click="store.settingsOpen = true"
       >
-        SFX: {{ store.muted ? 'Off' : 'On' }}
+        Settings
       </button>
     </div>
   </div>

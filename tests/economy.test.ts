@@ -119,13 +119,13 @@ describe('economy engine', () => {
     const click = (BASE_CLICK_VALUE + 10 * ta * 2) * legacy
     expect(computeClickIncome(base, false)).toBeCloseTo(click, 5)
     expect(computeClickIncome(base, true)).toBeCloseTo(click * 2, 5)
-    // 9 Etsy stores * 1.10 synergy * legacy, plus the allowance: taps' worth
-    // of click pay a second, without Hustle
+    // 9 Etsy stores * 1.10 synergy * legacy. A tapper draws no allowance;
+    // without tapping it is taps' worth of click pay a second, at the Hustle
     const business = 9 * etsy * 1.1 * legacy
-    const allowance = ALLOWANCE_TAPS_PER_SEC * click
-    const passive = business + allowance
+    const passive = business
     expect(computeIncomeBreakdown(base).business).toBeCloseTo(business, 5)
-    expect(computeIncomeBreakdown(base).allowance).toBeCloseTo(allowance, 5)
+    expect(computeIncomeBreakdown(base).allowance).toBe(0)
+    expect(computeIncomeBreakdown({ ...base, noTap: true }).allowance).toBeCloseTo(ALLOWANCE_TAPS_PER_SEC * click * 2, 5)
     expect(computePassivePerSecond(base) / passive).toBeCloseTo(1, 9)
 
     // With 2 Unpaid Interns: idle (hustle 1) adds 2 clicks a second; hustling (hustle 2) doubles them

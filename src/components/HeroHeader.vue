@@ -20,6 +20,7 @@
       </div>
 
       <button
+        v-if="!store.noTap"
         ref="payButtonRef"
         type="button"
         class="scn-PrimaryAction"
@@ -27,6 +28,10 @@
       >
         Get paid
       </button>
+      <div v-else class="scn-AllowancePanel" data-testid="allowance-panel">
+        <span>{{ store.allowanceLabel }}</span>
+        <strong>{{ formatCurrency(store.allowancePerSecond) }}/s</strong>
+      </div>
     </template>
 
     <div class="scn-DynastyStrip">
@@ -49,9 +54,6 @@
         >
           Abdicate
         </button>
-      </p>
-      <p class="scn-StatHint" data-testid="allowance-line">
-        {{ store.allowanceLabel }}: {{ formatCurrency(store.allowancePerSecond) }}/s, two taps' worth a second, no tapping needed
       </p>
 
       <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow" data-testid="header-bloodline-pills">

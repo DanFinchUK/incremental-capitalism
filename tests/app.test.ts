@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
@@ -106,6 +106,38 @@ describe('App UI integration', () => {
     expect(wrapper.find('.scn-Modal').exists()).toBe(true)
     await wrapper.find('[data-testid="dismiss-offline"]').trigger('click')
     expect(store.offlineReport).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('downloads the save as a JSON file', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.money = 4242
+    let saved: Blob | null = null
+    let fileName = ''
+    // jsdom has no object URLs
+    const urls = URL as unknown as { createObjectURL?: (b: Blob) => string; revokeObjectURL?: (u: string) => void }
+    urls.createObjectURL = (b: Blob) => {
+      saved = b
+      return 'blob:save'
+    }
+    urls.revokeObjectURL = () => {}
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      fileName = this.download
+    })
+    await wrapper.find('[data-testid="download-save"]').trigger('click')
+    expect(fileName).toMatch(/^incremental-capitalism-.+-gen\d+-.+\.json$/)
+    expect(saved).not.toBeNull()
+    const text = await new Promise<string>((resolve) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.readAsText(saved!)
+    })
+    const json = JSON.parse(text)
+    expect(json.scene.money).toBe(4242)
+    delete urls.createObjectURL
+    delete urls.revokeObjectURL
+    click.mockRestore()
     wrapper.unmount()
   })
 

@@ -12,7 +12,10 @@
         <span class="scn-ModalKicker scn-ModalKicker-purple">The headhunter calls</span>
         <h2 id="hire-title">Who joins the family office?</h2>
       </div>
-      <p class="scn-CardMeta">Every boss win brings a shortlist. Hire one or pass; the next boss waits until you do.</p>
+      <p class="scn-CardMeta">
+        Word of the win has reached the right people. The headhunter is waiting in the drawing room with a sheaf of CVs,
+        and won't leave until you take someone on or send the lot packing.
+      </p>
       <HeadhunterOffer :locked="lock.locked.value" :lock-seconds="lock.secondsLeft.value" />
     </div>
   </div>

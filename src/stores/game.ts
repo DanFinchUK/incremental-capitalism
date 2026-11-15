@@ -17,7 +17,16 @@ import {
   type MarketEventKind,
   type ScandalOutcome
 } from '../data/events'
-import { EMPTY_PERKS, perkNextCost, type PerkId, type PerkRanks } from '../data/perks'
+import {
+  BUFF_DURATION_PER_INSIDER_RANK,
+  EMPTY_PERKS,
+  EVENT_INTERVAL_PER_INSIDER_RANK,
+  INTERNS_PER_RANK,
+  MILESTONE_STEP_PER_DEREGULATION_RANK,
+  perkNextCost,
+  type PerkId,
+  type PerkRanks
+} from '../data/perks'
 import {
   bulkBuyQuote,
   computeClickIncome,
@@ -314,7 +323,7 @@ export const useGameStore = defineStore('game', () => {
       heirChoices.value.length === 0 &&
       disgraceReport.value === null
   )
-  const autoClickers = computed(() => (modifiers.value.internsDisabled ? 0 : perks.value.autoClicker))
+  const autoClickers = computed(() => (modifiers.value.internsDisabled ? 0 : perks.value.autoClicker * INTERNS_PER_RANK))
   const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
   const hustleMultiplier = computed(() => 1 + hustleBonus.value)
 
@@ -469,7 +478,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function scheduleNextEvent(fromMs: number, rng: () => number = Math.random): void {
-    const delaySec = (45 + rng() * 45) * Math.pow(0.85, perks.value.insider) * modifiers.value.eventIntervalMult
+    const delaySec = (45 + rng() * 45) * Math.pow(EVENT_INTERVAL_PER_INSIDER_RANK, perks.value.insider) * modifiers.value.eventIntervalMult
     nextEventAt.value = fromMs + delaySec * 1000
   }
 
@@ -644,7 +653,7 @@ export const useGameStore = defineStore('game', () => {
     // Automation crosses milestones quietly; only your own purchases get a banner
     if (crossedMilestone !== null && save) {
       markTelemetryEvent(telemetry.value, 'M')
-      const step = (2 + 0.25 * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
+      const step = (2 + MILESTONE_STEP_PER_DEREGULATION_RANK * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned: ${step}x output milestone!`)
     }
 
@@ -888,7 +897,7 @@ export const useGameStore = defineStore('game', () => {
       // A good bottle during the tasting is worth savouring
       creditMoney(unbuffedMoneyPerSecond.value * 20 * modifiers.value.windfallMult, 'windfall', ts)
     }
-    const durationMult = 1 + 0.25 * perks.value.insider
+    const durationMult = 1 + BUFF_DURATION_PER_INSIDER_RANK * perks.value.insider
     const def = ev.def
     const effect = def.effect
     const rarityPrefix = def.rarity === 'common' ? '' : `${RARITY_LABELS[def.rarity]}! `

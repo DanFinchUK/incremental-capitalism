@@ -167,11 +167,14 @@ describe('economy engine', () => {
     expect(maxHustleMultiplier(5)).toBe(8)
 
     expect(computeOfflineCatchUp(30_000, 1000, 0)).toBeNull()
-    const catchUp = computeOfflineCatchUp(2 * 3600 * 1000, 1000, 2)
+    // Cayman Shell rank 1: 70% for up to 48 hours
+    const catchUp = computeOfflineCatchUp(2 * 3600 * 1000, 1000, 1)
     expect(catchUp).toEqual({
       secondsCredited: 7200,
       efficiency: 0.7,
       moneyEarned: 7200 * 1000 * 0.7
     })
+    expect(computeOfflineCatchUp(60 * 3600 * 1000, 1000, 1)?.secondsCredited).toBe(48 * 3600)
+    expect(computeOfflineCatchUp(2 * 3600 * 1000, 1000, 3)?.efficiency).toBe(1)
   })
 })

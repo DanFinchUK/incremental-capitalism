@@ -304,7 +304,7 @@ const autoStatusText = computed(() => {
     : `Auto once under ${linePct}% of your cash`
 })
 
-// Nothing automates until an advisor, heir or title brings it
+// Nothing automates until an advisor, heir, perk or title brings it
 const showAutoBuyCheckbox = computed(() => props.row.mode === 'revealed' && store.automationLine > 0)
 
 // Buys on finger lift, so it works while another finger is on Get paid

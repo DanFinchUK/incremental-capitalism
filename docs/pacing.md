@@ -78,9 +78,11 @@ parent's deepest) skips the re-climb, so most of a generation is spent at the
 frontier rather than repeating old gates.
 
 A whole bloodline earns 9 Legacy, so perks cost 1 point a rank (the first
-Intern is free) and the full tree (24) is more than one bloodline can buy:
-which perks to take is a real choice. Elevating to the Lords gives one title
-per 9 Legacy, one per completed bloodline.
+pair of Interns is free) and the capped perks alone (22 ranks) are more than
+one bloodline can buy: which perks to take is a real choice. A perk rank lasts
+the whole bloodline, while most advisors leave after a generation, so each
+rank is worth at least a rare advisor (`src/data/perks.ts`). Elevating to the
+Lords gives one title per 9 Legacy, one per completed bloodline.
 
 ## Other targets
 

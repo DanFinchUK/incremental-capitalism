@@ -6,11 +6,11 @@ import { JOBS_BY_ID } from '../src/data/items'
 import { hireEstateManager } from './helpers'
 
 describe('automation line', () => {
-  it('is zero until someone brings automation, then Old School Tie adds 1% per rank', () => {
+  it('is zero until someone brings automation; Old School Tie brings 3% per rank on its own', () => {
     expect(automationShare(0, 0)).toBe(0)
-    expect(automationShare(4, 0)).toBe(0) // the perk alone brings nothing
+    expect(automationShare(1, 0)).toBeCloseTo(0.03) // the perk alone brings automation
     expect(automationShare(0, 0.01)).toBeCloseTo(0.01)
-    expect(automationShare(2, 0.01)).toBeCloseTo(0.03)
+    expect(automationShare(2, 0.01)).toBeCloseTo(0.07)
     expect(automationShare(4, 5)).toBeCloseTo(0.5) // capped
     expect(isWithinAutomationLine(0, 100_000, 0)).toBe(false)
     expect(isWithinAutomationLine(1000, 100_000, 0.01)).toBe(true)
@@ -33,12 +33,11 @@ describe('mastery automation in the store', () => {
     return store
   }
 
-  it('buys nothing without an advisor, heir or title that brings automation', () => {
+  it('buys nothing without an advisor, heir, perk or title that brings automation', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
     store.closeIntro(1000)
     store.money = 100_000
-    store.perks.nepotism = 4
     store.tick(1000)
     store.tick(2100)
     expect(store.automationLine).toBe(0)

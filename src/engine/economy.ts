@@ -1,6 +1,11 @@
 import { BUSINESSES, JOBS, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
 import { GATE_NET_WORTH, SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
 import { NEUTRAL_MODIFIERS, type Modifiers } from './modifiers'
+import {
+  MILESTONE_STEP_PER_DEREGULATION_RANK,
+  OFFLINE_HOURS_PER_OFFSHORE_RANK,
+  OFFLINE_RATE_PER_OFFSHORE_RANK
+} from '../data/perks'
 
 // The last two milestones in each band are deliberately distant: only an old,
 // cheap rung ever gets there, so the "next" bulk buy still has a target after
@@ -88,7 +93,7 @@ export function milestoneMultiplier(owned: number, scaleFactor: number, deregula
   if (reachedCount === 0) {
     return 1
   }
-  const step = 2 + 0.25 * deregulationRank + stepBonus
+  const step = 2 + MILESTONE_STEP_PER_DEREGULATION_RANK * deregulationRank + stepBonus
   return Math.pow(step, reachedCount)
 }
 
@@ -322,9 +327,9 @@ export function computeOfflineCatchUp(
   if (elapsedMs < 60_000 || passivePerSecond <= 0) {
     return null
   }
-  const maxSeconds = (24 + 12 * offshoreRank) * 3600
+  const maxSeconds = (24 + OFFLINE_HOURS_PER_OFFSHORE_RANK * offshoreRank) * 3600
   const secondsCredited = Math.min(elapsedMs / 1000, maxSeconds)
-  const efficiency = Math.min(1, 0.5 + 0.1 * offshoreRank + efficiencyAdd)
+  const efficiency = Math.min(1, 0.5 + OFFLINE_RATE_PER_OFFSHORE_RANK * offshoreRank + efficiencyAdd)
   const moneyEarned = passivePerSecond * secondsCredited * efficiency
   return { secondsCredited, efficiency, moneyEarned }
 }

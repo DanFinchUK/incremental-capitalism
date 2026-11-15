@@ -67,7 +67,7 @@ describe('family tree', () => {
     // The ancestor's own Nepo Baby retired with them; their Old Money stays.
     // The current head brings Black Sheep and Silver Tongue.
     expect(store.modifiers.internsDisabled).toBe(false)
-    expect(store.autoClickers).toBe(3)
+    expect(store.autoClickers).toBe(6) // two Interns per rank
     expect(store.modifiers.businessMult).toBeCloseTo(2 * 1.1)
     expect(store.modifiers.clickMult).toBeCloseTo(0.5 * 1.15)
 

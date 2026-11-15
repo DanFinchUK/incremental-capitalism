@@ -1,7 +1,7 @@
 // The family tree: one record per retired generation.
 import { INHERITED_BY_ID, TRAITS_BY_ID, type Heir } from '../data/heirs'
 import type { Sector } from '../data/items'
-import { combineModifiers, type ModifierSource } from './modifiers'
+import { combineModifiers, type ModifierSource, type Modifiers } from './modifiers'
 
 export interface GenerationRecord {
   generation: number
@@ -81,15 +81,28 @@ function fmtSignedPct(delta: number): string {
   return `${pct >= 0 ? '+' : ''}${pct}%`
 }
 
+export interface TraitPill {
+  label: string
+  negative: boolean
+}
+
 // Concise pills summarising the combined bloodline trait modifiers
-export function describeBloodlineTraits(
-  tree: ReadonlyArray<GenerationRecord>,
-  current: Heir
-): Array<{ label: string; negative: boolean }> {
+export function describeBloodlineTraits(tree: ReadonlyArray<GenerationRecord>, current: Heir): TraitPill[] {
   const sources = bloodlineTraitSources(tree, current)
-  if (sources.length === 0) return []
-  const m = combineModifiers(sources)
-  const pills: Array<{ label: string; negative: boolean }> = []
+  return sources.length === 0 ? [] : describeModifiers(combineModifiers(sources))
+}
+
+// What a candidate heir would change: their own trait and the one they pass
+// down, combined. Every trait multiplies or adds, so this is the real effect.
+export function describeHeirEffect(candidate: Heir): TraitPill[] {
+  const sources: ModifierSource[] = []
+  if (candidate.traitId && TRAITS_BY_ID[candidate.traitId]) sources.push(TRAITS_BY_ID[candidate.traitId].mods)
+  if (candidate.inheritId && INHERITED_BY_ID[candidate.inheritId]) sources.push(INHERITED_BY_ID[candidate.inheritId].mods)
+  return sources.length === 0 ? [] : describeModifiers(combineModifiers(sources))
+}
+
+export function describeModifiers(m: Modifiers): TraitPill[] {
+  const pills: TraitPill[] = []
   if (Math.abs(m.clickMult - 1) > 0.01) pills.push({ label: `Clicks ${fmtMult(m.clickMult)}`, negative: m.clickMult < 1 })
   if (Math.abs(m.businessMult - 1) > 0.01) pills.push({ label: `Businesses ${fmtMult(m.businessMult)}`, negative: m.businessMult < 1 })
   for (const [sector, mult] of Object.entries(m.sectorBusinessMult) as Array<[Sector, number]>) {

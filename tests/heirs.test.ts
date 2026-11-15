@@ -147,16 +147,14 @@ describe('heirs in the store', () => {
     const base = { click: store.modifiers.clickMult, biz: store.modifiers.businessMult }
     store.heirChoices = [{ name: 'Red Test', traitId: 'reformed-socialist', inheritId: 'old-money' }]
     store.pickHeir(0)
-    expect(store.modifiers.legacyScale).toBeCloseTo(0.5)
     expect(store.modifiers.clickMult / base.click).toBeCloseTo(5)
-    expect(store.modifiers.businessMult / base.biz).toBeCloseTo(1.1)
+    expect(store.modifiers.businessMult / base.biz).toBeCloseTo(0.5 * 1.1)
 
     store.gatesBeaten = 2
     expect(store.retire(T0 + 1000)).toBe(true)
     store.heirChoices = [{ name: 'Blue Test', traitId: 'tax-exile', inheritId: 'old-money' }]
     store.pickHeir(0)
     // Reformed Socialist is gone; both Old Moneys stack
-    expect(store.modifiers.legacyScale).toBeCloseTo(1)
     expect(store.modifiers.clickMult / base.click).toBeCloseTo(1)
     expect(store.modifiers.businessMult / base.biz).toBeCloseTo(1.21)
     expect(store.familyTree.at(-1)?.inheritId).toBe('old-money')
@@ -171,5 +169,14 @@ describe('saves from before traits were split', () => {
     const m = combineModifiers(bloodlineTraitSources([old!], { name: 'Now Test', traitId: 'black-sheep' }))
     expect(m.legacyScale).toBe(1)
     expect(m.businessMult).toBeCloseTo(2)
+  })
+})
+
+describe('the heir picker', () => {
+  it("shows each heir's combined effect: Reformed Socialist with Silver Tongue", async () => {
+    const { describeHeirEffect } = await import('../src/engine/family')
+    const labels = describeHeirEffect({ name: 'Red Test', traitId: 'reformed-socialist', inheritId: 'silver-tongue' }).map((p) => p.label)
+    expect(labels).toContain('Clicks x5.75')
+    expect(labels).toContain('Businesses x0.5')
   })
 })

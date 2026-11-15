@@ -42,6 +42,17 @@
           <p v-if="choice.inherit" class="scn-HeirInherit" data-testid="heir-inherit">
             <span class="scn-StatHint">Passes down:</span> <strong>{{ choice.inherit.name }}</strong>. {{ choice.inherit.description }}
           </p>
+          <div v-if="choice.effect.length > 0" class="scn-TraitPillRow" data-testid="heir-effect">
+            <span class="scn-StatHint">With this heir:</span>
+            <span
+              v-for="pill in choice.effect"
+              :key="pill.label"
+              class="scn-TraitPill"
+              :class="{ 'scn-TraitPill-neg': pill.negative }"
+            >
+              {{ pill.label }}
+            </span>
+          </div>
           <button type="button" class="scn-Action scn-Action-purple" @click="store.pickHeir(i)">
             Hand over the keys
           </button>
@@ -55,6 +66,7 @@
 import { computed } from 'vue'
 import { RARITY_LABELS } from '../data/events'
 import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
+import { describeHeirEffect } from '../engine/family'
 import { useGameStore } from '../stores/game'
 
 const store = useGameStore()
@@ -64,7 +76,8 @@ const options = computed(() =>
   store.heirChoices.map((h) => ({
     name: h.name,
     trait: h.traitId ? TRAITS_BY_ID[h.traitId] : null,
-    inherit: h.inheritId ? INHERITED_BY_ID[h.inheritId] ?? null : null
+    inherit: h.inheritId ? INHERITED_BY_ID[h.inheritId] ?? null : null,
+    effect: describeHeirEffect(h)
   }))
 )
 </script>

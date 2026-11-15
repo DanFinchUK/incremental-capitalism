@@ -108,13 +108,17 @@ describe('review fixes', () => {
     expect(store.incomePenalty).toBeNull()
   })
 
-  it('shows the Legacy multiplier after traits and titles', () => {
+  it('shows the Legacy multiplier after titles', () => {
     const store = fresh()
     store.legacyPoints = 20
     expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(20))
-    // Reformed Socialist halves Legacy's worth
-    store.heir = { name: 'Red Test', traitId: 'reformed-socialist' }
-    expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(10))
+    // Three titles make Legacy worth 50% more
+    store.titles = 3
+    expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(20, 1.5))
+  })
+
+  it('no heir trait changes what Legacy is worth, so none grows into a trap', () => {
+    for (const t of HEIR_TRAITS) expect(t.mods.legacyScale, t.id).toBeUndefined()
   })
 
   it('duplicate campaigners reach the cap sooner but share it', () => {

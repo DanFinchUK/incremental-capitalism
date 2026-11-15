@@ -77,8 +77,8 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     id: 'reformed-socialist',
     name: 'Reformed Socialist',
     rarity: 'rare',
-    description: 'Read one pamphlet at university and never recovered. Legacy is worth half as much, but every Job pays five times over.',
-    mods: { legacyScale: 0.5, clickMult: 5 }
+    description: 'Read one pamphlet at university and never recovered. Disapproves of owning the means of production, so businesses earn half; every Job pays five times over.',
+    mods: { businessMult: 0.5, clickMult: 5 }
   },
   {
     id: 'property-developer',

@@ -18,7 +18,7 @@
       </div>
 
       <div class="scn-ModalCallout scn-ModalCallout-perk" data-testid="bloodline-traits">
-        <strong>Inherited bloodline traits (all stack permanently):</strong>
+        <strong>Traits in play: the head's own trait, plus what every generation passed down (it stays until the family elevates):</strong>
         <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow">
           <span
             v-for="pill in store.bloodlineTraitPills"
@@ -29,7 +29,7 @@
             {{ pill.label }}
           </span>
         </div>
-        <span v-else class="scn-AutoLine">None yet. Each heir's trait joins the bloodline for good.</span>
+        <span v-else class="scn-AutoLine">None yet. Each heir passes one trait down the bloodline.</span>
       </div>
 
       <ol class="scn-TreeList" reversed>
@@ -39,7 +39,7 @@
             <span class="scn-StatHint">Generation {{ store.generation }} · head of the family now</span>
           </div>
           <p class="scn-AutoLine">
-            {{ traitName(store.heir.traitId) }} · deepest gate so far: {{ gateName(store.gatesBeaten) }} ·
+            {{ traitLine(store.heir.traitId, store.heir.inheritId ?? null) }} · deepest gate so far: {{ gateName(store.gatesBeaten) }} ·
             {{ formatClock(store.activeGenerationMs) }} played
           </p>
         </li>
@@ -49,7 +49,7 @@
             <span class="scn-StatHint">Generation {{ rec.generation }} · +{{ rec.legacyEarned }} Legacy</span>
           </div>
           <p class="scn-AutoLine">
-            {{ traitName(rec.traitId) }} · reached {{ gateName(rec.deepestGate) }} · {{ formatClock(rec.activeMs) }} played
+            {{ traitLine(rec.traitId, rec.inheritId) }} · reached {{ gateName(rec.deepestGate) }} · {{ formatClock(rec.activeMs) }} played
           </p>
           <p v-if="rec.advisors.length > 0" class="scn-StatHint">Advisors: {{ rec.advisors.join(', ') }}</p>
           <p v-if="splitText(rec.splits)" class="scn-StatHint" data-testid="tree-splits">Splits: {{ splitText(rec.splits) }}</p>
@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { TRAITS_BY_ID } from '../data/heirs'
+import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { bossForGate } from '../engine/bosses'
 import { useGameStore } from '../stores/game'
 import { formatClock } from '../utils/format'
@@ -75,8 +75,10 @@ useEscapeKey(() => store.familyTreeOpen, () => (store.familyTreeOpen = false))
 
 const newestFirst = computed(() => [...store.familyTree].reverse())
 
-function traitName(id: string | null): string {
-  return id && TRAITS_BY_ID[id] ? TRAITS_BY_ID[id].name : 'The founder'
+function traitLine(id: string | null, inheritId: string | null): string {
+  const own = id && TRAITS_BY_ID[id] ? TRAITS_BY_ID[id].name : 'The founder'
+  const passed = inheritId && INHERITED_BY_ID[inheritId] ? INHERITED_BY_ID[inheritId].name : null
+  return passed ? `${own} · passed down ${passed}` : own
 }
 
 function splitText(splits: ReadonlyArray<number | null>): string {

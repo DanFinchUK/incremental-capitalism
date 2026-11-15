@@ -10,13 +10,26 @@ export interface HeirTrait {
   mods: ModifierSource
 }
 
-export interface Heir {
+// A quirk that runs in the family: it stays with the bloodline, stacking
+// with every ancestor's, until the family elevates. Kept mild, so a bad
+// draw slows a family down but never sinks it.
+export interface InheritedTrait {
+  id: string
   name: string
-  // null for the founder, who arrived before anyone thought to write it down
-  traitId: string | null
+  description: string
+  mods: ModifierSource
 }
 
-// Every trait is a trade-off. The joke is always on the dynasty.
+export interface Heir {
+  name: string
+  // The heir's own trait, for their lifetime only. null for the founder,
+  // who arrived before anyone thought to write it down
+  traitId: string | null
+  // What they pass down the bloodline. null for the founder and old saves
+  inheritId?: string | null
+}
+
+// Every personal trait is a trade-off. The joke is always on the dynasty.
 export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
   {
     id: 'old-etonian',
@@ -106,6 +119,69 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
 
 export const TRAITS_BY_ID: Readonly<Record<string, HeirTrait>> = Object.fromEntries(HEIR_TRAITS.map((t) => [t.id, t]))
 
+// Most help a little; some trade a little. None scales with Legacy, and the
+// worst downside is a few percent, so even nine bad draws stay beatable.
+export const INHERITED_TRAITS: ReadonlyArray<InheritedTrait> = [
+  {
+    id: 'old-money',
+    name: 'Old Money',
+    description: 'Businesses earn 10% more.',
+    mods: { businessMult: 1.1 }
+  },
+  {
+    id: 'silver-tongue',
+    name: 'Silver Tongue',
+    description: 'Clicks pay 15% more.',
+    mods: { clickMult: 1.15 }
+  },
+  {
+    id: 'haggler',
+    name: 'Born Haggler',
+    description: 'Everything costs 3% less.',
+    mods: { purchaseCostMult: 0.97 }
+  },
+  {
+    id: 'well-connected',
+    name: 'Well Connected',
+    description: 'Opportunities turn up 10% more often.',
+    mods: { eventIntervalMult: 0.9 }
+  },
+  {
+    id: 'thick-skin',
+    name: 'Thick Skin',
+    description: 'Boss twists bite 10% less.',
+    mods: { twistStrength: 0.9 }
+  },
+  {
+    id: 'snob',
+    name: 'Snobbery',
+    description: 'Businesses earn 20% more, but clicks pay 10% less.',
+    mods: { businessMult: 1.2, clickMult: 0.9 }
+  },
+  {
+    id: 'workaholic',
+    name: 'Workaholic',
+    description: 'Clicks pay 25% more, but businesses earn 5% less.',
+    mods: { clickMult: 1.25, businessMult: 0.95 }
+  },
+  {
+    id: 'flutter',
+    name: 'Fond of a Flutter',
+    description: 'Windfalls are 25% bigger, but 5% more opportunities are shady.',
+    mods: { windfallMult: 1.25, shadyBonus: 0.05 }
+  },
+  {
+    id: 'lawyered-up',
+    name: 'Lawyered Up',
+    description: 'Boss fights last 10% longer, but legal fees take 1% of all income.',
+    mods: { bossTimeMult: 1.1, incomeDrain: 0.01 }
+  }
+]
+
+export const INHERITED_BY_ID: Readonly<Record<string, InheritedTrait>> = Object.fromEntries(
+  INHERITED_TRAITS.map((t) => [t.id, t])
+)
+
 const FIRST_NAMES: ReadonlyArray<string> = [
   'Araminta', 'Tarquin', 'Clementine', 'Rupert', 'Hugo', 'Ottoline', 'Montgomery', 'Persephone',
   'Barnaby', 'Wilhelmina', 'Peregrine', 'Cressida', 'Jolyon', 'Honoria', 'Ptolemy', 'Saffron',
@@ -141,6 +217,7 @@ export function heirName(rng: () => number, surname: string, takenNames: Readonl
 export function rollHeirChoices(rng: () => number, surname: string, takenNames: ReadonlyArray<string>, count = 3): Heir[] {
   const choices: Heir[] = []
   const usedTraits = new Set<string>()
+  const usedInherits = new Set<string>()
   const usedNames = [...takenNames]
   for (let guard = 0; choices.length < count && guard < 50; guard++) {
     const rarity = pickEventRarity(rng())
@@ -150,7 +227,10 @@ export function rollHeirChoices(rng: () => number, surname: string, takenNames: 
     usedTraits.add(trait.id)
     const name = heirName(rng, surname, usedNames)
     usedNames.push(name)
-    choices.push({ name, traitId: trait.id })
+    const inheritPool = INHERITED_TRAITS.filter((t) => !usedInherits.has(t.id))
+    const inherit = pick(rng, inheritPool.length > 0 ? inheritPool : INHERITED_TRAITS)
+    usedInherits.add(inherit.id)
+    choices.push({ name, traitId: trait.id, inheritId: inherit.id })
   }
   return choices
 }

@@ -207,11 +207,11 @@ export const useGameStore = defineStore('game', () => {
     announce: (msg) => announce(msg),
     flushSave: () => flushSave(nowMs.value)
   })
-  const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value.traitId))
+  const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value))
   // Every rule-bending source in play: stacked bloodline traits, the family office, achievements and titles
   const modifiers = computed(() =>
     combineModifiers([
-      ...bloodlineTraitSources(familyTree.value, heir.value.traitId),
+      ...bloodlineTraitSources(familyTree.value, heir.value),
       ...office.officeSources.value,
       achievementSource(achievements.value.length),
       titleSource(titles.value)
@@ -1162,6 +1162,7 @@ export const useGameStore = defineStore('game', () => {
         generation: generation.value,
         name: heir.value.name,
         traitId: heir.value.traitId,
+        inheritId: heir.value.inheritId ?? null,
         deepestGate: gatesBeaten.value,
         legacyEarned: gain,
         activeMs: activeGenerationMs.value,
@@ -1172,8 +1173,9 @@ export const useGameStore = defineStore('game', () => {
     ].slice(-MAX_TREE_ENTRIES)
     // Inheritance isn't earned, so it doesn't count toward lifetime earnings
     const inheritance = heirInheritance(netWorth.value, gatesBeaten.value, modifiers.value.trustFundShareAdd)
-    // Outgoing head's trait now lives on familyTree; clear it here until pickHeir sets the next head
-    heir.value = { name: heir.value.name, traitId: null }
+    // The outgoing head's traits now live on familyTree (only the inherited
+    // one still counts); clear them here until pickHeir sets the next head
+    heir.value = { name: heir.value.name, traitId: null, inheritId: null }
     legacyPoints.value += gain
     money.value = inheritance
     spentThisRun.value = 0
@@ -1232,7 +1234,7 @@ export const useGameStore = defineStore('game', () => {
       return
     }
     heir.value = chosen
-    plays.log(nowMs.value, 'heir', { trait: chosen.traitId ?? 'none', options: heirChoices.value.length })
+    plays.log(nowMs.value, 'heir', { trait: chosen.traitId ?? 'none', inherit: chosen.inheritId ?? 'none', options: heirChoices.value.length })
     heirChoices.value = []
     generation.value += 1
     money.value *= modifiers.value.trustFundMult

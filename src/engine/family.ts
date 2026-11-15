@@ -1,5 +1,5 @@
 // The family tree: one record per retired generation.
-import { TRAITS_BY_ID } from '../data/heirs'
+import { INHERITED_BY_ID, TRAITS_BY_ID, type Heir } from '../data/heirs'
 import type { Sector } from '../data/items'
 import { combineModifiers, type ModifierSource } from './modifiers'
 
@@ -7,6 +7,9 @@ export interface GenerationRecord {
   generation: number
   name: string
   traitId: string | null
+  // What they passed down; null for the founder and records from before
+  // traits were split
+  inheritId: string | null
   deepestGate: number
   legacyEarned: number
   // Active play time the generation lasted
@@ -29,6 +32,7 @@ export function readGenerationRecord(raw: unknown): GenerationRecord | null {
     generation: Math.max(1, Math.floor(num(r.generation))),
     name: r.name,
     traitId: typeof r.traitId === 'string' ? r.traitId : null,
+    inheritId: typeof r.inheritId === 'string' && INHERITED_BY_ID[r.inheritId] ? r.inheritId : null,
     deepestGate: Math.floor(num(r.deepestGate)),
     legacyEarned: num(r.legacyEarned),
     activeMs: num(r.activeMs),
@@ -47,17 +51,16 @@ export function currentBloodlineRecords(tree: ReadonlyArray<GenerationRecord>): 
   return tree.slice(start)
 }
 
-// Every trait carried in the family's DNA, from retired ancestors to the current head
-export function bloodlineTraitSources(
-  tree: ReadonlyArray<GenerationRecord>,
-  currentTraitId: string | null
-): ModifierSource[] {
-  const ids: string[] = []
+// Every trait in play: the head of the family's own trait, plus what each
+// generation of the current bloodline has passed down, theirs included
+export function bloodlineTraitSources(tree: ReadonlyArray<GenerationRecord>, current: Heir): ModifierSource[] {
+  const sources: ModifierSource[] = []
   for (const rec of currentBloodlineRecords(tree)) {
-    if (rec.traitId) ids.push(rec.traitId)
+    if (rec.inheritId && INHERITED_BY_ID[rec.inheritId]) sources.push(INHERITED_BY_ID[rec.inheritId].mods)
   }
-  if (currentTraitId) ids.push(currentTraitId)
-  return ids.flatMap((id) => (TRAITS_BY_ID[id] ? [TRAITS_BY_ID[id].mods] : []))
+  if (current.inheritId && INHERITED_BY_ID[current.inheritId]) sources.push(INHERITED_BY_ID[current.inheritId].mods)
+  if (current.traitId && TRAITS_BY_ID[current.traitId]) sources.push(TRAITS_BY_ID[current.traitId].mods)
+  return sources
 }
 
 const SECTOR_NAMES: Readonly<Record<Sector, string>> = {
@@ -81,9 +84,9 @@ function fmtSignedPct(delta: number): string {
 // Concise pills summarising the combined bloodline trait modifiers
 export function describeBloodlineTraits(
   tree: ReadonlyArray<GenerationRecord>,
-  currentTraitId: string | null
+  current: Heir
 ): Array<{ label: string; negative: boolean }> {
-  const sources = bloodlineTraitSources(tree, currentTraitId)
+  const sources = bloodlineTraitSources(tree, current)
   if (sources.length === 0) return []
   const m = combineModifiers(sources)
   const pills: Array<{ label: string; negative: boolean }> = []

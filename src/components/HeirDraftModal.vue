@@ -13,7 +13,8 @@
         <h2 id="heir-draft-title">Who inherits the estate?</h2>
       </div>
       <p class="scn-CardMeta">
-        Pick one of {{ countWord.toLowerCase() }} heirs. Their trait stacks permanently onto the {{ store.familySurname }} bloodline.
+        Pick one of {{ countWord.toLowerCase() }} heirs. Their own trait lasts their lifetime; the trait they pass down stays
+        with the {{ store.familySurname }} bloodline until the family elevates.
       </p>
       <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow">
         <span class="scn-StatHint">Current bloodline:</span>
@@ -38,6 +39,9 @@
           <h3 class="scn-HeirName">{{ choice.name }}</h3>
           <strong class="scn-HeirTrait">{{ choice.trait?.name }}</strong>
           <p class="scn-AutoLine">{{ choice.trait?.description }}</p>
+          <p v-if="choice.inherit" class="scn-HeirInherit" data-testid="heir-inherit">
+            <span class="scn-StatHint">Passes down:</span> <strong>{{ choice.inherit.name }}</strong>. {{ choice.inherit.description }}
+          </p>
           <button type="button" class="scn-Action scn-Action-purple" @click="store.pickHeir(i)">
             Hand over the keys
           </button>
@@ -50,13 +54,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RARITY_LABELS } from '../data/events'
-import { TRAITS_BY_ID } from '../data/heirs'
+import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { useGameStore } from '../stores/game'
 
 const store = useGameStore()
 const countWord = computed(() => ['Two', 'Three', 'Four', 'Five'][store.heirChoices.length - 2] ?? String(store.heirChoices.length))
 
 const options = computed(() =>
-  store.heirChoices.map((h) => ({ name: h.name, trait: h.traitId ? TRAITS_BY_ID[h.traitId] : null }))
+  store.heirChoices.map((h) => ({
+    name: h.name,
+    trait: h.traitId ? TRAITS_BY_ID[h.traitId] : null,
+    inherit: h.inheritId ? INHERITED_BY_ID[h.inheritId] ?? null : null
+  }))
 )
 </script>

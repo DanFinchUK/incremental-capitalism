@@ -2,7 +2,7 @@ import { SOCIAL_CLASSES } from '../data/classes'
 import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } from '../data/perks'
 import type { BulkBuyMode } from './economy'
 import { emptySplits } from './splits'
-import { TRAITS_BY_ID, type Heir } from '../data/heirs'
+import { INHERITED_BY_ID, TRAITS_BY_ID, type Heir } from '../data/heirs'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ACHIEVEMENTS_BY_ID, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from './office'
@@ -177,7 +177,8 @@ function readHeir(raw: unknown): Heir | null {
   const h = raw as Record<string, unknown>
   if (typeof h.name !== 'string') return null
   const traitId = typeof h.traitId === 'string' && TRAITS_BY_ID[h.traitId] ? h.traitId : null
-  return { name: h.name, traitId }
+  const inheritId = typeof h.inheritId === 'string' && INHERITED_BY_ID[h.inheritId] ? h.inheritId : null
+  return { name: h.name, traitId, inheritId }
 }
 
 function readSplits(raw: unknown): (number | null)[] {

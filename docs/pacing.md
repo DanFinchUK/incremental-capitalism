@@ -45,8 +45,15 @@ The rule needs two things to match:
 2. **Each new gate makes the bloodline about as much stronger.** Each Legacy
    point multiplies income by 4.5 (`legacyMultiplier` in
    `src/engine/economy.ts`), and a bloodline holds one point per gate it has
-   reached, so its strength tracks its depth. Perks, advisors and stacked heir
-   traits add a little more.
+   reached, so its strength tracks its depth. Perks, advisors and inherited
+   heir traits add a little more.
+
+Each heir has two traits. Their own trait is a big trade-off that lasts only
+their lifetime, so a bad draw costs one generation and Retire +0 fixes it.
+The trait they pass down stays with the bloodline until it elevates, and
+stacks with every ancestor's. Passed-down traits are kept mild and never
+touch Legacy (`INHERITED_TRAITS` in `src/data/heirs.ts`), so nine bad draws
+still leave a family that can beat its gates.
 
 If gates got harder faster than the bloodline got stronger, heirs would stall
 at their parent's depth. If the bloodline got stronger faster, heirs would race

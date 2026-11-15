@@ -33,6 +33,7 @@
       <p class="scn-HeirLine" data-testid="current-heir">
         <strong>{{ store.heir.name }}</strong>
         <span> · {{ currentTrait ? currentTrait.name : 'Founder' }}</span>
+        <span v-if="currentInherit" class="scn-StatHint"> · passes down {{ currentInherit.name }}</span>
         <span v-if="store.titles > 0"> · {{ peerageRank(store.titles) }} ({{ store.titles }})</span>
         <span class="scn-StatHint"> · Gen {{ store.generation }}</span>
         <button type="button" class="scn-LinkButton" data-testid="open-family-tree" @click="store.familyTreeOpen = true">
@@ -75,7 +76,7 @@ import { press } from '../utils/press'
 import { computed, ref } from 'vue'
 import { useGameStore } from '../stores/game'
 import { formatCurrency, formatMultiplier } from '../utils/format'
-import { TRAITS_BY_ID } from '../data/heirs'
+import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { peerageRank } from '../engine/peerage'
 
 const emit = defineEmits<{
@@ -88,6 +89,7 @@ defineProps<{ phone?: boolean }>()
 const store = useGameStore()
 const payPress = press((ev) => emit('paid', ev), 'down')
 const currentTrait = computed(() => (store.heir.traitId ? TRAITS_BY_ID[store.heir.traitId] : null))
+const currentInherit = computed(() => (store.heir.inheritId ? INHERITED_BY_ID[store.heir.inheritId] ?? null : null))
 const payButtonRef = ref<HTMLButtonElement | null>(null)
 
 const legacyMultLabel = computed(() => formatMultiplier(store.legacyMultiplier))

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { HEIR_TRAITS, rollHeirChoices } from '../src/data/heirs'
+import { HEIR_TRAITS, INHERITED_TRAITS, rollHeirChoices } from '../src/data/heirs'
+import { combineModifiers } from '../src/engine/modifiers'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
@@ -35,6 +36,26 @@ describe('heir traits data', () => {
     expect(choices).toHaveLength(3)
     expect(new Set(choices.map((c) => c.traitId)).size).toBe(3)
     for (const c of choices) expect(c.name).toContain('Fitzwilliam-Hobbs')
+  })
+})
+
+describe('inherited traits', () => {
+  it('each heir passes down a different trait', () => {
+    const choices = rollHeirChoices(seq([0.1, 0.5, 0.9, 0.3, 0.7, 0.2, 0.8, 0.4]), 'Fitzwilliam-Hobbs', [])
+    for (const c of choices) expect(INHERITED_TRAITS.some((t) => t.id === c.inheritId)).toBe(true)
+    expect(new Set(choices.map((c) => c.inheritId)).size).toBe(choices.length)
+  })
+
+  it('stay mild: nine copies of any one never cut income or raise costs much', () => {
+    for (const t of INHERITED_TRAITS) {
+      const m = combineModifiers(Array.from({ length: 9 }, () => t.mods))
+      expect(m.legacyScale).toBe(1)
+      expect(m.clickMult).toBeGreaterThan(0.35)
+      expect(m.businessMult).toBeGreaterThan(0.6)
+      expect(m.purchaseCostMult).toBeLessThanOrEqual(1)
+      expect(m.incomeDrain).toBeLessThan(0.1)
+      expect(m.internsDisabled).toBeFalsy()
+    }
   })
 })
 
@@ -117,5 +138,37 @@ describe('heirs in the store', () => {
     expect(again.familySurname).toBe(surname)
     expect(again.heirChoices).toEqual(choices)
     expect(again.generation).toBe(1)
+  })
+
+  it("an heir's own trait leaves with them; what they pass down stays until elevation", () => {
+    const store = retiredStore()
+    // Achievements add a little of their own; measure against that
+    const base = { click: store.modifiers.clickMult, biz: store.modifiers.businessMult }
+    store.heirChoices = [{ name: 'Red Test', traitId: 'reformed-socialist', inheritId: 'old-money' }]
+    store.pickHeir(0)
+    expect(store.modifiers.legacyScale).toBeCloseTo(0.5)
+    expect(store.modifiers.clickMult / base.click).toBeCloseTo(5)
+    expect(store.modifiers.businessMult / base.biz).toBeCloseTo(1.1)
+
+    store.gatesBeaten = 2
+    expect(store.retire(T0 + 1000)).toBe(true)
+    store.heirChoices = [{ name: 'Blue Test', traitId: 'tax-exile', inheritId: 'old-money' }]
+    store.pickHeir(0)
+    // Reformed Socialist is gone; both Old Moneys stack
+    expect(store.modifiers.legacyScale).toBeCloseTo(1)
+    expect(store.modifiers.clickMult / base.click).toBeCloseTo(1)
+    expect(store.modifiers.businessMult / base.biz).toBeCloseTo(1.21)
+    expect(store.familyTree.at(-1)?.inheritId).toBe('old-money')
+  })
+})
+
+describe('saves from before traits were split', () => {
+  it("ancestors' old traits stop stacking; the current head keeps theirs", async () => {
+    const { readGenerationRecord, bloodlineTraitSources } = await import('../src/engine/family')
+    const old = readGenerationRecord({ generation: 1, name: 'Old Test', traitId: 'reformed-socialist', deepestGate: 3, legacyEarned: 3, activeMs: 1, advisors: [], splits: [] })
+    expect(old?.inheritId).toBeNull()
+    const m = combineModifiers(bloodlineTraitSources([old!], { name: 'Now Test', traitId: 'black-sheep' }))
+    expect(m.legacyScale).toBe(1)
+    expect(m.businessMult).toBeCloseTo(2)
   })
 })

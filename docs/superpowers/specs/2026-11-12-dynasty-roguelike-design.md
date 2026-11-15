@@ -167,6 +167,8 @@ On retirement the player sees three heirs, each with a generated name and one tr
 
 Names are posh and generated (for example "Araminta Fitzwilliam-Hobbs III"), and the joke is on the dynasty.
 
+Each heir also passes down a milder inherited trait (for example Old Money: businesses earn 10% more). The heir's own trait leaves with them; inherited traits stay with the bloodline, stacking, until it elevates. See `docs/pacing.md`.
+
 ### Family tree
 
 A modal lists every generation: name, trait, advisors hired, deepest gate, split times, Legacy earned and time played. It persists in the save and is opened from the header.

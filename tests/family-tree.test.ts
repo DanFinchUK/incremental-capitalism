@@ -51,7 +51,7 @@ describe('family tree', () => {
     expect(again.familyTree).toHaveLength(1)
   })
 
-  it('opens from the header and lists the generations and stacked bloodline traits', async () => {
+  it('opens from the header and lists the generations and the traits in play', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const wrapper = mount(App, { global: { plugins: [pinia] } })
@@ -59,16 +59,17 @@ describe('family tree', () => {
     store.closeIntro()
     store.perks.autoClicker = 3
     store.familyTree = [
-      { generation: 1, name: 'Hugo Ashcombe-Blythe', traitId: 'nepo-baby', deepestGate: 4, legacyEarned: 15, activeMs: 1_800_000, advisors: ['Sommelier'], splits: [] }
+      { generation: 1, name: 'Hugo Ashcombe-Blythe', traitId: 'nepo-baby', inheritId: 'old-money', deepestGate: 4, legacyEarned: 15, activeMs: 1_800_000, advisors: ['Sommelier'], splits: [] }
     ]
-    store.heir = { name: 'Cressida Ashcombe-Blythe', traitId: 'black-sheep' }
+    store.heir = { name: 'Cressida Ashcombe-Blythe', traitId: 'black-sheep', inheritId: 'silver-tongue' }
     await wrapper.vm.$nextTick()
 
-    // Ancestor Nepo Baby + current Black Sheep both stack permanently
-    expect(store.modifiers.internsDisabled).toBe(true)
-    expect(store.autoClickers).toBe(0)
-    expect(store.modifiers.businessMult).toBeCloseTo(2)
-    expect(store.modifiers.clickMult).toBeCloseTo(0.5)
+    // The ancestor's own Nepo Baby retired with them; their Old Money stays.
+    // The current head brings Black Sheep and Silver Tongue.
+    expect(store.modifiers.internsDisabled).toBe(false)
+    expect(store.autoClickers).toBe(3)
+    expect(store.modifiers.businessMult).toBeCloseTo(2 * 1.1)
+    expect(store.modifiers.clickMult).toBeCloseTo(0.5 * 1.15)
 
     // Having reached Gate 4 previously, retiring requires at least Gate 3
     expect(store.minRetireGate).toBe(3)
@@ -83,7 +84,8 @@ describe('family tree', () => {
     expect(modal.text()).toContain('Hugo Ashcombe-Blythe')
     expect(modal.text()).toContain('Charity Golf Match')
     expect(modal.text()).toContain(store.heir.name)
-    expect(modal.find('[data-testid="bloodline-traits"]').text()).toContain('Interns barred')
+    expect(modal.find('[data-testid="bloodline-traits"]').text()).toContain('Businesses x2.2')
+    expect(modal.text()).toContain('Old Money')
     wrapper.unmount()
   })
 })

@@ -54,27 +54,28 @@ describe('office modifiers', () => {
     }
     const rare = ADVISORS_BY_ID['productivity-guru'].mods.clickMult!
     const legendary = ADVISORS_BY_ID['hustle-billionaire'].mods.clickMult!
-    expect(asPA(2).clickMult).toBeCloseTo(ADVISORS_BY_ID['life-coach'].mods.clickMult!)
-    expect(asPA(3).clickMult).toBeCloseTo(rare)
-    expect(asPA(6).clickMult).toBeCloseTo(legendary)
-    // MBE after 3 more: half again; a peer is three times a legendary
-    expect(asPA(9).clickMult).toBeCloseTo(legendary ** 1.5)
-    expect(asPA(18).clickMult).toBeCloseTo(legendary ** 3)
+    expect(asPA(0).clickMult).toBeCloseTo(ADVISORS_BY_ID['life-coach'].mods.clickMult!)
+    expect(asPA(1).clickMult).toBeCloseTo(rare)
+    expect(asPA(2).clickMult).toBeCloseTo(legendary)
+    // MBE a generation later: half again; a peer is three times a legendary
+    expect(asPA(3).clickMult).toBeCloseTo(legendary ** 1.5)
+    expect(asPA(6).clickMult).toBeCloseTo(legendary ** 3)
     expect(asPA(40).clickMult).toBeCloseTo(legendary ** 3)
     // Not a PA: no promotion even if they had served
     const plain = combineModifiers(officeModifierSources([inst('life-coach', 9)], new Set()))
     expect(plain.clickMult).toBeCloseTo(ADVISORS_BY_ID['life-coach'].mods.clickMult!)
   })
 
-  it('names a PA by their rank, and hands over to a child capped at Rare', () => {
-    const veteran = inst('estate-manager', 15)
+  it('names a PA by their rank, and hands over to a child capped at Legendary', () => {
+    const veteran = inst('estate-manager', 5)
     const s = paStanding(veteran)!
     expect(s.tier).toBe(5)
     expect(paTitle(s)).toBe('Proxy with Power of Attorney, knighted')
     expect(s.hiredAs?.name).toBe('Estate Manager')
-    expect(paTitle(paStanding(inst('estate-manager', 9))!)).toBe('Proxy with Power of Attorney, MBE')
-    expect(paTitle(paStanding(inst('estate-manager', 18))!)).toBe('Proxy with Power of Attorney, now in the Lords')
-    expect(childOf(veteran, 'kid')).toEqual({ uid: 'kid', advisorId: 'head-butler', servedGenerations: 0, campaignMs: 0 })
+    expect(paTitle(paStanding(inst('estate-manager', 3))!)).toBe('Proxy with Power of Attorney, MBE')
+    expect(paTitle(paStanding(inst('estate-manager', 6))!)).toBe('Proxy with Power of Attorney, now in the Lords')
+    expect(childOf(veteran, 'kid')).toEqual({ uid: 'kid', advisorId: 'proxy', servedGenerations: 0, campaignMs: 0 })
+    expect(childOf(inst('estate-manager', 2), 'kid')?.advisorId).toBe('head-butler')
     expect(childOf(inst('head-butler', 0), 'kid')?.advisorId).toBe('estate-manager')
     expect(childOf(inst('estate-manager', 0), 'kid')?.advisorId).toBe('estate-manager')
   })
@@ -129,9 +130,8 @@ describe('the family office in the store', () => {
     const store = winGate1()
     store.headhunterOffer = ['estate-manager']
     store.hireAdvisor(0)
-    store.paChairs[0]!.servedGenerations = 2
     store.retire(T0 + 2000)
-    expect(store.paChairs[0]?.servedGenerations).toBe(3)
+    expect(store.paChairs[0]?.servedGenerations).toBe(1)
     expect(paStanding(store.paChairs[0]!)?.def.name).toBe('Head Butler')
     expect(store.bannerMessage ?? '').toContain('Estate Manager is promoted to Head Butler')
   })

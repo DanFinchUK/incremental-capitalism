@@ -149,7 +149,7 @@ that builds up over generations and is slowly improved, not reset each time.
   keeps more of its staff through every retirement. (This replaces the Baron
   rank's extra office seat.)
 - **Promotion through service.** A PA moves up its advisor family with service:
-  common to rare after 3 generations served, rare to legendary after 3 more.
+  common to rare after a generation served, rare to legendary after another.
   The card shows it: "Estate Manager, promoted to Head Butler". Pay rises with
   the tier, as upkeep already grows with rarity. This replaces today's flat
   +25% effect and +20% pay per generation served.
@@ -158,19 +158,22 @@ that builds up over generations and is slowly improved, not reset each time.
 
   | Tier | Reached by | Shown as |
   |---|---|---|
-  | Common, Rare, Legendary | Hiring, or 3 generations' service each | as now |
-  | MBE | 3 generations at legendary | "Head Butler, MBE" |
-  | OBE | 3 more | "Head Butler, OBE" |
-  | Knighthood | 3 more | "Sir/Dame ..." |
-  | Peerage | 3 more | "Lord/Lady ..." |
+  | Common, Rare, Legendary | Hiring, or a generation's service each | as now |
+  | MBE | a generation at legendary | "Head Butler, MBE" |
+  | OBE | 1 more | "Head Butler, OBE" |
+  | Knighthood | 1 more | "Sir/Dame ..." |
+  | Peerage | 1 more | "Lord/Lady ..." |
 
-  A common hire who stays is legendary after 6 generations and a peer after
-  18. Each honours tier keeps growing the effect, for example +50% of the
+  A common hire who stays is legendary after 2 generations and a peer after
+  6. (First built at 3 generations a tier; play showed lines end long before
+  that reaches the honours.) Each honours tier keeps growing the effect, for example +50% of the
   legendary effect a tier (a peer at 3x legendary), with pay to match; the sim
   settles the numbers. A buyer PA's budget climbs with it.
 - **Succession at elevation.** Elevating no longer fires the PAs. Each is
   replaced by their child, who grew up around the job: one tier below the
-  parent, but never above Rare, since honours aren't inherited (decided). Pay resets
+  parent, but never above Legendary, since honours aren't inherited (decided;
+  first built capped at Rare, raised so elevation doesn't send good staff back
+  to the bottom). Pay resets
   with the new tier.
 
 ## Titles and Legacy

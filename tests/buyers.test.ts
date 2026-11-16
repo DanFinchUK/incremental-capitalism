@@ -23,8 +23,8 @@ describe('who buys, and with how much', () => {
     const b = familyBuyers(inputs({ seats: [inst('estate-manager'), inst('recruitment-consultant')] }))
     expect(b.businesses).toMatchObject({ name: 'Estate Manager', share: 0.2, itemTypes: 1 })
     expect(b.jobs).toMatchObject({ name: 'Recruitment Consultant', share: 0.4, itemTypes: 2 })
-    // A Proxy who has served 9 generations as PA holds an OBE: two honours
-    const veteran = familyBuyers(inputs({ paChairs: [inst('proxy', 6)], signingRanks: 1 }))
+    // A Proxy who has served 2 generations as PA holds an OBE: two honours
+    const veteran = familyBuyers(inputs({ paChairs: [inst('proxy', 2)], signingRanks: 1 }))
     expect(veteran.businesses!.share).toBeCloseTo(0.6 + 0.2 + 0.2)
     expect(veteran.businesses!.itemTypes).toBe(5)
   })

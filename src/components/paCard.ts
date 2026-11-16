@@ -10,6 +10,8 @@ export interface PaCard {
   // Their tier: a rarity, or the honour they hold
   rank: string
   service: string
+  // Just the time served, for a short card
+  served: string
 }
 
 export function paCards(chairs: ReadonlyArray<AdvisorInstance | null>): Array<PaCard | null> {
@@ -27,6 +29,7 @@ export function paCards(chairs: ReadonlyArray<AdvisorInstance | null>): Array<Pa
       standing,
       title: paTitle(standing),
       rank: standing.honour ?? RARITY_LABELS[standing.def.rarity],
+      served: `Served ${served} gen${served === 1 ? '' : 's'}`,
       service: `Served ${served} gen${served === 1 ? '' : 's'} · ${next}`
     }
   })

@@ -1681,6 +1681,76 @@
   font-weight: 700;
 }
 
+/* The second hiring step: the candidate you picked, then who makes way */
+.scn-HireChosen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 12px;
+  background: var(--color-card);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.scn-HireChosen > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 240px;
+}
+
+.scn-HireChosen .scn-MarketEventTag {
+  align-self: flex-start;
+  margin-bottom: 0;
+  background: var(--color-pip-bg);
+  color: var(--color-body);
+}
+
+.scn-HireChosen-rare {
+  background: linear-gradient(var(--rarity-rare-fill), var(--rarity-rare-fill)), var(--color-card);
+  border-color: var(--rarity-rare);
+}
+
+.scn-HireChosen-rare .scn-MarketEventTag {
+  background: var(--rarity-rare);
+  color: var(--rarity-rare-fg);
+}
+
+.scn-HireChosen-legendary {
+  background: linear-gradient(var(--rarity-legendary-fill), var(--rarity-legendary-fill)), var(--color-card);
+  border-color: var(--rarity-legendary);
+}
+
+.scn-HireChosen-legendary .scn-MarketEventTag {
+  background: var(--rarity-legendary);
+  color: var(--rarity-legendary-fg);
+}
+
+.scn-SeatPickerGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scn-PickerGroupTitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.scn-AdvisorGrid-compact {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+
+.scn-AdvisorGrid-compact .scn-AdvisorCard {
+  padding: 8px 10px;
+}
+
 .scn-AdvisorCard {
   display: flex;
   flex-direction: column;

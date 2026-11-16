@@ -76,9 +76,9 @@ describe('elevation in the store', () => {
     expect(store.titlesOnElevation).toBe(0)
     expect(store.legacySpent).toBe(0)
     expect(store.perks.hustleCap).toBe(0)
-    // The PA hands over to their child, one tier down: the rare Lobbyist's
-    // child arrives as a Parliamentary Researcher
-    expect(store.paChairs[0]?.advisorId).toBe('parliamentary-researcher')
+    // The PA hands over to their child, one tier down: the Lobbyist, promoted
+    // to Friendly Peer for the generation served, has a child who arrives as a Lobbyist
+    expect(store.paChairs[0]?.advisorId).toBe('lobbyist')
     expect(store.paChairs[0]?.servedGenerations).toBe(0)
     expect(store.paChairs).toHaveLength(5) // a PA chair per title, and the first
     expect(store.gatesBeaten).toBe(0)

@@ -17,15 +17,15 @@ export interface AdvisorInstance {
 }
 
 export const BASE_OFFICE_SEATS = 3
-export const SERVICE_GENERATIONS_PER_TIER = 3
+export const SERVICE_GENERATIONS_PER_TIER = 1
 // Tiers: 0 common, 1 rare, 2 legendary, then honours earned only by service
 export const HONOURS: ReadonlyArray<string> = ['MBE', 'OBE', 'Knighthood', 'Peerage']
 export const MAX_TIER = 2 + HONOURS.length
 // Each tier past what the family offers adds this much of its best advisor's
 // effect (and pay): a peer is three times a legendary
 export const HONOUR_STEP = 0.5
-// A PA's child arrives one tier below them, never above this: honours aren't inherited
-export const CHILD_MAX_TIER = 1
+// A PA's child arrives one tier below them, never above Legendary: honours aren't inherited
+export const CHILD_MAX_TIER = 2
 
 const RARITY_TIER: Readonly<Record<EventRarity, number>> = { common: 0, rare: 1, legendary: 2 }
 
@@ -92,7 +92,7 @@ export function paTitle(standing: PaStanding): string {
 }
 
 // At elevation a PA hands over to their child, who grew up around the job:
-// one tier below the parent, never above Rare, with no service yet
+// one tier below the parent, never above Legendary, with no service yet
 export function childOf(inst: AdvisorInstance, uid: string): AdvisorInstance | null {
   const hired = ADVISORS_BY_ID[inst.advisorId]
   if (!hired) return null

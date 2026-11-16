@@ -187,13 +187,40 @@ function brass(v: Voice, notes: ReadonlyArray<number>, at: number, dur: number, 
   }
 }
 
+// The tap's endless climb (a Shepard scale). Each tap sounds the same scale
+// degree in several octaves at once and moves one step up a major scale.
+// Loudness peaks mid-range and fades to nothing at both ends, so the top
+// voice slips away as a new one rises in at the bottom: it always sounds as
+// if it is going up, yet never leaves the same range.
+const SHEPARD_SCALE = [0, 2, 4, 5, 7, 9, 11]
+const SHEPARD_OCTAVES = 4
+const SHEPARD_LOWEST = 330
+let shepardStep = 0
+
+export function shepardVoices(step: number): Array<{ freq: number; weight: number }> {
+  const n = SHEPARD_SCALE.length
+  const degree = ((step % n) + n) % n
+  const pos = SHEPARD_SCALE[degree] / 12
+  const voices: Array<{ freq: number; weight: number }> = []
+  for (let octave = 0; octave < SHEPARD_OCTAVES; octave++) {
+    // Where this voice sits in the range, 0 at the bottom to 1 at the top
+    const x = (octave + pos) / SHEPARD_OCTAVES
+    // Raised cosine: across equally spaced octaves these always sum to half
+    // the octave count, so every tap is equally loud
+    const weight = (0.5 - 0.5 * Math.cos(2 * Math.PI * x)) / (SHEPARD_OCTAVES / 2)
+    voices.push({ freq: SHEPARD_LOWEST * 2 ** (octave + pos), weight })
+  }
+  return voices
+}
+
 const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void>> = {
-  // A coin chink that climbs as Hustle builds, with a glint at full Hustle
+  // A coin chink that climbs forever, one step a tap, with a glint at full Hustle
   click: (v, { intensity }) => {
-    const base = 1400 + intensity * 900 + Math.random() * 120
-    tone(v, base, 0, 0.06, 'triangle', 0.16, { attack: 0.002 })
-    tone(v, base * 1.5, 0.012, 0.05, 'sine', 0.08, { attack: 0.002 })
-    if (intensity >= 0.99 && Math.random() < 0.35) tone(v, base * 2, 0.03, 0.07, 'sine', 0.06)
+    const voices = shepardVoices(shepardStep++)
+    for (const { freq, weight } of voices) {
+      if (weight > 0.01) tone(v, freq, 0, 0.07, 'sine', 0.22 * weight, { attack: 0.002 })
+    }
+    if (intensity >= 0.99 && Math.random() < 0.35) tone(v, 3200, 0.03, 0.07, 'sine', 0.05)
   },
   // Clocking in: a stamp and a short chirp of the time card
   buyJob: (v, { count }) => {

@@ -21,7 +21,7 @@
 
     <section id="jobs" class="idx-Section">
       <h2>Jobs</h2>
-      <p class="idx-Rules">Each Job pays per tap of Get paid. Price shown is the first one; each extra costs more by the growth rate.</p>
+      <p class="idx-Rules">Each Job pays per tap of "Get paid". Price shown is the first one; each extra costs more by the growth rate.</p>
       <div class="idx-Grid">
         <article v-for="j in jobs" :key="j.id" class="idx-Card">
           <img :src="itemImageUrl('jobs', j.label)" alt="" class="idx-Img" loading="lazy">

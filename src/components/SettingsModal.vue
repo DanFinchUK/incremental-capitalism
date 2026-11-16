@@ -19,7 +19,7 @@
           <div>
             <strong>Play without tapping</strong>
             <p class="scn-StatHint">
-              Get paid goes. Instead the family draws Universal Credit (an allowance, for heirs) worth two taps a second,
+              "Get paid" goes. Instead the family draws Universal Credit (an allowance, for heirs) worth two taps a second,
               Hustle holds steady and Grindset Coaching raises it. Switch either way, any time.
             </p>
           </div>

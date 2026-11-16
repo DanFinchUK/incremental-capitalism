@@ -44,7 +44,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'autoClicker',
     label: 'Unpaid Interns (Auto-Clicker)',
-    description: 'Two Interns a rank, each clicking Get paid once a second at your Hustle. The first pair is literally unpaid.',
+    description: 'Two Interns a rank, each clicking "Get paid" once a second at your Hustle. The first pair is literally unpaid.',
     maxRank: null,
     costForRank: (r) => (r === 0 ? 0 : 1),
     effectSummary: (r) => `${r * INTERNS_PER_RANK} auto-clicks/sec`

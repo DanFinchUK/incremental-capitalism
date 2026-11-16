@@ -21,16 +21,19 @@ describe('sound', () => {
     const level = (step: number) => shepardVoices(step).reduce((sum, v) => sum + v.weight, 0)
     const n = SHEPARD_STEPS
     for (let step = 0; step < n * 2; step++) {
-      // Every tap is equally loud
-      expect(level(step)).toBeCloseTo(1, 6)
+      // Every tap is about equally loud (the unplayed ninth voice is at most 3%)
+      expect(level(step)).toBeGreaterThan(0.97)
+      expect(level(step)).toBeLessThanOrEqual(1 + 1e-9)
       // A full octave of steps gives exactly the same sound
       expect(shepardVoices(step + n)).toEqual(shepardVoices(step))
     }
     // At the wrap the top voice leaves and a new one enters at the bottom,
-    // both close to silent, so the join can't be heard
+    // both close to silent, so the join can't be heard; nothing played is
+    // above hearing
     const last = shepardVoices(n - 1)
     const first = shepardVoices(n)
-    expect(last[last.length - 1].weight).toBeLessThan(0.01)
+    expect(last[last.length - 1].weight).toBeLessThan(0.03)
+    for (let step = 0; step < n; step++) for (const v of shepardVoices(step)) expect(v.freq).toBeLessThan(20000)
     expect(first[0].weight).toBe(0)
     // Within an octave every voice rises from one tap to the next
     for (let step = 0; step < n - 1; step++) {

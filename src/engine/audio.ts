@@ -194,7 +194,10 @@ function brass(v: Voice, notes: ReadonlyArray<number>, at: number, dur: number, 
 // a new one rises in at the bottom: it always sounds as if it is going up,
 // yet never leaves the same range. Taps ring long enough to overlap.
 export const SHEPARD_STEPS = 19
+// The loudness curve spans nine octaves, but the ninth always sits above
+// 20 kHz where nobody hears it, so only eight voices are ever played
 const SHEPARD_OCTAVES = 9
+const SHEPARD_VOICES = 8
 const SHEPARD_LOWEST = 80
 let shepardStep = 0
 
@@ -202,11 +205,11 @@ export function shepardVoices(step: number): Array<{ freq: number; weight: numbe
   const n = SHEPARD_STEPS
   const pos = (((step % n) + n) % n) / n
   const voices: Array<{ freq: number; weight: number; x: number }> = []
-  for (let octave = 0; octave < SHEPARD_OCTAVES; octave++) {
+  for (let octave = 0; octave < SHEPARD_VOICES; octave++) {
     // Where this voice sits in the range, 0 at the bottom to 1 at the top
     const x = (octave + pos) / SHEPARD_OCTAVES
-    // Raised cosine: across equally spaced octaves these always sum to half
-    // the octave count, so every tap is equally loud
+    // Raised cosine: across equally spaced octaves these sum to half the
+    // octave count, so taps are equally loud (to within the unheard ninth)
     const weight = (0.5 - 0.5 * Math.cos(2 * Math.PI * x)) / (SHEPARD_OCTAVES / 2)
     voices.push({ freq: SHEPARD_LOWEST * 2 ** (octave + pos), weight, x })
   }
@@ -224,8 +227,7 @@ const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void
     const tune = 2 ** ((Math.random() - 0.5) * (6 / 1200))
     const ring = 0.5 * (1 + (Math.random() - 0.5) * 0.09)
     for (const { freq, weight, x } of voices) {
-      // Past 20 kHz nobody hears it
-      if (weight <= 0.01 || freq * tune > 20000) continue
+      if (weight <= 0.01) continue
       const level = 0.26 * weight * (1 + (Math.random() - 0.5) * 0.09)
       // Higher voices ring a little shorter, like a struck glass
       tone(v, freq * tune, 0, Math.max(0.04, ring * (1 - 0.35 * x)), 'sine', level, { attack: 0.003 })

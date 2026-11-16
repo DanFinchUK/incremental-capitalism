@@ -12,6 +12,18 @@
 - For any balance change, `npm run sim` must pass too. The pacing rule it
   checks is in `docs/pacing.md`.
 
+## Buttons
+
+- Use a plain `@click` by default. Use `press()` (`src/utils/press.ts`) only
+  for buttons a player presses while also tapping Get paid: Get paid itself,
+  Buy buttons, and Market Wire cards (opportunities and scandal answers).
+  `press()` acts on the touch, so it works with a second finger down, but the
+  browser's own click still follows it. `press()` swallows that click, so
+  never handle a press-driven button's action in a separate click listener.
+- Every modal needs `aria-modal="true"` on its backdrop. The tap guard
+  (`src/utils/tapGuard.ts`) relies on it to stop a doubled tap landing on
+  whatever sits under a dialog that has just closed or opened.
+
 ## In-game writing
 
 - Story copy (modal blurbs, victory and boss text, headlines, flavour in

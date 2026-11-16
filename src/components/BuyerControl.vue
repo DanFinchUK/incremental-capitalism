@@ -1,6 +1,6 @@
 <template>
   <label v-if="buyer" class="scn-BuyerControl" :data-testid="`buyer-${kind}`" :title="buyer.name">
-    <span class="scn-BuyerStats">Budget {{ Math.round(buyer.share * 100) }}% · {{ buyer.itemTypes }} item{{ buyer.itemTypes === 1 ? '' : 's' }}</span>
+    <span class="scn-BuyerStats">{{ budgetText }} · {{ buyer.itemTypes }} item{{ buyer.itemTypes === 1 ? '' : 's' }}</span>
     <input
       type="checkbox"
       :checked="!store.buyersPaused[kind]"
@@ -21,4 +21,15 @@ import { useGameStore } from '../stores/game'
 const props = defineProps<{ kind: ItemKind }>()
 const store = useGameStore()
 const buyer = computed(() => store.buyers[props.kind])
+
+// What they spend now, and what they'd spend otherwise: stood down, it's
+// nothing; sharing with the other buyer, it's less than their own budget
+const budgetText = computed(() => {
+  const b = buyer.value
+  if (!b) return ''
+  const pct = (x: number) => `${Math.round(x * 100)}%`
+  if (store.buyersPaused[props.kind]) return `Budget 0% (${pct(b.share)} when on)`
+  if (b.share < b.ownShare - 0.005) return `Budget ${pct(b.share)} (${pct(b.ownShare)} alone)`
+  return `Budget ${pct(b.share)}`
+})
 </script>

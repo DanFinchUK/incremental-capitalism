@@ -19,7 +19,10 @@ export interface Buyer {
   // Who it is: an advisor's name, or the family's own staff
   name: string
   // Share of cash this buyer may spend a second, after the family-wide cap
+  // (for one stood down: what they'd get back at work)
   share: number
+  // Their own budget, before sharing with the other buyer
+  ownShare: number
   itemTypes: number
 }
 
@@ -65,17 +68,23 @@ export function familyBuyers(inputs: BuyerInputs): Record<ItemKind, Buyer | null
     if (!who) continue
     const honours = Math.max(0, who.tier - 2)
     const base = Math.min(2, who.tier)
+    const own = SHARE_BY_TIER[base] + HONOUR_BUYER_SHARE * honours + BUYER_SHARE_PER_SIGNING_RANK * inputs.signingRanks
     raw[kind] = {
       kind,
       name: who.name,
-      share: SHARE_BY_TIER[base] + HONOUR_BUYER_SHARE * honours + BUYER_SHARE_PER_SIGNING_RANK * inputs.signingRanks,
+      share: own,
+      ownShare: own,
       itemTypes: TYPES_BY_TIER[base] + honours + inputs.extraItemTypes
     }
   }
   const working = [raw.jobs, raw.businesses].filter((b): b is Buyer => b !== null && !inputs.paused?.[b.kind])
   const total = working.reduce((a, b) => a + b.share, 0)
-  if (total > 1) {
-    for (const b of working) b.share /= total
+  // A buyer stood down shows what they'd get back at work, sharing with
+  // whoever is working now; those at work share between themselves
+  for (const b of [raw.jobs, raw.businesses]) {
+    if (!b) continue
+    const pool = working.includes(b) ? total : total + b.ownShare
+    if (pool > 1) b.share = b.ownShare / pool
   }
   return raw
 }

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import HeadhunterOffer from '../src/components/HeadhunterOffer.vue'
+import BuyerControl from '../src/components/BuyerControl.vue'
 import { bestValue, familyBuyers, type BuyerInputs } from '../src/engine/buyers'
 import { JOBS_BY_ID } from '../src/data/items'
 import { useGameStore } from '../src/stores/game'
@@ -42,6 +43,8 @@ describe('who buys, and with how much', () => {
     expect(two.businesses!.share).toBeCloseTo(0.5)
     const one = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')], paused: { jobs: true } }))
     expect(one.businesses!.share).toBeCloseTo(0.6)
+    // The one stood down shows what they'd get back at work: the shared share, not more
+    expect(one.jobs!.share).toBeCloseTo(0.5)
   })
 
   it('picks the best return per pound', () => {
@@ -159,5 +162,28 @@ describe('introducing buyers', () => {
     expect(buttons[0].text()).toBe('Upgrade')
     expect(buttons[1].text()).toBe('Hire')
     expect(wrapper.find('[data-testid="replaces-buyer"]').text()).toBe('Replaces your Recruitment Consultant')
+  })
+})
+
+describe('the buyer beside each list', () => {
+  it('shows what each spends now, and what it would otherwise', async () => {
+    localStorage.clear()
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    store.closeIntro(1000)
+    store.perks.signingAuthority = 2
+    hireFree(store, 'head-butler')
+    hireFree(store, 'recruitment-consultant')
+    const jobs = mount(BuyerControl, { props: { kind: 'jobs' }, global: { plugins: [pinia] } })
+    const biz = mount(BuyerControl, { props: { kind: 'businesses' }, global: { plugins: [pinia] } })
+    // 40% + 2 x 20% each: 160% together, so they share
+    expect(jobs.text()).toContain('Budget 50% (80% alone) · 2 items')
+    expect(biz.text()).toContain('Budget 50% (80% alone)')
+    store.toggleBuyersPaused('businesses')
+    await jobs.vm.$nextTick()
+    expect(biz.text()).toContain('Budget 0% (50% when on)')
+    expect(jobs.text()).toContain('Budget 80% · 2 items')
   })
 })

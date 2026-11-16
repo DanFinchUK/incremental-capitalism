@@ -105,6 +105,7 @@ import { BUSINESSES_BY_ID, JOBS_BY_ID, type ItemKind } from './data/items'
 import { itemMilestones } from './engine/economy'
 import type { PerkId } from './data/perks'
 import { playSfx } from './engine/audio'
+import { installTapGuard } from './utils/tapGuard'
 import { useGameStore } from './stores/game'
 import { PHONE_QUERY, useMediaQuery } from './utils/useMediaQuery'
 import ClassModal from './components/ClassModal.vue'
@@ -173,6 +174,7 @@ const activeDialog = ref<ConfirmDialogMode>(null)
 let floatSeq = 0
 let rafId: number | null = null
 let autoFloatTimer: ReturnType<typeof setInterval> | null = null
+let removeTapGuard: (() => void) | null = null
 let bannerTimer: ReturnType<typeof setTimeout> | null = null
 const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>()
 
@@ -340,9 +342,11 @@ onMounted(() => {
   window.addEventListener('beforeunload', onBeforeUnload)
   window.addEventListener('pagehide', onBeforeUnload)
   document.addEventListener('visibilitychange', onVisibilityChange)
+  removeTapGuard = installTapGuard()
 })
 
 onUnmounted(() => {
+  removeTapGuard?.()
   if (rafId !== null) {
     window.cancelAnimationFrame(rafId)
   }

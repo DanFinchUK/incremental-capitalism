@@ -93,7 +93,6 @@
         <p class="scn-CardMeta scn-CostLine">
           Cost<span v-if="quote.count > 1"> (x{{ quote.count }})</span>:
           {{ formatCurrency(quote.cost) }}
-          <span v-if="deltaText" class="scn-DeltaInline">{{ deltaText }}</span>
         </p>
 
         <p class="scn-CardMeta scn-IncomeLine">{{ incomeLineText }}</p>
@@ -260,16 +259,6 @@ const incomeLineText = computed(() => {
 const compactIncomeText = computed(() => {
   if (owned.value <= 0) return ''
   return `${formatCurrency(stackTotal.value)}/${unitSuffix.value} (${empireSharePct.value.toFixed(1)}%)`
-})
-
-const deltaText = computed(() => {
-  if (props.row.mode !== 'revealed') return ''
-  const d = store.itemIncomeDelta(props.kind, props.row.item.id, quote.value.count)
-  if (props.kind === 'businesses') {
-    return d.deltaPerSec > 0 ? `(+${formatCurrency(d.deltaPerSec)}/s)` : ''
-  }
-  // The per-click gain is already on the Income line below
-  return d.deltaPerSec > 0 ? `(+${formatCurrency(d.deltaPerSec)}/s)` : ''
 })
 
 const synergyText = computed(() => {

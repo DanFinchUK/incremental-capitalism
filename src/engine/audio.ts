@@ -8,7 +8,6 @@ export type SfxKind =
   | 'buyJob'
   | 'buyBusiness'
   | 'milestone'
-  | 'autoBuy'
   // The Market Wire
   | 'eventSpawn'
   | 'scandal'
@@ -43,7 +42,6 @@ export interface SfxOptions {
 // a fast tapper never turns into noise
 const MIN_GAP_MS: Partial<Record<SfxKind, number>> = {
   click: 35,
-  autoBuy: 450,
   buyJob: 60,
   buyBusiness: 60,
   eventSpawn: 1500,
@@ -218,11 +216,6 @@ const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void
     const notes = run.slice(0, 4 + Math.round(intensity * 2))
     notes.forEach((n, i) => tone(v, n, i * 0.055, 0.22, 'triangle', 0.07))
     bell(v, notes[notes.length - 1] * 2, notes.length * 0.055, 0.5, 0.03)
-  },
-  // The estate restocking itself: a soft, distant till tick
-  autoBuy: (v) => {
-    tone(v, 2600, 0, 0.04, 'sine', 0.05, { attack: 0.002 })
-    tone(v, 3200, 0.03, 0.05, 'sine', 0.035, { attack: 0.002 })
   },
   // A telegraph tapping out the news
   eventSpawn: (v) => {

@@ -769,7 +769,6 @@ export const useGameStore = defineStore('game', () => {
     }
     if (bought > 0) {
       lastAutoBuyAt.value = ts
-      cue('autoBuy')
     }
   }
 

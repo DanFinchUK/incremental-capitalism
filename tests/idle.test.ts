@@ -72,7 +72,12 @@ describe('playing without tapping', () => {
     const store = fresh()
     expect(store.allowanceLabel).toBe('Universal Credit')
     expect(store.allowancePerSecond).toBeCloseTo(ALLOWANCE_TAPS_PER_SEC * store.moneyPerClick)
-    for (let s = 1; s <= 60; s++) store.tick(T0 + s * 1000)
+    for (let s = 1; s <= 60; s++) {
+      store.tick(T0 + s * 1000)
+      // A Market Wire scandal left to run would dock income: keep the wire
+      // clear so this measures the allowance alone
+      store.activeEvent = null
+    }
     expect(store.money).toBeGreaterThan(0)
     expect(store.money).toBeCloseTo(store.allowancePerSecond * 60, 0)
   })

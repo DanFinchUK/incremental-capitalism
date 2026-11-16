@@ -143,7 +143,7 @@ describe('App UI integration', () => {
     wrapper.unmount()
   })
 
-  it('shows stack share, buy delta, and compact rows for automated items', async () => {
+  it('shows stack share, no buy delta, and compact rows for automated items', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
 
@@ -151,17 +151,17 @@ describe('App UI integration', () => {
     store.legacyPoints = 1
     store.businessesOwned = { '1': 10, '20': 10 }
     // Etsy's next unit (~£124k) is under 1% of £15M cash, so it is automated;
-    // the Phone kiosk's (~£516k) is not, so it keeps its buy button and delta
+    // the Phone kiosk's (~£516k) is not, so it keeps its buy button
     store.money = 15_000_000
     hireEstateManager(store)
     store.seenItems.jobs = { '1': true, '19': true, '2': true, '3': true, '4': true, '5': true }
     store.seenItems.businesses = { '1': true, '20': true }
     await wrapper.vm.$nextTick()
 
-    // Stack total + % share + buy delta on the revealed items
+    // Stack total + % share on the revealed items; the buy delta is gone
     const pageText = wrapper.text()
     expect(pageText).toContain('total (')
-    expect(pageText).toContain('(+£')
+    expect(pageText).not.toContain('(+£')
 
     // Compact mode collapses the automated Etsy store into a compact row, click expands
     await wrapper.find('[data-testid="open-settings"]').trigger('click')

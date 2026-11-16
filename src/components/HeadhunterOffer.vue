@@ -20,7 +20,7 @@
     <!-- Step one: the shortlist -->
     <div v-if="!chosen" class="scn-AdvisorGrid scn-AdvisorGrid-fill">
       <article v-for="(a, i) in offer" :key="a.id" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${a.rarity}`">
-        <span class="scn-MarketEventTag">{{ RARITY_LABELS[a.rarity] }} · {{ a.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
+        <span class="scn-MarketEventTag">{{ STAFF_LABELS[a.rarity] }} · {{ a.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
         <strong>{{ a.name }}</strong>
         <p class="scn-AutoLine">{{ store.wording(a.effectText) }}</p>
         <p class="scn-StatHint">{{ a.costText }} Fee: {{ Math.round(a.hireFeeShare * 100) }}% cash.</p>
@@ -41,7 +41,7 @@
     <template v-else>
       <div class="scn-HireChosen" :class="`scn-HireChosen-${chosen.rarity}`" data-testid="hire-chosen">
         <div>
-          <span class="scn-MarketEventTag">{{ RARITY_LABELS[chosen.rarity] }}</span>
+          <span class="scn-MarketEventTag">{{ STAFF_LABELS[chosen.rarity] }}</span>
           <strong>{{ chosen.name }}</strong>
           <p class="scn-AutoLine">{{ store.wording(chosen.effectText) }}</p>
         </div>
@@ -80,7 +80,7 @@
         <h3 v-if="seated.length > 0" class="scn-PickerGroupTitle">The office</h3>
         <div class="scn-AdvisorGrid scn-AdvisorGrid-compact">
           <article v-for="(seat, s) in seated" :key="s" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${seat.rarity}`">
-            <span class="scn-MarketEventTag">{{ RARITY_LABELS[seat.rarity] }}</span>
+            <span class="scn-MarketEventTag">{{ STAFF_LABELS[seat.rarity] }}</span>
             <strong>{{ seat.name }}</strong>
             <p class="scn-AutoLine">{{ store.wording(seat.effectText) }}</p>
             <button
@@ -104,7 +104,7 @@
 // modal, which opens whenever a shortlist is waiting.
 import { computed, nextTick, ref, watch } from 'vue'
 import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
-import { RARITY_LABELS } from '../data/events'
+import { STAFF_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
 import type { HireTarget } from '../stores/modules/office'
 import { paCards } from './paCard'

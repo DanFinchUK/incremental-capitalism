@@ -161,7 +161,7 @@ describe('family office UI', () => {
     await wrapper.vm.$nextTick()
     const paChair = panel().find('[data-testid="pa-chair"]')
     expect(paChair.classes()).toContain('scn-AdvisorCard-legendary')
-    expect(paChair.text()).toContain('Legendary')
+    expect(paChair.text()).toContain('Poached')
     expect(paChair.text()).toContain('Campaigning for 9 min')
     wrapper.unmount()
   })

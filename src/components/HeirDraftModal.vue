@@ -41,7 +41,7 @@
           :class="`scn-HeirCard-${choice.trait?.rarity ?? 'common'}`"
           data-testid="heir-option"
         >
-          <span class="scn-MarketEventTag">{{ choice.trait ? RARITY_LABELS[choice.trait.rarity] : 'Founder' }}</span>
+          <span class="scn-MarketEventTag">{{ choice.trait ? HEIR_LABELS[choice.trait.rarity] : 'Founder' }}</span>
           <h3 class="scn-HeirName">{{ choice.name }}</h3>
           <strong class="scn-HeirTrait">{{ choice.trait?.name }}</strong>
           <p class="scn-AutoLine">{{ store.wording(choice.trait?.description ?? '') }}</p>
@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RARITY_LABELS } from '../data/events'
+import { HEIR_LABELS } from '../data/events'
 import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { describeHeirEffect } from '../engine/family'
 import { useGameStore } from '../stores/game'

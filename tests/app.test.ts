@@ -97,7 +97,7 @@ describe('App UI integration', () => {
     await wrapper.vm.$nextTick()
     const toast = wrapper.find('.scn-MarketEvent')
     expect(toast.exists()).toBe(true)
-    expect(toast.text()).toContain('50/50 Risk')
+    expect(toast.text()).toContain('50/50 risk')
     await toast.trigger('click')
     expect(store.activeEvent).toBeNull()
 

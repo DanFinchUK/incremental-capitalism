@@ -39,7 +39,7 @@
         :class="seat ? `scn-AdvisorCard-${seat.def.rarity}` : 'scn-AdvisorCard-empty'"
       >
         <template v-if="seat">
-          <span class="scn-MarketEventTag">{{ RARITY_LABELS[seat.def.rarity] }} · {{ seat.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
+          <span class="scn-MarketEventTag">{{ STAFF_LABELS[seat.def.rarity] }} · {{ seat.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
           <strong>{{ seat.def.name }}</strong>
           <p class="scn-AutoLine">{{ store.wording(seat.def.effectText) }}</p>
           <p v-if="seat.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(seat.inst.campaignMs / 60000) }} min</p>
@@ -72,7 +72,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
-import { RARITY_LABELS } from '../data/events'
+import { STAFF_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
 import { paCards } from './paCard'
 

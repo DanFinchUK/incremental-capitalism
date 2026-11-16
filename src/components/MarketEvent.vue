@@ -8,7 +8,7 @@
     :aria-label="store.activeEvent.def.title"
   >
     <span class="scn-MarketEventTag">
-      {{ RARITY_LABELS[store.activeEvent.def.rarity] }} Scandal · {{ secondsLeft }}s
+      Scandal · {{ SCANDAL_LABELS[store.activeEvent.def.rarity] }} · {{ secondsLeft }}s
     </span>
     <div class="scn-CardTitle">{{ store.activeEvent.def.title }}</div>
     <div class="scn-AutoLine">{{ store.wording(store.activeEvent.def.subtitle) }}</div>
@@ -30,8 +30,7 @@
     v-on="claimPress"
   >
     <span class="scn-MarketEventTag">
-      {{ RARITY_LABELS[store.activeEvent.def.rarity] }}
-      {{ store.activeEvent.def.shady ? '50/50 Risk' : 'Opportunity' }} · {{ secondsLeft }}s
+      {{ TIP_LABELS[store.activeEvent.def.rarity] }}<template v-if="store.activeEvent.def.shady"> · 50/50 risk</template> · {{ secondsLeft }}s
     </span>
     <div class="scn-CardTitle">{{ store.activeEvent.def.title }}</div>
     <div class="scn-AutoLine">{{ store.wording(store.activeEvent.def.subtitle) }}</div>
@@ -42,7 +41,7 @@
 <script setup lang="ts">
 import { press } from '../utils/press'
 import { computed } from 'vue'
-import { RARITY_LABELS } from '../data/events'
+import { SCANDAL_LABELS, TIP_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
 
 const emit = defineEmits<{

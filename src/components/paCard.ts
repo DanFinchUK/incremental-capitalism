@@ -1,5 +1,5 @@
 // What a PA chair shows: who sits there, after promotions and honours
-import { RARITY_LABELS } from '../data/events'
+import { STAFF_LABELS } from '../data/events'
 import { paStanding, paTitle, type AdvisorInstance, type PaStanding } from '../engine/office'
 
 export interface PaCard {
@@ -28,7 +28,7 @@ export function paCards(chairs: ReadonlyArray<AdvisorInstance | null>): Array<Pa
       inst,
       standing,
       title: paTitle(standing),
-      rank: standing.honour ?? RARITY_LABELS[standing.def.rarity],
+      rank: standing.honour ?? STAFF_LABELS[standing.def.rarity],
       served: `Served ${served} gen${served === 1 ? '' : 's'}`,
       service: `Served ${served} gen${served === 1 ? '' : 's'} · ${next}`
     }

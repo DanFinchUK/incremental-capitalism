@@ -20,7 +20,7 @@ export const ACHIEVEMENTS: ReadonlyArray<AchievementDef> = [
   { id: 'silver-service', name: 'Silver Service', description: 'Finish Polishing the Family Silver.', hidden: false },
   { id: 'garden-party', name: 'Invited Back Next Year', description: 'Survive the Royal Garden Party.', hidden: false },
   { id: 'early-retirement', name: 'Early Retirement', description: 'Retire having climbed two classes or fewer.', hidden: false },
-  { id: 'lucky-streak', name: 'Born Lucky', description: 'Claim three Legendary opportunities in one generation.', hidden: false },
+  { id: 'lucky-streak', name: 'Born Lucky', description: 'Act on three insider tips in one generation.', hidden: false },
   { id: 'full-house', name: 'Full House', description: 'Fill every open seat in the family office.', hidden: false },
   { id: 'long-service', name: 'Long Service Award', description: 'Keep the same Personal Assistant for three generations.', hidden: false },
   { id: 'dynasty', name: 'Dynasty', description: 'Reach the fifth generation.', hidden: false },

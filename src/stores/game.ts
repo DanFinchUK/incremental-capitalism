@@ -13,7 +13,7 @@ import {
 } from '../data/items'
 import {
   MARKET_EVENTS_BY_KIND,
-  RARITY_LABELS,
+  TIP_LABELS,
   pickMarketEvent,
   type MarketEventDef,
   type MarketEventKind,
@@ -1043,7 +1043,7 @@ export const useGameStore = defineStore('game', () => {
     const durationMult = 1 + BUFF_DURATION_PER_INSIDER_RANK * perks.value.insider
     const def = ev.def
     const effect = def.effect
-    const rarityPrefix = def.rarity === 'common' ? '' : `${RARITY_LABELS[def.rarity]}! `
+    const rarityPrefix = def.rarity === 'common' ? '' : `${TIP_LABELS[def.rarity]}! `
     const name = def.title.replace(/!$/, '')
 
     if (def.rarity === 'legendary') {

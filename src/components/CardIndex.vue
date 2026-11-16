@@ -70,7 +70,7 @@
           <article v-for="a in group.advisors" :key="a.id" class="idx-Card" :class="`idx-Card-${a.rarity}`">
             <h3>{{ a.name }}</h3>
             <div class="idx-Pills">
-              <span class="idx-Pill" :class="`idx-Pill-${a.rarity}`">{{ RARITY_LABELS[a.rarity] }}</span>
+              <span class="idx-Pill" :class="`idx-Pill-${a.rarity}`">{{ STAFF_LABELS[a.rarity] }}</span>
               <span v-for="r in a.roles" :key="r" class="idx-Pill">{{ ROLE_LABELS[r] }}</span>
             </div>
             <p>{{ a.effectText }}</p>
@@ -90,7 +90,7 @@
         <article v-for="t in heirTraits" :key="t.id" class="idx-Card" :class="`idx-Card-${t.rarity}`">
           <h3>{{ t.name }}</h3>
           <div class="idx-Pills">
-            <span class="idx-Pill" :class="`idx-Pill-${t.rarity}`">{{ RARITY_LABELS[t.rarity] }}</span>
+            <span class="idx-Pill" :class="`idx-Pill-${t.rarity}`">{{ HEIR_LABELS[t.rarity] }}</span>
           </div>
           <p>{{ t.description }}</p>
         </article>
@@ -134,7 +134,7 @@
         <article v-for="e in opportunities" :key="e.kind" class="idx-Card" :class="`idx-Card-${e.rarity}`">
           <h3>{{ e.title }}</h3>
           <div class="idx-Pills">
-            <span class="idx-Pill" :class="`idx-Pill-${e.rarity}`">{{ RARITY_LABELS[e.rarity] }}</span>
+            <span class="idx-Pill" :class="`idx-Pill-${e.rarity}`">{{ TIP_LABELS[e.rarity] }}</span>
             <span v-if="e.shady" class="idx-Pill idx-Pill-shady">Shady</span>
           </div>
           <p>{{ e.subtitle }}</p>
@@ -145,7 +145,7 @@
         <article v-for="e in scandals" :key="e.kind" class="idx-Card" :class="`idx-Card-${e.rarity}`">
           <h3>{{ e.title }}</h3>
           <div class="idx-Pills">
-            <span class="idx-Pill" :class="`idx-Pill-${e.rarity}`">{{ RARITY_LABELS[e.rarity] }}</span>
+            <span class="idx-Pill" :class="`idx-Pill-${e.rarity}`">{{ SCANDAL_LABELS[e.rarity] }}</span>
           </div>
           <p class="idx-Flavour">{{ e.subtitle }}</p>
           <dl v-if="e.effect.type === 'scandal'" class="idx-Stats">
@@ -244,7 +244,7 @@ import { JOBS, BUSINESSES, SYNERGY_JOB_FOR_BUSINESS, itemImageUrl, type Sector }
 import { ADVISORS, ROLE_LABELS, type AdvisorDef } from '../data/advisors'
 import { HEIR_TRAITS, INHERITED_TRAITS } from '../data/heirs'
 import { BOSSES } from '../data/bosses'
-import { MARKET_EVENTS, RARITY_LABELS, type EventRarity } from '../data/events'
+import { HEIR_LABELS, MARKET_EVENTS, RARITY_SEARCH, SCANDAL_LABELS, STAFF_LABELS, TIP_LABELS, type EventRarity } from '../data/events'
 import { LEGACY_PERKS } from '../data/perks'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { ACHIEVEMENTS, ACHIEVEMENT_INCOME_BONUS } from '../data/achievements'
@@ -326,7 +326,7 @@ const advisorGroups = computed(() => {
   const groups = new Map<string, AdvisorDef[]>()
   for (const a of ADVISORS) {
     const roles = a.roles.map((r) => ROLE_LABELS[r]).join(' ')
-    if (!matches(a.name, a.effectText, a.costText, roles, RARITY_LABELS[a.rarity], familyLabel(a.family), 'advisor')) {
+    if (!matches(a.name, a.effectText, a.costText, roles, STAFF_LABELS[a.rarity], RARITY_SEARCH[a.rarity], familyLabel(a.family), 'advisor')) {
       continue
     }
     const list = groups.get(a.family) ?? []
@@ -342,7 +342,7 @@ const advisorGroups = computed(() => {
 const heirTraits = computed(() =>
   [...HEIR_TRAITS]
     .sort((x, y) => RARITY_ORDER[x.rarity] - RARITY_ORDER[y.rarity])
-    .filter((t) => matches(t.name, t.description, RARITY_LABELS[t.rarity], 'heir trait'))
+    .filter((t) => matches(t.name, t.description, HEIR_LABELS[t.rarity], RARITY_SEARCH[t.rarity], 'heir trait'))
 )
 const inheritedTraits = computed(() => INHERITED_TRAITS.filter((t) => matches(t.name, t.description, 'heir family inherited')))
 
@@ -353,12 +353,12 @@ const bosses = computed(() =>
 const opportunities = computed(() =>
   MARKET_EVENTS.filter((e) => e.effect.type !== 'scandal')
     .sort((x, y) => RARITY_ORDER[x.rarity] - RARITY_ORDER[y.rarity])
-    .filter((e) => matches(e.title, e.subtitle, RARITY_LABELS[e.rarity], e.shady ? 'shady' : '', 'opportunity market'))
+    .filter((e) => matches(e.title, e.subtitle, TIP_LABELS[e.rarity], RARITY_SEARCH[e.rarity], e.shady ? 'shady' : '', 'opportunity market'))
 )
 const scandals = computed(() =>
   MARKET_EVENTS.filter((e) => e.effect.type === 'scandal').filter((e) => {
     const opts = e.effect.type === 'scandal' ? e.effect.options.map((o) => `${o.label} ${o.detail}`).join(' ') : ''
-    return matches(e.title, e.subtitle, opts, RARITY_LABELS[e.rarity], 'scandal market')
+    return matches(e.title, e.subtitle, opts, SCANDAL_LABELS[e.rarity], RARITY_SEARCH[e.rarity], 'scandal market')
   })
 )
 

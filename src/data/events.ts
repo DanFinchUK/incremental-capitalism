@@ -62,11 +62,19 @@ export const RARITY_WEIGHTS: Readonly<Record<EventRarity, number>> = {
   legendary: 0.1
 }
 
-export const RARITY_LABELS: Readonly<Record<EventRarity, string>> = {
-  common: 'Common',
-  rare: 'Rare',
-  legendary: 'Legendary'
-}
+// The same three ranks, named in the world's words for each kind of card.
+// The colours (plain, silver, gold) carry the rank across all of them.
+type RarityLabels = Readonly<Record<EventRarity, string>>
+// Advisors and PAs: where the headhunter found them
+export const STAFF_LABELS: RarityLabels = { common: 'Agency', rare: 'Recommended', legendary: 'Poached' }
+// Heir traits: how the family talks about them
+export const HEIR_LABELS: RarityLabels = { common: 'Unremarkable', rare: 'Promising', legendary: 'Golden child' }
+// Market Wire opportunities: how good the tip is
+export const TIP_LABELS: RarityLabels = { common: 'Tip', rare: 'Hot tip', legendary: 'Insider tip' }
+// Market Wire scandals: where the story runs
+export const SCANDAL_LABELS: RarityLabels = { common: 'Diary item', rare: 'Exclusive', legendary: 'Front page' }
+// The old names, kept for searching the Card Index
+export const RARITY_SEARCH: RarityLabels = { common: 'common', rare: 'rare', legendary: 'legendary' }
 
 const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {

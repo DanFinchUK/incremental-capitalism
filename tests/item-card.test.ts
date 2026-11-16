@@ -27,6 +27,15 @@ describe('item card without automation', () => {
     return { store, wrapper }
   }
 
+  it('quotes the boss a locked card is waiting on', () => {
+    useGameStore().hydrateFromStorage(1000)
+    const wrapper = mount(ItemCard, {
+      props: { kind: 'jobs', row: { mode: 'gated', bossTitle: 'Polishing the Family Silver' } as never },
+      global: { plugins: [pinia] }
+    })
+    expect(wrapper.text()).toContain('Beat "Polishing the Family Silver" to unlock')
+  })
+
   it('shows income and says nothing about automation until someone brings it', () => {
     const { wrapper } = card()
     expect(wrapper.text()).toContain('Income:')

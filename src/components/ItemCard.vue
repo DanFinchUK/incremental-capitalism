@@ -16,7 +16,7 @@
       <div class="scn-CardHeader">
         <h4 class="scn-CardTitle">Locked</h4>
       </div>
-      <p class="scn-AutoLine">Beat {{ row.bossTitle }} to unlock</p>
+      <p class="scn-AutoLine">Beat "{{ row.bossTitle }}" to unlock</p>
     </div>
   </div>
 

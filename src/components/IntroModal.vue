@@ -1,7 +1,7 @@
 <template>
   <div
-    v-if="store.introOpen"
-    class="scn-ModalBackdrop"
+    v-if="store.introOpen && !store.menuOpen"
+    class="scn-ModalBackdrop scn-ModalBackdrop-over"
     role="dialog"
     aria-modal="true"
     aria-labelledby="intro-modal-title"

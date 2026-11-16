@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="store.dynastyComplete"
+    v-if="store.dynastyComplete && !store.menuOpen"
     class="scn-ModalBackdrop scn-ModalBackdrop-top"
     role="dialog"
     aria-modal="true"

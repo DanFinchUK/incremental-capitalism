@@ -5,7 +5,11 @@ import './styles/theme.css'
 import './styles/mobile.css'
 import './styles/rooms.css'
 import App from './App.vue'
+import { useGameStore } from './stores/game'
 
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.mount('#app')
+// Every visit opens on the main menu
+useGameStore(pinia).openMenu()

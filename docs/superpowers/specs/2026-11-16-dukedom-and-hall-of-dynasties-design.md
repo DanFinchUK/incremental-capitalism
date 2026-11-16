@@ -1,6 +1,6 @@
 # The dukedom, the finale and the Hall of Dynasties
 
-Status: draft, in discussion with Dan. Date: 2026-11-16.
+Status: built, apart from the Questions and Later sections. Date: 2026-11-16.
 
 ## Intent
 
@@ -84,6 +84,13 @@ is dealt with, a gate whose condition the family would meet many times over in
 its first second is beaten on its own, with the usual banner. The check uses
 income without tapping and the boss's twist, and needs a wide margin, since a
 lost fight ends the line. Anything closer is fought as now.
+
+As built, the check is the game itself: with nothing waiting on the player, a
+gate the family has beaten before is quietly started. Won within a second, it
+was outgrown; otherwise it is called off with no loss and no record, and looked
+at again 30 seconds later. Pressing Take it on during the look turns it into
+the fight. A boss waved through brings no shortlist: Dan passed on every late
+shortlist anyway.
 
 ## Questions
 

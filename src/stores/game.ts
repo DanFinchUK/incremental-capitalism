@@ -250,6 +250,8 @@ export const useGameStore = defineStore('game', () => {
   const familyTree = ref<GenerationRecord[]>(initial.familyTree)
   const familyTreeOpen = ref(false)
   const hallOpen = ref(false)
+  // The main menu, shown on arrival; the game waits behind it
+  const menuOpen = ref(false)
   const achievements = ref<string[]>(initial.achievements)
   const achievementProgress = ref<AchievementProgress>(initial.achievementProgress)
   const achievementsOpen = ref(false)
@@ -1092,7 +1094,7 @@ export const useGameStore = defineStore('game', () => {
     }
     const elapsedMs = Math.max(0, ts - lastTickMs.value)
     lastTickMs.value = ts
-    if (heirChoices.value.length > 0 || disgraceReport.value !== null || dynastyComplete.value) {
+    if (heirChoices.value.length > 0 || disgraceReport.value !== null || dynastyComplete.value || menuOpen.value) {
       // The game pauses while succession or disgrace is on screen, and stops
       // once the dynasty is over
       return
@@ -1654,6 +1656,19 @@ export const useGameStore = defineStore('game', () => {
     } catch {
       // A full or blocked store: the Hall lives for this visit only
     }
+    beginDynasty(ts, record.surname)
+    return true
+  }
+
+  // Give up on the dynasty under way: a new family, and nothing in the Hall
+  function abandonDynasty(ts = Date.now()): void {
+    const previous = familySurname.value
+    plays.log(ts, 'abandon-dynasty', { surname: previous, activeMs: dynastyMs.value })
+    beginDynasty(ts, previous)
+  }
+
+  function beginDynasty(ts: number, previousSurname: string): void {
+    const record = { surname: previousSurname, activeMs: dynastyMs.value }
     const fresh = createInitialSceneState()
     fresh.achievements = [...achievements.value]
     fresh.bulkBuyMode = bulkBuyMode.value
@@ -1673,7 +1688,16 @@ export const useGameStore = defineStore('game', () => {
     plays.log(ts, 'new-dynasty', { previous: record.surname, activeMs: record.activeMs })
     announce(`A new dynasty: the ${surname} family enters the market with nothing but ambition.`)
     flushSave(ts)
-    return true
+  }
+
+  function openMenu(): void {
+    menuOpen.value = true
+  }
+
+  function closeMenu(ts = Date.now()): void {
+    menuOpen.value = false
+    // The clock starts again from here, not from when the menu opened
+    lastTickMs.value = ts
   }
 
   function hardReset(ts = Date.now()): void {
@@ -1812,6 +1836,10 @@ export const useGameStore = defineStore('game', () => {
     familyTree,
     familyTreeOpen,
     hallOpen,
+    menuOpen,
+    openMenu,
+    closeMenu,
+    abandonDynasty,
     officeSeats: office.officeSeats,
     paChairs: office.paChairs,
     headhunterOffer: office.headhunterOffer,

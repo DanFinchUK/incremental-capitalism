@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="store.settingsOpen"
-    class="scn-ModalBackdrop"
+    class="scn-ModalBackdrop scn-ModalBackdrop-over"
     role="dialog"
     aria-modal="true"
     aria-labelledby="settings-title"
@@ -81,6 +81,15 @@
       </div>
 
       <div class="scn-ModalFooter">
+        <button
+          v-if="!store.menuOpen"
+          type="button"
+          class="scn-Action scn-Action-outline"
+          data-testid="settings-main-menu"
+          @click="toMenu"
+        >
+          Main menu
+        </button>
         <button type="button" class="scn-Action scn-Action-accent" data-testid="close-settings" @click="store.settingsOpen = false">
           Done
         </button>
@@ -99,6 +108,11 @@ const emit = defineEmits<{ (e: 'reset'): void }>()
 
 const store = useGameStore()
 useEscapeKey(() => store.settingsOpen, () => (store.settingsOpen = false))
+
+function toMenu(): void {
+  store.settingsOpen = false
+  store.openMenu()
+}
 
 const decor = computed<RoomId | 'auto'>({
   get: () => store.decor,

@@ -14,7 +14,6 @@
       <Teleport :key="phone ? 'dock' : 'inline'" to="#dock-events" :disabled="!phone" defer>
         <MarketEvent @claim="handleClaimEvent" @choose="handleScandalChoice" />
       </Teleport>
-      <IntroModal />
       <WelcomeModal v-if="!store.introOpen" />
       <ClassModal />
       <LegacyShop @buy-perk="handleBuyPerk" />
@@ -31,10 +30,13 @@
       <AbdicationModal />
       <HireModal />
       <FavourModal />
-      <SettingsModal @reset="handleHardReset" />
       <DisgraceModal />
-      <HallModal />
       <DukedomModal />
+      <!-- The menu sits over the game; what it opens sits over the menu -->
+      <MainMenu />
+      <IntroModal />
+      <SettingsModal @reset="handleHardReset" />
+      <HallModal />
 
       <OverviewBar v-if="!phone || phoneTab === 'family'" :phone="phone" @retire="handleRetire" />
 
@@ -138,6 +140,7 @@ import AbdicationModal from './components/AbdicationModal.vue'
 import HireModal from './components/HireModal.vue'
 import DukedomModal from './components/DukedomModal.vue'
 import HallModal from './components/HallModal.vue'
+import MainMenu from './components/MainMenu.vue'
 import FavourModal from './components/FavourModal.vue'
 import BuyerControl from './components/BuyerControl.vue'
 import SettingsModal from './components/SettingsModal.vue'

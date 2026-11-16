@@ -14,6 +14,7 @@ export async function newGame(page: Page): Promise<void> {
   await page.goto('/')
   await page.evaluate(() => localStorage.clear())
   await page.reload()
+  await page.getByTestId('menu-continue').tap()
   await page.getByTestId('intro-skip').tap()
 }
 

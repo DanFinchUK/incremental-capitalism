@@ -227,10 +227,10 @@ export const ROOMS: ReadonlyArray<RoomDef> = [
       bg: '#1a0b0f', surface: '#220f14', card: '#2d141a', cardSubtle: '#1e0c11',
       body: '#f6ead5', bodySecondary: '#e0cfb2', muted: '#b89c87',
       border: '#5a3a26', borderSubtle: '#3e1e22', strongLine: '#b08a3e',
-      btnBg: '#d4af5a', btnFg: '#1a0b0f', btnHover: '#e3c274',
+      btnBg: '#f6ead5', btnFg: '#1a0b0f', btnHover: '#ffffff',
       btnOutlineBg: '#2d141a', btnOutlineFg: '#f6ead5', btnOutlineHover: '#3c1a21',
-      accent: '#e08596', accentHover: '#ea9dab', accentFg: '#1a0b0f', accentPillBg: '#43161f', accentPillFg: '#f6cdd5',
-      synergy: '#eba7b3', track: '#3d1d22', pipBg: '#371a1f', pipFg: '#b89c87',
+      accent: '#d9b45e', accentHover: '#e6c676', accentFg: '#1a0b0f', accentPillBg: '#5a1a28', accentPillFg: '#f6dccb',
+      synergy: '#e8c98a', track: '#3d1d22', pipBg: '#371a1f', pipFg: '#b89c87',
       gold: '#d9b45e', goldBg: '#3c2c0f', goldFg: '#f5e0a6'
     }
   },

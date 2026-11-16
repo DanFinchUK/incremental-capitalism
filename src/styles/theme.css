@@ -371,8 +371,6 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  /* One pill's height, held open even with no pills */
-  min-height: 22px;
   font-size: 13px;
 }
 
@@ -383,7 +381,6 @@
   padding: 2px 9px;
   border-radius: 999px;
   font-size: 12px;
-  line-height: 16px;
   font-weight: 700;
   background: var(--color-gold-bg);
   border: 1px solid var(--color-gold);

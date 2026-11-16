@@ -1269,10 +1269,22 @@
   stop-color: var(--color-accent);
 }
 
-.scn-ThresholdLine {
-  stroke: var(--color-gold);
-  stroke-width: 1.4;
-  stroke-dasharray: 6 3;
+.scn-BuyerControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.scn-BuyerStats {
+  font-variant-numeric: tabular-nums;
+}
+
+.scn-BuyMark {
+  fill: var(--color-gold);
 }
 
 .scn-FavourBand {

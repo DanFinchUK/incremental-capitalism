@@ -182,8 +182,7 @@ const compactEligible = computed(
   () =>
     props.row.mode === 'revealed' &&
     store.compactAutoBuy &&
-    store.automationLine > 0 &&
-    !store.autoBuyPaused &&
+    store.buyerWorking(props.kind) &&
     store.isAutoBuyEnabled(props.kind, props.row.item.id)
 )
 
@@ -277,7 +276,8 @@ const synergyText = computed(() => {
 })
 
 // Nothing automates until an advisor, heir, perk or title brings it
-const showAutoBuyCheckbox = computed(() => props.row.mode === 'revealed' && store.automationLine > 0)
+// Only once this list has a buyer: unticking keeps them off an item
+const showAutoBuyCheckbox = computed(() => props.row.mode === 'revealed' && store.buyers[props.kind] !== null)
 
 // Buys on finger lift, so it works while another finger is on Get paid
 const buyPress = press(() => {

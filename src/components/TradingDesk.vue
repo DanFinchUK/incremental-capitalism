@@ -143,15 +143,11 @@
               />
             </g>
 
-            <line
-              v-if="thresholdY !== null"
-              x1="0"
-              :y1="thresholdY"
-              :x2="SVG_W"
-              :y2="thresholdY"
-              class="scn-ThresholdLine"
-              data-testid="desk-threshold-line"
-            />
+            <!-- Where a buyer bought something: hover for what -->
+            <g v-for="bar in buyerMarks" :key="`buy-${bar.bucketStart}`" data-testid="desk-buy-mark">
+              <title>{{ bar.text }}</title>
+              <path :d="`M ${bar.cx - 3} ${bar.y - 7} L ${bar.cx + 3} ${bar.y - 7} L ${bar.cx} ${bar.y - 2} Z`" class="scn-BuyMark" />
+            </g>
 
             <line
               v-if="hoverCandleX !== null"
@@ -358,8 +354,6 @@ const inspectedCandle = computed<OhlcCandle>(() => {
   )
 })
 
-const THRESHOLD_REACH = 2
-
 const candleRange = computed(() => {
   let min = Infinity
   let max = 0
@@ -368,22 +362,12 @@ const candleRange = computed(() => {
     max = Math.max(max, c.high)
   }
   if (!Number.isFinite(min)) min = 0
-  // Stretch to show the next automation threshold when it's near; far above,
-  // it would flatten the candles, so the legend alone names it
-  const next = store.nextAutomation?.cash
-  if (next !== undefined && next > max && next <= max * THRESHOLD_REACH) max = next
   const pad = Math.max(10, (max - min) * 0.08)
   const floor = Math.max(0, min - pad)
   const ceil = max <= floor ? floor + 100 : max + pad
   return { min: floor, max: ceil }
 })
 
-const thresholdY = computed(() => {
-  const next = store.nextAutomation?.cash
-  if (next === undefined) return null
-  const { min, max } = candleRange.value
-  return next >= min && next <= max ? yForCandle(next) : null
-})
 
 function yForCandle(val: number): number {
   const { min, max } = candleRange.value
@@ -391,6 +375,14 @@ function yForCandle(val: number): number {
   const norm = Math.min(1, Math.max(0, (val - min) / span))
   return Number((PAD_TOP + PLOT_H * (1 - norm)).toFixed(2))
 }
+
+// Candles where a buyer bought something, marked above their high
+const buyerMarks = computed(() =>
+  candleBars.value.flatMap((bar, i) => {
+    const buys = candles.value[i]?.buys
+    return buys && buys.length > 0 ? [{ bucketStart: bar.bucketStart, cx: bar.cx, y: bar.highY, text: buys.join('\n') }] : []
+  })
+)
 
 const candleBars = computed(() => {
   const list = candles.value

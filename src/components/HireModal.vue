@@ -9,12 +9,12 @@
   >
     <div class="scn-Modal scn-Modal-xl">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-accent">The headhunter calls</span>
+        <span class="scn-ModalKicker scn-ModalKicker-accent">Introductions</span>
         <h2 id="hire-title">Who joins the family office?</h2>
       </div>
       <p class="scn-CardMeta">
-        Word of the win has reached the right people. The headhunter is waiting in the drawing room with a sheaf of CVs,
-        and won't leave until you take someone on or send the lot packing.
+        Word of the win has reached the right people, and some of them would like to be introduced. They are waiting in
+        the drawing room with their CVs, and won't leave until you take someone on or send the lot packing.
       </p>
       <HeadhunterOffer :locked="lock.locked.value" :lock-seconds="lock.secondsLeft.value" />
     </div>

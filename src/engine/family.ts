@@ -127,6 +127,6 @@ export function describeModifiers(m: Modifiers): TraitPill[] {
   }
   if (m.shadyBonus > 0.001) pills.push({ label: `Shady +${Math.round(m.shadyBonus * 100)}%`, negative: true })
   if (Math.abs(m.windfallMult - 1) > 0.01) pills.push({ label: `Windfalls ${fmtMult(m.windfallMult)}`, negative: m.windfallMult < 1 })
-  if (m.automationShareBonus > 0.0005) pills.push({ label: `Auto +${Math.round(m.automationShareBonus * 100)}%`, negative: false })
+  if (m.buyerItemTypes > 0) pills.push({ label: `Buyers +${m.buyerItemTypes} item${m.buyerItemTypes === 1 ? '' : 's'}`, negative: false })
   return pills
 }

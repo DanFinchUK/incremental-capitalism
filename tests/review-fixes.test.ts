@@ -54,21 +54,20 @@ describe('review fixes', () => {
     expect(store.nextBoss!.remainingSec).toBe(180)
   })
 
-  it('items keep their buy button while automation is paused by a boss or frozen', () => {
+  it('a frozen buyer stops buying', () => {
     const store = fresh()
     store.tick(T0)
     store.money = 10_000_000
     hireEstateManager(store)
-    expect(store.isAutomated('jobs', '1')).toBe(true)
+    expect(store.buyerWorking('businesses')).toBe(true)
     store.spawnSpecificEvent('shadyDeal', T0)
-    store.claimMarketEvent(T0, () => 0.9) // loses: automation frozen
-    expect(store.isAutomated('jobs', '1')).toBe(false)
+    store.claimMarketEvent(T0, () => 0.9) // loses: buyers suspended
+    expect(store.buyerWorking('businesses')).toBe(false)
   })
 
   it('the game waits while the heir draft is open, and the trust fund multiplier hits the whole inheritance', () => {
     const store = fresh()
-    store.toggleAutoBuyPaused() // ensure cash isn't spent before we look
-    store.toggleAutoBuyPaused()
+    store.buyersPaused = { jobs: true, businesses: true } // keep the buyers' spending out of the sums
     store.addDebugMoney(1e9, T0)
     store.gatesBeaten = 1
     store.retire(T0)

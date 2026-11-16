@@ -7,12 +7,12 @@ describe('modifiers', () => {
   it('combines multipliers by product, additions by sum and flags by or', () => {
     expect(combineModifiers([])).toEqual(NEUTRAL_MODIFIERS)
     const m = combineModifiers([
-      { clickMult: 2, incomeDrain: 0.02, automationShareBonus: 0.01, sectorBusinessMult: { food: 3 } },
+      { clickMult: 2, incomeDrain: 0.02, buyerItemTypes: 1, sectorBusinessMult: { food: 3 } },
       { clickMult: 1.5, incomeDrain: 0.03, internsDisabled: true, sectorBusinessMult: { food: 2, property: 4 } }
     ])
     expect(m.clickMult).toBeCloseTo(3)
     expect(m.incomeDrain).toBeCloseTo(0.05)
-    expect(m.automationShareBonus).toBeCloseTo(0.01)
+    expect(m.buyerItemTypes).toBe(1)
     expect(m.internsDisabled).toBe(true)
     expect(m.sectorBusinessMult).toEqual({ food: 6, property: 4 })
     expect(m.businessMult).toBe(1)

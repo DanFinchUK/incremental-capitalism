@@ -11,18 +11,6 @@
       <BulkPicker />
 
       <button
-        v-if="store.automationLine > 0"
-        type="button"
-        class="scn-Action scn-Action-outline"
-        :class="{ 'scn-Action-pausedToggle': store.autoBuyPaused }"
-        data-testid="toggle-autobuy-pause"
-        @click="store.toggleAutoBuyPaused()"
-      >
-        Automation: {{ store.autoBuyPaused ? 'Paused' : 'On' }}
-      </button>
-
-
-      <button
         type="button"
         class="scn-Action scn-Action-outline"
         data-testid="toggle-legacy-shop"

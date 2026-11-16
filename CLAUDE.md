@@ -33,8 +33,8 @@
 - Story copy (modal blurbs, victory and boss text, headlines, flavour in
   descriptions) speaks in the game's voice: a dry, satirical take on British
   wealth and privilege. It describes what happens in the world, not the
-  game's rules. "The headhunter won't leave until you take someone on or send
-  the lot packing" fits; "Every boss win brings a shortlist; the next boss
+  game's rules. "They won't leave until you take someone on or send the lot
+  packing" fits; "Every boss win brings a shortlist; the next boss
   waits until you do" reads like a spec and doesn't.
 - Rules and numbers go where the screen presents them as such: effect and
   cost lines, boss conditions, stat pills, buttons, a labelled rules line and

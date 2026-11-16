@@ -149,7 +149,7 @@ describe('advisor tiers', () => {
     Math.abs(Math.log(m.scandalSeverity)) +
     Math.abs(Math.log(m.windfallMult)) +
     Object.values(m.sectorBusinessMult).reduce((a, v) => a + Math.abs(Math.log(v ?? 1)), 0) +
-    m.automationShareBonus * 10 +
+    m.buyerItemTypes +
     m.trustFundShareAdd * 10 +
     m.milestoneStepBonus +
     m.allowanceTapsAdd / 10 +
@@ -158,6 +158,8 @@ describe('advisor tiers', () => {
   it('within each family the buff grows from common to rare to legendary', () => {
     const families = new Set(ADVISORS.map((a) => a.family))
     for (const f of families) {
+      // Buyers grow by budget and item types instead (tests/buyers.test.ts)
+      if (ADVISORS.find((a) => a.family === f)?.buyer) continue
       const tier = (r: string) => ADVISORS.find((a) => a.family === f && a.rarity === r)!
       const [c, r, l] = ['common', 'rare', 'legendary'].map(tier)
       const score = (a: (typeof ADVISORS)[number]) =>

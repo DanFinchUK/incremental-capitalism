@@ -42,16 +42,14 @@ describe('item card without automation', () => {
     expect(wrapper.text()).not.toMatch(/automat/i)
   })
 
-  it('sums the automation line into one status pill once anything brings it', () => {
-    const { store } = card()
-    expect(store.automationPill).toBe('')
-    hireEstateManager(store)
-    expect(store.automationPill).toBe('Auto under 1% of cash')
-    hireFree(store, 'head-butler')
-    expect(store.automationPill).toMatch(/^Auto under [\d.]+% of cash$/)
-    expect(store.automationPill).not.toBe('Auto under 1% of cash')
-    store.toggleAutoBuyPaused()
-    expect(store.automationPill).toBe('Auto paused')
+  it('shows the Automate tick on Job cards only once a Recruiter buys Jobs', async () => {
+    const { store, wrapper } = card()
+    hireEstateManager(store) // buys Businesses
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.scn-AutoBuy').exists()).toBe(false)
+    hireFree(store, 'temp-agency')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('.scn-AutoBuy').exists()).toBe(true)
   })
 
   it('shows job income at the base rate, ignoring Hustle', async () => {
@@ -65,11 +63,11 @@ describe('item card without automation', () => {
 
   it('keeps the buy button on an automated item', async () => {
     const { store, wrapper } = card()
-    hireEstateManager(store)
-    store.money = JOBS_BY_ID['1'].baseCost * 1e6 // far under the line: automated
+    hireFree(store, 'temp-agency')
+    store.money = JOBS_BY_ID['1'].baseCost * 1e6
     store.tick(2000)
     await wrapper.vm.$nextTick()
-    expect(store.isAutomated('jobs', '1')).toBe(true)
+    expect(store.buyerWorking('jobs')).toBe(true)
     // Automated cards look like any other: no shading and no status line
     expect(wrapper.find('[data-item-key="jobs-1"]').classes()).not.toContain('scn-Card-automated')
     expect(wrapper.text()).not.toContain('restocking')
@@ -81,11 +79,10 @@ describe('item card without automation', () => {
 
   it('collapses whenever Automate is ticked, whatever the price', async () => {
     const { store, wrapper } = card()
-    hireEstateManager(store)
+    hireFree(store, 'temp-agency')
     store.compactAutoBuy = true
-    store.money = 0 // nothing is under the line
+    store.money = 0 // nothing affordable
     await wrapper.vm.$nextTick()
-    expect(store.isAutomated('jobs', '1')).toBe(false)
     expect(wrapper.classes()).toContain('scn-Card-compact')
     expect(wrapper.find('.scn-Action-compact').exists()).toBe(true)
 

@@ -51,7 +51,7 @@
       </ul>
 
       <p v-if="victory && store.headhunterOffer.length > 0" class="scn-AutoLine" data-testid="victory-hire-next">
-        The headhunter has a shortlist waiting for you.
+        Some people would like to be introduced.
       </p>
 
       <details class="scn-PyramidFold" data-testid="class-pyramid" :open="!victory">

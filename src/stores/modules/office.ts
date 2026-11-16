@@ -40,6 +40,8 @@ export interface OfficeModule {
   queuedOffers: Ref<number>
   officeSources: ComputedRef<ModifierSource[]>
   hireAdvisor: (offerIndex: number, replaceSeat?: HireTarget) => boolean
+  // The advisor a hire would replace because they buy the same list, if any
+  replacedBuyer: (advisorId: string) => AdvisorInstance | null
   skipOffer: () => boolean
   fireAdvisor: (seat: number) => void
   firePA: (chair?: number) => void
@@ -102,11 +104,23 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     seatStore.value = seats
   }
 
-  // replaceSeat: an office seat index, or { pa } for a PA chair
-  function hireAdvisor(offerIndex: number, replaceSeat?: HireTarget): boolean {
+  // Where a buyer already of this kind sits: a new one takes their place
+  function sameBuyerAt(kind: 'jobs' | 'businesses' | undefined): HireTarget | null {
+    if (!kind) return null
+    const isKind = (a: AdvisorInstance | null) => a !== null && ADVISORS_BY_ID[a.advisorId]?.buyer === kind
+    const chair = paChairs.value.findIndex(isKind)
+    if (chair >= 0) return { pa: chair }
+    const seat = officeSeats.value.findIndex(isKind)
+    return seat >= 0 ? seat : null
+  }
+
+  // replaceSeat: an office seat index, or { pa } for a PA chair. A buyer
+  // always replaces the buyer of its kind, if there is one: one of each.
+  function hireAdvisor(offerIndex: number, requested?: HireTarget): boolean {
     const advisorId = headhunterOffer.value[offerIndex]
     const def = advisorId ? ADVISORS_BY_ID[advisorId] : undefined
     if (!def) return false
+    const replaceSeat = sameBuyerAt(def.buyer) ?? requested
     const inst: AdvisorInstance = { uid: newUid(), advisorId, servedGenerations: 0, campaignMs: 0 }
     // An empty PA chair is filled first, so the family's first advisors
     // aren't lost on retirement by accident
@@ -130,10 +144,16 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     return true
   }
 
+  function replacedBuyer(advisorId: string): AdvisorInstance | null {
+    const at = sameBuyerAt(ADVISORS_BY_ID[advisorId]?.buyer)
+    if (at === null) return null
+    return typeof at === 'number' ? (officeSeats.value[at] ?? null) : (paChairs.value[at.pa] ?? null)
+  }
+
   function skipOffer(): boolean {
     if (headhunterOffer.value.length === 0) return false
     nextOffer()
-    deps.announce('Sent the headhunter packing.')
+    deps.announce('Sent the lot packing, with a nice lunch for their trouble.')
     deps.flushSave()
     return true
   }
@@ -227,6 +247,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     queuedOffers,
     officeSources,
     hireAdvisor,
+    replacedBuyer,
     skipOffer,
     fireAdvisor,
     firePA,

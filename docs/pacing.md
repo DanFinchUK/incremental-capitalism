@@ -85,7 +85,9 @@ pair of Interns is free) and the capped perks alone (22 ranks) are more than
 one bloodline can buy: which perks to take is a real choice. A perk rank lasts
 the whole bloodline, while most advisors leave after a generation, so each
 rank is worth at least a rare advisor (`src/data/perks.ts`). Elevating to the
-Lords gives one title per 9 Legacy, one per completed bloodline.
+Lords gives one title per 9 Legacy, one per completed bloodline, and each
+title starts every new line with 2 Legacy (`sim/elevation.report.sim.ts`
+shows the climb after an elevation).
 
 ## Other targets
 

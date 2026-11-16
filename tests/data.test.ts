@@ -81,13 +81,13 @@ describe('catalogue & static data', () => {
     expect(BUSINESS_IMAGE_FILES).toHaveLength(22)
   })
 
-  it('defines 10 social classes (including 3 post-Elite secret tiers), 7 legacy perks, events, and headlines', () => {
+  it('defines 10 social classes (including 3 post-Elite secret tiers), 8 legacy perks, events, and headlines', () => {
     expect(SOCIAL_CLASSES).toHaveLength(10)
     expect(SOCIAL_CLASSES[0].threshold).toBe(0)
     expect(SOCIAL_CLASSES[7].label).toBe('Davos Regular')
     expect(SOCIAL_CLASSES[8].label).toBe('Shadow Cabinet')
     expect(SOCIAL_CLASSES[9].label).toBe('Reptilian Dynasty')
-    expect(LEGACY_PERKS).toHaveLength(7)
+    expect(LEGACY_PERKS).toHaveLength(8)
     // Legacy is one point per new gate, so every perk rank costs 1 (the first Intern is free)
     expect(perkNextCost('autoClicker', 0)).toBe(0)
     expect(perkNextCost('autoClicker', 1)).toBe(1)
@@ -96,8 +96,9 @@ describe('catalogue & static data', () => {
     expect(perkNextCost('hustleCap', 4)).toBe(1)
     expect(perkNextCost('hustleCap', 5)).toBeNull()
     expect(perkNextCost('nepotism', 3)).toBeNull()
-    // The whole finite tree costs 24 Legacy, more than a bloodline's 9; Interns are the open-ended sink
-    expect(perkSpend({ autoClicker: 0, hustleCap: 5, offshore: 5, nepotism: 3, deregulation: 4, insider: 4, officeSeats: 2 })).toBe(23)
+    // The whole finite tree costs 25 Legacy, more than a bloodline's 9; Interns are the open-ended sink
+    expect(perkNextCost('signingAuthority', 2)).toBeNull()
+    expect(perkSpend({ autoClicker: 0, hustleCap: 5, offshore: 5, nepotism: 3, signingAuthority: 2, deregulation: 4, insider: 4, officeSeats: 2 })).toBe(25)
     expect(perkSpend({ ...EMPTY_PERKS, autoClicker: 10 })).toBe(9)
     expect(MARKET_EVENTS.some((e) => e.shady)).toBe(true)
     // Rarity tiers: 60/30/10, and the 7x Overtime only in Legendary

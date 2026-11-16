@@ -23,6 +23,8 @@ export interface OhlcCandle {
   high: number
   low: number
   close: number
+  // What the buyers bought in this candle, in words, for its marker
+  buys?: string[]
 }
 
 export interface TelemetryState {
@@ -124,6 +126,13 @@ export function observeBalance(state: TelemetryState, ts: number, cash: number):
   if (safeCash > last.high) last.high = safeCash
   if (safeCash < last.low) last.low = safeCash
   last.close = safeCash
+}
+
+// A buyer's purchase lands on the current candle
+export function noteCandlePurchase(state: TelemetryState, text: string): void {
+  const candle = state.candles[state.candles.length - 1]
+  if (!candle) return
+  candle.buys = [...(candle.buys ?? []), text].slice(-6)
 }
 
 export function markTelemetryEvent(state: TelemetryState, marker: TelemetryMarker): void {

@@ -38,54 +38,22 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     wrapper.unmount()
   })
 
-  it('shows the automation pill with the family\'s lasting effects, and no automation figures on the desk', async () => {
-    const wrapper = mount(App, { global: { plugins: [pinia] } })
-    const store = useGameStore()
-    hireFree(store, 'head-butler')
-    store.money = 1_000_000
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="header-bloodline-pills"]').text()).toContain(`Auto under ${store.automationLinePct}% of cash`)
-    expect(wrapper.find('.scn-HustleRow').text()).not.toContain('Auto under')
-    expect(wrapper.find('.scn-Desk').text()).not.toMatch(/auto/i)
-    wrapper.unmount()
-  })
-
-  it('names the next item automation will pick up, and the cash it needs', async () => {
-    const wrapper = mount(App, { global: { plugins: [pinia] } })
-    const store = useGameStore()
-    hireFree(store, 'head-butler')
-    store.money = 0
-    await wrapper.vm.$nextTick()
-    const next = store.nextAutomation!
-    expect(next.label).toBe('Gig delivery rider')
-    expect(next.cash).toBeCloseTo(store.itemQuote('jobs', '1', 1).cost / store.automationLine)
-    store.toggleAutoBuy('jobs', '1')
-    expect(store.nextAutomation?.label).not.toBe('Gig delivery rider')
-    wrapper.unmount()
-  })
-
-  it('draws the next automation threshold on the cash chart when it is within reach', async () => {
+  it('marks the candle where a buyer bought something, in words', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
     store.closeIntro()
     if (store.tradingDeskCollapsed) store.toggleTradingDesk()
-    hireFree(store, 'head-butler')
-    store.autoBuyPaused = false
-    store.money = 2500 // the gig rider joins automation at about £4,333
+    store.jobsPurchased = { '1': 30 }
+    store.money = 1e9
+    hireFree(store, 'temp-agency')
     const t0 = Date.now()
-    for (let i = 1; i <= 8; i++) store.tick(t0 + i * 500)
+    for (let i = 1; i <= 6; i++) store.tick(t0 + i * 500)
     await wrapper.vm.$nextTick()
-    expect(store.nextAutomation!.cash).toBeGreaterThan(store.money)
-    expect(wrapper.find('[data-testid="desk-threshold-line"]').exists()).toBe(true)
-    // Far out of reach: no line, only the words under the chart
-    // (once the £2,500 candles have left the chart's 80 seconds)
-    store.money = 10
-    for (let i = 9; i <= 400; i++) {
-      store.money = 10
-      store.tick(t0 + i * 500)
-    }
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="desk-threshold-line"]').exists()).toBe(false)
+    const mark = wrapper.find('[data-testid="desk-buy-mark"]')
+    expect(mark.exists()).toBe(true)
+    expect(mark.find('title').text()).toMatch(/^Temping Agency bought \d+ × /)
+    // No threshold line or automation figures any more
+    expect(wrapper.find('.scn-Desk').text()).not.toMatch(/auto/i)
     wrapper.unmount()
   })
 

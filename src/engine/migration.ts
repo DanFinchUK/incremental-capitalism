@@ -59,7 +59,8 @@ export interface PersistedSceneState {
   titles: number
   achievementProgress: AchievementProgress
   bulkBuyMode: BulkBuyMode
-  autoBuyPaused: boolean
+  // Each list's buyer, stood down or not
+  buyersPaused: { jobs: boolean; businesses: boolean }
   compactAutoBuy: boolean
   // The room the family lives in: its current class's ('auto'), or one it has reached before
   decor: RoomId | 'auto'
@@ -111,7 +112,7 @@ export function createInitialSceneState(): PersistedSceneState {
     titles: 0,
     achievementProgress: { ...EMPTY_PROGRESS },
     bulkBuyMode: 1,
-    autoBuyPaused: false,
+    buyersPaused: { jobs: false, businesses: false },
     compactAutoBuy: false,
     decor: 'auto',
     noTap: false,
@@ -122,6 +123,15 @@ export function createInitialSceneState(): PersistedSceneState {
     titleLegacyGranted: true,
     lastUpdate: null
   }
+}
+
+// Older saves paused all automation with one switch
+function readBuyersPaused(raw: unknown, oldPaused: unknown): { jobs: boolean; businesses: boolean } {
+  if (raw && typeof raw === 'object') {
+    const r = raw as Record<string, unknown>
+    return { jobs: Boolean(r.jobs), businesses: Boolean(r.businesses) }
+  }
+  return { jobs: Boolean(oldPaused), businesses: Boolean(oldPaused) }
 }
 
 function readFavours(raw: unknown): FavourState {
@@ -391,7 +401,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     familyTree,
     gatesBeaten: Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.gatesBeaten, 0))),
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
-    autoBuyPaused: Boolean(s.autoBuyPaused),
+    buyersPaused: readBuyersPaused(s.buyersPaused, s.autoBuyPaused),
     compactAutoBuy: Boolean(s.compactAutoBuy),
     decor: ROOMS.some((r) => r.id === s.decor) ? (s.decor as RoomId) : 'auto',
     noTap: s.noTap === true,

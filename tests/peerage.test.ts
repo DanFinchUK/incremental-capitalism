@@ -25,7 +25,7 @@ describe('peerage rules', () => {
     expect(titleSource(2)).toMatchObject({ clickMult: 2, businessMult: 2 })
     expect(titleSource(1).legacyScale).toBeCloseTo(1.15)
     expect(titleSource(3).legacyScale).toBeCloseTo(1.45)
-    expect(titleSource(5).automationShareBonus).toBeUndefined()
+    expect(titleSource(5)).not.toHaveProperty('buyerItemTypes')
     expect(titlePaChairs(0)).toBe(1)
     expect(titlePaChairs(3)).toBe(4)
   })

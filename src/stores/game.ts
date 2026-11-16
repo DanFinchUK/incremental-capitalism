@@ -61,6 +61,7 @@ import {
   currentManualPerSec,
   currentRealisedPerSec,
   markTelemetryEvent,
+  noteCandlePurchase,
   observeBalance,
   recordIncome,
   resetTelemetry,
@@ -74,7 +75,7 @@ import { combineModifiers, type ModifierSource } from '../engine/modifiers'
 import { generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { createPlayLogModule } from './modules/playLog'
 import { loadPlayLog, withPlayLog } from '../engine/playLog'
-import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationLine } from '../engine/automation'
+import { bestValue, familyBuyers, type BuyOption } from '../engine/buyers'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
 import { createOfficeModule, type HireTarget } from './modules/office'
@@ -170,7 +171,8 @@ export const useGameStore = defineStore('game', () => {
   const lifetimeEarned = ref<number>(initial.lifetimeEarned)
   const highestClassReached = ref<number>(initial.highestClassReached)
   const bulkBuyMode = ref<BulkBuyMode>(initial.bulkBuyMode)
-  const autoBuyPaused = ref<boolean>(initial.autoBuyPaused)
+  // Each list's buyer can be stood down on its own
+  const buyersPaused = ref<{ jobs: boolean; businesses: boolean }>(initial.buyersPaused)
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
   const decor = ref<RoomId | 'auto'>(initial.decor)
   const noTap = ref<boolean>(initial.noTap)
@@ -429,18 +431,23 @@ export const useGameStore = defineStore('game', () => {
     mods: modifiers.value
   }))
 
-  // Share of cash under which an item's next unit restocks itself
-  // Old School Tie now calls in favours, so only advisors, heirs and titles bring automation
-  const automationLine = computed(() => automationShare(0, modifiers.value.automationShareBonus))
-  // The status pill: the whole automation line, from perks, advisors, heirs
-  // and titles together. Empty until something brings automation; a freeze
-  // has its own pill.
-  const automationPill = computed(() => {
-    if (automationLine.value <= 0 || isAutoBuyFrozen.value) return ''
-    if (autoBuyPaused.value || twist.value.automationPaused) return 'Auto paused'
-    return `Auto under ${automationLinePct.value}% of cash`
-  })
-  const automationLinePct = computed(() => Math.round(automationLine.value * 1000) / 10)
+  // Buyers: a Recruiter for Jobs and Acquisitions for Businesses, or the
+  // family's own staff on a Landed Gentry heir (engine/buyers.ts)
+  const buyers = computed(() =>
+    familyBuyers({
+      seats: office.officeSeats.value,
+      paChairs: office.paChairs.value,
+      signingRanks: perks.value.signingAuthority,
+      extraItemTypes: modifiers.value.buyerItemTypes
+    })
+  )
+  const hasBuyers = computed(() => buyers.value.jobs !== null || buyers.value.businesses !== null)
+
+  // Whether a list's buyer is at work right now: hired, not stood down, and
+  // not stopped by a freeze or a boss
+  function buyerWorking(kind: ItemKind): boolean {
+    return buyers.value[kind] !== null && !buyersPaused.value[kind] && !isAutoBuyFrozen.value && !twist.value.automationPaused
+  }
 
   const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
   const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
@@ -562,7 +569,7 @@ export const useGameStore = defineStore('game', () => {
       titles: titles.value,
       achievementProgress: achievementProgress.value,
       bulkBuyMode: bulkBuyMode.value,
-      autoBuyPaused: autoBuyPaused.value,
+      buyersPaused: buyersPaused.value,
       compactAutoBuy: compactAutoBuy.value,
       decor: decor.value,
       noTap: noTap.value,
@@ -623,7 +630,7 @@ export const useGameStore = defineStore('game', () => {
     bosses.bossAttempt.value = null
     bosses.bossCooldownUntilMs.value = 0
     bulkBuyMode.value = loaded.bulkBuyMode
-    autoBuyPaused.value = loaded.autoBuyPaused
+    buyersPaused.value = loaded.buyersPaused
     compactAutoBuy.value = loaded.compactAutoBuy
     decor.value = loaded.decor
     noTap.value = loaded.noTap
@@ -719,7 +726,8 @@ export const useGameStore = defineStore('game', () => {
     return true
   }
 
-  function itemQuote(kind: ItemKind, id: string, modeOverride?: BulkBuyMode) {
+  // cash: what the purchase may spend, if not all your money (a buyer's budget)
+  function itemQuote(kind: ItemKind, id: string, modeOverride?: BulkBuyMode, cash?: number) {
     const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
     const owned = kind === 'jobs' ? (jobsPurchased.value[id] ?? 0) : (businessesOwned.value[id] ?? 0)
     return bulkBuyQuote(
@@ -731,16 +739,22 @@ export const useGameStore = defineStore('game', () => {
         modifiers.value.purchaseCostMult *
         (modifiers.value.sectorCostMult[def.sector] ?? 1),
       modeOverride ?? bulkBuyMode.value,
-      money.value
+      Math.min(money.value, cash ?? money.value)
     )
   }
 
   // save: manual purchases save at once; automation relies on the throttled tick save
-  function buyItem(kind: ItemKind, id: string, modeOverride?: BulkBuyMode, save = true): { bought: number; hitMilestone: boolean; promotedClass: boolean } {
-    const quote = itemQuote(kind, id, modeOverride)
+  function buyItem(
+    kind: ItemKind,
+    id: string,
+    modeOverride?: BulkBuyMode,
+    save = true,
+    cash?: number
+  ): { bought: number; hitMilestone: boolean; promotedClass: boolean; cost: number } {
+    const quote = itemQuote(kind, id, modeOverride, cash)
     const gatedDef = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
     if (!quote.canAfford || quote.count < 1 || !gatedDef || gatedDef.baseCost > costCeiling.value) {
-      return { bought: 0, hitMilestone: false, promotedClass: false }
+      return { bought: 0, hitMilestone: false, promotedClass: false, cost: 0 }
     }
 
     const map = kind === 'jobs' ? jobsPurchased.value : businessesOwned.value
@@ -777,69 +791,52 @@ export const useGameStore = defineStore('game', () => {
     return {
       bought: quote.count,
       hitMilestone: crossedMilestone !== null,
-      promotedClass: promoted
+      promotedClass: promoted,
+      cost: quote.cost
     }
   }
 
-  // The cash at which the next item joins automation: its next unit's price
-  // over the automation line. For the trading desk's threshold line.
-  const nextAutomation = computed<{ label: string; cash: number } | null>(() => {
-    if (!automationPill.value || automationPill.value === 'Auto paused') return null
-    let best: { label: string; cash: number } | null = null
-    for (const [kind, rows] of [
-      ['jobs', visibleJobs.value],
-      ['businesses', visibleBusinesses.value]
-    ] as const) {
-      for (const r of rows) {
-        if (r.mode !== 'revealed' || !isAutoBuyEnabled(kind, r.item.id) || r.item.baseCost > costCeiling.value) continue
-        if (isAutomated(kind, r.item.id)) continue
-        const cash = itemQuote(kind, r.item.id, 1).cost / automationLine.value
-        if (!best || cash < best.cash) best = { label: r.item.label, cash }
+  // Once a second each buyer gets a budget, a share of the cash in hand (both
+  // from the same snapshot), and buys the best return per pound that fits at
+  // the bulk setting, then the next best with what's left, up to its item
+  // types, never the same item twice. Unspent budget stays put.
+  function runBuyers(ts: number): void {
+    if (lastAutoBuyAt.value > 0 && ts - lastAutoBuyAt.value < AUTO_BUY_COOLDOWN_MS) return
+    const cash = money.value
+    let bought = false
+    for (const kind of ['jobs', 'businesses'] as const) {
+      const buyer = buyers.value[kind]
+      if (!buyer || !buyerWorking(kind)) continue
+      let left = cash * buyer.share
+      const rows = kind === 'jobs' ? visibleJobs.value : visibleBusinesses.value
+      const done = new Set<string>()
+      for (let pick = 0; pick < buyer.itemTypes; pick++) {
+        const options: BuyOption[] = []
+        for (const r of rows) {
+          if (r.mode !== 'revealed' || done.has(r.item.id) || !isAutoBuyEnabled(kind, r.item.id)) continue
+          const q = itemQuote(kind, r.item.id, undefined, left)
+          if (!q.canAfford || q.count < 1) continue
+          const delta = itemIncomeDelta(kind, r.item.id, q.count)
+          const gain = kind === 'jobs' ? delta.deltaPerClick : delta.deltaPerSec
+          options.push({ id: r.item.id, cost: q.cost, valuePerPound: gain / q.cost })
+        }
+        const best = bestValue(options)
+        if (!best) break
+        const result = buyItem(kind, best.id, undefined, false, left)
+        if (result.bought === 0) break
+        done.add(best.id)
+        left -= result.cost
+        bought = true
+        const def = kind === 'jobs' ? JOBS_BY_ID[best.id] : BUSINESSES_BY_ID[best.id]
+        noteCandlePurchase(telemetry.value, `${buyer.name} bought ${result.bought} × ${def.label}`)
       }
     }
-    return best
-  })
-
-  function isAutomated(kind: ItemKind, id: string): boolean {
-    if (autoBuyDisabled.value[kind][id] || twist.value.automationPaused || isAutoBuyFrozen.value) {
-      return false
-    }
-    const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
-    if (!def || def.baseCost > costCeiling.value) {
-      return false
-    }
-    return isWithinAutomationLine(itemQuote(kind, id, 1).cost, money.value, automationLine.value)
+    if (bought) lastAutoBuyAt.value = ts
   }
 
-  // Once a second, restock every item behind the automation line, cheapest
-  // first, up to a cap so a huge bank balance can't stall a tick.
-  function runAutoBuy(ts: number): void {
-    if (isAutoBuyFrozen.value || autoBuyPaused.value || twist.value.automationPaused) {
-      return
-    }
-    if (lastAutoBuyAt.value > 0 && ts - lastAutoBuyAt.value < AUTO_BUY_COOLDOWN_MS) {
-      return
-    }
-    const candidates: Array<{ kind: ItemKind; id: string }> = [
-      ...visibleJobs.value.flatMap((r) => (r.mode === 'revealed' ? [{ kind: 'jobs' as const, id: r.item.id }] : [])),
-      ...visibleBusinesses.value.flatMap((r) => (r.mode === 'revealed' ? [{ kind: 'businesses' as const, id: r.item.id }] : []))
-    ]
-    let bought = 0
-    while (bought < MAX_AUTOMATION_PURCHASES_PER_TICK) {
-      let cheapest: { kind: ItemKind; id: string; cost: number } | null = null
-      for (const c of candidates) {
-        if (!isAutomated(c.kind, c.id)) continue
-        const cost = itemQuote(c.kind, c.id, 1).cost
-        if (!cheapest || cost < cheapest.cost) cheapest = { ...c, cost }
-      }
-      if (!cheapest || buyItem(cheapest.kind, cheapest.id, 1, false).bought === 0) {
-        break
-      }
-      bought += 1
-    }
-    if (bought > 0) {
-      lastAutoBuyAt.value = ts
-    }
+  function toggleBuyersPaused(kind: ItemKind): void {
+    buyersPaused.value = { ...buyersPaused.value, [kind]: !buyersPaused.value[kind] }
+    flushSave(nowMs.value)
   }
 
   function manualClick(ts = Date.now()): number {
@@ -922,7 +919,7 @@ export const useGameStore = defineStore('game', () => {
   // A freeze stops automation. A family with no automation to freeze has its
   // income halved for the same time instead, so the threat always bites.
   function applyFreeze(ms: number, ts: number): void {
-    if (automationLine.value > 0) {
+    if (hasBuyers.value) {
       autoBuyFrozenUntil.value = Math.max(autoBuyFrozenUntil.value, ts + ms)
       return
     }
@@ -1045,8 +1042,8 @@ export const useGameStore = defineStore('game', () => {
     }
     applyFreeze(effect.freezeSec * 1000, ts)
     announce(
-      automationLine.value > 0
-        ? `Select Committee Inquiry! Automation paused for ${effect.freezeSec}s (cash untouched).`
+      hasBuyers.value
+        ? `Select Committee Inquiry! Your buyers are suspended for ${effect.freezeSec}s (cash untouched).`
         : `Select Committee Inquiry! Income halved for ${effect.freezeSec}s (cash untouched).`
     )
     flushSave(ts)
@@ -1098,7 +1095,7 @@ export const useGameStore = defineStore('game', () => {
 
     refreshSeenItems()
     // Before and after: restocking is what pushes an item back over the line
-    runAutoBuy(ts)
+    runBuyers(ts)
     observeBalance(telemetry.value, ts, money.value)
     if (ts - telemetry.value.lastSampleTs >= 250) {
       sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value, undefined, favourPerSecond.value)
@@ -1615,11 +1612,6 @@ export const useGameStore = defineStore('game', () => {
     flushSave(nowMs.value)
   }
 
-  function toggleAutoBuyPaused(): void {
-    autoBuyPaused.value = !autoBuyPaused.value
-    flushSave(nowMs.value)
-  }
-
   function itemIncomeDelta(kind: ItemKind, id: string, count: number): IncomeDeltaQuote {
     return quoteIncomeDelta(kind, id, count, economyInput.value)
   }
@@ -1653,7 +1645,7 @@ export const useGameStore = defineStore('game', () => {
     lifetimeEarned,
     highestClassReached,
     bulkBuyMode,
-    autoBuyPaused,
+    buyersPaused,
     compactAutoBuy,
     decor,
     unlockedRooms,
@@ -1730,6 +1722,7 @@ export const useGameStore = defineStore('game', () => {
     elevateToLords,
     firePA: office.firePA,
     promoteToPA: office.promoteToPA,
+    replacedBuyer: office.replacedBuyer,
     costCeiling,
     activeGenerationMs,
     bossAttempt: bosses.bossAttempt,
@@ -1795,11 +1788,10 @@ export const useGameStore = defineStore('game', () => {
     tick,
     toggleAutoBuy,
     isAutoBuyEnabled,
-    isAutomated,
-    automationLine,
-    automationPill,
-    automationLinePct,
-    nextAutomation,
+    buyers,
+    hasBuyers,
+    buyerWorking,
+    toggleBuyersPaused,
     buyPerk,
     retire,
     hardReset,
@@ -1807,7 +1799,6 @@ export const useGameStore = defineStore('game', () => {
     toggleMute,
     setBulkBuyMode,
     toggleCompactAutoBuy,
-    toggleAutoBuyPaused,
     toggleTradingDesk,
     openClassPyramid,
     closeClassModal

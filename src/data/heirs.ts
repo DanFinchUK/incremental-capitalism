@@ -67,6 +67,13 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     mods: { clickMult: 2, purchaseCostMult: 1.15 }
   },
   {
+    id: 'minor-gentry',
+    name: 'Minor Gentry',
+    rarity: 'common',
+    description: 'A rectory, two spaniels and a cleaner called Pam. Your buyers handle 1 more kind of item a second (Pam buys for you if you have no buyers), but businesses earn 10% less.',
+    mods: { buyerItemTypes: 1, businessMult: 0.9 }
+  },
+  {
     id: 'nepo-baby',
     name: 'Nepo Baby',
     rarity: 'rare',
@@ -98,8 +105,8 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     id: 'landed-gentry',
     name: 'Landed Gentry',
     rarity: 'rare',
-    description: 'Has staff for the staff. The staff restock anything whose next unit costs under 3% of your cash, but clicks pay 20% less.',
-    mods: { automationShareBonus: 0.03, clickMult: 0.8 }
+    description: 'Has staff for the staff. Your buyers handle 2 more kinds of item a second (the family\'s own staff buy for you if you have none), but clicks pay 20% less.',
+    mods: { buyerItemTypes: 2, clickMult: 0.8 }
   },
   {
     id: 'the-favourite',
@@ -114,6 +121,13 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     rarity: 'legendary',
     description: 'Owns three newspapers and the opinions in them. Media earns six times as much, opportunities come faster, and windfalls are 50% bigger.',
     mods: { sectorBusinessMult: { media: 6 }, eventIntervalMult: 0.6, windfallMult: 1.5 }
+  },
+  {
+    id: 'old-aristocracy',
+    name: 'Old Aristocracy',
+    rarity: 'legendary',
+    description: 'The family seat has a moat and forty bedrooms nobody has been into since 1952. Your buyers handle 3 more kinds of item a second (the household buys for you if you have no buyers), but the upkeep takes 2% of all income.',
+    mods: { buyerItemTypes: 3, incomeDrain: 0.02 }
   }
 ]
 

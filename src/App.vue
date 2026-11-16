@@ -53,6 +53,7 @@
               <div class="lyt-Items">
                 <div class="lyt-ListHead">
                   <h2 class="scn-ColumnTitle">Jobs</h2>
+                  <BuyerControl kind="jobs" />
                   <BulkPicker v-if="phone" />
                 </div>
                 <ItemCard
@@ -69,6 +70,7 @@
               <div class="lyt-Items">
                 <div class="lyt-ListHead">
                   <h2 class="scn-ColumnTitle">Businesses</h2>
+                  <BuyerControl kind="businesses" />
                   <BulkPicker v-if="phone" />
                 </div>
                 <ItemCard
@@ -133,6 +135,7 @@ import NewsTicker from './components/NewsTicker.vue'
 import AbdicationModal from './components/AbdicationModal.vue'
 import HireModal from './components/HireModal.vue'
 import FavourModal from './components/FavourModal.vue'
+import BuyerControl from './components/BuyerControl.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import OverviewBar from './components/OverviewBar.vue'
 import TradingDesk from './components/TradingDesk.vue'

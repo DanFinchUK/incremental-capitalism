@@ -27,6 +27,7 @@
         <strong>{{ a.name }}</strong>
         <p class="scn-AutoLine">{{ store.wording(a.effectText) }}</p>
         <p class="scn-StatHint">{{ a.costText }} Fee: {{ Math.round(a.hireFeeShare * 100) }}% cash.</p>
+        <p v-if="replaces(a.id)" class="scn-StatHint" data-testid="replaces-buyer">Replaces your {{ replaces(a.id) }}</p>
         <button
           v-if="choosing === i && seatsFull"
           type="button"
@@ -123,8 +124,14 @@ const chosen = computed(() => (choosing.value === null ? null : offer.value[choo
 watch(offer, () => (choosing.value = null))
 const pickerTitle = ref<HTMLElement | null>(null)
 
+// A buyer replaces the one already buying their list, so needs no seat picked
+function replaces(id: string): string | null {
+  const inst = store.replacedBuyer(id)
+  return inst ? (ADVISORS_BY_ID[inst.advisorId]?.name ?? null) : null
+}
+
 function hire(i: number): void {
-  if (seatsFull.value) {
+  if (seatsFull.value && !replaces(offer.value[i].id)) {
     choosing.value = i
     // On a phone the row of current advisors sits below the fold
     void nextTick(() => pickerTitle.value?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }))

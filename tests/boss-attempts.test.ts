@@ -121,7 +121,7 @@ describe('boss attempts', () => {
     store.businessesOwned['1'] = 2
     store.jobsPurchased['1'] = 5
     store.perks.autoClicker = 2
-    store.toggleAutoBuyPaused() // keep automation's spending out of the sums
+    store.buyersPaused = { jobs: true, businesses: true } // keep the buyers' spending out of the sums
     store.startBossAttempt()
     // Gate cash is astronomical; clear it so small credits stay exact
     store.money = 0

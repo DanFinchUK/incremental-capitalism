@@ -1,6 +1,7 @@
 # Buyers and favours: automation redesign
 
-Status: design agreed; being built in the order below. A clickable sketch of the favour button:
+Status: built (favours, PAs and titles, buyers), with the changes made in play
+noted in each section. A clickable sketch of the favour button:
 https://claude.ai/artifact/KZLiWJcfXDNZxE31jRHPAu
 
 ## Why
@@ -49,6 +50,8 @@ Automation becomes staff who press Buy.
   its budget: common 1 item type, rare 2, legendary 3, and +1 for each
   honours tier (a peer handles 7). Landed Gentry traits add more on top
   (below).
+- **Honours.** Each honour a PA buyer holds adds +10% budget and one item
+  type.
 - **Bulk setting.** Buyers follow the same x1 / x10 / Next / Max picker as the
   player's own Buy buttons. Max means as much of the single best item as the
   budget allows, so on Max a buyer concentrates on one item (revisit if it

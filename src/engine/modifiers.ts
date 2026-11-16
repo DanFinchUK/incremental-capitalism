@@ -27,7 +27,8 @@ export interface Modifiers {
   scandalSeverity: number
   // 1 is full strength; 0.75 is a quarter weaker
   twistStrength: number
-  automationShareBonus: number
+  // Extra kinds of item each buyer handles a second (Landed Gentry and kin)
+  buyerItemTypes: number
   windfallMult: number
   // What the Interns earn, on top of the click pay they tap at
   internMult: number
@@ -56,7 +57,7 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   bossTimeMult: 1,
   scandalSeverity: 1,
   twistStrength: 1,
-  automationShareBonus: 0,
+  buyerItemTypes: 0,
   windfallMult: 1,
   internMult: 1,
   allowanceTapsAdd: 0,
@@ -82,7 +83,7 @@ const SUM_KEYS = [
   'milestoneStepBonus',
   'trustFundShareAdd',
   'shadyBonus',
-  'automationShareBonus',
+  'buyerItemTypes',
   'allowanceTapsAdd',
   'offlineEfficiencyAdd'
 ] as const

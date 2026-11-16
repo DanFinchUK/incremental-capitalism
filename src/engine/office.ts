@@ -107,7 +107,7 @@ const SUM_KEYS = [
   'milestoneStepBonus',
   'trustFundShareAdd',
   'shadyBonus',
-  'automationShareBonus',
+  'buyerItemTypes',
   'allowanceTapsAdd',
   'offlineEfficiencyAdd'
 ] as const

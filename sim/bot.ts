@@ -100,7 +100,7 @@ export const PLAYSTYLES: ReadonlyArray<{ name: string; cfg: BotConfig; finishWit
   {
     // Taps hard and puts Legacy into compounding milestones and automation
     name: 'tapper building milestones and automation',
-    cfg: { ...FAST_TAPPER, perkPriority: ['deregulation', 'nepotism', 'officeSeats', 'hustleCap', 'autoClicker'] },
+    cfg: { ...FAST_TAPPER, perkPriority: ['deregulation', 'signingAuthority', 'nepotism', 'officeSeats', 'hustleCap', 'autoClicker'] },
     finishWithinHours: 3
   },
   {
@@ -118,7 +118,7 @@ export const PLAYSTYLES: ReadonlyArray<{ name: string; cfg: BotConfig; finishWit
   {
     // Never taps; lets the estate run itself, then builds milestones
     name: 'non-tapper automating everything',
-    cfg: { ...ZERO_TAP, perkPriority: ['nepotism', 'officeSeats', 'deregulation', 'autoClicker'] },
+    cfg: { ...ZERO_TAP, perkPriority: ['signingAuthority', 'officeSeats', 'nepotism', 'deregulation', 'autoClicker'] },
     finishWithinHours: 4
   }
 ]
@@ -425,6 +425,8 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe): Gen
   store.hydrateFromStorage(ts)
   store.closeIntro(ts)
   if (cfg.noTap) store.toggleNoTap()
+  // Buyers follow the bulk setting; a player with staff buys to the next milestone
+  store.bulkBuyMode = 'next'
   store.tick(ts)
 
   const results: GenerationResult[] = []

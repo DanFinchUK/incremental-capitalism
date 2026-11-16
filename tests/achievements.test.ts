@@ -13,7 +13,7 @@ function fresh() {
   const store = useGameStore()
   store.hydrateFromStorage(T0)
   store.closeIntro(T0)
-  store.toggleAutoBuyPaused()
+  store.buyersPaused = { jobs: true, businesses: true } // keep the buyers' spending out of the sums
   return store
 }
 

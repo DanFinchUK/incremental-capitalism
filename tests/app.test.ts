@@ -38,7 +38,7 @@ describe('App UI integration', () => {
     wrapper.unmount()
   })
 
-  it('switches bulk-buy modes and opens the 7-perk Old Boys Network drawer', async () => {
+  it('switches bulk-buy modes and opens the 8-perk Old Boys Network drawer', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
 
@@ -51,7 +51,7 @@ describe('App UI integration', () => {
     const networkBtn = wrapper.find('[data-testid="toggle-legacy-shop"]')
     await networkBtn.trigger('click')
     expect(wrapper.find('[data-testid="legacy-modal"]').exists()).toBe(true)
-    expect(wrapper.findAll('.scn-PerkCard')).toHaveLength(7)
+    expect(wrapper.findAll('.scn-PerkCard')).toHaveLength(8)
     wrapper.unmount()
   })
 
@@ -150,8 +150,6 @@ describe('App UI integration', () => {
     store.gatesBeaten = 9
     store.legacyPoints = 1
     store.businessesOwned = { '1': 10, '20': 10 }
-    // Etsy's next unit (~£124k) is under 1% of £15M cash, so it is automated;
-    // the Phone kiosk's (~£516k) is not, so it keeps its buy button
     store.money = 15_000_000
     hireEstateManager(store)
     store.seenItems.jobs = { '1': true, '19': true, '2': true, '3': true, '4': true, '5': true }
@@ -174,12 +172,15 @@ describe('App UI integration', () => {
     await wrapper.find('[data-item-key="businesses-1"]').trigger('click')
     expect(wrapper.find('[data-item-key="businesses-1"]').classes()).not.toContain('scn-Card-compact')
 
-    // Pausing automation brings back the manual buy button on automated cards
-    const pauseBtn = wrapper.find('[data-testid="toggle-autobuy-pause"]')
-    expect(pauseBtn.exists()).toBe(true)
-    expect(pauseBtn.text()).toContain('Automation: On')
-    await pauseBtn.trigger('click')
-    expect(pauseBtn.text()).toContain('Automation: Paused')
+    // The buyer sits beside the Businesses heading; standing them down unfolds their cards
+    const buyer = wrapper.find('[data-testid="buyer-businesses"]')
+    expect(buyer.text()).toContain('Budget 20% · 1 item')
+    expect(wrapper.find('[data-testid="buyer-jobs"]').exists()).toBe(false)
+    await wrapper.find('[data-item-key="businesses-1"]').find('.scn-CompactRefold').trigger('click')
+    expect(wrapper.find('[data-item-key="businesses-1"]').classes()).toContain('scn-Card-compact')
+    await wrapper.find('[data-testid="buyer-toggle-businesses"]').setValue(false)
+    expect(store.buyersPaused.businesses).toBe(true)
+    expect(wrapper.find('[data-item-key="businesses-1"]').classes()).not.toContain('scn-Card-compact')
     expect(wrapper.find('[data-item-key="businesses-1"]').text()).toContain('Acquire')
     wrapper.unmount()
   })

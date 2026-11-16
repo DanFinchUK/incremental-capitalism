@@ -70,19 +70,7 @@
       </p>
 
       <!-- The family's lasting effects; the temporary ones sit with Hustle -->
-      <div
-        v-if="store.bloodlineTraitPills.length > 0 || store.automationPill"
-        class="scn-TraitPillRow"
-        data-testid="header-bloodline-pills"
-      >
-        <span
-          v-if="store.automationPill"
-          class="scn-TraitPill"
-          :class="{ 'scn-TraitPill-neg': store.automationPill === 'Auto paused' }"
-          data-testid="automation-pill"
-        >
-          {{ store.automationPill }}
-        </span>
+      <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow" data-testid="header-bloodline-pills">
         <span
           v-for="pill in store.bloodlineTraitPills"
           :key="pill.label"

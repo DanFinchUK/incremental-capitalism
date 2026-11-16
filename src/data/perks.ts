@@ -3,6 +3,7 @@ export type PerkId =
   | 'hustleCap'
   | 'offshore'
   | 'nepotism'
+  | 'signingAuthority'
   | 'deregulation'
   | 'insider'
   | 'officeSeats'
@@ -23,6 +24,7 @@ export const EMPTY_PERKS: Readonly<PerkRanks> = {
   hustleCap: 0,
   offshore: 0,
   nepotism: 0,
+  signingAuthority: 0,
   deregulation: 0,
   insider: 0,
   officeSeats: 0
@@ -39,6 +41,9 @@ export const OFFLINE_RATE_PER_OFFSHORE_RANK = 0.2
 export const OFFLINE_HOURS_PER_OFFSHORE_RANK = 24
 export const EVENT_INTERVAL_PER_INSIDER_RANK = 0.8
 export const BUFF_DURATION_PER_INSIDER_RANK = 0.5
+// Every buyer's budget, as a share of cash, a rank: a legendary buyer with
+// both ranks spends everything it can
+export const BUYER_SHARE_PER_SIGNING_RANK = 0.2
 
 export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
@@ -72,6 +77,14 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
     maxRank: 3,
     costForRank: () => 1,
     effectSummary: (r) => `${r} favour${r === 1 ? '' : 's'} a generation`
+  },
+  {
+    id: 'signingAuthority',
+    label: 'Signing Authority',
+    description: 'Your staff may sign for more without asking: every buyer\'s budget is 20% more of your cash a rank.',
+    maxRank: 2,
+    costForRank: () => 1,
+    effectSummary: (r) => `+${20 * r}% buyer budget`
   },
   {
     id: 'deregulation',

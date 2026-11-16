@@ -55,7 +55,7 @@ describe('schema 8 saves', () => {
       ...createInitialSceneState(),
       legacyPoints: 10,
       legacySpent: 9,
-      perks: { autoClicker: 2, hustleCap: 1, offshore: 0, nepotism: 0, deregulation: 0, insider: 0, officeSeats: 0 }
+      perks: { autoClicker: 2, hustleCap: 1, offshore: 0, nepotism: 0, signingAuthority: 0, deregulation: 0, insider: 0, officeSeats: 0 }
     })
     // Interns 0 + 1, Grindset 1
     expect(parseSavedState(raw).legacySpent).toBe(2)

@@ -51,6 +51,9 @@ export interface AdvisorDef {
   mods: ModifierSource
   // What they cost while employed, per copy (payrises scale this)
   upkeep: ModifierSource
+  // A buyer presses Buy on one list for you each second (engine/buyers.ts).
+  // You keep one of each: hiring another replaces the first
+  buyer?: 'jobs' | 'businesses'
   // Extra income per advisor in the office who has this role
   roleBonus?: { role: AdvisorRole; incomePerAdvisor: number }
   campaign?: Campaign
@@ -172,37 +175,79 @@ export const ADVISORS: ReadonlyArray<AdvisorDef> = [
   {
     id: 'estate-manager',
     name: 'Estate Manager',
-    family: 'automation',
+    family: 'acquisitions',
     rarity: 'common',
     roles: ['buyer'],
-    effectText: 'Anything costing under 1% of your cash restocks itself. Each one hired adds 1%.',
+    buyer: 'businesses',
+    effectText: 'Buys Businesses for you: up to 20% of your cash a second, one kind at a time. Walks the grounds with a clipboard.',
     costText: 'Takes 1% of all income.',
     hireFeeShare: FEE.common,
-    mods: { automationShareBonus: 0.01 },
+    mods: {},
     upkeep: { incomeDrain: 0.01 }
   },
   {
     id: 'head-butler',
     name: 'Head Butler',
-    family: 'automation',
+    family: 'acquisitions',
     rarity: 'rare',
     roles: ['buyer', 'household'],
-    effectText: 'Runs the household: anything costing under 3% of your cash restocks itself.',
+    buyer: 'businesses',
+    effectText: 'Buys Businesses for you: up to 40% of your cash a second, two kinds at a time. Runs the household, and now the holdings.',
     costText: 'Takes 2% of all income.',
     hireFeeShare: FEE.rare,
-    mods: { automationShareBonus: 0.03 },
+    mods: {},
     upkeep: { incomeDrain: 0.02 }
   },
   {
     id: 'proxy',
     name: 'Proxy with Power of Attorney',
-    family: 'automation',
+    family: 'acquisitions',
     rarity: 'legendary',
     roles: ['buyer'],
-    effectText: 'Signs for everything: anything costing under 5% of your cash restocks itself.',
+    buyer: 'businesses',
+    effectText: 'Buys Businesses for you: up to 60% of your cash a second, three kinds at a time. Signs for everything.',
     costText: 'Commission: purchases cost 3% more.',
     hireFeeShare: FEE.legendary,
-    mods: { automationShareBonus: 0.05 },
+    mods: {},
+    upkeep: { purchaseCostMult: 1.03 }
+  },
+  {
+    id: 'temp-agency',
+    name: 'Temping Agency',
+    family: 'recruiting',
+    rarity: 'common',
+    roles: ['buyer'],
+    buyer: 'jobs',
+    effectText: 'Takes on Jobs for you: up to 20% of your cash a second, one kind at a time. Sends whoever was free.',
+    costText: 'Takes 1% of all income.',
+    hireFeeShare: FEE.common,
+    mods: {},
+    upkeep: { incomeDrain: 0.01 }
+  },
+  {
+    id: 'recruitment-consultant',
+    name: 'Recruitment Consultant',
+    family: 'recruiting',
+    rarity: 'rare',
+    roles: ['buyer', 'services'],
+    buyer: 'jobs',
+    effectText: 'Takes on Jobs for you: up to 40% of your cash a second, two kinds at a time. Calls everyone "a rockstar".',
+    costText: 'Takes 2% of all income.',
+    hireFeeShare: FEE.rare,
+    mods: {},
+    upkeep: { incomeDrain: 0.02 }
+  },
+  {
+    id: 'executive-search',
+    name: 'Executive Search Partner',
+    family: 'recruiting',
+    rarity: 'legendary',
+    roles: ['buyer', 'finance'],
+    buyer: 'jobs',
+    effectText: 'Takes on Jobs for you: up to 60% of your cash a second, three kinds at a time. Only places people they were at school with.',
+    costText: 'Commission: purchases cost 3% more.',
+    hireFeeShare: FEE.legendary,
+    mods: {},
     upkeep: { purchaseCostMult: 1.03 }
   },
   {

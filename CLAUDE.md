@@ -48,6 +48,10 @@
   mechanic needs a name, take it from British wealth and class (titles,
   honours, staff, estates, occasions) before reaching for a gaming term
   (boss, run, tier, buff, loot, XP, level up, rarity).
+- When prose names a button or other control, quote its label exactly as it
+  appears: tap "Get paid", turn on "Play without tapping", cards set to
+  "Automate". A verb used as a verb ("Retire to pass it all on") stays
+  unquoted.
 - Follow the avoid-ai-writing guidance
   (github.com/conorbronsdon/avoid-ai-writing): no em dashes, none of its
   flagged vocabulary, no stock transitions, no "it's not X, it's Y" framing.

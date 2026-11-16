@@ -20,7 +20,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     title: 'Businesses earn while you sleep',
     body: [
       'Businesses pay out every second, and at a reduced rate while you are away.',
-      'Ownership milestones multiply an item\'s output. Use x1, x10, Next and Max to buy in bulk.',
+      'Ownership milestones multiply an item\'s output. Use "x1", "x10", "Next" and "Max" to buy in bulk.',
       'Opportunities on the Market Wire last a few seconds. A freeze stops automation, or halves income if nothing is automated.'
     ]
   },

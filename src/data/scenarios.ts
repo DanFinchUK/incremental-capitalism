@@ -33,7 +33,7 @@ export const SCENARIOS: ReadonlyArray<ScenarioDef> = [
     id: 'hands-on',
     name: 'Hands-On',
     blurb: 'Great-grandfather never trusted staff, and wrote it into the will. The family presses its own buttons.',
-    rules: 'No Interns, no buyers and no allowance: you tap Get paid and press every Buy yourself.',
+    rules: 'No Interns, no buyers and no allowance: you tap "Get paid" and press every "Buy" yourself.',
     noTap: false,
     noAutomation: true,
     blockedPerks: ['autoClicker', 'signingAuthority']

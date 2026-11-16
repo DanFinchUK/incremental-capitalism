@@ -91,7 +91,7 @@
         <div v-if="store.hasBuyers" class="ttl-Setting">
           <div>
             <strong>Compact auto</strong>
-            <p>Cards set to Automate fold down to a single line.</p>
+            <p>Cards set to "Automate" fold down to a single line.</p>
           </div>
           <button type="button" class="ttl-Toggle" :aria-pressed="store.compactAutoBuy" @click="store.toggleCompactAutoBuy()">
             {{ store.compactAutoBuy ? 'On' : 'Off' }}

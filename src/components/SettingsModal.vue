@@ -41,7 +41,7 @@
         <div v-if="store.hasBuyers" class="scn-SettingRow">
           <div>
             <strong>Compact auto</strong>
-            <p class="scn-StatHint">Cards set to Automate fold down to a single line.</p>
+            <p class="scn-StatHint">Cards set to "Automate" fold down to a single line.</p>
           </div>
           <button
             type="button"

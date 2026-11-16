@@ -184,6 +184,17 @@
   gap: 8px 16px;
 }
 
+/* The command deck's Money box covers this while the deck stays beside the lists */
+@media (min-width: 921px) {
+  .scn-OverviewStats {
+    display: none;
+  }
+
+  .scn-Overview {
+    justify-content: flex-end;
+  }
+}
+
 .scn-BulkGroup {
   display: inline-flex;
   border: 1px solid var(--color-strong-line);

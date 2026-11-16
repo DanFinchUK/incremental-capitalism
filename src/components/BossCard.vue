@@ -36,10 +36,13 @@
         </span>
       </div>
       <h2 class="scn-BossTitle">{{ boss.def.title }}</h2>
+      <p v-if="boss.status !== 'locked'" class="scn-StatHint" data-testid="boss-net-worth">
+        Net worth {{ formatCurrency(store.netWorth) }}
+      </p>
 
       <template v-if="boss.status === 'locked'">
-        <p class="scn-AutoLine">
-          Opens at {{ formatCurrency(threshold) }} net worth
+        <p class="scn-AutoLine" data-testid="boss-net-worth">
+          Net worth {{ formatCurrency(store.netWorth) }} of {{ formatCurrency(threshold) }}
         </p>
         <div class="scn-MiniProgressTrack" role="progressbar" :aria-valuenow="pct" aria-valuemin="0" aria-valuemax="100">
           <div class="scn-MiniProgressFill" :style="{ width: `${pct}%` }"></div>
@@ -82,6 +85,7 @@
 
     <template v-else>
       <h2 class="scn-BossTitle">Every gate beaten</h2>
+      <p class="scn-StatHint" data-testid="boss-net-worth">Net worth {{ formatCurrency(store.netWorth) }}</p>
       <p class="scn-CardMeta">Top of the British class pyramid reached. Retire to pass it all on.</p>
     </template>
   </section>

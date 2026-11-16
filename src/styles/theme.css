@@ -371,6 +371,8 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  /* One pill's height, held open even with no pills */
+  min-height: 22px;
   font-size: 13px;
 }
 
@@ -381,6 +383,7 @@
   padding: 2px 9px;
   border-radius: 999px;
   font-size: 12px;
+  line-height: 16px;
   font-weight: 700;
   background: var(--color-gold-bg);
   border: 1px solid var(--color-gold);
@@ -1281,11 +1284,6 @@
   color: #94a3b8;
 }
 
-.scn-SectorEmpty {
-  font-size: 12px;
-  color: #64748b;
-}
-
 .scn-SectorBar {
   display: flex;
   width: 100%;
@@ -1305,6 +1303,9 @@
   flex-wrap: wrap;
   gap: 6px 16px;
   font-size: 12px;
+  line-height: 18px;
+  /* Holds one line open before any income, so nothing jumps when it arrives */
+  min-height: 18px;
   color: #cbd5e1;
 }
 

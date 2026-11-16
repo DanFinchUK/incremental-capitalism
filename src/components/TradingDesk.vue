@@ -165,26 +165,21 @@
       <!-- Bottom Strip: Portfolio Revenue Mix -->
       <div class="scn-SectorStrip">
         <div class="scn-SectorTitle">PORTFOLIO REVENUE MIX</div>
-        <div v-if="store.sectorSlices.length === 0" class="scn-SectorEmpty">
-          Awaiting active revenue streams: click Get Paid or acquire your first venture.
+        <div class="scn-SectorBar">
+          <div
+            v-for="slice in store.sectorSlices"
+            :key="slice.id"
+            class="scn-SectorSeg"
+            :style="{ width: `${slice.pct.toFixed(2)}%`, backgroundColor: slice.color }"
+            :title="`${slice.label}: ${formatCurrency(slice.perSec)}/s (${slice.pct.toFixed(1)}%)`"
+          ></div>
         </div>
-        <template v-else>
-          <div class="scn-SectorBar">
-            <div
-              v-for="slice in store.sectorSlices"
-              :key="slice.id"
-              class="scn-SectorSeg"
-              :style="{ width: `${slice.pct.toFixed(2)}%`, backgroundColor: slice.color }"
-              :title="`${slice.label}: ${formatCurrency(slice.perSec)}/s (${slice.pct.toFixed(1)}%)`"
-            ></div>
-          </div>
-          <div class="scn-SectorLegend">
-            <span v-for="slice in store.sectorSlices" :key="`leg-${slice.id}`" class="scn-SectorItem">
-              <i class="scn-SectorDot" :style="{ backgroundColor: slice.color }"></i>
-              {{ slice.label }} <strong>{{ slice.pct.toFixed(1) }}%</strong>
-            </span>
-          </div>
-        </template>
+        <div class="scn-SectorLegend">
+          <span v-for="slice in store.sectorSlices" :key="`leg-${slice.id}`" class="scn-SectorItem">
+            <i class="scn-SectorDot" :style="{ backgroundColor: slice.color }"></i>
+            {{ slice.label }} <strong>{{ slice.pct.toFixed(1) }}%</strong>
+          </span>
+        </div>
       </div>
     </div>
   </section>

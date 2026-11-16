@@ -1,8 +1,9 @@
 <template>
   <div class="lyt-Header">
     <template v-if="!phone">
-      <div v-if="hasActivePills" class="scn-HustleRow">
-        <span v-if="store.hustleMultiplier > 1.01" class="scn-BuffPill scn-BuffPill-streak">
+      <!-- Hustle always shows (1.0x at rest), so Get paid never moves when pills come and go -->
+      <div class="scn-HustleRow">
+        <span class="scn-BuffPill scn-BuffPill-streak">
           {{ store.hustleMultiplier.toFixed(1) }}x Hustle
         </span>
         <span v-if="store.activeBusinessBuff" class="scn-BuffPill">
@@ -108,14 +109,6 @@ const currentInherit = computed(() => (store.heir.inheritId ? INHERITED_BY_ID[st
 const payButtonRef = ref<HTMLButtonElement | null>(null)
 
 const legacyMultLabel = computed(() => formatMultiplier(store.legacyMultiplier))
-const hasActivePills = computed(
-  () =>
-    store.hustleMultiplier > 1.01 ||
-    Boolean(store.activeBusinessBuff) ||
-    Boolean(store.activeClickBuff) ||
-    Boolean(store.incomePenalty) ||
-    store.isAutoBuyFrozen
-)
 
 defineExpose({ payButtonRef })
 </script>

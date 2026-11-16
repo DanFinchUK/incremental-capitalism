@@ -6,6 +6,7 @@
     aria-modal="true"
     aria-labelledby="menu-title"
     data-testid="main-menu"
+    ref="screen"
   >
     <!-- Money falling from somewhere higher up -->
     <div class="ttl-Rain" aria-hidden="true">
@@ -13,17 +14,17 @@
     </div>
 
     <div class="ttl-Stage">
-      <header class="ttl-Head">
-        <FamilyCrest class="ttl-Crest" :surname="store.familySurname" :titles="store.titles" />
+      <header class="ttl-Head" :class="{ 'ttl-Head-compact': view === 'how' || view === 'settings' }">
+        <FamilyCrest v-if="view !== 'how' && view !== 'settings'" class="ttl-Crest" :surname="store.familySurname" :titles="store.titles" />
         <h1 id="menu-title" class="ttl-Title">
           <span class="ttl-TitleSmall">Incremental</span>
           <span class="ttl-TitleBig">Capitalism</span>
         </h1>
-        <p class="ttl-Tagline">From a zero-hours rota to a dukedom</p>
+        <p v-if="view !== 'how' && view !== 'settings'" class="ttl-Tagline">From a zero-hours rota to a dukedom</p>
         <div class="ttl-Rule" aria-hidden="true"><span></span></div>
       </header>
 
-      <template v-if="!confirming">
+      <template v-if="view === 'main'">
         <button type="button" class="ttl-Continue" data-testid="menu-continue" @click="store.closeMenu()">
           <span class="ttl-ContinueLabel">{{ fresh ? 'Begin' : 'Continue' }}</span>
           <span class="ttl-ContinueFamily">The {{ pluralSurname(store.familySurname) }}</span>
@@ -43,14 +44,82 @@
             <span>Achievements</span>
             <small>{{ store.achievements.length }} of {{ ACHIEVEMENTS.length }}</small>
           </button>
-          <button type="button" class="ttl-Item" data-testid="menu-how-to-play" @click="howToPlay">
+          <button type="button" class="ttl-Item" data-testid="menu-how-to-play" @click="view = 'how'">
             <span>How to play</span>
           </button>
-          <button type="button" class="ttl-Item" data-testid="menu-settings" @click="store.settingsOpen = true">
+          <button type="button" class="ttl-Item" data-testid="menu-settings" @click="view = 'settings'">
             <span>Settings</span>
           </button>
         </nav>
       </template>
+
+      <!-- How to play, as a page of the menu -->
+      <section v-else-if="view === 'how'" class="ttl-Page" data-testid="menu-how" aria-labelledby="menu-how-title">
+        <h2 id="menu-how-title" class="ttl-PageTitle">How to play</h2>
+        <article v-for="(page, i) in INTRO_PAGES" :key="i" class="ttl-HowPage">
+          <span class="ttl-PageKicker">{{ page.kicker }}</span>
+          <h3>{{ page.title }}</h3>
+          <p v-for="(para, j) in page.body" :key="j">{{ para }}</p>
+          <p v-if="page.tip" class="ttl-Tip">{{ page.tip }}</p>
+        </article>
+        <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
+      </section>
+
+      <!-- Settings, as a page of the menu -->
+      <section v-else-if="view === 'settings'" class="ttl-Page" data-testid="menu-settings-page" aria-labelledby="menu-settings-title">
+        <h2 id="menu-settings-title" class="ttl-PageTitle">Settings</h2>
+        <div class="ttl-Setting">
+          <div>
+            <strong>Play without tapping</strong>
+            <p>
+              "Get paid" goes. Instead the family draws Universal Credit (an allowance, for heirs) worth two taps a second,
+              Hustle holds steady and Grindset Coaching raises it. Switch either way, any time.
+            </p>
+            <p v-if="store.scenarioDef.noTap !== undefined">Set by the {{ store.scenarioDef.name }} scenario for this dynasty.</p>
+          </div>
+          <button
+            type="button"
+            class="ttl-Toggle"
+            :aria-pressed="store.noTap"
+            data-testid="menu-toggle-no-tap"
+            :disabled="store.scenarioDef.noTap !== undefined"
+            @click="store.toggleNoTap()"
+          >
+            {{ store.noTap ? 'On' : 'Off' }}
+          </button>
+        </div>
+        <div v-if="store.hasBuyers" class="ttl-Setting">
+          <div>
+            <strong>Compact auto</strong>
+            <p>Cards set to Automate fold down to a single line.</p>
+          </div>
+          <button type="button" class="ttl-Toggle" :aria-pressed="store.compactAutoBuy" @click="store.toggleCompactAutoBuy()">
+            {{ store.compactAutoBuy ? 'On' : 'Off' }}
+          </button>
+        </div>
+        <div class="ttl-Setting ttl-Setting-stack">
+          <div>
+            <label for="menu-decor"><strong>Decor</strong></label>
+            <p>Follows your class. Any room the family has reached can be kept instead.</p>
+          </div>
+          <select id="menu-decor" v-model="decor" class="ttl-Select">
+            <option value="auto">Follow my class ({{ classRoomName }})</option>
+            <option v-for="r in store.unlockedRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
+          </select>
+        </div>
+        <div class="ttl-Setting">
+          <div><strong>Sound</strong></div>
+          <button type="button" class="ttl-Toggle" :aria-pressed="!store.muted" data-testid="menu-toggle-sound" @click="store.toggleMute()">
+            {{ store.muted ? 'Off' : 'On' }}
+          </button>
+        </div>
+        <nav class="ttl-Nav" aria-label="Settings">
+          <a class="ttl-Item" href="./cards.html" target="_blank" rel="noopener">Card index</a>
+          <button type="button" class="ttl-Item" data-testid="menu-download-save" @click="downloadSave(store)">Download save</button>
+          <button type="button" class="ttl-Item ttl-Item-danger" data-testid="menu-reset" @click="emit('reset')">Reset game</button>
+        </nav>
+        <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
+      </section>
 
       <div v-else class="ttl-Confirm" data-testid="menu-confirm-abandon">
         <p v-if="fresh">Every family plays by somebody's rules. Choose this one's.</p>
@@ -60,7 +129,7 @@
         </p>
         <ScenarioPicker v-if="scenariosOpen(store.hall)" v-model="next" />
         <div class="ttl-ConfirmActions">
-          <button type="button" class="ttl-Item ttl-Item-quiet" @click="confirming = false">Back</button>
+          <button type="button" class="ttl-Item ttl-Item-quiet" @click="view = 'main'">Back</button>
           <button type="button" class="ttl-Item" :class="{ 'ttl-Item-danger': !fresh }" data-testid="menu-confirm-new-dynasty" @click="abandon">
             {{ fresh ? 'Choose' : 'Abandon them' }}
           </button>
@@ -75,19 +144,36 @@
 <script setup lang="ts">
 // The way in: carry on with the family, give it up for another, look round
 // the Hall, read the rules or change the settings. The game waits behind it.
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import FamilyCrest from './FamilyCrest.vue'
 import ScenarioPicker from './ScenarioPicker.vue'
 import { ACHIEVEMENTS } from '../data/achievements'
+import { INTRO_PAGES } from '../data/intro'
+import { roomForClass, type RoomId } from '../data/rooms'
 import type { ScenarioId } from '../data/scenarios'
 import { armsFor } from '../engine/crest'
 import { bestDynasty, scenariosOpen } from '../engine/hall'
 import { peerageRank } from '../engine/peerage'
 import { useGameStore } from '../stores/game'
+import { downloadSave } from '../utils/downloadSave'
 import { formatDuration, pluralSurname } from '../utils/format'
 
+const emit = defineEmits<{ (e: 'reset'): void }>()
+
 const store = useGameStore()
-const confirming = ref(false)
+// The menu's pages: the menu itself, the rules, the settings, and asking
+// before a family is abandoned
+const view = ref<'main' | 'how' | 'settings' | 'confirm'>('main')
+const screen = ref<HTMLElement | null>(null)
+// Each visit starts from the menu itself
+watch(
+  () => store.menuOpen,
+  () => (view.value = 'main')
+)
+// and each page from its top
+watch(view, () => {
+  if (screen.value) screen.value.scrollTop = 0
+})
 const next = ref<ScenarioId>('standard')
 const best = computed(() => bestDynasty(store.hall))
 const arms = computed(() => armsFor(store.familySurname))
@@ -117,19 +203,20 @@ function newDynasty(): void {
   if (store.dynastyComplete) {
     store.closeMenu()
   } else {
-    confirming.value = true
+    view.value = 'confirm'
   }
 }
 
 function abandon(): void {
-  confirming.value = false
+  view.value = 'main'
   store.abandonDynasty(Date.now(), next.value)
 }
 
-function howToPlay(): void {
-  store.closeMenu()
-  store.openIntro()
-}
+const decor = computed<RoomId | 'auto'>({
+  get: () => store.decor,
+  set: (choice) => store.setDecor(choice)
+})
+const classRoomName = computed(() => roomForClass(store.classStatus.current.level).name)
 
 // Fixed, so the rain looks the same each visit and costs nothing to work out
 const COINS = Array.from({ length: 16 }, (_, i) => ({
@@ -435,6 +522,161 @@ const COINS = Array.from({ length: 16 }, (_, i) => ({
   font-weight: 700;
   color: var(--ttl-gold);
   animation: ttl-fall linear infinite;
+}
+
+/* A compact heading over the menu's pages */
+.ttl-Head-compact .ttl-TitleBig {
+  font-size: 40px;
+}
+
+.ttl-Head-compact .ttl-TitleSmall {
+  font-size: 11px;
+}
+
+a.ttl-Item {
+  text-decoration: none;
+}
+
+.ttl-Page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+  animation: ttl-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.ttl-PageTitle {
+  margin: 0;
+  text-align: center;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: 30px;
+  color: var(--ttl-gold-hi);
+}
+
+.ttl-HowPage {
+  padding: 16px 18px;
+  border: 1px solid rgba(214, 169, 60, 0.3);
+  border-radius: 4px;
+  background: rgba(12, 7, 8, 0.55);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.ttl-HowPage h3 {
+  margin: 2px 0 8px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: 23px;
+  line-height: 1.15;
+  color: var(--ttl-gold-hi);
+}
+
+.ttl-HowPage p {
+  margin: 0 0 8px;
+}
+
+.ttl-HowPage p:last-child {
+  margin-bottom: 0;
+}
+
+.ttl-PageKicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ttl-gold);
+}
+
+.ttl-Tip {
+  padding-left: 10px;
+  border-left: 2px solid var(--ttl-gold);
+  color: var(--ttl-dim);
+}
+
+.ttl-Setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(214, 169, 60, 0.3);
+  border-radius: 4px;
+  background: rgba(12, 7, 8, 0.55);
+}
+
+.ttl-Setting strong {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 21px;
+  color: var(--ttl-gold-hi);
+}
+
+.ttl-Setting p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ttl-dim);
+}
+
+.ttl-Toggle {
+  flex: none;
+  min-width: 64px;
+  min-height: 44px;
+  border: 1px solid rgba(214, 169, 60, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ttl-dim);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.ttl-Toggle[aria-pressed='true'] {
+  background: var(--ttl-gold);
+  border-color: var(--ttl-gold);
+  color: #240910;
+}
+
+.ttl-Toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ttl-Select {
+  flex: none;
+  max-width: 48%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid rgba(214, 169, 60, 0.5);
+  border-radius: 4px;
+  background: #1a0b0e;
+  color: var(--ttl-ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.ttl-Setting-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.ttl-Setting-stack .ttl-Select {
+  max-width: none;
+}
+
+.ttl-Back {
+  border: 1px solid rgba(214, 169, 60, 0.35);
+  border-radius: 4px;
+}
+
+.ttl-Toggle:focus-visible,
+.ttl-Select:focus-visible {
+  outline: 2px solid var(--ttl-gold-hi);
+  outline-offset: 3px;
 }
 
 @keyframes ttl-rise {

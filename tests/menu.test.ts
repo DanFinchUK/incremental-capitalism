@@ -83,7 +83,7 @@ describe('the main menu', () => {
     wrapper.unmount()
   })
 
-  it('opens the Hall and the settings over itself, and How to play in place of itself', async () => {
+  it('opens the Hall over itself, and How to play and the settings as its own pages', async () => {
     const { wrapper, store } = app()
     store.closeIntro(T0)
     store.openMenu()
@@ -94,8 +94,21 @@ describe('the main menu', () => {
     expect(store.menuOpen).toBe(true)
     store.hallOpen = false
     await wrapper.find('[data-testid="menu-how-to-play"]').trigger('click')
-    expect(store.menuOpen).toBe(false)
-    expect(wrapper.find('[data-testid="intro-modal"]').exists()).toBe(true)
+    // Reading the rules stays on the menu, and doesn't start the game
+    expect(store.menuOpen).toBe(true)
+    expect(wrapper.find('[data-testid="menu-how"]').text()).toContain('Retire and let your heir take over')
+    expect(wrapper.find('[data-testid="intro-modal"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="menu-back"]').trigger('click')
+    await wrapper.find('[data-testid="menu-settings"]').trigger('click')
+    expect(store.menuOpen).toBe(true)
+    expect(wrapper.find('[data-testid="settings"]').exists()).toBe(false)
+    const muted = store.muted
+    await wrapper.find('[data-testid="menu-toggle-sound"]').trigger('click')
+    expect(store.muted).toBe(!muted)
+    await wrapper.find('[data-testid="menu-reset"]').trigger('click')
+    expect(wrapper.find('[data-testid="reset-modal"]').exists()).toBe(true)
+    await wrapper.find('[data-testid="menu-back"]').trigger('click')
+    expect(wrapper.find('[data-testid="menu-continue"]').exists()).toBe(true)
     wrapper.unmount()
   })
 })

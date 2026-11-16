@@ -33,7 +33,7 @@
       <DisgraceModal />
       <DukedomModal />
       <!-- The menu sits over the game; what it opens sits over the menu -->
-      <MainMenu />
+      <MainMenu @reset="handleHardReset" />
       <IntroModal />
       <SettingsModal @reset="handleHardReset" @new-bloodline="handleNewBloodline" />
       <HallModal />

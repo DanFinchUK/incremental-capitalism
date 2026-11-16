@@ -86,16 +86,16 @@
           @click="emit('retire')"
         >
           <div class="scn-DataTitle">Retire for +{{ store.legacyOnRetire }} Legacy</div>
+          <div class="scn-StatHint">Income multiplier</div>
           <div v-if="store.legacyOnRetire > 0" class="scn-DataValue" data-testid="hero-retire-mult">
             x{{ legacyMultLabel }} → x{{ retireMultLabel }}
           </div>
           <div v-else class="scn-DataValue">x{{ legacyMultLabel }}</div>
-          <div class="scn-StatHint">Income multiplier · {{ internsLine }}</div>
         </button>
         <div v-else class="scn-StatBox" data-testid="hero-legacy">
-          <div class="scn-DataTitle">Legacy &amp; Interns</div>
-          <div class="scn-DataValue">{{ legacyLine }}</div>
-          <div class="scn-StatHint">{{ retireBlockedHint }}</div>
+          <div class="scn-DataTitle">{{ retireBlockedTitle }}</div>
+          <div class="scn-StatHint">Income multiplier</div>
+          <div class="scn-DataValue">x{{ legacyMultLabel }}</div>
         </div>
       </div>
     </div>
@@ -129,16 +129,9 @@ const legacyMultLabel = computed(() => formatMultiplier(store.legacyMultiplier))
 const retireMultLabel = computed(() =>
   formatMultiplier(calcLegacyMultiplier(store.legacyPoints + store.legacyOnRetire, store.modifiers.legacyScale))
 )
-const internsLine = computed(() =>
-  store.modifiers.internsDisabled
-    ? 'Interns barred'
-    : `${store.autoClickers} intern${store.autoClickers === 1 ? '' : 's'}`
-)
-const legacyLine = computed(() => `${store.legacyPoints} (x${legacyMultLabel.value}) · ${internsLine.value}`)
-const retireBlockedHint = computed(() =>
-  store.gatesBeaten < store.minRetireGate
-    ? `Retire at Gate ${store.minRetireGate}`
-    : `Retiring now pays +${store.legacyOnRetire} Legacy`
+// Before the gate that opens retiring, or while an heir draft or disgrace is pending
+const retireBlockedTitle = computed(() =>
+  store.gatesBeaten < store.minRetireGate ? `Retire at Gate ${store.minRetireGate}` : 'Legacy'
 )
 
 defineExpose({ payButtonRef })

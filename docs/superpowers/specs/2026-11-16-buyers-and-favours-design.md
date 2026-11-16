@@ -1,7 +1,8 @@
 # Buyers and favours: automation redesign
 
 Status: design agreed in conversation, not built. Open questions are listed at
-the end.
+the end. A clickable sketch of the favour button:
+https://claude.ai/artifact/KZLiWJcfXDNZxE31jRHPAu
 
 ## Why
 
@@ -91,15 +92,17 @@ from people you were at school with, beyond what you could otherwise reach.
   second favour with 5 seconds left on the first runs both for 5 seconds,
   then the first drops off and the second runs on for 2:55.
 - **Favours.** Shared between the two lists. They reset each generation;
-  ranks add more (Call in a favour (1/2), (2/2) ...). It must be strong
-  enough to be worth Legacy.
+  ranks add more. With one favour the button just says "Call in a favour";
+  with more it shows what's left, "Call in a favour (1/2)", the way Buy
+  doesn't show x1. It must be strong enough to be worth Legacy.
 - **The button while a loan runs.** The pressed button becomes a countdown row
   for that loan, "Lending you a hand for 2:58", not clickable. If favours
   remain, another "Call in a favour (1/2)" button appears below it. Each
   running loan has its own row.
 - **The card while a loan runs.** Shows the loaned item, only on that card;
-  the rung after it stays hidden. The title shows owned and lent, for example
-  "Broker (0 + 1)". A locked item stays locked for buying.
+  the rung after it stays hidden. While the item is locked for buying, the
+  title shows just the number lent, "Broker (1)". Once it can be bought, it
+  shows owned and lent, "Broker (2 + 1)", next to the usual Buy button.
 - **Earnings.** A lent unit earns what one unit earns at the family's rates
   (Legacy, class, heir traits, advisors, titles), ignoring any of the same
   item owned: no milestones, no synergy.

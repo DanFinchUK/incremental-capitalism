@@ -4,6 +4,7 @@ import { BOSSES, type BossDef } from '../src/data/bosses'
 import {
   NO_TWIST,
   bossForGate,
+  conditionTarget,
   combineTwists,
   evaluateBoss,
   gateThreshold,
@@ -96,10 +97,23 @@ describe('evaluateBoss', () => {
   const start = 1000
 
   it('netWorth: progress is net worth over target, won at target', () => {
-    const def = boss({ kind: 'netWorth', target: 1000 })
+    const def = boss({ kind: 'netWorth', target: 1000, gain: 100 })
     const t = newTracker(1, start)
     expect(evaluateBoss(def, t, { netWorth: 500, allRevealedOwned: false }, start + 1)).toEqual({ progress: 0.5, won: false, lost: false })
     expect(evaluateBoss(def, t, { netWorth: 1000, allRevealedOwned: false }, start + 1)).toEqual({ progress: 1, won: true, lost: false })
+  })
+
+  it('on new ground, net worth bosses count only what the fight adds', () => {
+    const def = boss({ kind: 'netWorth', target: 1000, gain: 100 })
+    // Already far past the total when the fight starts
+    const t = newTracker(1, start, 1, 5000, true)
+    expect(evaluateBoss(def, t, { netWorth: 5000, allRevealedOwned: false }, start + 1)).toEqual({ progress: 0, won: false, lost: false })
+    expect(evaluateBoss(def, t, { netWorth: 5050, allRevealedOwned: false }, start + 1)).toEqual({ progress: 0.5, won: false, lost: false })
+    expect(evaluateBoss(def, t, { netWorth: 5100, allRevealedOwned: false }, start + 1).won).toBe(true)
+    // Losing cash mid-fight is never negative progress
+    expect(evaluateBoss(def, t, { netWorth: 4000, allRevealedOwned: false }, start + 1).progress).toBe(0)
+    expect(conditionTarget(def, true)).toBe(100)
+    expect(conditionTarget(def, false)).toBe(1000)
   })
 
   it('tracked values drive their condition kinds', () => {
@@ -111,7 +125,7 @@ describe('evaluateBoss', () => {
   })
 
   it('netWorthWithinPar: lost once purchases exceed par, even when rich', () => {
-    const def = boss({ kind: 'netWorthWithinPar', target: 1000, par: 3 })
+    const def = boss({ kind: 'netWorthWithinPar', target: 1000, gain: 100, par: 3 })
     const t = { ...newTracker(1, start), purchases: 3 }
     expect(evaluateBoss(def, t, { netWorth: 1000, allRevealedOwned: false }, start).won).toBe(true)
     const over = { ...t, purchases: 4 }
@@ -119,7 +133,7 @@ describe('evaluateBoss', () => {
   })
 
   it('ownAllRevealed: needs every revealed item and the net worth', () => {
-    const def = boss({ kind: 'ownAllRevealed', netWorth: 1000 })
+    const def = boss({ kind: 'ownAllRevealed', netWorth: 1000, gain: 100 })
     const t = newTracker(1, start)
     const notAll = evaluateBoss(def, t, { netWorth: 5000, allRevealedOwned: false }, start)
     expect(notAll.won).toBe(false)
@@ -129,7 +143,7 @@ describe('evaluateBoss', () => {
   })
 
   it('is lost when the time limit runs out without a win', () => {
-    const def = boss({ kind: 'netWorth', target: 1000 }, 100)
+    const def = boss({ kind: 'netWorth', target: 1000, gain: 100 }, 100)
     const t = newTracker(1, start)
     expect(evaluateBoss(def, t, { netWorth: 0, allRevealedOwned: false }, start + 99_999).lost).toBe(false)
     expect(evaluateBoss(def, t, { netWorth: 0, allRevealedOwned: false }, start + 100_000).lost).toBe(true)

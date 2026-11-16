@@ -31,6 +31,28 @@ describe('boss attempts', () => {
     vi.restoreAllMocks()
   })
 
+  it('net worth bosses count only the fight\'s gain on new ground, and the total on gates the family has beaten', () => {
+    const store = readyFor(3)
+    // The founder has never beaten gate 3: banked wealth doesn't win it
+    store.addDebugMoney(gateThreshold(3) * 100, T0)
+    expect(store.bossCountsGain(3)).toBe(true)
+    expect(store.bossTarget(3)).toBeCloseTo(gateThreshold(3) * 0.5)
+    expect(store.bossConditionText(3)).toContain('New ground')
+    store.startBossAttempt()
+    store.tick(T0 + 50)
+    expect(store.gatesBeaten).toBe(2)
+    expect(store.nextBoss?.status).toBe('active')
+    store.addDebugMoney(gateThreshold(3) * 0.6, T0 + 50)
+    store.tick(T0 + 100)
+    expect(store.gatesBeaten).toBe(3)
+
+    // A family that has been past gate 3 meets the total instead
+    store.familyTree = [{ ...store.familyTree[0], generation: 1, name: 'Old Test', traitId: null, inheritId: null, deepestGate: 5, legacyEarned: 5, activeMs: 1, advisors: [], splits: [] }]
+    expect(store.bossCountsGain(3)).toBe(false)
+    expect(store.bossTarget(3)).toBeCloseTo(gateThreshold(3) * 1.5)
+    expect(store.bossConditionText(3)).toBe('Reach the target net worth.')
+  })
+
   it('only the next gate can be attempted, once unlocked', () => {
     const store = useGameStore()
     store.hydrateFromStorage(T0)

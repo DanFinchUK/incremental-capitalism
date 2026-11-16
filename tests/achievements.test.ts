@@ -24,6 +24,7 @@ function forceWin(store: ReturnType<typeof useGameStore>, t: number) {
   a.clickEarningsAtFullHustle = 1e300
   a.earnedAfterTax = 1e300
   a.polish = 1e300
+  a.startNetWorth = -1e300
   store.tick(t + 1000)
 }
 
@@ -70,6 +71,8 @@ describe('achievements', () => {
     store.gatesBeaten = 3
     store.addDebugMoney(gateThreshold(4) * 10, T0 + 2000)
     store.startBossAttempt()
+    // Golf counts what is gained during the round
+    store.addDebugMoney(gateThreshold(4) * 2, T0 + 2000)
     for (let i = 0; i < 4; i++) store.buyItem('jobs', '1', 1)
     store.tick(T0 + 3000)
     expect(store.gatesBeaten).toBe(4)

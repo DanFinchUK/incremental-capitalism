@@ -69,7 +69,7 @@ import {
   type TelemetryState
 } from '../engine/telemetry'
 import { formatClock, formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
-import { bossForGate, conditionTarget, itemCostCeiling, legacyForRetiring } from '../engine/bosses'
+import { bossForGate, conditionTarget, conditionTextFor, itemCostCeiling, legacyForRetiring } from '../engine/bosses'
 import { combineModifiers, type ModifierSource } from '../engine/modifiers'
 import { generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { createPlayLogModule } from './modules/playLog'
@@ -308,6 +308,7 @@ export const useGameStore = defineStore('game', () => {
     },
     bestKillFor: (gate) => bestKillMs.value[gate] ?? null,
     bossTimeMult: () => modifiers.value.bossTimeMult,
+    countsGain: (gate) => bossCountsGain(gate),
     twistStrength: () => modifiers.value.twistStrength,
     onAttemptEnded: (ended) => {
       plays.onAttemptEnded(nowMs.value, ended)
@@ -1387,7 +1388,21 @@ export const useGameStore = defineStore('game', () => {
   // The current target for a gate's boss, after the heir's trait and advisors
   function bossTarget(gate: number): number {
     const def = bossForGate(gate)
-    return def ? conditionTarget(def) : 0
+    return def ? conditionTarget(def, bossCountsGain(gate)) : 0
+  }
+
+  // A gate past the family's best: its net worth boss counts only what is
+  // gained during the fight. The rules for a fight in progress stay as they
+  // were when it began.
+  function bossCountsGain(gate: number): boolean {
+    const attempt = bosses.bossAttempt.value
+    if (attempt && attempt.gate === gate) return attempt.countsGain
+    return gate > bloodlineDeepestGate.value
+  }
+
+  function bossConditionText(gate: number): string {
+    const def = bossForGate(gate)
+    return def ? conditionTextFor(def, bossCountsGain(gate)) : ''
   }
 
   function unlockAchievement(id: string): void {
@@ -1569,6 +1584,8 @@ export const useGameStore = defineStore('game', () => {
     modifiers,
     pickHeir,
     bossTarget,
+    bossCountsGain,
+    bossConditionText,
     familyTree,
     familyTreeOpen,
     officeSeats: office.officeSeats,

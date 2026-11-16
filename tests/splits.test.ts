@@ -31,6 +31,7 @@ function beatNextGate(store: ReturnType<typeof useGameStore>, t: number): number
   attempt.clickEarningsAtFullHustle = 1e300
   attempt.earnedAfterTax = 1e300
   attempt.polish = 1e300
+  attempt.startNetWorth = -1e300
   store.tick(t + 1000)
   return t + 1000
 }

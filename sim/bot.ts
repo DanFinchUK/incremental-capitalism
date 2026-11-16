@@ -250,17 +250,17 @@ function readyToChallengeBoss(store: Store, cfg: BotConfig): boolean {
         if (!owned) missingCost += store.itemQuote(item.kind, item.id, 1).cost
       }
       if (store.money < missingCost * 1.1) return false
-      const gap = Math.max(0, target - store.netWorth)
+      const gap = store.bossCountsGain(boss.def.gate) ? target : Math.max(0, target - store.netWorth)
       const flow = store.moneyPerSecond + cfg.clicksPerSec * store.moneyPerClick * fullHustleFactor
       return gap <= flow * (timeSec * 0.65)
     }
     case 'netWorthWithinPar': {
-      const gap = Math.max(0, target - store.netWorth)
+      const gap = store.bossCountsGain(boss.def.gate) ? target : Math.max(0, target - store.netWorth)
       const flow = store.moneyPerSecond + cfg.clicksPerSec * store.moneyPerClick * fullHustleFactor
       return gap <= flow * (timeSec * 0.55)
     }
     case 'netWorth': {
-      const gap = Math.max(0, target - store.netWorth)
+      const gap = store.bossCountsGain(boss.def.gate) ? target : Math.max(0, target - store.netWorth)
       const flow = (store.moneyPerSecond + cfg.clicksPerSec * store.moneyPerClick * fullHustleFactor) * 0.85
       return gap <= flow * (timeSec * 0.65)
     }

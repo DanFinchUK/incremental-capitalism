@@ -37,7 +37,8 @@
       </div>
       <h2 class="scn-BossTitle">{{ boss.def.title }}</h2>
       <p v-if="boss.status !== 'locked'" class="scn-StatHint" data-testid="boss-net-worth">
-        Net worth {{ formatCurrency(store.netWorth) }}
+        Net worth {{ formatCurrency(store.netWorth) }}<template v-if="gainedThisFight !== null">
+          · up {{ formatCurrency(gainedThisFight) }} this fight</template>
       </p>
 
       <template v-if="boss.status === 'locked'">
@@ -51,7 +52,7 @@
 
       <template v-else>
         <p v-if="boss.def.twistText" class="scn-BossRule"><strong>Twist:</strong> {{ store.wording(boss.def.twistText) }}</p>
-        <p class="scn-BossRule"><strong>To win:</strong> {{ store.wording(boss.def.conditionText) }}</p>
+        <p class="scn-BossRule"><strong>To win:</strong> {{ store.wording(store.bossConditionText(boss.def.gate)) }}</p>
         <p class="scn-BossRule"><strong>Target:</strong> {{ formatCurrency(target) }}</p>
       </template>
 
@@ -107,6 +108,12 @@ const lastKill = computed(() => (boss.value ? (store.lastKillMs[boss.value.def.g
 const golfPar = computed(() =>
   boss.value?.def.condition.kind === 'netWorthWithinPar' ? boss.value.def.condition.par : null
 )
+// What the fight has added so far, where only that counts
+const gainedThisFight = computed(() => {
+  const attempt = store.bossAttempt
+  if (!attempt || !attempt.countsGain || boss.value?.status !== 'active' || !boss.value.def.frontierConditionText) return null
+  return Math.max(0, store.netWorth - attempt.startNetWorth)
+})
 
 const target = computed(() => (boss.value ? store.bossTarget(boss.value.def.gate) : 0))
 const timeLimitSec = computed(() => Math.round((boss.value?.def.timeLimitSec ?? 0) * store.modifiers.bossTimeMult))

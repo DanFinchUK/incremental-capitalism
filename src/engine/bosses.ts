@@ -70,12 +70,26 @@ export interface BossTracker {
   earnedAfterTax: number
   polish: number
   purchases: number
+  // Net worth when the fight began, and whether this fight counts only what
+  // is gained from there (a gate the family has never beaten)
+  startNetWorth: number
+  countsGain: boolean
   // Time-limit multiplier from heir traits and advisors, fixed at the start
   timeMult: number
 }
 
-export function newTracker(gate: number, activeMs: number, timeMult = 1): BossTracker {
-  return { gate, startedActiveMs: activeMs, clickEarningsAtFullHustle: 0, earnedAfterTax: 0, polish: 0, purchases: 0, timeMult }
+export function newTracker(gate: number, activeMs: number, timeMult = 1, startNetWorth = 0, countsGain = false): BossTracker {
+  return {
+    gate,
+    startedActiveMs: activeMs,
+    clickEarningsAtFullHustle: 0,
+    earnedAfterTax: 0,
+    polish: 0,
+    purchases: 0,
+    startNetWorth,
+    countsGain,
+    timeMult
+  }
 }
 
 export interface BossSnapshot {
@@ -95,9 +109,23 @@ function ratio(value: number, target: number): number {
 
 // Boss targets are fixed (spec: they never scale with the player's power);
 // only the time limit can stretch, and it is fixed when the fight starts.
-export function conditionTarget(def: BossDef): number {
+// countsGain: a gate the family has never beaten, where net worth bosses
+// want what is gained during the fight rather than the total
+export function conditionTarget(def: BossDef, countsGain = false): number {
   const c = def.condition
-  return c.kind === 'ownAllRevealed' ? c.netWorth : c.target
+  switch (c.kind) {
+    case 'netWorth':
+    case 'netWorthWithinPar':
+      return countsGain ? c.gain : c.target
+    case 'ownAllRevealed':
+      return countsGain ? c.gain : c.netWorth
+    default:
+      return c.target
+  }
+}
+
+export function conditionTextFor(def: BossDef, countsGain: boolean): string {
+  return countsGain && def.frontierConditionText ? def.frontierConditionText : def.conditionText
 }
 
 export function evaluateBoss(
@@ -107,10 +135,12 @@ export function evaluateBoss(
   activeMs: number
 ): BossEvaluation {
   const c = def.condition
-  const target = conditionTarget(def)
+  const target = conditionTarget(def, t.countsGain)
   let progress: number
   let won: boolean
   let bust = false
+  // Net worth that counts: all of it, or only what this fight has added
+  const worth = t.countsGain ? s.netWorth - t.startNetWorth : s.netWorth
   switch (c.kind) {
     case 'clickEarningsAtFullHustle':
       progress = ratio(t.clickEarningsAtFullHustle, target)
@@ -121,21 +151,21 @@ export function evaluateBoss(
       won = t.earnedAfterTax >= target
       break
     case 'netWorth':
-      progress = ratio(s.netWorth, target)
-      won = s.netWorth >= target
+      progress = ratio(worth, target)
+      won = worth >= target
       break
     case 'netWorthWithinPar':
       bust = t.purchases > c.par
-      progress = ratio(s.netWorth, target)
-      won = !bust && s.netWorth >= target
+      progress = ratio(worth, target)
+      won = !bust && worth >= target
       break
     case 'polish':
       progress = ratio(t.polish, target)
       won = t.polish >= target
       break
     case 'ownAllRevealed':
-      won = s.allRevealedOwned && s.netWorth >= target
-      progress = won ? 1 : Math.min(ratio(s.netWorth, target), 0.99)
+      won = s.allRevealedOwned && worth >= target
+      progress = won ? 1 : Math.min(ratio(worth, target), 0.99)
       break
   }
   const timedOut = activeMs - t.startedActiveMs >= def.timeLimitSec * t.timeMult * 1000

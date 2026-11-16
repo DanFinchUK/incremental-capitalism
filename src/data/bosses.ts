@@ -11,10 +11,13 @@ export type BossTwist =
 export type BossCondition =
   | { kind: 'clickEarningsAtFullHustle'; target: number }
   | { kind: 'earnedAfterTax'; target: number }
-  | { kind: 'netWorth'; target: number }
-  | { kind: 'netWorthWithinPar'; target: number; par: number }
+  // Net worth bosses: a gate the family has beaten before wants the total
+  // (target); a gate it has never beaten wants net worth gained during the
+  // fight (gain), so wealth banked before it, or by waiting, doesn't count
+  | { kind: 'netWorth'; target: number; gain: number }
+  | { kind: 'netWorthWithinPar'; target: number; gain: number; par: number }
   | { kind: 'polish'; target: number }
-  | { kind: 'ownAllRevealed'; netWorth: number }
+  | { kind: 'ownAllRevealed'; netWorth: number; gain: number }
 
 export interface BossDef {
   // The class index this boss guards (1..9)
@@ -28,6 +31,8 @@ export interface BossDef {
   disgraceText: string
   twistText: string
   conditionText: string
+  // The rules on a gate the family has never beaten, where they differ
+  frontierConditionText?: string
   twists: ReadonlyArray<BossTwist>
   condition: BossCondition
   timeLimitSec: number
@@ -37,6 +42,9 @@ export interface BossDef {
 function gateTarget(gate: number, mult: number): number {
   return Math.round(SOCIAL_CLASSES[gate].threshold * mult)
 }
+
+// A gate the family has never beaten counts only fresh money
+const FRONTIER_GAIN = 'New ground for the family: grow your net worth by the target during the fight.'
 
 const TIME_LIMIT_SEC = 180
 const COOLDOWN_SEC = 60
@@ -79,8 +87,9 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     disgraceText: 'Caught pouring unauthorised foundations at midnight by three parish councillors with torches. Blacklisted from every cul-de-sac in Surrey, the family sells up and flees abroad.',
     twistText: 'Purchases cost 50% more.',
     conditionText: 'Reach the target net worth.',
+    frontierConditionText: FRONTIER_GAIN,
     twists: [{ kind: 'purchaseCost', mult: 1.5 }],
-    condition: { kind: 'netWorth', target: gateTarget(3, 1.5) },
+    condition: { kind: 'netWorth', target: gateTarget(3, 1.5), gain: gateTarget(3, 0.5) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC
   },
@@ -93,8 +102,9 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     disgraceText: 'Four balls in the pond on the eighteenth and a five-iron thrown into the sponsors\' marquee. Struck from the clubhouse honours board, the family changes its surname and moves to Bruges.',
     twistText: 'Automation paused; every purchase counts as a stroke.',
     conditionText: 'Reach the target net worth in 15 purchases or fewer.',
+    frontierConditionText: `${FRONTIER_GAIN} Use 15 purchases or fewer.`,
     twists: [{ kind: 'automationPaused' }],
-    condition: { kind: 'netWorthWithinPar', target: gateTarget(4, 2), par: 15 },
+    condition: { kind: 'netWorthWithinPar', target: gateTarget(4, 2), gain: gateTarget(4, 1), par: 15 },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC
   },
@@ -107,8 +117,9 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     disgraceText: 'You praised a corked Cava in front of two dukes and the Decanter wine critic. Expelled from every cellar in St James\'s, the bloodline retreats to a dry Swiss valley.',
     twistText: 'Opportunities flood in; 30% are corked (-5% cash).',
     conditionText: 'Reach the target net worth. Good bottles pay a windfall.',
+    frontierConditionText: `${FRONTIER_GAIN} Good bottles pay a windfall.`,
     twists: [{ kind: 'eventFlood', intervalSec: 6, corkedChance: 0.3 }],
-    condition: { kind: 'netWorth', target: gateTarget(5, 2) },
+    condition: { kind: 'netWorth', target: gateTarget(5, 2), gain: gateTarget(5, 1) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC
   },
@@ -136,8 +147,9 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     // The twist is the condition itself, so there's nothing more to say
     twistText: '',
     conditionText: 'Own at least one of every revealed Job and Business, and reach the target.',
+    frontierConditionText: `Own at least one of every revealed Job and Business. ${FRONTIER_GAIN}`,
     twists: [],
-    condition: { kind: 'ownAllRevealed', netWorth: gateTarget(7, 1.3) },
+    condition: { kind: 'ownAllRevealed', netWorth: gateTarget(7, 1.3), gain: gateTarget(7, 0.3) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC
   },
@@ -150,8 +162,9 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     disgraceText: 'You accidentally told a parliamentary committee the truth on live television. Dropped by every lunch club in Westminster, the family enters voluntary exile in Patagonia.',
     twistText: 'Automation paused.',
     conditionText: 'Reach the target net worth by hand.',
+    frontierConditionText: `${FRONTIER_GAIN} Buy by hand.`,
     twists: [{ kind: 'automationPaused' }],
-    condition: { kind: 'netWorth', target: gateTarget(8, 1.3) },
+    condition: { kind: 'netWorth', target: gateTarget(8, 1.3), gain: gateTarget(8, 0.3) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC
   },
@@ -164,12 +177,13 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     disgraceText: 'You trod on a corgi and called the Lord Chamberlain "pal". Escorted through the tradesmen\'s gate in dead silence, the dynasty boards the night ferry, never to be seen again.',
     twistText: 'Clicks x0.75, rent 15%, purchases +25% cost.',
     conditionText: 'Reach the target net worth.',
+    frontierConditionText: FRONTIER_GAIN,
     twists: [
       { kind: 'clickPay', mult: 0.75 },
       { kind: 'incomeTax', rate: 0.15 },
       { kind: 'purchaseCost', mult: 1.25 }
     ],
-    condition: { kind: 'netWorth', target: gateTarget(9, 1.3) },
+    condition: { kind: 'netWorth', target: gateTarget(9, 1.3), gain: gateTarget(9, 0.3) },
     timeLimitSec: TIME_LIMIT_SEC,
     cooldownSec: COOLDOWN_SEC
   }

@@ -48,6 +48,8 @@ export interface BossModuleDeps {
   onAttemptEnded: (ended: AttemptEnded) => void
   // Heir traits and advisors: longer fights (fixed at the start) and softer twists
   bossTimeMult: () => number
+  // A gate the family has never beaten: net worth bosses count only the gain
+  countsGain: (gate: number) => boolean
   twistStrength: () => number
 }
 
@@ -135,7 +137,7 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
       return false
     }
     const def = nextBoss.value.def
-    bossAttempt.value = newTracker(def.gate, deps.activeMs(), deps.bossTimeMult())
+    bossAttempt.value = newTracker(def.gate, deps.activeMs(), deps.bossTimeMult(), deps.netWorth(), deps.countsGain(def.gate))
     deps.announce(def.twistText ? `${def.title}: ${def.twistText}` : def.title)
     return true
   }

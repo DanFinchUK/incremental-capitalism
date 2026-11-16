@@ -122,6 +122,19 @@ from people you were at school with, beyond what you could otherwise reach.
   price ceiling is allowed; it skips the shopping restriction, not the boss.
 - **Retiring** ends any running loans.
 
+## The favour on the trading desk
+
+- **Cashflow chart (LON:FLOW).** While loans run, the lent units' income sits
+  on top of the area as a gold band, with a worded legend entry beside
+  "Realised 1s" and "Passive floor" (for example "From favours"). It steps up
+  when a favour is called in and drops away when the helper leaves.
+- **Revenue mix.** A gold "Favours" slice with its share, like the other
+  sources, while any loan runs.
+- **No new single letters.** While in this code, the chart's event pins swap
+  their letters for words: M becomes "Milestone" or "Class", the star
+  becomes "Opportunity" (or a pin with the word in a tooltip if words crowd
+  the chart). The cash chart's O and C stay as they are.
+
 ## Status pill
 
 The automation pill above the Money and Retire boxes stays, reworded for

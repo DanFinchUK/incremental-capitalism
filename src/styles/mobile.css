@@ -200,6 +200,12 @@ html {
   color: var(--color-accent-fg);
 }
 
+/* On the filled tab, the count swaps to the tab's own colours so it stands out */
+.mob-Tab-active .mob-TabCount {
+  background: var(--color-accent-fg);
+  color: var(--color-accent);
+}
+
 @media (max-width: 720px) {
   .ic-Shell-phone .lyt-Content {
     padding-bottom: calc(var(--dock-h, 240px) + 16px);

@@ -62,6 +62,7 @@
 
       <div class="scn-SettingsActions">
         <button type="button" class="scn-Action scn-Action-outline" data-testid="open-intro" @click="openIntro">How to play</button>
+        <a class="scn-Action scn-Action-outline" href="./cards.html" target="_blank" rel="noopener" data-testid="open-card-index">Card index</a>
         <button type="button" class="scn-Action scn-Action-outline" data-testid="download-save" @click="downloadSave">
           Download save
         </button>

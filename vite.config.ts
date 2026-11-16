@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 
@@ -9,6 +10,15 @@ const testExecArgv = nodeMajor >= 25 ? ['--no-experimental-webstorage'] : []
 export default defineConfig({
   base: './',
   plugins: [vue()],
+  build: {
+    rollupOptions: {
+      // The game, and the card index beside it
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        cards: fileURLToPath(new URL('./cards.html', import.meta.url))
+      }
+    }
+  },
   test: {
     environment: 'jsdom',
     poolOptions: {

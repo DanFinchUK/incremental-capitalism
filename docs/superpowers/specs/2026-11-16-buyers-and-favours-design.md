@@ -101,12 +101,13 @@ from people you were at school with, beyond what you could otherwise reach.
   running loan has its own row. When a loan ends its row stays, greyed, in
   the order the favours were called in, until the generation ends; it stays
   even after the card locks again. Each finished row says where the helper
-  went, picked at random with no repeats on a card: "Headed back to
-  Mayfair", "Flew back to Dubai", "Needed elsewhere", "Back to the yacht",
-  "Off to Verbier for the season", "Called away to a shoot in Perthshire",
-  "Gone to Henley for the regatta", "Back to the club for a long lunch",
-  "Off to Monaco for the Grand Prix", "Returned to the family office",
-  "Back to Cheltenham for the races", "Recalled to the Treasury".
+  went, picked at random with no repeats on a card. Each line has a sting
+  about privilege, revolving doors or favours not being free, and fits a
+  phone-width row: "Flew back to Dubai", "Headed back to Mayfair", "Signing
+  in at the Lords", "Gone to Davos to fight inequality", "Took a non-exec at
+  a water firm", "Now advising your rivals", "Left a card and an invoice",
+  "Lunch at the club ran to dinner", "Called away to a shoot", "Recalled to
+  the Treasury", "Back on the yacht", "Off to a select committee".
 - **The card while a loan runs.** Shows the loaned item, only on that card;
   the rung after it stays hidden. While the item is locked for buying, the
   title shows just the number lent, "Broker (1)". Once it can be bought, it

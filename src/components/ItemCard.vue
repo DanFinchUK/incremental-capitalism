@@ -264,7 +264,6 @@ const synergyText = computed(() => {
     const job = props.row.item as JobDef
     const biz = BUSINESSES_BY_ID[job.synergyBusinessId]
     const bizCount = store.businessesOwned[job.synergyBusinessId] ?? 0
-    // The number first, so a line cut short on a phone still shows it
     return bizCount > 0
       ? `+${owned.value}% to ${biz.label}: ${job.synergyNote}`
       : `+${owned.value}% to ${biz.label} once owned: ${job.synergyNote}`

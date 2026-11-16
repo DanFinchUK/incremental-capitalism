@@ -322,10 +322,9 @@ html {
     min-width: calc(8.5ch + 24px);
   }
 
-  /* Keep cards short so several fit between the list header and the dock.
-     The milestone badge still shows the multiplier earned. */
+  /* The ownership milestones wrap rather than squeeze */
   .ic-Shell-phone .scn-Pips {
-    display: none;
+    flex-wrap: wrap;
   }
 
   /* Room for two lines, so a card doesn't grow (and move its Buy button)
@@ -344,11 +343,10 @@ html {
     text-overflow: ellipsis;
   }
 
+  /* The pairing reads in full: it says what the Job does for the trade */
   .ic-Shell-phone .scn-SynergyLine {
     font-size: 11px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.4;
   }
 
   .ic-Shell-phone .scn-CardBody .scn-CardMeta,

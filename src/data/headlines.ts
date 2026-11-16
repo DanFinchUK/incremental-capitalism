@@ -1,4 +1,4 @@
-export const GENERAL_HEADLINES: ReadonlyArray<string> = [
+const GENERAL_HEADLINES: ReadonlyArray<string> = [
   'Chancellor confirms trickle-down economics "due to arrive any Tuesday now".',
   'Rail replacement bus service floated on FTSE 100 at £14B valuation.',
   'Landlord heroically raises rent by 18% to "help tenants stay motivated".',

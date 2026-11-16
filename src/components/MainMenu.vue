@@ -69,12 +69,6 @@
 
       <footer class="ttl-Foot">Empire &amp; Privilege Edition</footer>
     </div>
-
-    <div class="ttl-Ticker" aria-hidden="true">
-      <div class="ttl-TickerTrack">
-        <span v-for="(h, i) in TICKER" :key="i">{{ h }}</span>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -85,7 +79,6 @@ import { computed, ref } from 'vue'
 import FamilyCrest from './FamilyCrest.vue'
 import ScenarioPicker from './ScenarioPicker.vue'
 import { ACHIEVEMENTS } from '../data/achievements'
-import { GENERAL_HEADLINES } from '../data/headlines'
 import type { ScenarioId } from '../data/scenarios'
 import { armsFor } from '../engine/crest'
 import { bestDynasty, scenariosOpen } from '../engine/hall'
@@ -150,7 +143,6 @@ const COINS = Array.from({ length: 16 }, (_, i) => ({
   }
 }))
 
-const TICKER = [...GENERAL_HEADLINES, ...GENERAL_HEADLINES]
 </script>
 
 <style scoped>
@@ -178,7 +170,7 @@ const TICKER = [...GENERAL_HEADLINES, ...GENERAL_HEADLINES]
   width: 100%;
   max-width: 460px;
   margin: auto;
-  padding: 36px 20px 24px;
+  padding: 36px 20px max(28px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -445,35 +437,6 @@ const TICKER = [...GENERAL_HEADLINES, ...GENERAL_HEADLINES]
   animation: ttl-fall linear infinite;
 }
 
-.ttl-Ticker {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  width: 100%;
-  overflow: hidden;
-  border-top: 1px solid rgba(214, 169, 60, 0.3);
-  background: rgba(12, 7, 8, 0.8);
-  color: var(--ttl-dim);
-  font-size: 12px;
-  white-space: nowrap;
-  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
-}
-
-.ttl-TickerTrack {
-  display: inline-flex;
-  gap: 48px;
-  padding-left: 100%;
-  animation: ttl-ticker 160s linear infinite;
-}
-
-.ttl-TickerTrack span::before {
-  content: '◆';
-  margin-right: 12px;
-  color: var(--ttl-gold);
-  font-size: 9px;
-  vertical-align: 2px;
-}
-
 @keyframes ttl-rise {
   from {
     opacity: 0;
@@ -510,12 +473,6 @@ const TICKER = [...GENERAL_HEADLINES, ...GENERAL_HEADLINES]
   }
 }
 
-@keyframes ttl-ticker {
-  to {
-    transform: translateX(-100%);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .ttl-Screen *,
   .ttl-Screen *::before {
@@ -525,10 +482,6 @@ const TICKER = [...GENERAL_HEADLINES, ...GENERAL_HEADLINES]
 
   .ttl-Coin {
     display: none;
-  }
-
-  .ttl-TickerTrack {
-    padding-left: 16px;
   }
 }
 </style>

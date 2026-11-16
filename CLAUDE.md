@@ -39,6 +39,15 @@
 - Rules and numbers go where the screen presents them as such: effect and
   cost lines, boss conditions, stat pills, buttons, a labelled rules line and
   How to play. State them plainly there, and keep them out of story copy.
+- Name things in the world's own words, not game jargon. Every label a
+  player reads (headings, tabs, pills, buttons, effect lines) should be a
+  word someone in that world would use: a class, not a gate; an ordeal, not
+  a boss; times, not splits. Test: would a minor aristocrat or a letting
+  agent say it? Code identifiers (`gatesBeaten`, `bossForGate`) can stay as
+  they are, so this governs only what appears on screen. When a new
+  mechanic needs a name, take it from British wealth and class (titles,
+  honours, staff, estates, occasions) before reaching for a gaming term
+  (boss, run, tier, buff, loot, XP, level up, rarity).
 - Follow the avoid-ai-writing guidance
   (github.com/conorbronsdon/avoid-ai-writing): no em dashes, none of its
   flagged vocabulary, no stock transitions, no "it's not X, it's Y" framing.

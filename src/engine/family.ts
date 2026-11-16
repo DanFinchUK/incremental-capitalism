@@ -19,6 +19,25 @@ export interface GenerationRecord {
   splits: (number | null)[]
   // True when this generation ended by elevating to the House of Lords
   elevated?: boolean
+  // The family's titles while they were head, and after their elevation.
+  // Older records have neither: see titlesHeld
+  titles?: number
+  becameTitles?: number
+  // Their Personal Assistants at retirement, as styled then ("Head Butler, MBE")
+  pas?: string[]
+}
+
+// The titles each record's head held, and what an elevation made them:
+// recorded, or for older records one title per elevation before it, which is
+// how every line played before titles were recorded
+export function titlesHeld(tree: ReadonlyArray<GenerationRecord>): Array<{ held: number; became: number | null }> {
+  let titles = 0
+  return tree.map((r) => {
+    const held = r.titles ?? titles
+    const became = r.elevated ? (r.becameTitles ?? held + 1) : null
+    titles = became ?? held
+    return { held, became }
+  })
 }
 
 export const MAX_TREE_ENTRIES = 200
@@ -38,7 +57,10 @@ export function readGenerationRecord(raw: unknown): GenerationRecord | null {
     activeMs: num(r.activeMs),
     advisors: Array.isArray(r.advisors) ? r.advisors.filter((a): a is string => typeof a === 'string') : [],
     splits: Array.isArray(r.splits) ? r.splits.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : null)) : [],
-    ...(r.elevated === true ? { elevated: true } : {})
+    ...(r.elevated === true ? { elevated: true } : {}),
+    ...(typeof r.titles === 'number' && Number.isFinite(r.titles) ? { titles: Math.max(0, Math.floor(r.titles)) } : {}),
+    ...(typeof r.becameTitles === 'number' && Number.isFinite(r.becameTitles) ? { becameTitles: Math.max(0, Math.floor(r.becameTitles)) } : {}),
+    ...(Array.isArray(r.pas) ? { pas: r.pas.filter((a): a is string => typeof a === 'string') } : {})
   }
 }
 

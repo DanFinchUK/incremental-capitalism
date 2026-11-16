@@ -16,6 +16,17 @@ export function titlesFor(legacyPoints: number): number {
 
 const RANKS: ReadonlyArray<string> = ['Commoner', 'Baron', 'Viscount', 'Earl', 'Marquess', 'Duke']
 
+// The top rank: reaching it ends the dynasty
+export const DUKE_TITLES = RANKS.length - 1
+
+// How a line holding a rank is named on the roll: "The Barons"
+export function rankLine(titles: number): string {
+  const rank = peerageRank(titles)
+  if (rank === 'Commoner') return 'The commoners'
+  if (rank === 'Duke') return 'The Duke'
+  return `The ${rank === 'Marquess' ? 'Marquesses' : `${rank}s`}`
+}
+
 export function peerageRank(titles: number): string {
   return RANKS[Math.min(RANKS.length - 1, Math.max(0, Math.floor(titles)))]
 }

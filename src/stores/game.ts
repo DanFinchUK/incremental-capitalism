@@ -56,6 +56,7 @@ import {
   serializeState,
   type PersistedSceneState
 } from '../engine/migration'
+import { HALL_KEY, addToHall, parseHall, type DynastyRecord } from '../engine/hall'
 import {
   createTelemetryState,
   currentManualPerSec,
@@ -86,9 +87,9 @@ import {
   describeBloodlineTraits,
   type GenerationRecord
 } from '../engine/family'
-import { heirChoiceCount, peerageRank, titlePaChairs, titleSource, titleStartingLegacy, titlesFor } from '../engine/peerage'
+import { DUKE_TITLES, heirChoiceCount, peerageRank, titlePaChairs, titleSource, titleStartingLegacy, titlesFor } from '../engine/peerage'
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
-import type { AdvisorInstance } from '../engine/office'
+import { paStanding, paTitle, type AdvisorInstance } from '../engine/office'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ROOMS, roomForClass, type RoomDef, type RoomId } from '../data/rooms'
 import {
@@ -252,6 +253,11 @@ export const useGameStore = defineStore('game', () => {
   const achievementProgress = ref<AchievementProgress>(initial.achievementProgress)
   const achievementsOpen = ref(false)
   const titles = ref<number>(initial.titles)
+  // The dynasty: active time since it began, and whether it has reached Duke
+  const dynastyMs = ref<number>(initial.dynastyMs)
+  const dynastyComplete = ref<boolean>(initial.dynastyComplete)
+  // Every dynasty that reached Duke, newest first; kept apart from the save
+  const hall = ref<DynastyRecord[]>([])
   // Elevation needs the Royal Garden Party beaten at least once, ever
   // Counts the Legacy this generation would bank, since elevating ends it
   // Only Legacy the line earned counts towards titles, not what the titles gave it
@@ -595,6 +601,8 @@ export const useGameStore = defineStore('game', () => {
       tradingDeskCollapsed: tradingDeskCollapsed.value,
       favours: favours.value,
       titleLegacyGranted: true,
+      dynastyMs: dynastyMs.value,
+      dynastyComplete: dynastyComplete.value,
       lastUpdate: ts
     }
   }
@@ -642,6 +650,8 @@ export const useGameStore = defineStore('game', () => {
     familyTree.value = loaded.familyTree
     achievements.value = loaded.achievements
     titles.value = loaded.titles
+    dynastyMs.value = loaded.dynastyMs
+    dynastyComplete.value = loaded.dynastyComplete
     achievementProgress.value = loaded.achievementProgress
     penalty.value = null
     bosses.bossAttempt.value = null
@@ -683,9 +693,15 @@ export const useGameStore = defineStore('game', () => {
     }
     const loaded = parseSavedState(raw)
     applyLoadedState(loaded, ts)
+    try {
+      hall.value = parseHall(localStorage.getItem(HALL_KEY))
+    } catch {
+      hall.value = []
+    }
 
-    // No catch-up while the succession is undecided: the family is in mourning
-    if (loaded.lastUpdate !== null && ts > loaded.lastUpdate && heirChoices.value.length === 0) {
+    // No catch-up while the succession is undecided: the family is in
+    // mourning; nor once the dynasty is over
+    if (loaded.lastUpdate !== null && ts > loaded.lastUpdate && heirChoices.value.length === 0 && !dynastyComplete.value) {
       const catchUp = computeOfflineCatchUp(ts - loaded.lastUpdate, offlinePerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
       if (catchUp) {
         // Through creditMoney, so advisor drain applies offline too
@@ -1075,8 +1091,9 @@ export const useGameStore = defineStore('game', () => {
     }
     const elapsedMs = Math.max(0, ts - lastTickMs.value)
     lastTickMs.value = ts
-    if (heirChoices.value.length > 0 || disgraceReport.value !== null) {
-      // The game pauses while succession or disgrace is on screen
+    if (heirChoices.value.length > 0 || disgraceReport.value !== null || dynastyComplete.value) {
+      // The game pauses while succession or disgrace is on screen, and stops
+      // once the dynasty is over
       return
     }
 
@@ -1103,6 +1120,7 @@ export const useGameStore = defineStore('game', () => {
         hustleBonus.value = Math.max(0, Number((hustleBonus.value - deltaSec * decayRate).toFixed(3)))
       }
       activeGenerationMs.value += Math.min(elapsedMs, 5000)
+      dynastyMs.value += Math.min(elapsedMs, 5000)
       office.addCampaignTime(Math.min(elapsedMs, 5000))
       const { business, interns, allowance } = computeIncomeBreakdown(economyInput.value)
       creditMoney(business * deltaSec, 'passive', ts)
@@ -1394,9 +1412,11 @@ export const useGameStore = defineStore('game', () => {
   // Promotions earned by the outgoing generation's PAs, for the retirement news
   let officeNews: string[] = []
 
-  function endGeneration(ts: number, gain: number, elevated = false): number {
+  // titlesBefore: on elevation, the titles held before it
+  function endGeneration(ts: number, gain: number, elevated = false, titlesBefore = titles.value): number {
     achievementProgress.value = { ...EMPTY_PROGRESS }
-    const payroll = [...office.paChairs.value, ...office.officeSeats.value].filter((a): a is AdvisorInstance => a !== null)
+    const pas = office.paChairs.value.filter((a): a is AdvisorInstance => a !== null)
+    const payroll = [...pas, ...office.officeSeats.value.filter((a): a is AdvisorInstance => a !== null)]
     familyTree.value = [
       ...familyTree.value,
       {
@@ -1409,7 +1429,12 @@ export const useGameStore = defineStore('game', () => {
         activeMs: activeGenerationMs.value,
         advisors: payroll.map((a) => ADVISORS_BY_ID[a.advisorId]?.name ?? a.advisorId),
         splits: [...splits.value],
-        ...(elevated ? { elevated: true } : {})
+        ...(elevated ? { elevated: true, becameTitles: titles.value } : {}),
+        titles: titlesBefore,
+        pas: pas.flatMap((a) => {
+          const standing = paStanding(a)
+          return standing ? [paTitle(standing)] : []
+        })
       }
     ].slice(-MAX_TREE_ENTRIES)
     // Inheritance isn't earned, so it doesn't count toward lifetime earnings.
@@ -1463,10 +1488,19 @@ export const useGameStore = defineStore('game', () => {
     if (!canElevate.value || heirChoices.value.length > 0) {
       return false
     }
+    const before = titles.value
     titles.value += gain
     plays.log(ts, 'elevate', { titles: gain })
     cue('elevate')
-    endGeneration(ts, 0, true)
+    endGeneration(ts, 0, true, before)
+    // The dukedom: the dynasty is complete, and the finale takes over
+    if (titles.value >= DUKE_TITLES) {
+      dynastyComplete.value = true
+      heirChoices.value = []
+      plays.log(ts, 'dukedom', { dynastyMs: dynastyMs.value })
+      flushSave(ts)
+      return true
+    }
     plays.resetGateWatch(0)
     // The titles give the new line its first Legacy
     legacyPoints.value = titleStartingLegacy(titles.value)
@@ -1606,6 +1640,39 @@ export const useGameStore = defineStore('game', () => {
       scheduleNextEvent(ts)
       flushSave(ts)
     }
+  }
+
+  // After the dukedom: file the dynasty in the Hall and start a new family
+  // with nothing. Achievements and settings stay; they aren't power.
+  function foundNewDynasty(ts = Date.now()): boolean {
+    if (!dynastyComplete.value) return false
+    const record: DynastyRecord = { surname: familySurname.value, finishedAt: ts, activeMs: dynastyMs.value, roll: [...familyTree.value] }
+    hall.value = addToHall(hall.value, record)
+    try {
+      localStorage.setItem(HALL_KEY, JSON.stringify(hall.value))
+    } catch {
+      // A full or blocked store: the Hall lives for this visit only
+    }
+    const fresh = createInitialSceneState()
+    fresh.achievements = [...achievements.value]
+    fresh.bulkBuyMode = bulkBuyMode.value
+    fresh.compactAutoBuy = compactAutoBuy.value
+    fresh.noTap = noTap.value
+    fresh.muted = muted.value
+    fresh.introSeen = true
+    fresh.tradingDeskCollapsed = tradingDeskCollapsed.value
+    // A new surname, never the one just filed
+    let surname = generateSurname(Math.random)
+    for (let guard = 0; surname === record.surname && guard < 10; guard++) surname = generateSurname(Math.random)
+    fresh.familySurname = surname
+    applyLoadedState(fresh, ts)
+    offlineReport.value = null
+    legacyDrawerOpen.value = false
+    successionShop.value = null
+    plays.log(ts, 'new-dynasty', { previous: record.surname, activeMs: record.activeMs })
+    announce(`A new dynasty: the ${surname} family enters the market with nothing but ambition.`)
+    flushSave(ts)
+    return true
   }
 
   function hardReset(ts = Date.now()): void {
@@ -1758,6 +1825,10 @@ export const useGameStore = defineStore('game', () => {
     achievements,
     achievementsOpen,
     titles,
+    dynastyMs,
+    dynastyComplete,
+    hall,
+    foundNewDynasty,
     titlesOnElevation,
     canElevate,
     elevateToLords,

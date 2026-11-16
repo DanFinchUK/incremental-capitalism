@@ -32,6 +32,10 @@
       <div class="scn-ModalCallout scn-ModalCallout-perk">
         <p>Every title, for good: 50% more income, Legacy 15% stronger, 2 Legacy to start each new line with, and a PA chair, so one more of your staff stays through every retirement. Two titles bring a fourth heir to choose from.</p>
       </div>
+      <p v-if="nextTitles >= DUKE_TITLES" class="scn-ModalCallout scn-ModalCallout-perk" data-testid="elevate-dukedom">
+        Duke is the top of the peerage: accepting ends the dynasty. Its time goes in the Hall of Dynasties, and a new family
+        starts from nothing.
+      </p>
       <div class="scn-ModalFooter">
         <button type="button" class="scn-Action scn-Action-outline" @click="emit('close')">Not yet</button>
         <button type="button" class="scn-Action scn-Action-accent" data-testid="confirm-elevate" @click="confirm">
@@ -44,7 +48,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { peerageRank } from '../engine/peerage'
+import { DUKE_TITLES, peerageRank } from '../engine/peerage'
 import { useGameStore } from '../stores/game'
 import { useEscapeKey } from '../utils/useEscapeKey'
 

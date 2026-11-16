@@ -2,7 +2,7 @@ import { SOCIAL_CLASSES } from '../data/classes'
 import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } from '../data/perks'
 import type { BulkBuyMode } from './economy'
 import { emptySplits } from './splits'
-import { titleStartingLegacy } from './peerage'
+import { DUKE_TITLES, titleStartingLegacy } from './peerage'
 import { INHERITED_BY_ID, TRAITS_BY_ID, type Heir } from '../data/heirs'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ACHIEVEMENTS_BY_ID, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
@@ -73,6 +73,10 @@ export interface PersistedSceneState {
   favours: FavourState
   // Lines that elevated before titles brought starting Legacy get it once, on load
   titleLegacyGranted: boolean
+  // Active play time since the dynasty began, every line and generation
+  dynastyMs: number
+  // The family reached Duke: the dynasty is over and the finale stays up
+  dynastyComplete: boolean
   lastUpdate: number | null
 }
 
@@ -121,6 +125,8 @@ export function createInitialSceneState(): PersistedSceneState {
     tradingDeskCollapsed: false,
     favours: emptyFavours(),
     titleLegacyGranted: true,
+    dynastyMs: 0,
+    dynastyComplete: false,
     lastUpdate: null
   }
 }
@@ -410,6 +416,12 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),
     favours: readFavours(s.favours),
     titleLegacyGranted: true,
+    // Older saves: every generation recorded, plus the one under way
+    dynastyMs: typeof s.dynastyMs === 'number' && Number.isFinite(s.dynastyMs) && s.dynastyMs >= 0
+      ? s.dynastyMs
+      : familyTree.reduce((a, r) => a + r.activeMs, 0) + readNonNegativeNumber(s.activeGenerationMs, 0),
+    // A family already at Duke when the dukedom became the end has finished
+    dynastyComplete: s.dynastyComplete === true || titles >= DUKE_TITLES,
     lastUpdate
   }
 }

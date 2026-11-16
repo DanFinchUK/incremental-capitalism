@@ -2003,3 +2003,165 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* The dukedom: the end of a dynasty, and the roll of everyone in it */
+.scn-ModalKicker-gold {
+  background: var(--color-gold-bg);
+  color: var(--color-gold-fg);
+}
+
+.scn-DukedomStyle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--color-muted);
+}
+
+.scn-DynastyRecord {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.scn-DynastyRecord div {
+  padding: 8px 10px;
+  background: var(--color-card-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.scn-DynastyRecord dt {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.scn-DynastyRecord dd {
+  margin: 2px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.scn-DynastyRecord small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.scn-Roll {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.scn-RollLine {
+  display: flex;
+  flex-direction: column;
+}
+
+.scn-RollLineHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-strong-line);
+}
+
+.scn-RollLineHead h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+}
+
+.scn-RollLineHead span,
+.scn-RollStats,
+.scn-RollTraits,
+.scn-RollGen {
+  font-size: 13px;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.scn-RollPerson {
+  display: grid;
+  grid-template-columns: 3ch minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.scn-RollPerson:last-child {
+  border-bottom: none;
+}
+
+.scn-RollGen {
+  grid-row: span 3;
+}
+
+.scn-RollStats {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.scn-RollTraits,
+.scn-RollStaff {
+  grid-column: 2 / 4;
+}
+
+.scn-RollBecame {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+  background: var(--color-perk-pill-bg);
+  color: var(--color-perk-pill-fg);
+}
+
+.scn-RollBecame-duke {
+  background: var(--color-gold-bg);
+  color: var(--color-gold-fg);
+}
+
+.scn-RollStaff {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.scn-RollStaff span {
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 12px;
+  background: var(--color-pip-bg);
+}
+
+.scn-RollStaff .scn-RollPA {
+  background: var(--color-gold-bg);
+  color: var(--color-gold-fg);
+}
+
+@media (max-width: 520px) {
+  .scn-RollPerson {
+    grid-template-columns: 3ch minmax(0, 1fr);
+  }
+
+  .scn-RollStats {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .scn-RollTraits,
+  .scn-RollStaff {
+    grid-column: 2;
+  }
+}

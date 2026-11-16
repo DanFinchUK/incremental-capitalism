@@ -18,6 +18,9 @@
 
 .scn-AllowancePanel strong {
   font-size: 24px;
+  /* Suffixes like No and Qa are case-sensitive, so the rate keeps its case */
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .scn-PrimaryAction {

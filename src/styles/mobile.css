@@ -138,6 +138,17 @@ html {
   user-select: none;
 }
 
+/* The allowance is a readout, not a button: a small label on one line,
+   instead of the Get paid button's big text */
+.mob-Pay.scn-AllowancePanel {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+.mob-Pay.scn-AllowancePanel strong {
+  font-size: 20px;
+}
+
 .mob-Tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

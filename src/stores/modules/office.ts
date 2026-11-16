@@ -26,7 +26,7 @@ export interface OfficeModule {
   headhunterOffer: Ref<string[]>
   queuedOffers: Ref<number>
   officeSources: ComputedRef<ModifierSource[]>
-  hireAdvisor: (offerIndex: number, replaceSeat?: number) => boolean
+  hireAdvisor: (offerIndex: number, replaceSeat?: number | 'pa') => boolean
   skipOffer: () => boolean
   fireAdvisor: (seat: number) => void
   firePA: () => void
@@ -72,14 +72,15 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     seatStore.value = seats
   }
 
-  function hireAdvisor(offerIndex: number, replaceSeat?: number): boolean {
+  // replaceSeat: an office seat index, or 'pa' to replace the Personal Assistant
+  function hireAdvisor(offerIndex: number, replaceSeat?: number | 'pa'): boolean {
     const advisorId = headhunterOffer.value[offerIndex]
     const def = advisorId ? ADVISORS_BY_ID[advisorId] : undefined
     if (!def) return false
     const inst: AdvisorInstance = { uid: `a${Date.now().toString(36)}${nextUid++}`, advisorId, servedGenerations: 0, campaignMs: 0 }
     // An empty PA chair is filled first, so the family's first advisor
     // isn't lost on retirement by accident
-    if (replaceSeat === undefined && paChair.value === null) {
+    if ((replaceSeat === undefined && paChair.value === null) || replaceSeat === 'pa') {
       deps.money.value -= deps.money.value * def.hireFeeShare
       paChair.value = inst
       nextOffer()

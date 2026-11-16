@@ -16,28 +16,26 @@
     </div>
     <p v-if="props.locked" class="scn-AutoLine" data-testid="hire-locked">Catch your breath: choose in {{ props.lockSeconds }}s.</p>
     <p v-else-if="seatsFull" class="scn-AutoLine">Office full: hiring means someone makes way.</p>
-    <div class="scn-AdvisorGrid">
-      <article v-for="(a, i) in offer" :key="a.id" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${a.rarity}`">
+    <div class="scn-AdvisorGrid scn-AdvisorGrid-fill">
+      <article
+        v-for="(a, i) in offer"
+        :key="a.id"
+        class="scn-AdvisorCard"
+        :class="[`scn-AdvisorCard-${a.rarity}`, { 'scn-AdvisorCard-chosen': choosing === i && seatsFull }]"
+      >
         <span class="scn-MarketEventTag">{{ RARITY_LABELS[a.rarity] }} · {{ a.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
         <strong>{{ a.name }}</strong>
         <p class="scn-AutoLine">{{ store.wording(a.effectText) }}</p>
         <p class="scn-StatHint">{{ a.costText }} Fee: {{ Math.round(a.hireFeeShare * 100) }}% cash.</p>
-        <div v-if="choosing === i && seatsFull" class="scn-SeatPicker" data-testid="seat-picker">
-          <p class="scn-AutoLine">Who makes way?</p>
-          <button
-            v-for="(seat, s) in seated"
-            :key="s"
-            type="button"
-            class="scn-SeatOption"
-            data-testid="replace-seat"
-            :disabled="props.locked"
-            @click="replace(i, s)"
-          >
-            <strong>{{ seat.name }}</strong>
-            <span>{{ store.wording(seat.effectText) }}</span>
-          </button>
-          <button type="button" class="scn-Action scn-Action-outline" @click="choosing = null">Cancel</button>
-        </div>
+        <button
+          v-if="choosing === i && seatsFull"
+          type="button"
+          class="scn-Action scn-Action-outline"
+          data-testid="cancel-replace"
+          @click="choosing = null"
+        >
+          Cancel
+        </button>
         <button
           v-else
           type="button"
@@ -50,13 +48,59 @@
         </button>
       </article>
     </div>
+    <template v-if="chosen && seatsFull">
+      <p ref="pickerTitle" class="scn-AutoLine scn-SeatPickerTitle">Who makes way for the {{ chosen.name }}?</p>
+      <div class="scn-AdvisorGrid scn-AdvisorGrid-fill" data-testid="seat-picker">
+        <article
+          v-if="pa"
+          class="scn-AdvisorCard"
+          :class="`scn-AdvisorCard-${pa.def.rarity}`"
+          data-testid="replace-pa-card"
+        >
+          <div class="scn-AdvisorTags">
+            <span class="scn-PaBadge">PA</span>
+            <span class="scn-MarketEventTag">{{ RARITY_LABELS[pa.def.rarity] }} · {{ pa.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
+          </div>
+          <strong>{{ pa.def.name }}</strong>
+          <p class="scn-AutoLine">{{ store.wording(pa.def.effectText) }}</p>
+          <p class="scn-StatHint">{{ pa.def.costText }}</p>
+          <p v-if="pa.inst.servedGenerations > 0" class="scn-StatHint">
+            Served {{ pa.inst.servedGenerations }} gen: +{{ pa.inst.servedGenerations * 25 }}% effect, +{{ pa.inst.servedGenerations * 20 }}% pay
+          </p>
+          <button
+            type="button"
+            class="scn-Action scn-Action-outline"
+            data-testid="replace-pa"
+            :disabled="props.locked"
+            @click="replace(choosing!, 'pa')"
+          >
+            Let go
+          </button>
+        </article>
+        <article v-for="(seat, s) in seated" :key="s" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${seat.rarity}`">
+          <span class="scn-MarketEventTag">{{ RARITY_LABELS[seat.rarity] }} · {{ seat.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
+          <strong>{{ seat.name }}</strong>
+          <p class="scn-AutoLine">{{ store.wording(seat.effectText) }}</p>
+          <p class="scn-StatHint">{{ seat.costText }}</p>
+          <button
+            type="button"
+            class="scn-Action scn-Action-outline"
+            data-testid="replace-seat"
+            :disabled="props.locked"
+            @click="replace(choosing!, s)"
+          >
+            Let go
+          </button>
+        </article>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 // The headhunter's current shortlist, with hire buttons. Shown in the hiring
 // modal, which opens whenever a shortlist is waiting.
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
 import { RARITY_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
@@ -68,22 +112,31 @@ const store = useGameStore()
 const offer = computed(() => store.headhunterOffer.map((id) => ADVISORS_BY_ID[id]).filter(Boolean))
 // An empty PA chair takes the next hire, so the office isn't full yet
 const seatsFull = computed(() => store.paChair !== null && store.officeSeats.every((s) => s !== null))
+const pa = computed(() => {
+  const inst = store.paChair
+  const def = inst ? ADVISORS_BY_ID[inst.advisorId] : undefined
+  return inst && def ? { inst, def } : null
+})
 const seated = computed(() => store.officeSeats.map((s) => (s ? ADVISORS_BY_ID[s.advisorId] : null)).filter((a) => a !== null))
 
 // With the office full, Hire first asks who makes way, showing what each
 // current advisor gives, so a swap is never a blind one
 const choosing = ref<number | null>(null)
+const chosen = computed(() => (choosing.value === null ? null : offer.value[choosing.value] ?? null))
 watch(offer, () => (choosing.value = null))
+const pickerTitle = ref<HTMLElement | null>(null)
 
 function hire(i: number): void {
   if (seatsFull.value) {
     choosing.value = i
+    // On a phone the row of current advisors sits below the fold
+    void nextTick(() => pickerTitle.value?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }))
   } else {
     store.hireAdvisor(i)
   }
 }
 
-function replace(i: number, seat: number): void {
+function replace(i: number, seat: number | 'pa'): void {
   choosing.value = null
   store.hireAdvisor(i, seat)
 }

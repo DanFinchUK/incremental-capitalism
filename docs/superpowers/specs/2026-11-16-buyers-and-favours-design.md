@@ -29,7 +29,7 @@ Automation becomes staff who press Buy.
   Businesses. Each only ever compares items of its own kind: Jobs by tap pay
   gained per pound, Businesses by income per second gained per pound.
 - **One of each.** Buyer advisors are unique: at most one Recruiter and one
-  Acquisitions advisor at a time. A better one offered by the headhunter is an
+  Acquisitions advisor at a time. A better one offered through Introductions is an
   upgrade decision, not a pile-up.
 - **Budget.** Each buyer gets its own budget each second: a share of the cash
   in hand at that moment. Both work from the same snapshot. With £100 in hand
@@ -145,7 +145,7 @@ that builds up over generations and is slowly improved, not reset each time.
   the tier, as upkeep already grows with rarity. This replaces today's flat
   +25% effect and +20% pay per generation served.
 - **Honours, by service only.** Past legendary, PAs earn honours "for services
-  to the family". The headhunter never offers them.
+  to the family". Introductions never offer them.
 
   | Tier | Reached by | Shown as |
   |---|---|---|
@@ -161,7 +161,7 @@ that builds up over generations and is slowly improved, not reset each time.
   settles the numbers. A buyer PA's budget climbs with it.
 - **Succession at elevation.** Elevating no longer fires the PAs. Each is
   replaced by their child, who grew up around the job: one tier below the
-  parent, but never above Rare, since honours aren't inherited. Pay resets
+  parent, but never above Rare, since honours aren't inherited (decided). Pay resets
   with the new tier.
 
 ## Titles and Legacy
@@ -193,11 +193,24 @@ income to things that last:
   becomes "Opportunity" (or a pin with the word in a tooltip if words crowd
   the chart). The cash chart's O and C stay as they are.
 
-## Status pill
+## Buyers on screen
 
-The automation pill above the Money and Retire boxes stays, reworded for
-buyers, for example "Recruiter 4% · Acquisitions 6%". The trading desk shows
-only the cash chart's threshold line (to be revisited once buyers exist).
+- **Beside each list's title.** The Jobs heading shows the Recruiter, the
+  Businesses heading shows Acquisitions, for example
+  `Budget 40% · 2 items  [x] Automate`. Unticking Automate stands that buyer
+  down; ticking it puts them back to work. With no buyer for a list, the area
+  is empty. This replaces the automation pill above Money and Retire, and the
+  top bar's single "Automation: On/Paused" button.
+- **The trading desk.** The gold threshold line on the cash chart goes. A
+  small marker sits on the candle where a buyer bought something, named in a
+  tooltip ("Recruiter bought 10 Cleaners"). Words, not letters.
+
+## Renaming the headhunter
+
+"The headhunter is coming" reads as a threat. Advisor offers become
+**Introductions**: "Some people would like to be introduced". This covers the
+dialog's label, its copy, and any story text that mentions the headhunter
+(including the example in CLAUDE.md).
 
 ## Open questions
 
@@ -206,17 +219,7 @@ only the cash chart's threshold line (to be revisited once buyers exist).
    new family of three becomes Recruiters.
 2. **The per-title Legacy step,** for example +15%, and how much of the flat
    income per title survives.
-3. **Renaming the headhunter.** "The headhunter is coming" reads as a threat.
-   Candidate: "Introductions" ("Some people would like to be introduced");
-   alternatives "The shortlist" or "The agency calls".
-4. **The child's cap.** Rare as decided, or Legendary: honours aren't
-   inherited, but being very good at the job might be.
-5. **Pill wording** once buyers exist, for example "Recruiter 40% ·
-   Acquisitions 60%".
-6. **The trading desk line.** It sits just above the candles because it marks
-   the next restock. Candidate under buyers: drop it and put a small marker on
-   the candle where a buyer bought, named in a tooltip.
-7. **New perks** (later, not this phase): an heir draft re-roll, scandal
+3. **New perks** (later, not this phase): an heir draft re-roll, scandal
    protection, the trust fund, synergies.
 
 ## Testing

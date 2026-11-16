@@ -47,6 +47,13 @@
   --color-danger-hover: #9b1c1c;
   --color-danger-bg: #fde8e8;
   --color-danger-fg: #9b1c1c;
+  /* Rarity reads the same in every room: rooms never set these */
+  --rarity-rare: #3f78d8;
+  --rarity-rare-fill: rgba(63, 120, 216, 0.16);
+  --rarity-rare-fg: #ffffff;
+  --rarity-legendary: #d4a017;
+  --rarity-legendary-fill: rgba(212, 160, 23, 0.18);
+  --rarity-legendary-fg: #111111;
   --font-mono: 'Inconsolata', Monaco, 'Lucida Console', monospace;
   --font-display: var(--font-mono);
   --radius: 3px;

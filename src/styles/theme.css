@@ -779,18 +779,19 @@
 }
 
 .scn-MarketEvent-rare {
-  background: var(--color-perk-pill-bg);
-  border-color: var(--color-accent);
+  background: linear-gradient(var(--rarity-rare-fill), var(--rarity-rare-fill)), var(--color-card);
+  border-color: var(--rarity-rare);
 }
 
 .scn-MarketEvent-rare .scn-MarketEventTag {
-  background: var(--color-accent);
-  color: var(--color-accent-fg);
+  background: var(--rarity-rare);
+  color: var(--rarity-rare-fg);
 }
 
 .scn-MarketEvent-legendary {
   border-width: 3px;
-  box-shadow: 0 0 0 3px var(--color-gold-bg), 0 0 22px var(--color-gold), 0 8px 24px rgba(0, 0, 0, 0.22);
+  border-color: var(--rarity-legendary);
+  box-shadow: 0 0 0 3px var(--rarity-legendary-fill), 0 0 22px var(--rarity-legendary), 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 
 .scn-MarketEvent-shady {
@@ -1588,24 +1589,24 @@
 }
 
 .scn-HeirCard-rare {
-  background: var(--color-perk-pill-bg);
-  border-color: var(--color-accent);
+  background: linear-gradient(var(--rarity-rare-fill), var(--rarity-rare-fill)), var(--color-card);
+  border-color: var(--rarity-rare);
 }
 
 .scn-HeirCard-rare .scn-MarketEventTag {
-  background: var(--color-accent);
-  color: var(--color-accent-fg);
+  background: var(--rarity-rare);
+  color: var(--rarity-rare-fg);
 }
 
 .scn-HeirCard-legendary {
-  background: var(--color-gold-bg);
-  border-color: var(--color-gold);
-  box-shadow: 0 0 18px var(--color-gold);
+  background: linear-gradient(var(--rarity-legendary-fill), var(--rarity-legendary-fill)), var(--color-card);
+  border-color: var(--rarity-legendary);
+  box-shadow: 0 0 18px var(--rarity-legendary);
 }
 
 .scn-HeirCard-legendary .scn-MarketEventTag {
-  background: var(--color-gold);
-  color: #111111;
+  background: var(--rarity-legendary);
+  color: var(--rarity-legendary-fg);
 }
 
 .scn-HeirCard button {
@@ -1714,23 +1715,23 @@
 }
 
 .scn-AdvisorCard-rare {
-  background: var(--color-perk-pill-bg);
-  border-color: var(--color-accent);
+  background: linear-gradient(var(--rarity-rare-fill), var(--rarity-rare-fill)), var(--color-card);
+  border-color: var(--rarity-rare);
 }
 
 .scn-AdvisorCard-rare .scn-MarketEventTag {
-  background: var(--color-accent);
-  color: var(--color-accent-fg);
+  background: var(--rarity-rare);
+  color: var(--rarity-rare-fg);
 }
 
 .scn-AdvisorCard-legendary {
-  border-color: var(--color-gold);
-  background: var(--color-gold-bg);
+  background: linear-gradient(var(--rarity-legendary-fill), var(--rarity-legendary-fill)), var(--color-card);
+  border-color: var(--rarity-legendary);
 }
 
 .scn-AdvisorCard-legendary .scn-MarketEventTag {
-  background: var(--color-gold);
-  color: #111111;
+  background: var(--rarity-legendary);
+  color: var(--rarity-legendary-fg);
 }
 
 .scn-AdvisorCard-chosen {

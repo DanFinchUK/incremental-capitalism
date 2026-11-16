@@ -46,6 +46,9 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     store.money = 1_000_000
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-testid="desk-automation"]').text()).toBe(`AUTO <${store.automationLinePct}%`)
+    // The pill sits with the family's lasting effects, not the temporary ones by Hustle
+    expect(wrapper.find('[data-testid="header-bloodline-pills"]').text()).toContain(`Auto under ${store.automationLinePct}% of cash`)
+    expect(wrapper.find('.scn-HustleRow').text()).not.toContain('Auto under')
     expect(wrapper.find('[data-testid="desk-restock-line"]').text()).toContain('Auto restocks under')
     store.toggleAutoBuyPaused()
     await wrapper.vm.$nextTick()

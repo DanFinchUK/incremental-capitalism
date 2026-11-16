@@ -6,7 +6,6 @@
         <span class="scn-BuffPill scn-BuffPill-streak">
           {{ store.hustleMultiplier.toFixed(1) }}x Hustle
         </span>
-        <span v-if="store.automationPill" class="scn-BuffPill" data-testid="automation-pill">{{ store.automationPill }}</span>
         <span v-if="store.activeBusinessBuff" class="scn-BuffPill">
           {{ store.activeBusinessBuff.mult }}x {{ store.activeBusinessBuff.label }} ({{ store.activeBusinessBuff.remainingSec }}s)
         </span>
@@ -58,7 +57,20 @@
         </button>
       </p>
 
-      <div v-if="store.bloodlineTraitPills.length > 0" class="scn-TraitPillRow" data-testid="header-bloodline-pills">
+      <!-- The family's lasting effects; the temporary ones sit with Hustle -->
+      <div
+        v-if="store.bloodlineTraitPills.length > 0 || store.automationPill"
+        class="scn-TraitPillRow"
+        data-testid="header-bloodline-pills"
+      >
+        <span
+          v-if="store.automationPill"
+          class="scn-TraitPill"
+          :class="{ 'scn-TraitPill-neg': store.automationPill === 'Auto paused' }"
+          data-testid="automation-pill"
+        >
+          {{ store.automationPill }}
+        </span>
         <span
           v-for="pill in store.bloodlineTraitPills"
           :key="pill.label"

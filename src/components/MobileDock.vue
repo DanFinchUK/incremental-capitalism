@@ -5,7 +5,6 @@
       <span>{{ formatCurrency(store.moneyPerSecond) }}/s</span>
       <span v-if="!store.noTap">{{ formatCurrency(store.moneyPerClick) }}/tap</span>
       <span v-if="store.hustleMultiplier > 1.01" class="mob-Hustle">{{ store.hustleMultiplier.toFixed(1) }}x</span>
-      <span v-if="store.automationPill" class="mob-Auto" data-testid="dock-automation">{{ store.automationPill }}</span>
       <span v-if="store.activeClickBuff" class="mob-Buff">{{ store.activeClickBuff.label }} x{{ store.activeClickBuff.mult }} {{ store.activeClickBuff.remainingSec }}s</span>
       <span v-if="store.activeBusinessBuff" class="mob-Buff">{{ store.activeBusinessBuff.label }} x{{ store.activeBusinessBuff.mult }} {{ store.activeBusinessBuff.remainingSec }}s</span>
       <span v-if="store.incomePenalty" class="mob-Penalty">Income x{{ store.incomePenalty.mult }} {{ store.incomePenalty.remainingSec }}s</span>

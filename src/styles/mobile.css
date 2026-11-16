@@ -82,10 +82,6 @@ html {
   box-sizing: border-box;
 }
 
-.mob-Auto {
-  font-weight: 700;
-}
-
 .mob-Hustle {
   font-weight: 700;
   color: var(--color-accent-text);

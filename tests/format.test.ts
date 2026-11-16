@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatCurrency, formatDuration } from '../src/utils/format'
+import { formatCurrency, formatDuration, pluralSurname } from '../src/utils/format'
 
 describe('formatCurrency', () => {
   it('shows pennies below £1M', () => {
@@ -39,5 +39,14 @@ describe('formatDuration', () => {
     expect(formatDuration(125)).toBe('2m 5s')
     expect(formatDuration(3600)).toBe('1h')
     expect(formatDuration(11_520)).toBe('3h 12m')
+  })
+})
+
+describe('pluralSurname', () => {
+  it('adds es after a hissing ending and s otherwise', () => {
+    expect(pluralSurname('Pemberton-Hobbs')).toBe('Pemberton-Hobbses')
+    expect(pluralSurname('Ashcombe-Rees')).toBe('Ashcombe-Reeses')
+    expect(pluralSurname('Smythe-Mountjoy')).toBe('Smythe-Mountjoys')
+    expect(pluralSurname('Blythe-Featherstonehaugh')).toBe('Blythe-Featherstonehaughs')
   })
 })

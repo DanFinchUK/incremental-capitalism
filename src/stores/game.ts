@@ -203,6 +203,10 @@ export const useGameStore = defineStore('game', () => {
   // Set when a boss attempt is lost and the bloodline is forced into exile
   const disgraceReport = ref<DisgraceReport | null>(null)
   const legacyDrawerOpen = ref<boolean>(false)
+  // Succession runs as steps, one dialog at a time: choose the heir, then
+  // spend Legacy. 'pending' waits for the heir; 'open' marks the club as
+  // the last step rather than a visit from the top bar.
+  const successionShop = ref<'pending' | 'open' | null>(null)
   const classModalOpen = ref<boolean>(false)
   const celebratedClassLevel = ref<number | null>(null)
 
@@ -1194,12 +1198,18 @@ export const useGameStore = defineStore('game', () => {
     classModalOpen.value = false
     celebratedClassLevel.value = null
     legacyDrawerOpen.value = false
+    successionShop.value = null
     achievementProgress.value = { ...EMPTY_PROGRESS }
     plays.resetGateWatch(0)
     resetTelemetry(telemetry.value, ts, 0)
     refreshSeenItems()
     scheduleNextEvent(ts)
     flushSave(ts)
+  }
+
+  function closeLegacyDrawer(): void {
+    legacyDrawerOpen.value = false
+    successionShop.value = null
   }
 
   function dismissDisgrace(): void {
@@ -1355,6 +1365,10 @@ export const useGameStore = defineStore('game', () => {
     heirChoices.value = []
     generation.value += 1
     money.value *= modifiers.value.trustFundMult
+    if (successionShop.value === 'pending') {
+      successionShop.value = 'open'
+      legacyDrawerOpen.value = true
+    }
     announce(`${chosen.name} takes over the family firm.`)
     flushSave(nowMs.value)
   }
@@ -1416,6 +1430,7 @@ export const useGameStore = defineStore('game', () => {
     offlineReport.value = null
     bannerMessage.value = null
     legacyDrawerOpen.value = false
+    successionShop.value = null
     flushSave(ts)
   }
 
@@ -1518,6 +1533,8 @@ export const useGameStore = defineStore('game', () => {
     dismissDisgrace,
     startNewBloodline,
     legacyDrawerOpen,
+    successionShop,
+    closeLegacyDrawer,
     classModalOpen,
     celebratedClassLevel,
     netWorth,

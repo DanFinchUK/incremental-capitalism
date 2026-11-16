@@ -5,19 +5,27 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="legacy-modal-title"
-    @click.self="store.legacyDrawerOpen = false"
+    @click.self="store.closeLegacyDrawer()"
   >
     <div class="scn-Modal scn-Modal-xl" data-testid="legacy-modal">
       <div class="scn-DrawerHeader">
         <div>
-          <span class="scn-ModalKicker scn-ModalKicker-accent">Private Members' Club</span>
+          <span class="scn-ModalKicker scn-ModalKicker-accent">
+            {{ succession ? `Succession · Generation ${store.generation} · Step 2 of 2` : "Private Members' Club" }}
+          </span>
           <h2 id="legacy-modal-title">Old Boys' Network: {{ store.legacyAvailable }} unspent Legacy</h2>
           <p class="scn-AutoLine">
             Spending Legacy on perks never lowers your global x{{ formatMultiplier(store.legacyMultiplier) }} income multiplier.
           </p>
         </div>
-        <button type="button" class="scn-Action scn-Action-outline" @click="store.legacyDrawerOpen = false">
-          Close
+        <button
+          type="button"
+          class="scn-Action"
+          :class="succession ? 'scn-Action-accent' : 'scn-Action-outline'"
+          data-testid="legacy-done"
+          @click="store.closeLegacyDrawer()"
+        >
+          {{ succession ? 'Start the generation' : 'Close' }}
         </button>
       </div>
 
@@ -51,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { LEGACY_PERKS, perkNextCost, type PerkId } from '../data/perks'
 import { useGameStore } from '../stores/game'
 import { formatMultiplier } from '../utils/format'
@@ -61,6 +69,8 @@ const emit = defineEmits<{
 }>()
 
 const store = useGameStore()
+// Straight after choosing an heir, the club is the last step of succession
+const succession = computed(() => store.successionShop === 'open')
 
 function canBuy(id: PerkId): boolean {
   if (store.legacyPoints < 1) {
@@ -83,7 +93,7 @@ function buttonText(id: PerkId): string {
 
 function onKeyDown(ev: KeyboardEvent): void {
   if (store.legacyDrawerOpen && ev.key === 'Escape') {
-    store.legacyDrawerOpen = false
+    store.closeLegacyDrawer()
   }
 }
 

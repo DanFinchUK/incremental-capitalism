@@ -95,3 +95,8 @@ export function formatClock(ms: number, signed = false): string {
   const s = String(total % 60).padStart(2, '0')
   return h > 0 ? `${sign}${h}:${String(m).padStart(2, '0')}:${s}` : `${sign}${m}:${s}`
 }
+
+// The family as a group: "the Pemberton-Hobbses", "the Smythe-Mountjoys"
+export function pluralSurname(surname: string): string {
+  return /(s|x|z|ch|sh)$/i.test(surname) ? `${surname}es` : `${surname}s`
+}

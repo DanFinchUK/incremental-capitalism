@@ -206,7 +206,26 @@ describe('App UI integration', () => {
     await wrapper.find('[data-testid="confirm-retire-btn"]').trigger('click')
     expect(wrapper.find('[data-testid="retire-modal"]').exists()).toBe(false)
     expect(store.legacyPoints).toBe(1)
-    expect(store.legacyDrawerOpen).toBe(true)
+
+    // Succession runs as steps, one dialog at a time: the heir first...
+    const draft = wrapper.find('[data-testid="heir-draft"]')
+    expect(draft.exists()).toBe(true)
+    expect(draft.text()).toContain('Step 1 of 2')
+    expect(wrapper.find('[data-testid="legacy-modal"]').exists()).toBe(false)
+
+    // ...then the Legacy, which ends the succession
+    await draft.findAll('[data-testid="heir-option"]')[0].find('button').trigger('click')
+    expect(wrapper.find('[data-testid="heir-draft"]').exists()).toBe(false)
+    const shop = wrapper.find('[data-testid="legacy-modal"]')
+    expect(shop.exists()).toBe(true)
+    expect(shop.text()).toContain('Step 2 of 2')
+    await wrapper.find('[data-testid="legacy-done"]').trigger('click')
+    expect(wrapper.find('[data-testid="legacy-modal"]').exists()).toBe(false)
+
+    // Opened by hand later, the club is just the club
+    store.legacyDrawerOpen = true
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="legacy-modal"]').text()).not.toContain('Step')
     wrapper.unmount()
   })
 

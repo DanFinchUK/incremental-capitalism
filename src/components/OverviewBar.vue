@@ -26,7 +26,7 @@
         type="button"
         class="scn-Action scn-Action-outline"
         data-testid="toggle-legacy-shop"
-        @click="store.legacyDrawerOpen = !store.legacyDrawerOpen"
+        @click="store.legacyDrawerOpen ? store.closeLegacyDrawer() : (store.legacyDrawerOpen = true)"
       >
         Old Boys' Network
         <span class="scn-BadgeCount">{{ networkBadgeText }}</span>

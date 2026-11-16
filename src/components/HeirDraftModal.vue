@@ -9,11 +9,13 @@
   >
     <div class="scn-Modal scn-Modal-xl">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-accent">Succession · Generation {{ store.generation + 1 }}</span>
+        <span class="scn-ModalKicker scn-ModalKicker-accent">
+          Succession · Generation {{ store.generation + 1 }}<template v-if="store.successionShop === 'pending'"> · Step 1 of 2</template>
+        </span>
         <h2 id="heir-draft-title">Who inherits the estate?</h2>
       </div>
       <p class="scn-CardMeta">
-        The solicitor has read the will. {{ countWord }} {{ store.familySurname }}s are waiting in the library, each quite
+        The solicitor has read the will. {{ countWord }} {{ pluralSurname(store.familySurname) }} are waiting in the library, each quite
         sure it should be them.
       </p>
       <p class="scn-StatHint" data-testid="heir-rules">
@@ -72,6 +74,7 @@ import { RARITY_LABELS } from '../data/events'
 import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { describeHeirEffect } from '../engine/family'
 import { useGameStore } from '../stores/game'
+import { pluralSurname } from '../utils/format'
 
 const store = useGameStore()
 const countWord = computed(() => ['Two', 'Three', 'Four', 'Five'][store.heirChoices.length - 2] ?? String(store.heirChoices.length))

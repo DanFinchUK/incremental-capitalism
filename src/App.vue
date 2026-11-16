@@ -329,8 +329,9 @@ function handleRetire(): void {
 function confirmRetire(): void {
   activeDialog.value = null
   if (store.retire(Date.now())) {
+    // The club follows the heir draft as the next step, not on top of it
     if (store.legacyAvailable > 0) {
-      store.legacyDrawerOpen = true
+      store.successionShop = 'pending'
     }
   }
 }

@@ -265,8 +265,8 @@ const synergyText = computed(() => {
     const biz = BUSINESSES_BY_ID[job.synergyBusinessId]
     const bizCount = store.businessesOwned[job.synergyBusinessId] ?? 0
     return bizCount > 0
-      ? `+${owned.value}% to ${biz.label}: ${job.synergyNote}`
-      : `+${owned.value}% to ${biz.label} once owned: ${job.synergyNote}`
+      ? `${job.synergyNote}: +${owned.value}% to ${biz.label}`
+      : `${job.synergyNote}: +${owned.value}% to ${biz.label}, once owned`
   }
   const synJob = SYNERGY_JOB_FOR_BUSINESS[props.row.item.id]
   if (!synJob) return ''

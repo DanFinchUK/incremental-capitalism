@@ -34,7 +34,7 @@
             <dt>Pays</dt><dd>{{ formatCurrency(j.moneyPerClick) }} a tap</dd>
             <dt>Growth</dt><dd>+{{ growth(j.scaleFactor) }} each</dd>
           </dl>
-          <p class="idx-Note">{{ j.synergyNote }}</p>
+          <p class="idx-Note">{{ j.synergyNote }}: +1% to {{ BUSINESSES_BY_ID[j.synergyBusinessId]?.label }} each</p>
         </article>
       </div>
       <p v-if="jobs.length === 0" class="idx-Empty">No Jobs match.</p>
@@ -240,7 +240,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { JOBS, BUSINESSES, SYNERGY_JOB_FOR_BUSINESS, itemImageUrl, type Sector } from '../data/items'
+import { JOBS, BUSINESSES, BUSINESSES_BY_ID, SYNERGY_JOB_FOR_BUSINESS, itemImageUrl, type Sector } from '../data/items'
 import { ADVISORS, ROLE_LABELS, type AdvisorDef } from '../data/advisors'
 import { HEIR_TRAITS, INHERITED_TRAITS } from '../data/heirs'
 import { BOSSES } from '../data/bosses'

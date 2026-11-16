@@ -44,7 +44,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'autoClicker',
     label: 'Unpaid Interns (Auto-Clicker)',
-    description: 'Each rank brings two Interns, who each click Get Paid once a second, riding your Hustle streak. The first pair is literally unpaid!',
+    description: 'Two Interns a rank, each clicking Get paid once a second at your Hustle. The first pair is literally unpaid.',
     maxRank: null,
     costForRank: (r) => (r === 0 ? 0 : 1),
     effectSummary: (r) => `${r * INTERNS_PER_RANK} auto-clicks/sec`
@@ -52,7 +52,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'hustleCap',
     label: 'Grindset Coaching',
-    description: 'Raises max Hustle click multiplier by +1x per rank (3x up to 8x) and scales streak build-up, boosting both manual clicks and Unpaid Interns.',
+    description: '+1x max Hustle a rank, for your taps and the Interns. Playing without tapping, +0.5x steady Hustle instead.',
     maxRank: 5,
     costForRank: () => 1,
     effectSummary: (r) => `${3 + r}x max Hustle`
@@ -60,7 +60,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'offshore',
     label: 'Cayman Shell Company',
-    description: 'Each rank pays 20% more of your passive income while you are away, and covers 24 hours more of it.',
+    description: '+20% of your passive income while away, and 24 hours more of it, a rank.',
     maxRank: 3,
     costForRank: () => 1,
     effectSummary: (r) => `${Math.min(100, 50 + 20 * r)}% offline rate (${24 + 24 * r}h cap)`
@@ -68,7 +68,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'nepotism',
     label: 'Old School Tie',
-    description: 'Brings automation for the rest of the bloodline: each rank lets anything whose next unit costs up to 3% more of your cash restock itself, with or without an advisor.',
+    description: 'Automation for the whole bloodline: +3% of cash a rank, advisor or not.',
     maxRank: 4,
     costForRank: () => 1,
     effectSummary: (r) => `+${3 * r}% to the automation line`
@@ -76,7 +76,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'deregulation',
     label: 'Light-Touch Regulation',
-    description: 'Boosts each ownership milestone multiplier by +0.25x per rank, on every Job and Business.',
+    description: '+0.25x on every milestone of every Job and Business, a rank.',
     maxRank: 4,
     costForRank: () => 1,
     effectSummary: (r) => `${(2 + MILESTONE_STEP_PER_DEREGULATION_RANK * r).toFixed(2)}x per milestone`
@@ -84,7 +84,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'insider',
     label: 'Chancellor on Speed Dial',
-    description: 'Each rank brings Market Opportunities 20% sooner and makes their buffs last 50% longer.',
+    description: 'Opportunities 20% sooner and their buffs 50% longer, a rank.',
     maxRank: 4,
     costForRank: () => 1,
     effectSummary: (r) => `${Math.round((1 - EVENT_INTERVAL_PER_INSIDER_RANK ** r) * 100)}% sooner, +${50 * r}% buff duration`
@@ -92,7 +92,7 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'officeSeats',
     label: 'Family Office Extension',
-    description: 'Knocks through into the orangery: one more open seat in the family office per rank.',
+    description: 'Knocks through into the orangery: one more office seat a rank.',
     maxRank: 2,
     costForRank: () => 1,
     effectSummary: (r) => `${3 + r} open seats`

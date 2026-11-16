@@ -136,7 +136,7 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
     }
     const def = nextBoss.value.def
     bossAttempt.value = newTracker(def.gate, deps.activeMs(), deps.bossTimeMult())
-    deps.announce(`${def.title}: ${def.twistText}`)
+    deps.announce(def.twistText ? `${def.title}: ${def.twistText}` : def.title)
     return true
   }
 

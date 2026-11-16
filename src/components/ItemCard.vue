@@ -111,7 +111,7 @@
           </span>
         </div>
 
-        <p v-if="autoStatusText" class="scn-AutoLine">{{ autoStatusText }}</p>
+        <p v-if="autoStatusText" class="scn-AutoLine scn-AutoStatus">{{ autoStatusText }}</p>
       </div>
 
       <div class="scn-Actions" @click.stop>
@@ -252,7 +252,7 @@ const unitSuffix = computed(() => (props.kind === 'jobs' ? 'click' : 's'))
 const incomeLineText = computed(() => {
   if (props.row.mode !== 'revealed') return ''
   if (owned.value > 0) {
-    return `Income: ${formatCurrency(effectiveUnitIncome.value)}/${unitSuffix.value} each · ${formatCurrency(stackTotal.value)}/${unitSuffix.value} total (${empireSharePct.value.toFixed(1)}%)`
+    return `Income: ${formatCurrency(effectiveUnitIncome.value)}/${unitSuffix.value} each · ${formatCurrency(stackTotal.value)} total (${empireSharePct.value.toFixed(1)}%)`
   }
   return `Income: ${formatCurrency(effectiveUnitIncome.value)} / ${props.kind === 'jobs' ? 'click' : 'second'} each`
 })
@@ -278,16 +278,15 @@ const synergyText = computed(() => {
     const job = props.row.item as JobDef
     const biz = BUSINESSES_BY_ID[job.synergyBusinessId]
     const bizCount = store.businessesOwned[job.synergyBusinessId] ?? 0
+    // The number first, so a line cut short on a phone still shows it
     return bizCount > 0
-      ? `${job.synergyNote} (+${owned.value}% to ${biz.label})`
-      : `${job.synergyNote} (+${owned.value}% once ${biz.label} owned)`
+      ? `+${owned.value}% to ${biz.label}: ${job.synergyNote}`
+      : `+${owned.value}% to ${biz.label} once owned: ${job.synergyNote}`
   }
   const synJob = SYNERGY_JOB_FOR_BUSINESS[props.row.item.id]
   if (!synJob) return ''
   const synCount = store.jobsPurchased[synJob.id] ?? 0
-  return synCount > 0
-    ? `Boosted +${synCount}% by ${synJob.label} (${synCount} hired)`
-    : `Synergy: +1% output per ${synJob.label} hired`
+  return synCount > 0 ? `+${synCount}% from ${synJob.label}` : `+1% per ${synJob.label} hired`
 })
 
 const autoStatusText = computed(() => {
@@ -299,9 +298,7 @@ const autoStatusText = computed(() => {
   if (store.autoBuyPaused) {
     return 'Auto paused'
   }
-  return isAutoActive.value
-    ? `Auto: restocks under ${linePct}% of your cash`
-    : `Auto once under ${linePct}% of your cash`
+  return isAutoActive.value ? `Auto: restocking under ${linePct}% of cash` : `Auto once under ${linePct}% of cash`
 })
 
 // Nothing automates until an advisor, heir, perk or title brings it

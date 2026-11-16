@@ -1,9 +1,9 @@
 <template>
   <div v-if="offer.length > 0" class="scn-Headhunter" data-testid="headhunter">
     <div class="scn-OfficeHeader">
-      <strong>
-        Headhunter shortlist<span v-if="store.queuedOffers > 0"> (+{{ store.queuedOffers }} queued)</span>
-      </strong>
+      <span class="scn-StatHint">
+        <template v-if="store.queuedOffers > 0">{{ store.queuedOffers }} more to follow</template>
+      </span>
       <button
         type="button"
         class="scn-Action scn-Action-outline"

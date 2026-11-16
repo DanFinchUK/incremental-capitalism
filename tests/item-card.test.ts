@@ -38,7 +38,7 @@ describe('item card without automation', () => {
     hireEstateManager(store)
     await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('Income:')
-    expect(wrapper.text()).toContain('under 1% of your cash')
+    expect(wrapper.text()).toContain('under 1% of cash')
   })
 
   it('shows job income at the base rate, ignoring Hustle', async () => {
@@ -57,7 +57,7 @@ describe('item card without automation', () => {
     store.tick(2000)
     await wrapper.vm.$nextTick()
     expect(store.isAutomationShown('jobs', '1')).toBe(true)
-    expect(wrapper.text()).toContain('restocks under 1% of your cash')
+    expect(wrapper.text()).toContain('restocking under 1% of cash')
     const buy = wrapper.find('.scn-Actions button.scn-Action')
     expect(buy.exists()).toBe(true)
     // The per-click gain is on the Income line, so the cost line doesn't repeat it

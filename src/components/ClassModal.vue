@@ -92,7 +92,6 @@
               <span class="scn-PyramidReq">Requires {{ thresholdLabel(cls.threshold) }} net worth</span>
             </div>
             <div class="scn-PyramidPerk">{{ cls.perkSummary }}</div>
-            <p class="scn-AutoLine">Reach {{ thresholdLabel(cls.threshold) }} net worth in a single run to join this circle.</p>
           </template>
 
           <template v-else>
@@ -103,7 +102,7 @@
               </div>
               <span class="scn-PyramidReq">Requires {{ thresholdLabel(cls.threshold) }} net worth</span>
             </div>
-            <p class="scn-AutoLine">Privilege: ???. Climb higher on the social ladder to reveal this tier.</p>
+            <p class="scn-AutoLine">Climb higher to find out.</p>
           </template>
         </div>
       </div>

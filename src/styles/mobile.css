@@ -309,8 +309,10 @@ html {
     align-items: stretch;
   }
 
-  /* Automation is set for the whole estate on a phone: no per-item boxes */
-  .ic-Shell-phone .scn-AutoBuy {
+  /* Automation is set for the whole estate on a phone: no per-item boxes,
+     and no line on every card repeating the same automation rule */
+  .ic-Shell-phone .scn-AutoBuy,
+  .ic-Shell-phone .scn-AutoStatus {
     display: none;
   }
 
@@ -328,10 +330,18 @@ html {
 
   /* Room for two lines, so a card doesn't grow (and move its Buy button)
      when the first purchase adds the running total */
-  .ic-Shell-phone .scn-CostLine,
   .ic-Shell-phone .scn-IncomeLine {
     min-height: 2.8em;
     line-height: 1.4;
+  }
+
+  /* One line, always: a very long gain is cut short rather than wrapping,
+     so the card neither jumps nor keeps an empty line in reserve */
+  .ic-Shell-phone .scn-CostLine {
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ic-Shell-phone .scn-SynergyLine {

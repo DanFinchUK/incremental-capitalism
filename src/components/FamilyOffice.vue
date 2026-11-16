@@ -19,7 +19,7 @@
           <strong>{{ pa.def.name }}</strong>
           <p class="scn-AutoLine">{{ pa.def.effectText }}</p>
           <p v-if="pa.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(pa.inst.campaignMs / 60000) }} min</p>
-          <p class="scn-StatHint">
+          <p v-if="pa.inst.servedGenerations > 0" class="scn-StatHint">
             Served {{ pa.inst.servedGenerations }} gen: +{{ pa.inst.servedGenerations * 25 }}% effect, +{{ pa.inst.servedGenerations * 20 }}% pay
           </p>
           <button type="button" class="scn-Action scn-Action-outline" @click="store.firePA()">Let go</button>

@@ -117,7 +117,7 @@ const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {
     kind: 'shadyDeal',
     title: 'Shady VIP-Lane Tip-Off',
-    subtitle: '50/50 Risk: 180s windfall OR a 15s freeze (automation stops, or income halves without it)',
+    subtitle: '50/50: a 3 min windfall, or a 15s freeze',
     buffLabel: 'VIP Lane',
     rarity: 'rare',
     shady: true,
@@ -158,10 +158,10 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
       ignored: [{ type: 'penalty', mult: 0.5, durationSec: 60 }],
       ignoredText: 'No comment was taken as a comment. The story runs and income halves for 60s.',
       options: [
-        { label: 'Pay the hush money', detail: 'Costs 10% of cash.', outcomes: [{ type: 'cashLoss', share: 0.1 }] },
+        { label: 'Pay the hush money', detail: '10% of cash.', outcomes: [{ type: 'cashLoss', share: 0.1 }] },
         {
           label: 'Ride it out',
-          detail: '50/50: 3x business income for 30s, or income halved for 60s.',
+          detail: '50/50: 3x business income for 30s, or half income for 60s.',
           outcomes: [
             {
               type: 'gamble',
@@ -188,7 +188,7 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
       options: [
         {
           label: 'Move it all offshore',
-          detail: '90s windfall, then a 30s freeze while the lawyers work: automation stops, or income halves if you have none.',
+          detail: '90s windfall, then a 30s freeze while the lawyers work.',
           outcomes: [
             { type: 'windfall', seconds: 90 },
             { type: 'freeze', sec: 30 }
@@ -196,7 +196,7 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
         },
         {
           label: 'Pay your taxes like everyone else',
-          detail: 'Costs 5% of cash; the goodwill doubles click pay for 60s.',
+          detail: '5% of cash; the goodwill doubles click pay for 60s.',
           outcomes: [
             { type: 'cashLoss', share: 0.05 },
             { type: 'buff', target: 'click', mult: 2, durationSec: 60 }
@@ -220,7 +220,7 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
         { label: 'Claim on the insurance', detail: '60s windfall.', outcomes: [{ type: 'windfall', seconds: 60 }] },
         {
           label: 'Blame the council',
-          detail: '50/50: a 180s compensation windfall, or a 20s freeze (automation stops, or income halves without it).',
+          detail: '50/50: a 3 min windfall, or a 20s freeze.',
           outcomes: [
             {
               type: 'gamble',
@@ -247,7 +247,7 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
       options: [
         {
           label: 'Pay them, finally',
-          detail: 'Costs 3% of cash; a motivated workforce doubles click pay for 30s.',
+          detail: '3% of cash; a motivated workforce doubles click pay for 30s.',
           outcomes: [
             { type: 'cashLoss', share: 0.03 },
             { type: 'buff', target: 'click', mult: 2, durationSec: 30 }
@@ -255,7 +255,7 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
         },
         {
           label: 'Call it a learning opportunity',
-          detail: '50/50: it blows over, or income is halved for 45s.',
+          detail: '50/50: it blows over, or half income for 45s.',
           outcomes: [{ type: 'gamble', chance: 0.5, win: [], lose: [{ type: 'penalty', mult: 0.5, durationSec: 45 }] }]
         }
       ]

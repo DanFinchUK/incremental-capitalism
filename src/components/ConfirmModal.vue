@@ -18,7 +18,8 @@
       </div>
 
       <p class="scn-CardMeta">
-        Wind up Jobs and Businesses and hand {{ inheritancePct }}% of net worth to your chosen heir, up to a cap that starts them about one gate behind you. Legacy, perks, your Personal Assistant, and every trait passed down the bloodline carry forward. The current head's own trait retires with them.
+        The Jobs and Businesses are wound up and {{ inheritancePct }}% of net worth goes to the heir, capped about a gate
+        behind you. Legacy, perks, the PA and passed-down traits stay with the family.
       </p>
 
       <div class="scn-ModalGrid">
@@ -56,10 +57,6 @@
           <strong>First retirement unlock:</strong> grants <strong>1 Free Unpaid Intern</strong> and opens the Old Boys' Network.
         </p>
       </div>
-
-      <p class="scn-AutoLine">
-        Deepest gate this generation: {{ store.gatesBeaten }} of 9.
-      </p>
 
       <div class="scn-ModalFooter">
         <button

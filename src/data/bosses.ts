@@ -133,8 +133,9 @@ export const BOSSES: ReadonlyArray<BossDef> = [
     blurb: 'Christie\'s are here to value the Old Masters your ancestors "acquired" abroad. Best have the full set before anyone asks for them back.',
     victoryText: 'Christie\'s value the collection at more than the GDP of the places it came from. The repatriation letters go in the drawer with the others.',
     disgraceText: 'Christie\'s uncover a garden-centre print in an ancestral gilt frame. Laughed out of Mayfair before the port arrives, the family liquidates and vanishes overseas.',
-    twistText: 'Must own every unlocked Job and Business.',
-    conditionText: 'Own at least 1 of every revealed item and hit target net worth.',
+    // The twist is the condition itself, so there's nothing more to say
+    twistText: '',
+    conditionText: 'Own at least one of every revealed Job and Business, and reach the target.',
     twists: [],
     condition: { kind: 'ownAllRevealed', netWorth: gateTarget(7, 1.3) },
     timeLimitSec: TIME_LIMIT_SEC,

@@ -46,7 +46,8 @@ describe('boss data', () => {
     for (const b of BOSSES) {
       expect(b.blurb.length).toBeGreaterThan(10)
       expect(b.disgraceText.length).toBeGreaterThan(20)
-      expect(b.twistText.length).toBeGreaterThan(5)
+      // A twist that is the win condition itself is left blank, not repeated
+      if (b.gate !== 7) expect(b.twistText.length).toBeGreaterThan(5)
       expect(b.conditionText.length).toBeGreaterThan(5)
     }
   })

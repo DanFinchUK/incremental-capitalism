@@ -1,0 +1,132 @@
+/* Rooms: decoration for each room (data/rooms.ts). utils/applyRoom.ts sets
+   the colours on <html> along with data-room, data-ornament and data-font. */
+
+:root {
+  --room-leather: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .1 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.14'/%3E%3C/svg%3E");
+  --room-damask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg fill='none' stroke='%23b08a2e' stroke-opacity='.16'%3E%3Cpath d='M18 2 C24 10 24 14 18 18 C12 14 12 10 18 2Z M18 34 C24 26 24 22 18 18 C12 22 12 26 18 34Z M2 18 C10 12 14 12 18 18 C14 24 10 24 2 18Z M34 18 C26 12 22 12 18 18 C22 24 26 24 34 18Z'/%3E%3C/g%3E%3C/svg%3E");
+  --room-scales: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'%3E%3Cg fill='none' stroke='%233fbf8a' stroke-opacity='.12'%3E%3Cpath d='M0 12 A12 12 0 0 1 24 12 M-12 0 A12 12 0 0 1 12 0 M12 0 A12 12 0 0 1 36 0'/%3E%3C/g%3E%3C/svg%3E");
+  --room-corners: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 40 40'%3E%3Cg transform='' fill='none' stroke='%23c9a24a' stroke-width='1.6'%3E%3Cpath d='M3 37 V14 Q3 3 14 3 H37'/%3E%3Cpath d='M9 37 V17 Q9 9 17 9 H37'/%3E%3Cpath d='M3 24 Q9 22 9 30 M24 3 Q22 9 30 9'/%3E%3Ccircle cx='14' cy='14' r='2.6' fill='%23c9a24a' stroke='none'/%3E%3C/g%3E%3C/svg%3E") top 3px left 3px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 40 40'%3E%3Cg transform='translate%2840 0%29 scale%28-1 1%29' fill='none' stroke='%23c9a24a' stroke-width='1.6'%3E%3Cpath d='M3 37 V14 Q3 3 14 3 H37'/%3E%3Cpath d='M9 37 V17 Q9 9 17 9 H37'/%3E%3Cpath d='M3 24 Q9 22 9 30 M24 3 Q22 9 30 9'/%3E%3Ccircle cx='14' cy='14' r='2.6' fill='%23c9a24a' stroke='none'/%3E%3C/g%3E%3C/svg%3E") top 3px right 3px no-repeat,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 40 40'%3E%3Cg transform='translate%280 40%29 scale%281 -1%29' fill='none' stroke='%23c9a24a' stroke-width='1.6'%3E%3Cpath d='M3 37 V14 Q3 3 14 3 H37'/%3E%3Cpath d='M9 37 V17 Q9 9 17 9 H37'/%3E%3Cpath d='M3 24 Q9 22 9 30 M24 3 Q22 9 30 9'/%3E%3Ccircle cx='14' cy='14' r='2.6' fill='%23c9a24a' stroke='none'/%3E%3C/g%3E%3C/svg%3E") bottom 3px left 3px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 40 40'%3E%3Cg transform='translate%2840 40%29 scale%28-1 -1%29' fill='none' stroke='%23c9a24a' stroke-width='1.6'%3E%3Cpath d='M3 37 V14 Q3 3 14 3 H37'/%3E%3Cpath d='M9 37 V17 Q9 9 17 9 H37'/%3E%3Cpath d='M3 24 Q9 22 9 30 M24 3 Q22 9 30 9'/%3E%3Ccircle cx='14' cy='14' r='2.6' fill='%23c9a24a' stroke='none'/%3E%3C/g%3E%3C/svg%3E") bottom 3px right 3px no-repeat;
+}
+
+/* Moving rooms: the walls change colour gently */
+body {
+  transition: background-color 0.6s ease, color 0.6s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
+}
+
+/* Serif rooms: headings in the display face, a touch larger since it runs small */
+:root[data-font='serif'] .scn-ColumnTitle,
+:root[data-font='serif'] .scn-ModalTop h2,
+:root[data-font='serif'] .scn-CardTitle {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+:root[data-font='serif'] .scn-ColumnTitle {
+  font-size: 28px;
+}
+
+:root[data-font='serif'] .scn-ModalTop h2 {
+  font-size: 1.7em;
+}
+
+:root[data-font='serif'] .scn-CardTitle {
+  font-size: 21px;
+}
+
+/* Saloon bar: brass edging */
+:root[data-ornament='brass'] .lyt-Header,
+:root[data-ornament='brass'] .scn-Card,
+:root[data-ornament='brass'] .scn-Modal {
+  border-color: var(--color-gold);
+}
+
+:root[data-ornament='brass'] .lyt-Header {
+  border-bottom-width: 3px;
+}
+
+/* Home Counties: double rules under headings */
+:root[data-ornament='ruled'] .scn-ColumnTitle {
+  border-bottom: 3px double var(--color-strong-line);
+}
+
+:root[data-ornament='ruled'] .scn-ModalTop h2 {
+  padding-bottom: 4px;
+  border-bottom: 3px double var(--color-strong-line);
+}
+
+/* Smoking lounge: leather grain, with stitching just inside the edge */
+:root[data-ornament='stitched'] .lyt-Header,
+:root[data-ornament='stitched'] .scn-Modal,
+:root[data-ornament='stitched'] .scn-Card {
+  position: relative;
+  background-image: var(--room-leather);
+}
+
+:root[data-ornament='stitched'] .lyt-Header::after,
+:root[data-ornament='stitched'] .scn-Modal::after,
+:root[data-ornament='stitched'] .scn-Card::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed var(--color-gold);
+  border-radius: calc(var(--radius) - 2px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Alpine chalet: nothing added, softer edges and quiet capitals */
+:root[data-ornament='clean'] .lyt-Header,
+:root[data-ornament='clean'] .scn-Card {
+  border-color: var(--color-border-subtle);
+}
+
+:root[data-ornament='clean'] .scn-ColumnTitle {
+  font-size: 18px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-bottom-width: 1px;
+}
+
+/* State rooms: damask, a gilt double frame and corner flourishes */
+:root[data-ornament='gilt'] .lyt-Header,
+:root[data-ornament='gilt'] .scn-Modal {
+  border: 3px double var(--color-gold);
+  outline: 1px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+:root[data-ornament='gilt'] .lyt-Header {
+  margin: 3px;
+  padding: 14px;
+  background: var(--room-corners), var(--room-damask), var(--color-card);
+}
+
+:root[data-ornament='gilt'] .scn-Modal {
+  padding: 28px;
+  background: var(--room-corners), var(--color-card);
+}
+
+:root[data-ornament='gilt'] .scn-Card {
+  border-color: var(--color-gold);
+}
+
+/* The Vault: scales on the walls, gold hairlines */
+:root[data-ornament='scaled'] body {
+  background-image: var(--room-scales);
+}
+
+:root[data-ornament='scaled'] .lyt-Header,
+:root[data-ornament='scaled'] .scn-Modal {
+  border-color: var(--color-gold);
+}
+
+:root[data-ornament='scaled'] .scn-Card {
+  border-top: 2px solid var(--color-gold);
+}

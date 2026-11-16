@@ -11,7 +11,7 @@
     <div class="scn-Modal scn-Modal-xl">
       <div class="scn-DrawerHeader">
         <div class="scn-ModalTop">
-          <span class="scn-ModalKicker scn-ModalKicker-purple">Burke's Peerage, abridged</span>
+          <span class="scn-ModalKicker scn-ModalKicker-accent">Burke's Peerage, abridged</span>
           <h2 id="family-tree-title">The {{ store.familySurname }} family tree</h2>
         </div>
         <button type="button" class="scn-Action scn-Action-outline" @click="store.familyTreeOpen = false">Close</button>

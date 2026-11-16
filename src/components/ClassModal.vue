@@ -10,7 +10,7 @@
     <div class="scn-Modal scn-Modal-xl" data-testid="class-modal">
       <div class="scn-DrawerHeader">
         <div class="scn-ModalTop">
-          <span class="scn-ModalKicker scn-ModalKicker-purple">
+          <span class="scn-ModalKicker scn-ModalKicker-accent">
             {{ victory ? `Gate ${victory.boss.gate} of 9 beaten` : celebratedDef ? 'New Lifetime Milestone' : 'The Great British Class Survey' }}
           </span>
           <h2 id="class-modal-title">
@@ -111,7 +111,7 @@
       <div class="scn-ModalFooter">
         <button
           type="button"
-          class="scn-Action scn-Action-purple"
+          class="scn-Action scn-Action-accent"
           data-testid="close-class-modal"
           :disabled="lock.locked.value"
           @click="store.closeClassModal()"

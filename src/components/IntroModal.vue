@@ -9,7 +9,7 @@
   >
     <div class="scn-Modal scn-Modal-wide">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-purple">
+        <span class="scn-ModalKicker scn-ModalKicker-accent">
           {{ page.kicker }} · {{ step + 1 }}/{{ INTRO_PAGES.length }}
         </span>
         <h2 id="intro-modal-title">{{ page.title }}</h2>
@@ -50,7 +50,7 @@
         </button>
         <button
           type="button"
-          class="scn-Action scn-Action-purple"
+          class="scn-Action scn-Action-accent"
           data-testid="intro-next"
           @click="isLast ? finish() : (step += 1)"
         >

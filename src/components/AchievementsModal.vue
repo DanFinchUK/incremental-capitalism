@@ -11,7 +11,7 @@
     <div class="scn-Modal scn-Modal-xl">
       <div class="scn-DrawerHeader">
         <div class="scn-ModalTop">
-          <span class="scn-ModalKicker scn-ModalKicker-purple">Honours List · {{ earned }} / {{ ACHIEVEMENTS.length }}</span>
+          <span class="scn-ModalKicker scn-ModalKicker-accent">Honours List · {{ earned }} / {{ ACHIEVEMENTS.length }}</span>
           <h2 id="achievements-title">Achievements</h2>
         </div>
         <button type="button" class="scn-Action scn-Action-outline" @click="store.achievementsOpen = false">Close</button>

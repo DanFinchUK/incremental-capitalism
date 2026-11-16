@@ -273,8 +273,7 @@ export function roomForClass(level: number): RoomDef {
   return ROOMS.find((r) => r.classLevels.includes(level)) ?? ROOMS[ROOMS.length - 1]
 }
 
-// CSS custom properties for a palette, named as in styles/base.css. The
-// accent keeps the old --color-purple names until the game switches over.
+// CSS custom properties for a palette, named as in styles/base.css
 export function roomStyle(room: RoomDef, scheme: 'light' | 'dark'): Record<string, string> {
   const p = room[scheme]
   return {
@@ -298,10 +297,10 @@ export function roomStyle(room: RoomDef, scheme: 'light' | 'dark'): Record<strin
     '--color-accent-hover': p.accentHover,
     '--color-accent-fg': p.accentFg,
     '--color-accent-text': p.accentText,
-    '--color-purple': p.accent,
-    '--color-purple-hover': p.accentHover,
     '--color-perk-pill-bg': p.accentPillBg,
     '--color-perk-pill-fg': p.accentPillFg,
+    '--color-streak-bg': p.accentPillBg,
+    '--color-streak-fg': p.accentPillFg,
     '--color-synergy': p.synergy,
     '--color-track': p.track,
     '--color-pip-bg': p.pipBg,

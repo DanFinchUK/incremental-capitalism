@@ -26,7 +26,7 @@
 
     <template v-if="boss">
       <div class="scn-BossTopRow">
-        <span class="scn-ModalKicker scn-ModalKicker-purple">
+        <span class="scn-ModalKicker scn-ModalKicker-accent">
           Gate {{ boss.def.gate }} / 9<template v-if="store.classStatus.next"> → {{ store.classStatus.next.label }}</template>
         </span>
         <span v-if="lastKill !== null || boss.bestKillMs !== null" class="scn-StatHint" data-testid="boss-kill-times">
@@ -73,7 +73,7 @@
 
       <div v-else-if="boss.status === 'available'" class="scn-BossActions">
         <span class="scn-AutoLine scn-BossStakes">{{ timeLimitSec }}s limit · Defeat ends bloodline</span>
-        <button type="button" class="scn-Action scn-Action-purple" data-testid="boss-start" @click="store.startBossAttempt()">
+        <button type="button" class="scn-Action scn-Action-accent" data-testid="boss-start" @click="store.startBossAttempt()">
           Take it on
         </button>
       </div>

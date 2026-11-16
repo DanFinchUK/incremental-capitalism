@@ -106,6 +106,7 @@ import { itemMilestones } from './engine/economy'
 import type { PerkId } from './data/perks'
 import { playSfx } from './engine/audio'
 import { installTapGuard } from './utils/tapGuard'
+import { applyRoom } from './utils/applyRoom'
 import { useGameStore } from './stores/game'
 import { PHONE_QUERY, useMediaQuery } from './utils/useMediaQuery'
 import ClassModal from './components/ClassModal.vue'
@@ -144,6 +145,14 @@ const dockRef = ref<InstanceType<typeof MobileDock> | null>(null)
 // On a phone one section shows at a time and Get paid lives in the dock.
 // Each tab keeps its own scroll position.
 const phone = useMediaQuery(PHONE_QUERY)
+const darkScheme = useMediaQuery('(prefers-color-scheme: dark)')
+
+// The family's room sets the page's colours and decoration
+watch(
+  [() => store.activeRoom, darkScheme],
+  ([room, dark]) => applyRoom(document.documentElement, room, dark ? 'dark' : 'light'),
+  { immediate: true }
+)
 const phoneTab = ref<PhoneTab>('jobs')
 const tabScroll: Record<PhoneTab, number> = { jobs: 0, businesses: 0, family: 0 }
 

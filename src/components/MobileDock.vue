@@ -33,7 +33,7 @@
         <button
           v-if="boss.status === 'available'"
           type="button"
-          class="scn-Action scn-Action-purple"
+          class="scn-Action scn-Action-accent"
           data-testid="dock-boss-start"
           @click="startBoss"
         >
@@ -56,13 +56,13 @@
         <button
           v-if="store.canElevate"
           type="button"
-          class="scn-Action scn-Action-purple"
+          class="scn-Action scn-Action-accent"
           data-testid="dock-elevate"
           @click="elevateOpen = true"
         >
           Elevate +{{ store.titlesOnElevation }}
         </button>
-        <button v-else type="button" class="scn-Action scn-Action-purple" data-testid="dock-retire" @click="emit('retire')">
+        <button v-else type="button" class="scn-Action scn-Action-accent" data-testid="dock-retire" @click="emit('retire')">
           Retire +{{ store.legacyOnRetire }}
         </button>
       </div>

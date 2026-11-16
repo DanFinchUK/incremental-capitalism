@@ -9,7 +9,7 @@
   >
     <div class="scn-Modal scn-Modal-xl">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-purple">The headhunter calls</span>
+        <span class="scn-ModalKicker scn-ModalKicker-accent">The headhunter calls</span>
         <h2 id="hire-title">Who joins the family office?</h2>
       </div>
       <p class="scn-CardMeta">

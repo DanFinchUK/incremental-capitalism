@@ -27,7 +27,7 @@
       <div class="scn-ModalFooter">
         <button
           type="button"
-          class="scn-Action scn-Action-purple"
+          class="scn-Action scn-Action-accent"
           data-testid="dismiss-disgrace"
           @click="store.dismissDisgrace()"
         >

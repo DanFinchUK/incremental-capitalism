@@ -44,7 +44,7 @@
       <button
         v-if="store.canElevate"
         type="button"
-        class="scn-Action scn-Action-purple"
+        class="scn-Action scn-Action-accent"
         data-testid="elevate"
         @click="elevateOpen = true"
       >

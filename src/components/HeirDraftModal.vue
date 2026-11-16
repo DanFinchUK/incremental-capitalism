@@ -9,7 +9,7 @@
   >
     <div class="scn-Modal scn-Modal-xl">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-purple">Succession · Generation {{ store.generation + 1 }}</span>
+        <span class="scn-ModalKicker scn-ModalKicker-accent">Succession · Generation {{ store.generation + 1 }}</span>
         <h2 id="heir-draft-title">Who inherits the estate?</h2>
       </div>
       <p class="scn-CardMeta">
@@ -57,7 +57,7 @@
               {{ pill.label }}
             </span>
           </div>
-          <button type="button" class="scn-Action scn-Action-purple" @click="store.pickHeir(i)">
+          <button type="button" class="scn-Action scn-Action-accent" @click="store.pickHeir(i)">
             Hand over the keys
           </button>
         </article>

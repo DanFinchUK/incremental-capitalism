@@ -193,7 +193,7 @@
 
     <section id="rooms" class="idx-Section">
       <h2>Rooms</h2>
-      <p class="idx-Rules">Preview: the game's look will follow your class through these rooms. Each room shows its light and dark version.</p>
+      <p class="idx-Rules">The game's look follows your class through these rooms. Settings can keep any room the family has reached. Each room is shown in light and dark.</p>
       <article v-for="r in rooms" :key="r.room.id" class="idx-RoomRow" :data-testid="`room-${r.room.id}`">
         <header class="idx-RoomHead">
           <h3>{{ r.room.name }}</h3>
@@ -417,7 +417,7 @@ body {
 .idx-Title {
   margin: 0;
   font-size: 32px;
-  color: var(--color-purple);
+  color: var(--color-accent-text);
 }
 
 .idx-Lede {
@@ -467,7 +467,7 @@ body {
 }
 
 .idx-NavLink:hover {
-  border-color: var(--color-purple);
+  border-color: var(--color-accent);
 }
 
 .idx-Count {
@@ -568,7 +568,7 @@ body {
 }
 
 .idx-Card-rare {
-  border-top-color: var(--color-purple);
+  border-top-color: var(--color-accent);
 }
 
 .idx-Card-legendary {

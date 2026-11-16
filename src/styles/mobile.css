@@ -84,7 +84,7 @@ html {
 
 .mob-Hustle {
   font-weight: 700;
-  color: var(--color-purple);
+  color: var(--color-accent-text);
 }
 
 .mob-Gate {
@@ -122,7 +122,7 @@ html {
 
 .mob-GateFill {
   height: 100%;
-  background: var(--color-purple);
+  background: var(--color-accent);
   transition: width 0.3s ease;
 }
 
@@ -184,9 +184,9 @@ html {
 }
 
 .mob-Tab-active {
-  background: var(--color-purple);
-  border-color: var(--color-purple);
-  color: #ffffff;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-fg);
 }
 
 @media (max-width: 720px) {

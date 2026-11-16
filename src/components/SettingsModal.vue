@@ -10,7 +10,7 @@
   >
     <div class="scn-Modal scn-Modal-wide">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-purple">The study</span>
+        <span class="scn-ModalKicker scn-ModalKicker-accent">The study</span>
         <h2 id="settings-title">Settings</h2>
       </div>
 
@@ -52,6 +52,17 @@
 
         <div class="scn-SettingRow">
           <div>
+            <label for="decor-select"><strong>Decor</strong></label>
+            <p class="scn-StatHint">Follows your class. Any room the family has reached can be kept instead.</p>
+          </div>
+          <select id="decor-select" v-model="decor" class="scn-Select" data-testid="decor-select">
+            <option value="auto">Follow my class ({{ classRoomName }})</option>
+            <option v-for="r in store.unlockedRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
+          </select>
+        </div>
+
+        <div class="scn-SettingRow">
+          <div>
             <strong>Sound</strong>
           </div>
           <button type="button" class="scn-Action scn-Action-outline" data-testid="toggle-sound" @click="store.toggleMute()">
@@ -70,7 +81,7 @@
       </div>
 
       <div class="scn-ModalFooter">
-        <button type="button" class="scn-Action scn-Action-purple" data-testid="close-settings" @click="store.settingsOpen = false">
+        <button type="button" class="scn-Action scn-Action-accent" data-testid="close-settings" @click="store.settingsOpen = false">
           Done
         </button>
       </div>
@@ -79,13 +90,21 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useGameStore } from '../stores/game'
 import { useEscapeKey } from '../utils/useEscapeKey'
+import { roomForClass, type RoomId } from '../data/rooms'
 
 const emit = defineEmits<{ (e: 'reset'): void }>()
 
 const store = useGameStore()
 useEscapeKey(() => store.settingsOpen, () => (store.settingsOpen = false))
+
+const decor = computed<RoomId | 'auto'>({
+  get: () => store.decor,
+  set: (choice) => store.setDecor(choice)
+})
+const classRoomName = computed(() => roomForClass(store.classStatus.current.level).name)
 
 function openIntro(): void {
   store.settingsOpen = false

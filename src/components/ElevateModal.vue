@@ -10,7 +10,7 @@
   >
     <div class="scn-Modal scn-Modal-wide">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-purple">Letters Patent</span>
+        <span class="scn-ModalKicker scn-ModalKicker-accent">Letters Patent</span>
         <h2 id="elevate-title">Elevation to the Lords</h2>
       </div>
       <p class="scn-CardMeta">
@@ -33,7 +33,7 @@
       </div>
       <div class="scn-ModalFooter">
         <button type="button" class="scn-Action scn-Action-outline" @click="emit('close')">Not yet</button>
-        <button type="button" class="scn-Action scn-Action-purple" data-testid="confirm-elevate" @click="confirm">
+        <button type="button" class="scn-Action scn-Action-accent" data-testid="confirm-elevate" @click="confirm">
           Accept the peerage
         </button>
       </div>

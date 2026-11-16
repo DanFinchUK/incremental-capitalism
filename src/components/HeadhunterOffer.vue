@@ -41,7 +41,7 @@
         <button
           v-else
           type="button"
-          class="scn-Action scn-Action-purple"
+          class="scn-Action scn-Action-accent"
           data-testid="hire-advisor"
           :disabled="props.locked"
           @click="hire(i)"

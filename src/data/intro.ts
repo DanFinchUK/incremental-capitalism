@@ -29,7 +29,8 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     title: 'Climb the nine class gates',
     body: [
       'Each class is guarded by a boss with its own twist. Beat it to move up, unlock new items and bring the headhunter.',
-      'Choose your moment: losing a boss fight ends the bloodline.'
+      'Choose your moment: losing a boss fight ends the bloodline.',
+      'Your home changes as you climb, from a bedsit to the State rooms and beyond. Settings can keep any room the family has reached.'
     ]
   },
   {

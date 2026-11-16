@@ -87,6 +87,7 @@ import { heirChoiceCount, peerageRank, titleExtraSeats, titleSource, titlesFor }
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from '../engine/office'
 import { ADVISORS_BY_ID } from '../data/advisors'
+import { ROOMS, roomForClass, type RoomDef, type RoomId } from '../data/rooms'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -162,6 +163,7 @@ export const useGameStore = defineStore('game', () => {
   const bulkBuyMode = ref<BulkBuyMode>(initial.bulkBuyMode)
   const autoBuyPaused = ref<boolean>(initial.autoBuyPaused)
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
+  const decor = ref<RoomId | 'auto'>(initial.decor)
   const noTap = ref<boolean>(initial.noTap)
   const settingsOpen = ref(false)
   // Sound cues raised by the game, for the page to play; capped so a sim or
@@ -327,6 +329,13 @@ export const useGameStore = defineStore('game', () => {
   })
   plays.resetGateWatch(initial.gatesBeaten)
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
+  // Rooms: the family lives in its current class's room unless the player
+  // has pinned one it has reached before (any bloodline, any generation)
+  const unlockedRooms = computed(() => ROOMS.filter((r) => Math.min(...r.classLevels) <= highestClassReached.value))
+  const activeRoom = computed<RoomDef>(() => {
+    const pinned = unlockedRooms.value.find((r) => r.id === decor.value)
+    return pinned ?? roomForClass(classStatus.value.current.level)
+  })
   const costCeiling = computed(() => itemCostCeiling(gatesBeaten.value))
   const heirInheritancePreview = computed(() => heirInheritance(netWorth.value, gatesBeaten.value, modifiers.value.trustFundShareAdd))
   const legacyMultiplier = computed(() => calcLegacyMultiplier(legacyPoints.value, modifiers.value.legacyScale))
@@ -481,6 +490,7 @@ export const useGameStore = defineStore('game', () => {
       bulkBuyMode: bulkBuyMode.value,
       autoBuyPaused: autoBuyPaused.value,
       compactAutoBuy: compactAutoBuy.value,
+      decor: decor.value,
       noTap: noTap.value,
       muted: muted.value,
       introSeen: introSeen.value,
@@ -539,6 +549,7 @@ export const useGameStore = defineStore('game', () => {
     bulkBuyMode.value = loaded.bulkBuyMode
     autoBuyPaused.value = loaded.autoBuyPaused
     compactAutoBuy.value = loaded.compactAutoBuy
+    decor.value = loaded.decor
     noTap.value = loaded.noTap
     muted.value = loaded.muted
     introSeen.value = loaded.introSeen
@@ -1422,6 +1433,13 @@ export const useGameStore = defineStore('game', () => {
     flushSave(nowMs.value)
   }
 
+  // Pin a room the family has reached, or 'auto' to follow the current class
+  function setDecor(choice: RoomId | 'auto'): void {
+    if (choice !== 'auto' && !unlockedRooms.value.some((r) => r.id === choice)) return
+    decor.value = choice
+    flushSave(nowMs.value)
+  }
+
   // Any time, either way: the allowance and tapping never come together
   function toggleNoTap(): void {
     noTap.value = !noTap.value
@@ -1469,6 +1487,10 @@ export const useGameStore = defineStore('game', () => {
     bulkBuyMode,
     autoBuyPaused,
     compactAutoBuy,
+    decor,
+    unlockedRooms,
+    activeRoom,
+    setDecor,
     noTap,
     toggleNoTap,
     settingsOpen,

@@ -13,7 +13,7 @@
       data-testid="retire-modal"
     >
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-purple">Estate Handover</span>
+        <span class="scn-ModalKicker scn-ModalKicker-accent">Estate Handover</span>
         <h2 id="retire-modal-title">Deploy Golden Parachute</h2>
       </div>
 
@@ -68,7 +68,7 @@
         </button>
         <button
           type="button"
-          class="scn-Action scn-Action-purple"
+          class="scn-Action scn-Action-accent"
           data-testid="confirm-retire-btn"
           @click="emit('confirm-retire')"
         >

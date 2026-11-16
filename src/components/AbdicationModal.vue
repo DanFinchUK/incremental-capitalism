@@ -10,7 +10,7 @@
   >
     <div class="scn-Modal scn-Modal-xl">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-purple">Abdication · Generation {{ store.generation }}</span>
+        <span class="scn-ModalKicker scn-ModalKicker-accent">Abdication · Generation {{ store.generation }}</span>
         <h2 id="abdication-title">Who steps in for {{ firstName }}?</h2>
       </div>
       <p class="scn-CardMeta">
@@ -47,7 +47,7 @@
               {{ pill.label }}
             </span>
           </div>
-          <button type="button" class="scn-Action scn-Action-purple" data-testid="pick-sibling" @click="store.pickSibling(i)">
+          <button type="button" class="scn-Action scn-Action-accent" data-testid="pick-sibling" @click="store.pickSibling(i)">
             Hand over the keys
           </button>
         </article>

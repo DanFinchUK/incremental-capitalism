@@ -8,6 +8,7 @@ import { ACHIEVEMENTS_BY_ID, EMPTY_PROGRESS, type AchievementProgress } from '..
 import type { AdvisorInstance } from './office'
 import { MAX_TREE_ENTRIES, currentBloodlineRecords, readGenerationRecord, type GenerationRecord } from './family'
 import type { OfficeState } from '../stores/modules/office'
+import { ROOMS, type RoomId } from '../data/rooms'
 
 export const STORAGE_KEY = 'state'
 // Saves from any earlier schema reset to a new game.
@@ -58,6 +59,8 @@ export interface PersistedSceneState {
   bulkBuyMode: BulkBuyMode
   autoBuyPaused: boolean
   compactAutoBuy: boolean
+  // The room the family lives in: its current class's ('auto'), or one it has reached before
+  decor: RoomId | 'auto'
   // Accessibility: play without tapping (no Get paid; an allowance instead)
   noTap: boolean
   muted: boolean
@@ -104,6 +107,7 @@ export function createInitialSceneState(): PersistedSceneState {
     bulkBuyMode: 1,
     autoBuyPaused: false,
     compactAutoBuy: false,
+    decor: 'auto',
     noTap: false,
     muted: false,
     introSeen: false,
@@ -353,6 +357,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
     autoBuyPaused: Boolean(s.autoBuyPaused),
     compactAutoBuy: Boolean(s.compactAutoBuy),
+    decor: ROOMS.some((r) => r.id === s.decor) ? (s.decor as RoomId) : 'auto',
     noTap: s.noTap === true,
     muted: Boolean(s.muted),
     introSeen: Boolean(s.introSeen),

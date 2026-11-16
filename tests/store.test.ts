@@ -42,6 +42,17 @@ describe('useGameStore', () => {
     expect(store.hustleMultiplier).toBeLessThan(1.5)
   })
 
+  it('the first Interns arrive on retiring, but not where a scenario forbids them', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    store.scenario = 'hands-on'
+    store.addDebugMoney(1e12, 1000)
+    store.gatesBeaten = 2
+    store.retire(2000)
+    expect(store.legacyPoints).toBe(2)
+    expect(store.perks.autoClicker).toBe(0)
+  })
+
   it('supports Retire, free 1st Intern, one Legacy per perk rank, and +1x/rank Grindset Hustle cap', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
@@ -64,8 +75,7 @@ describe('useGameStore', () => {
     expect(store.lifetimeEarned).toBe(lifetimeBefore)
     expect(store.legacyAvailable).toBe(2)
 
-    // 1st Intern costs 0, then every rank costs 1
-    expect(store.buyPerk('autoClicker')).toBe(true)
+    // The first Interns turn up on retiring, for nothing; then every rank costs 1
     expect(store.perks.autoClicker).toBe(1)
     expect(store.legacyAvailable).toBe(2)
 

@@ -202,7 +202,7 @@ describe('App UI integration', () => {
     expect(modal.text()).toContain(`x1 → x${formatMultiplier(legacyMultiplier(1))}`)
     // A trust fund of 5%, under the cap
     expect(modal.find('[data-testid="heir-inheritance"]').text()).toContain('£30,000,000')
-    expect(modal.text()).toContain('Free Unpaid Intern')
+    expect(modal.text()).toContain('two Unpaid Interns start work')
 
     await wrapper.find('[data-testid="confirm-retire-btn"]').trigger('click')
     expect(wrapper.find('[data-testid="retire-modal"]').exists()).toBe(false)

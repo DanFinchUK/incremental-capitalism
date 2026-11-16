@@ -89,6 +89,8 @@ describe('heirs in the store', () => {
   it('applies a trait to the economy: Black Sheep doubles businesses and halves clicks', () => {
     const store = retiredStore()
     store.heirChoices = [{ name: 'Rupert Test', traitId: 'black-sheep' }]
+    // No Interns, whose clicks would count as passive income
+    store.perks.autoClicker = 0
     store.gatesBeaten = 9
     store.businessesOwned = { '1': 10 }
     store.jobsPurchased = { '1': 10 }

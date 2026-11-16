@@ -54,7 +54,7 @@
 
       <div v-if="store.legacyPoints === 0" class="scn-ModalCallout scn-ModalCallout-perk">
         <p>
-          <strong>First retirement unlock:</strong> grants <strong>1 Free Unpaid Intern</strong> and opens the Old Boys' Network.
+          <strong>First retirement:</strong> two <strong>Unpaid Interns</strong> start work for the family, for nothing, and the Old Boys' Network opens.
         </p>
       </div>
 

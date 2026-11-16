@@ -1170,6 +1170,16 @@ export const useGameStore = defineStore('game', () => {
     return !autoBuyDisabled.value[kind][id]
   }
 
+  // The first pair of Interns cost nothing, so they simply turn up once the
+  // family has Legacy to its name, without a trip to the club
+  function grantFreeInterns(): void {
+    if (perks.value.autoClicker > 0 || legacyPoints.value < 1) return
+    if (scenarioDef.value.blockedPerks.includes('autoClicker')) return
+    if (perkNextCost('autoClicker', 0) !== 0) return
+    perks.value = { ...perks.value, autoClicker: 1 }
+    plays.log(nowMs.value, 'perk', { id: 'autoClicker', rank: 1, free: true })
+  }
+
   function buyPerk(id: PerkId): boolean {
     if (legacyPoints.value < 1 || scenarioDef.value.blockedPerks.includes(id)) {
       return false
@@ -1462,6 +1472,7 @@ export const useGameStore = defineStore('game', () => {
     // one still counts); clear them here until pickHeir sets the next head
     heir.value = { name: heir.value.name, traitId: null, inheritId: null }
     legacyPoints.value += gain
+    grantFreeInterns()
     money.value = inheritance
     spentThisRun.value = 0
     jobsPurchased.value = {}
@@ -1521,6 +1532,7 @@ export const useGameStore = defineStore('game', () => {
     legacyPoints.value = titleStartingLegacy(titles.value)
     legacySpent.value = 0
     perks.value = { ...EMPTY_PERKS }
+    grantFreeInterns()
     // The PAs hand over to their children, who grew up around the job
     office.onElevate()
     const handover = office.paChairs.value.some((pa) => pa !== null) ? ' Your PAs hand over to their children, who grew up around the job.' : ''

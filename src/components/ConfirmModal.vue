@@ -19,7 +19,7 @@
 
       <p class="scn-CardMeta">
         The Jobs and Businesses are wound up and {{ inheritancePct }}% of net worth goes to the heir, capped about a gate
-        behind you. Legacy, perks, the PA and passed-down traits stay with the family.
+        behind you. Legacy, perks, your PAs and passed-down traits stay with the family.
       </p>
 
       <div class="scn-ModalGrid">

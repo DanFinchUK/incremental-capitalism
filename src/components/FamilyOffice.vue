@@ -7,22 +7,24 @@
 
     <div class="scn-AdvisorGrid">
       <article
+        v-for="(pa, c) in pas"
+        :key="`pa-${c}`"
         class="scn-AdvisorCard scn-AdvisorCard-pa"
-        :class="pa ? `scn-AdvisorCard-${pa.def.rarity}` : 'scn-AdvisorCard-empty'"
+        :class="pa ? `scn-AdvisorCard-${pa.standing.def.rarity}` : 'scn-AdvisorCard-empty'"
         data-testid="pa-chair"
       >
         <template v-if="pa">
           <div class="scn-AdvisorTags">
             <span class="scn-PaBadge">PA</span>
-            <span class="scn-MarketEventTag">{{ RARITY_LABELS[pa.def.rarity] }} · {{ pa.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
+            <span class="scn-MarketEventTag">{{ pa.rank }} · {{ pa.standing.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
           </div>
-          <strong>{{ pa.def.name }}</strong>
-          <p class="scn-AutoLine">{{ store.wording(pa.def.effectText) }}</p>
-          <p v-if="pa.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(pa.inst.campaignMs / 60000) }} min</p>
-          <p v-if="pa.inst.servedGenerations > 0" class="scn-StatHint">
-            Served {{ pa.inst.servedGenerations }} gen: +{{ pa.inst.servedGenerations * 25 }}% effect, +{{ pa.inst.servedGenerations * 20 }}% pay
-          </p>
-          <button type="button" class="scn-Action scn-Action-outline" @click="store.firePA()">Let go</button>
+          <strong>{{ pa.title }}</strong>
+          <p v-if="pa.standing.hiredAs" class="scn-StatHint">Hired as {{ pa.standing.hiredAs.name }}</p>
+          <p class="scn-AutoLine">{{ store.wording(pa.standing.def.effectText) }}</p>
+          <p v-if="pa.standing.scale > 1" class="scn-StatHint">Honours: x{{ pa.standing.scale }} effect and pay</p>
+          <p v-if="pa.standing.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(pa.inst.campaignMs / 60000) }} min</p>
+          <p class="scn-StatHint" data-testid="pa-service">{{ pa.service }}</p>
+          <button type="button" class="scn-Action scn-Action-outline" @click="store.firePA(c)">Let go</button>
         </template>
         <template v-else>
           <span class="scn-PaBadge">Personal Assistant</span>
@@ -57,12 +59,13 @@ import { computed } from 'vue'
 import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
 import { RARITY_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
+import { paCards } from './paCard'
 
 const store = useGameStore()
 
 const seats = computed(() =>
   store.officeSeats.map((inst) => (inst ? { inst, def: ADVISORS_BY_ID[inst.advisorId] } : null))
 )
-const pa = computed(() => (store.paChair ? { inst: store.paChair, def: ADVISORS_BY_ID[store.paChair.advisorId] } : null))
+const pas = computed(() => paCards(store.paChairs))
 const drainPct = computed(() => Math.round(store.modifiers.incomeDrain * 1000) / 10)
 </script>

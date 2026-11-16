@@ -37,7 +37,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     kicker: 'The dynasty',
     title: 'Retire and let your heir take over',
     body: [
-      'Retire to bank Legacy: +1 for each gate past the family best, and each point multiplies income by 4.5. The heir gets 5% of net worth, capped about a gate behind you, and keeps your Personal Assistant.',
+      'Retire to bank Legacy: +1 for each gate past the family best, and each point multiplies income by 4.5. The heir gets 5% of net worth, capped about a gate behind you, and keeps your Personal Assistants.',
       'Each heir has their own trait, which retires with them, and a milder one they pass down. Passed-down traits stack until the family elevates.'
     ]
   }

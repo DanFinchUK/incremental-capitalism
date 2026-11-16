@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ADVISORS, ADVISORS_BY_ID } from '../src/data/advisors'
 import { combineModifiers } from '../src/engine/modifiers'
-import { officeModifierSources, rollAdvisorOffer, type AdvisorInstance } from '../src/engine/office'
+import { childOf, officeModifierSources, paStanding, paTitle, rollAdvisorOffer, type AdvisorInstance } from '../src/engine/office'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
@@ -40,33 +40,54 @@ describe('advisor data', () => {
 
 describe('office modifiers', () => {
   it('stacks duplicates: effects and upkeep both multiply up', () => {
-    const m = combineModifiers(officeModifierSources([inst('property-guy'), inst('property-guy')], null))
+    const m = combineModifiers(officeModifierSources([inst('property-guy'), inst('property-guy')], new Set()))
     expect(m.sectorBusinessMult.property).toBeCloseTo(4)
     expect(m.incomeDrain).toBeCloseTo(0.02)
   })
 
-  it('a long-serving PA is stronger and better paid', () => {
-    const pa = inst('productivity-guru', 2)
-    const m = combineModifiers(officeModifierSources([pa], pa.uid))
-    // Seniority scales the effect geometrically by 1 + 25% per generation; payrise adds 20% upkeep per generation
-    expect(m.clickMult).toBeCloseTo(1.5 ** 1.5)
-    expect(m.incomeDrain).toBeCloseTo(0.01 * 1.4)
-    // Not the PA: no seniority even if they had served
-    const plain = combineModifiers(officeModifierSources([pa], null))
-    expect(plain.clickMult).toBeCloseTo(1.5)
+  it('a long-serving PA is promoted up the family, then through the honours', () => {
+    const asPA = (served: number) => {
+      const pa = inst('life-coach', served)
+      return combineModifiers(officeModifierSources([pa], new Set([pa.uid])))
+    }
+    const rare = ADVISORS_BY_ID['productivity-guru'].mods.clickMult!
+    const legendary = ADVISORS_BY_ID['hustle-billionaire'].mods.clickMult!
+    expect(asPA(2).clickMult).toBeCloseTo(ADVISORS_BY_ID['life-coach'].mods.clickMult!)
+    expect(asPA(3).clickMult).toBeCloseTo(rare)
+    expect(asPA(6).clickMult).toBeCloseTo(legendary)
+    // MBE after 3 more: half again; a peer is three times a legendary
+    expect(asPA(9).clickMult).toBeCloseTo(legendary ** 1.5)
+    expect(asPA(18).clickMult).toBeCloseTo(legendary ** 3)
+    expect(asPA(40).clickMult).toBeCloseTo(legendary ** 3)
+    // Not a PA: no promotion even if they had served
+    const plain = combineModifiers(officeModifierSources([inst('life-coach', 9)], new Set()))
+    expect(plain.clickMult).toBeCloseTo(ADVISORS_BY_ID['life-coach'].mods.clickMult!)
+  })
+
+  it('names a PA by their rank, and hands over to a child capped at Rare', () => {
+    const veteran = inst('estate-manager', 15)
+    const s = paStanding(veteran)!
+    expect(s.tier).toBe(5)
+    expect(paTitle(s)).toBe('Proxy with Power of Attorney, knighted')
+    expect(s.hiredAs?.name).toBe('Estate Manager')
+    expect(paTitle(paStanding(inst('estate-manager', 9))!)).toBe('Proxy with Power of Attorney, MBE')
+    expect(paTitle(paStanding(inst('estate-manager', 18))!)).toBe('Proxy with Power of Attorney, now in the Lords')
+    expect(childOf(veteran, 'kid')).toEqual({ uid: 'kid', advisorId: 'head-butler', servedGenerations: 0, campaignMs: 0 })
+    expect(childOf(inst('head-butler', 0), 'kid')?.advisorId).toBe('estate-manager')
+    expect(childOf(inst('estate-manager', 0), 'kid')?.advisorId).toBe('estate-manager')
   })
 
   it('Head of Finance pays out per Finance advisor', () => {
-    const m = combineModifiers(officeModifierSources([inst('head-of-finance'), inst('accountant'), inst('stockbroker')], null))
+    const m = combineModifiers(officeModifierSources([inst('head-of-finance'), inst('accountant'), inst('stockbroker')], new Set()))
     expect(m.businessMult).toBeCloseTo(1.3)
     expect(m.clickMult).toBeCloseTo(1.3)
   })
 
   it('campaigns build with minutes in office and stop at their cap', () => {
-    const early = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 10 * 60_000)], null))
+    const early = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 10 * 60_000)], new Set()))
     expect(early.sectorCostMult.food).toBeCloseTo(0.9)
     expect(early.sectorBusinessMult.food).toBeCloseTo(1.3)
-    const capped = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 600 * 60_000)], null))
+    const capped = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 600 * 60_000)], new Set()))
     expect(capped.sectorCostMult.food).toBeCloseTo(0.5)
     expect(capped.sectorBusinessMult.food).toBeCloseTo(2.5)
   })
@@ -90,6 +111,42 @@ describe('the family office in the store', () => {
     return store
   }
 
+  it('each title adds a PA chair, and empty chairs are filled first', () => {
+    const store = winGate1()
+    store.titles = 2
+    expect(store.paChairs).toHaveLength(3)
+    store.headhunterOffer = ['sommelier']
+    store.hireAdvisor(0)
+    store.headhunterOffer = ['accountant']
+    store.hireAdvisor(0)
+    expect(store.paChairs.map((p) => p?.advisorId ?? null)).toEqual(['sommelier', 'accountant', null])
+    expect(store.officeSeats.filter(Boolean)).toHaveLength(0)
+  })
+
+  it('long service brings promotion at retirement, and says so', () => {
+    const store = winGate1()
+    store.headhunterOffer = ['estate-manager']
+    store.hireAdvisor(0)
+    store.paChairs[0]!.servedGenerations = 2
+    store.retire(T0 + 2000)
+    expect(store.paChairs[0]?.servedGenerations).toBe(3)
+    expect(paStanding(store.paChairs[0]!)?.def.name).toBe('Head Butler')
+    expect(store.bannerMessage ?? '').toContain('Estate Manager is promoted to Head Butler')
+  })
+
+  it('an old save\'s single PA moves into the first chair', () => {
+    localStorage.setItem(
+      'state',
+      JSON.stringify({
+        schemaVersion: 8,
+        scene: { office: { seats: [], paChair: { uid: 'x', advisorId: 'sommelier', servedGenerations: 4, campaignMs: 0 }, offer: [], queued: 0 } }
+      })
+    )
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    expect(store.paChairs[0]).toMatchObject({ uid: 'x', advisorId: 'sommelier', servedGenerations: 4 })
+  })
+
   it('a boss win brings the headhunter with three candidates', () => {
     const store = winGate1()
     expect(store.gatesBeaten).toBe(1)
@@ -100,11 +157,11 @@ describe('the family office in the store', () => {
     const store = winGate1()
     store.headhunterOffer = ['sommelier', 'accountant', 'lobbyist']
     expect(store.hireAdvisor(0)).toBe(true)
-    expect(store.paChair?.advisorId).toBe('sommelier')
+    expect(store.paChairs[0]?.advisorId).toBe('sommelier')
     expect(store.officeSeats.filter(Boolean)).toHaveLength(0)
     store.retire(T0 + 2000)
     store.pickHeir(0)
-    expect(store.paChair?.advisorId).toBe('sommelier')
+    expect(store.paChairs[0]?.advisorId).toBe('sommelier')
   })
 
   it('hiring pays the fee from cash, fills a seat and applies the effect', () => {
@@ -141,11 +198,11 @@ describe('the family office in the store', () => {
     store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
     store.hireAdvisor(0)
     expect(store.officeSeats[0]?.advisorId).toBe('accountant')
-    expect(store.paChair?.advisorId).toBe('productivity-guru')
+    expect(store.paChairs[0]?.advisorId).toBe('productivity-guru')
     store.retire(T0 + 2000)
     store.pickHeir(0)
     expect(store.officeSeats.every((s) => s === null)).toBe(true)
-    expect(store.paChair?.servedGenerations).toBe(1)
+    expect(store.paChairs[0]?.servedGenerations).toBe(1)
   })
 
   it('the Family Office Extension perk adds seats', () => {
@@ -164,6 +221,6 @@ describe('the family office in the store', () => {
     setActivePinia(createPinia())
     const again = useGameStore()
     again.hydrateFromStorage(T0 + 3000)
-    expect(again.paChair?.advisorId).toBe('stockbroker')
+    expect(again.paChairs[0]?.advisorId).toBe('stockbroker')
   })
 })

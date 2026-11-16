@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
-import { peerageRank, titlesFor, titleSource } from '../src/engine/peerage'
+import { peerageRank, titlePaChairs, titlesFor, titleSource } from '../src/engine/peerage'
 import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
@@ -21,10 +21,13 @@ describe('peerage rules', () => {
     expect(peerageRank(9)).toBe('Duke')
   })
 
-  it('titles pay 50% more income each and unlock perks along the way', () => {
+  it('titles pay 50% more income and make Legacy 15% stronger each, and bring a PA chair', () => {
     expect(titleSource(2)).toMatchObject({ clickMult: 2, businessMult: 2 })
-    expect(titleSource(3).legacyScale).toBeCloseTo(1.5)
-    expect(titleSource(5).automationShareBonus).toBeCloseTo(0.05)
+    expect(titleSource(1).legacyScale).toBeCloseTo(1.15)
+    expect(titleSource(3).legacyScale).toBeCloseTo(1.45)
+    expect(titleSource(5).automationShareBonus).toBeUndefined()
+    expect(titlePaChairs(0)).toBe(1)
+    expect(titlePaChairs(3)).toBe(4)
   })
 })
 
@@ -69,12 +72,42 @@ describe('elevation in the store', () => {
     expect(store.legacyPoints).toBe(0)
     expect(store.legacySpent).toBe(0)
     expect(store.perks.hustleCap).toBe(0)
-    expect(store.paChair).toBeNull()
+    // The PA hands over to their child, one tier down: the rare Lobbyist's
+    // child arrives as a Parliamentary Researcher
+    expect(store.paChairs[0]?.advisorId).toBe('parliamentary-researcher')
+    expect(store.paChairs[0]?.servedGenerations).toBe(0)
+    expect(store.paChairs).toHaveLength(5) // a PA chair per title, and the first
     expect(store.gatesBeaten).toBe(0)
     expect(store.achievements).toEqual(['side-hustle'])
     expect(store.familyTree.length).toBe(1)
     expect(store.heirChoices).toHaveLength(4) // two or more titles: four heirs to choose from
-    expect(store.officeSeats).toHaveLength(4) // one title or more: an extra seat
+    expect(store.officeSeats).toHaveLength(3)
+  })
+
+  it('once every gate is beaten, the gate card points to the Lords when elevation is open', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro(T0)
+    store.gatesBeaten = 9
+    store.bestSplits = [null, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    store.legacyPoints = 0
+    await wrapper.vm.$nextTick()
+    // Not enough Legacy for a title yet: retire it is
+    store.legacyPoints = 0
+    store.familyTree = [{ generation: 1, name: 'Old Test', traitId: null, inheritId: null, deepestGate: 9, legacyEarned: 9, activeMs: 1, advisors: [], splits: [] }]
+    await wrapper.vm.$nextTick()
+    expect(store.canElevate).toBe(false)
+    expect(wrapper.find('[data-testid="top-of-pyramid"]').text()).toContain('Retire to pass it all on')
+    expect(wrapper.find('[data-testid="boss-elevate"]').exists()).toBe(false)
+    store.legacyPoints = 9
+    await wrapper.vm.$nextTick()
+    expect(store.canElevate).toBe(true)
+    expect(wrapper.find('[data-testid="top-of-pyramid"]').text()).not.toContain('Retire')
+    await wrapper.find('[data-testid="boss-elevate"]').trigger('click')
+    expect(document.body.querySelector('[data-testid="elevate-modal"]')).not.toBeNull()
+    wrapper.unmount()
   })
 
   it('starts the new line with no trust fund, so no gate opens before it can be fought', () => {

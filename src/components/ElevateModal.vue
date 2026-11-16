@@ -15,8 +15,9 @@
       </div>
       <p class="scn-CardMeta">
         A grateful nation (or at least a grateful party treasurer) offers the {{ store.familySurname }} family a seat in the
-        Lords. The new line starts afresh: Legacy, perks and the family office are given up, and even the PA retires.
-        The family name, its history, achievements and best times all carry on.
+        Lords. The new line starts afresh: Legacy and perks are given up, the office empties, and your PAs hand over to
+        their children, who grew up around the job. The family name, its history, achievements and best times all carry
+        on.
       </p>
       <div class="scn-ModalGrid">
         <div class="scn-StatBox">
@@ -29,7 +30,7 @@
         </div>
       </div>
       <div class="scn-ModalCallout scn-ModalCallout-perk">
-        <p>Every title adds 50% to all income, for good. One title adds an office seat, two bring a fourth heir to choose from, three make Legacy worth 50% more, and five bring automation for good (anything under 5% of your cash restocks itself).</p>
+        <p>Every title adds 50% to all income and makes Legacy 15% stronger, for good, and adds a PA chair, so one more of your staff stays through every retirement. Two titles bring a fourth heir to choose from.</p>
       </div>
       <div class="scn-ModalFooter">
         <button type="button" class="scn-Action scn-Action-outline" @click="emit('close')">Not yet</button>

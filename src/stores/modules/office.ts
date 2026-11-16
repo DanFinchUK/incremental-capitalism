@@ -1,20 +1,33 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
 import { ADVISORS_BY_ID } from '../../data/advisors'
-import { BASE_OFFICE_SEATS, officeModifierSources, rollAdvisorOffer, type AdvisorInstance } from '../../engine/office'
+import {
+  BASE_OFFICE_SEATS,
+  childOf,
+  officeModifierSources,
+  paStanding,
+  paTitle,
+  rollAdvisorOffer,
+  type AdvisorInstance
+} from '../../engine/office'
 import type { ModifierSource } from '../../engine/modifiers'
 
 export interface OfficeModuleDeps {
   money: Ref<number>
   extraSeats: () => number
+  // PA chairs: one, plus one per title
+  paChairCount: () => number
   announce: (msg: string) => void
   flushSave: () => void
   // Playing without tapping (the headhunter brings allowance advisors then)
   noTap?: () => boolean
 }
 
+// Where a hire goes when the office is full: an office seat, or a PA chair
+export type HireTarget = number | { pa: number }
+
 export interface OfficeState {
   seats: (AdvisorInstance | null)[]
-  paChair: AdvisorInstance | null
+  paChairs: (AdvisorInstance | null)[]
   offer: string[]
   // Offers earned by boss wins while another offer was still open
   queued: number
@@ -22,17 +35,19 @@ export interface OfficeState {
 
 export interface OfficeModule {
   officeSeats: ComputedRef<(AdvisorInstance | null)[]>
-  paChair: Ref<AdvisorInstance | null>
+  paChairs: ComputedRef<(AdvisorInstance | null)[]>
   headhunterOffer: Ref<string[]>
   queuedOffers: Ref<number>
   officeSources: ComputedRef<ModifierSource[]>
-  hireAdvisor: (offerIndex: number, replaceSeat?: number | 'pa') => boolean
+  hireAdvisor: (offerIndex: number, replaceSeat?: HireTarget) => boolean
   skipOffer: () => boolean
   fireAdvisor: (seat: number) => void
-  firePA: () => void
-  promoteToPA: (seat: number) => void
+  firePA: (chair?: number) => void
+  promoteToPA: (seat: number, chair?: number) => void
   rollOffer: (rng?: () => number) => void
-  onRetire: () => void
+  // Returns the promotions long service earned, as sentences for the retirement news
+  onRetire: () => string[]
+  onElevate: () => void
   addCampaignTime: (ms: number) => void
   loadState: (state: OfficeState) => void
   snapshot: () => OfficeState
@@ -40,7 +55,7 @@ export interface OfficeModule {
 
 export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   const seatStore = ref<(AdvisorInstance | null)[]>([])
-  const paChair = ref<AdvisorInstance | null>(null)
+  const paStore = ref<(AdvisorInstance | null)[]>([])
   const headhunterOffer = ref<string[]>([])
   const queuedOffers = ref(0)
   let nextUid = 1
@@ -60,11 +75,26 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     return Array.from({ length: count }, (_, i) => seatStore.value[i] ?? null)
   })
 
+  // Chair count follows the titles; PAs beyond it are kept but stand aside
+  const paChairs = computed(() =>
+    Array.from({ length: Math.max(1, deps.paChairCount()) }, (_, i) => paStore.value[i] ?? null)
+  )
+
   const officeSources = computed(() => {
-    const everyone = [...officeSeats.value.filter((s): s is AdvisorInstance => s !== null)]
-    if (paChair.value) everyone.push(paChair.value)
-    return officeModifierSources(everyone, paChair.value?.uid ?? null)
+    const pas = paChairs.value.filter((s): s is AdvisorInstance => s !== null)
+    const everyone = [...officeSeats.value.filter((s): s is AdvisorInstance => s !== null), ...pas]
+    return officeModifierSources(everyone, new Set(pas.map((p) => p.uid)))
   })
+
+  function setChair(index: number, inst: AdvisorInstance | null): void {
+    const chairs = [...paChairs.value]
+    chairs[index] = inst
+    paStore.value = chairs
+  }
+
+  function newUid(): string {
+    return `a${Date.now().toString(36)}${nextUid++}`
+  }
 
   function setSeat(index: number, inst: AdvisorInstance | null): void {
     const seats = [...officeSeats.value]
@@ -72,23 +102,25 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     seatStore.value = seats
   }
 
-  // replaceSeat: an office seat index, or 'pa' to replace the Personal Assistant
-  function hireAdvisor(offerIndex: number, replaceSeat?: number | 'pa'): boolean {
+  // replaceSeat: an office seat index, or { pa } for a PA chair
+  function hireAdvisor(offerIndex: number, replaceSeat?: HireTarget): boolean {
     const advisorId = headhunterOffer.value[offerIndex]
     const def = advisorId ? ADVISORS_BY_ID[advisorId] : undefined
     if (!def) return false
-    const inst: AdvisorInstance = { uid: `a${Date.now().toString(36)}${nextUid++}`, advisorId, servedGenerations: 0, campaignMs: 0 }
-    // An empty PA chair is filled first, so the family's first advisor
-    // isn't lost on retirement by accident
-    if ((replaceSeat === undefined && paChair.value === null) || replaceSeat === 'pa') {
+    const inst: AdvisorInstance = { uid: newUid(), advisorId, servedGenerations: 0, campaignMs: 0 }
+    // An empty PA chair is filled first, so the family's first advisors
+    // aren't lost on retirement by accident
+    const emptyChair = paChairs.value.findIndex((c) => c === null)
+    const chair = typeof replaceSeat === 'object' ? replaceSeat.pa : replaceSeat === undefined ? emptyChair : -1
+    if (chair >= 0 && chair < paChairs.value.length) {
       deps.money.value -= deps.money.value * def.hireFeeShare
-      paChair.value = inst
+      setChair(chair, inst)
       nextOffer()
       deps.announce(`${def.name} joins the family office as your Personal Assistant.`)
       deps.flushSave()
       return true
     }
-    const seat = replaceSeat ?? officeSeats.value.findIndex((s) => s === null)
+    const seat = typeof replaceSeat === 'number' ? replaceSeat : officeSeats.value.findIndex((s) => s === null)
     if (seat < 0 || seat >= officeSeats.value.length) return false
     deps.money.value -= deps.money.value * def.hireFeeShare
     setSeat(seat, inst)
@@ -111,17 +143,19 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     deps.flushSave()
   }
 
-  function firePA(): void {
-    paChair.value = null
+  function firePA(chair = 0): void {
+    setChair(chair, null)
     deps.flushSave()
   }
 
-  // The seat's advisor takes the PA chair; any previous PA moves into that seat.
-  function promoteToPA(seat: number): void {
+  // The seat's advisor takes a PA chair (the first empty one, unless one is
+  // named); whoever sat there moves into the seat.
+  function promoteToPA(seat: number, chair?: number): void {
     const promoted = officeSeats.value[seat]
     if (!promoted) return
-    const previous = paChair.value
-    paChair.value = promoted
+    const target = chair ?? Math.max(0, paChairs.value.findIndex((c) => c === null))
+    const previous = paChairs.value[target] ?? null
+    setChair(target, promoted)
     setSeat(seat, previous)
     deps.flushSave()
   }
@@ -135,15 +169,33 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     headhunterOffer.value = rollAdvisorOffer(rng, deps.noTap?.() ?? false)
   }
 
-  // Open-seat advisors leave with the outgoing generation; the PA stays on
-  // and gets a payrise.
-  function onRetire(): void {
+  // Open-seat advisors leave with the outgoing generation; PAs stay on, and
+  // long service brings promotion
+  function onRetire(): string[] {
     seatStore.value = []
     headhunterOffer.value = []
     queuedOffers.value = 0
-    if (paChair.value) {
-      paChair.value = { ...paChair.value, servedGenerations: paChair.value.servedGenerations + 1 }
-    }
+    const news: string[] = []
+    paStore.value = paChairs.value.map((pa) => {
+      if (!pa) return null
+      const before = paStanding(pa)
+      const after = { ...pa, servedGenerations: pa.servedGenerations + 1 }
+      const now = paStanding(after)
+      if (before && now && now.tier > before.tier) {
+        news.push(
+          now.honour
+            ? `${before.def.name} is honoured for services to the family: ${paTitle(now)}.`
+            : `${before.def.name} is promoted to ${now.def.name}.`
+        )
+      }
+      return after
+    })
+    return news
+  }
+
+  // Elevating to the Lords: each PA hands over to their child
+  function onElevate(): void {
+    paStore.value = paChairs.value.map((pa) => (pa ? childOf(pa, newUid()) : null))
   }
 
   function addCampaignTime(ms: number): void {
@@ -152,25 +204,25 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     if (officeSeats.value.some((a) => a && ADVISORS_BY_ID[a.advisorId]?.campaign)) {
       seatStore.value = officeSeats.value.map(grow)
     }
-    if (paChair.value && ADVISORS_BY_ID[paChair.value.advisorId]?.campaign) {
-      paChair.value = grow(paChair.value)
+    if (paChairs.value.some((a) => a && ADVISORS_BY_ID[a.advisorId]?.campaign)) {
+      paStore.value = paChairs.value.map(grow)
     }
   }
 
   function loadState(state: OfficeState): void {
     seatStore.value = state.seats
-    paChair.value = state.paChair
+    paStore.value = state.paChairs
     headhunterOffer.value = state.offer
     queuedOffers.value = state.queued
   }
 
   function snapshot(): OfficeState {
-    return { seats: seatStore.value, paChair: paChair.value, offer: headhunterOffer.value, queued: queuedOffers.value }
+    return { seats: seatStore.value, paChairs: paStore.value, offer: headhunterOffer.value, queued: queuedOffers.value }
   }
 
   return {
     officeSeats,
-    paChair,
+    paChairs,
     headhunterOffer,
     queuedOffers,
     officeSources,
@@ -181,6 +233,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     promoteToPA,
     rollOffer,
     onRetire,
+    onElevate,
     addCampaignTime,
     loadState,
     snapshot

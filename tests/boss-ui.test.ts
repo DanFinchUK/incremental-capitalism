@@ -156,8 +156,8 @@ describe('family office UI', () => {
     await modal().findAll('[data-testid="hire-advisor"]')[1].trigger('click')
     vi.useRealTimers()
     // The first hire takes the empty PA chair
-    expect(store.paChair?.advisorId).toBe('planning-lobby')
-    store.paChair!.campaignMs = 9 * 60_000
+    expect(store.paChairs[0]?.advisorId).toBe('planning-lobby')
+    store.paChairs[0]!.campaignMs = 9 * 60_000
     await wrapper.vm.$nextTick()
     const paChair = panel().find('[data-testid="pa-chair"]')
     expect(paChair.classes()).toContain('scn-AdvisorCard-legendary')

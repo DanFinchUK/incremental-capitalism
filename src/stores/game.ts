@@ -78,7 +78,7 @@ import { loadPlayLog, withPlayLog } from '../engine/playLog'
 import { MAX_AUTOMATION_PURCHASES_PER_TICK, automationShare, isWithinAutomationLine } from '../engine/automation'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
-import { createOfficeModule } from './modules/office'
+import { createOfficeModule, type HireTarget } from './modules/office'
 import {
   MAX_TREE_ENTRIES,
   bloodlineTraitSources,
@@ -86,7 +86,7 @@ import {
   describeBloodlineTraits,
   type GenerationRecord
 } from '../engine/family'
-import { heirChoiceCount, peerageRank, titleExtraSeats, titleSource, titlesFor } from '../engine/peerage'
+import { heirChoiceCount, peerageRank, titlePaChairs, titleSource, titlesFor } from '../engine/peerage'
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from '../engine/office'
 import { ADVISORS_BY_ID } from '../data/advisors'
@@ -246,7 +246,8 @@ export const useGameStore = defineStore('game', () => {
   const canElevate = computed(() => bestSplits.value[9] != null && titlesOnElevation.value >= 1)
   const office = createOfficeModule({
     money,
-    extraSeats: () => perks.value.officeSeats + titleExtraSeats(titles.value),
+    extraSeats: () => perks.value.officeSeats,
+    paChairCount: () => titlePaChairs(titles.value),
     announce: (msg) => announce(msg),
     flushSave: () => flushSave(nowMs.value),
     noTap: () => noTap.value
@@ -1122,7 +1123,7 @@ export const useGameStore = defineStore('game', () => {
     return withPlayLog(localStorage.getItem(STORAGE_KEY) ?? '', plays.playLog.value)
   }
 
-  function hireAdvisor(offerIndex: number, replaceSeat?: number | 'pa'): boolean {
+  function hireAdvisor(offerIndex: number, replaceSeat?: HireTarget): boolean {
     const advisorId = office.headhunterOffer.value[offerIndex]
     const hired = office.hireAdvisor(offerIndex, replaceSeat)
     if (hired) {
@@ -1223,7 +1224,10 @@ export const useGameStore = defineStore('game', () => {
     const inheritance = endGeneration(ts, gain)
     plays.resetGateWatch(0)
     announce(
-      `Retired with +${gain} Legacy! Your heir inherits ${formatCurrency(inheritance)} and a x${formatMultiplier(legacyMultiplier.value)} income multiplier.`
+      [
+        `Retired with +${gain} Legacy! Your heir inherits ${formatCurrency(inheritance)} and a x${formatMultiplier(legacyMultiplier.value)} income multiplier.`,
+        ...officeNews
+      ].join(' ')
     )
     flushSave(ts)
     return true
@@ -1247,7 +1251,7 @@ export const useGameStore = defineStore('game', () => {
     legacyPoints.value = 0
     legacySpent.value = 0
     perks.value = { ...EMPTY_PERKS }
-    office.loadState({ seats: [], paChair: null, offer: [], queued: 0 })
+    office.loadState({ seats: [], paChairs: [], offer: [], queued: 0 })
     favours.value = emptyFavours()
     money.value = 0
     spentThisRun.value = 0
@@ -1300,9 +1304,12 @@ export const useGameStore = defineStore('game', () => {
 
   // Close the current generation: record it, pay out Legacy and the trust
   // fund, clear the run and draft the next heirs. Returns the trust fund.
+  // Promotions earned by the outgoing generation's PAs, for the retirement news
+  let officeNews: string[] = []
+
   function endGeneration(ts: number, gain: number, elevated = false): number {
     achievementProgress.value = { ...EMPTY_PROGRESS }
-    const payroll = [office.paChair.value, ...office.officeSeats.value].filter((a): a is AdvisorInstance => a !== null)
+    const payroll = [...office.paChairs.value, ...office.officeSeats.value].filter((a): a is AdvisorInstance => a !== null)
     familyTree.value = [
       ...familyTree.value,
       {
@@ -1343,7 +1350,7 @@ export const useGameStore = defineStore('game', () => {
     )
     abdicated.value = false
     siblingChoices.value = []
-    office.onRetire()
+    officeNews = office.onRetire()
     // Favours are a generation's; any help still here goes home
     favours.value = emptyFavours()
     splits.value = emptySplits()
@@ -1377,8 +1384,10 @@ export const useGameStore = defineStore('game', () => {
     legacyPoints.value = 0
     legacySpent.value = 0
     perks.value = { ...EMPTY_PERKS }
-    office.firePA()
-    announce(`Elevated to the Lords! The family now holds ${titles.value} title${titles.value === 1 ? '' : 's'}: ${peerageRank(titles.value)}.`)
+    // The PAs hand over to their children, who grew up around the job
+    office.onElevate()
+    const handover = office.paChairs.value.some((pa) => pa !== null) ? ' Your PAs hand over to their children, who grew up around the job.' : ''
+    announce(`Elevated to the Lords! The family now holds ${titles.value} title${titles.value === 1 ? '' : 's'}: ${peerageRank(titles.value)}.${handover}`)
     flushSave(ts)
     return true
   }
@@ -1485,7 +1494,7 @@ export const useGameStore = defineStore('game', () => {
     if (netWorth.value >= 1e9) unlockAchievement('billionaire')
     if (JOBS.every((j) => (jobsPurchased.value[j.id] ?? 0) > 0)) unlockAchievement('portfolio-career')
     if (office.officeSeats.value.every((s) => s !== null)) unlockAchievement('full-house')
-    if ((office.paChair.value?.servedGenerations ?? 0) >= 3) unlockAchievement('long-service')
+    if (office.paChairs.value.some((pa) => (pa?.servedGenerations ?? 0) >= 3)) unlockAchievement('long-service')
     if (generation.value >= 5) unlockAchievement('dynasty')
   }
 
@@ -1651,7 +1660,7 @@ export const useGameStore = defineStore('game', () => {
     familyTree,
     familyTreeOpen,
     officeSeats: office.officeSeats,
-    paChair: office.paChair,
+    paChairs: office.paChairs,
     headhunterOffer: office.headhunterOffer,
     queuedOffers: office.queuedOffers,
     hireAdvisor,

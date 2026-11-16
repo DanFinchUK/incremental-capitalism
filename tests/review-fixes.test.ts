@@ -29,7 +29,7 @@ describe('review fixes', () => {
   it('PA seniority never pushes a "lower is better" multiplier to zero or below', () => {
     for (const id of ['lobbyist', 'spin-doctor', 'personal-shopper']) {
       const pa = inst(id, 40)
-      const m = combineModifiers(officeModifierSources([pa], pa.uid))
+      const m = combineModifiers(officeModifierSources([pa], new Set([pa.uid])))
       expect(m.twistStrength).toBeGreaterThan(0)
       expect(m.eventIntervalMult).toBeGreaterThan(0)
       expect(m.purchaseCostMult).toBeGreaterThan(0)
@@ -112,9 +112,9 @@ describe('review fixes', () => {
     const store = fresh()
     store.legacyPoints = 20
     expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(20))
-    // Three titles make Legacy worth 50% more
+    // Each title makes Legacy worth 15% more
     store.titles = 3
-    expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(20, 1.5))
+    expect(store.legacyMultiplier / legacyMultiplier(20, 1.45)).toBeCloseTo(1)
   })
 
   it('no heir trait changes what Legacy is worth, so none grows into a trap', () => {
@@ -122,10 +122,10 @@ describe('review fixes', () => {
   })
 
   it('duplicate campaigners reach the cap sooner but share it', () => {
-    const m = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 600 * 60_000, 'a'), inst('flour-campaigner', 0, 600 * 60_000, 'b')], null))
+    const m = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 600 * 60_000, 'a'), inst('flour-campaigner', 0, 600 * 60_000, 'b')], new Set()))
     expect(m.sectorCostMult.food).toBeCloseTo(0.5)
     expect(m.sectorBusinessMult.food).toBeCloseTo(2.5)
-    const early = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 10 * 60_000, 'a'), inst('flour-campaigner', 0, 10 * 60_000, 'b')], null))
+    const early = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 10 * 60_000, 'a'), inst('flour-campaigner', 0, 10 * 60_000, 'b')], new Set()))
     expect(early.sectorCostMult.food).toBeCloseTo(0.8)
   })
 

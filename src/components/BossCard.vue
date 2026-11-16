@@ -87,19 +87,36 @@
     <template v-else>
       <h2 class="scn-BossTitle">Every gate beaten</h2>
       <p class="scn-StatHint" data-testid="boss-net-worth">Net worth {{ formatCurrency(store.netWorth) }}</p>
-      <p class="scn-CardMeta">Top of the British class pyramid reached. Retire to pass it all on.</p>
+      <p class="scn-CardMeta" data-testid="top-of-pyramid">
+        <template v-if="store.canElevate">Top of the British class pyramid reached. The Lords are expecting you.</template>
+        <template v-else>Top of the British class pyramid reached. Retire to pass it all on.</template>
+      </p>
+      <button
+        v-if="store.canElevate"
+        type="button"
+        class="scn-Action scn-Action-accent"
+        data-testid="boss-elevate"
+        @click="elevateOpen = true"
+      >
+        Elevate to the Lords
+      </button>
     </template>
+    <Teleport to="body">
+      <ElevateModal :open="elevateOpen" @close="elevateOpen = false" />
+    </Teleport>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import ElevateModal from './ElevateModal.vue'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { gateThreshold } from '../engine/bosses'
 import { useGameStore } from '../stores/game'
 import { formatClock, formatCurrency } from '../utils/format'
 
 const store = useGameStore()
+const elevateOpen = ref(false)
 
 const boss = computed(() => store.nextBoss)
 const threshold = computed(() => (boss.value ? gateThreshold(boss.value.def.gate) : 0))

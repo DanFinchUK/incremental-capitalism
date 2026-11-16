@@ -52,27 +52,26 @@
       <p ref="pickerTitle" class="scn-AutoLine scn-SeatPickerTitle">Who makes way for the {{ chosen.name }}?</p>
       <div class="scn-AdvisorGrid scn-AdvisorGrid-fill" data-testid="seat-picker">
         <article
-          v-if="pa"
+          v-for="pa in pas"
+          :key="`pa-${pa.chair}`"
           class="scn-AdvisorCard"
-          :class="`scn-AdvisorCard-${pa.def.rarity}`"
+          :class="`scn-AdvisorCard-${pa.standing.def.rarity}`"
           data-testid="replace-pa-card"
         >
           <div class="scn-AdvisorTags">
             <span class="scn-PaBadge">PA</span>
-            <span class="scn-MarketEventTag">{{ RARITY_LABELS[pa.def.rarity] }} · {{ pa.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
+            <span class="scn-MarketEventTag">{{ pa.rank }} · {{ pa.standing.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
           </div>
-          <strong>{{ pa.def.name }}</strong>
-          <p class="scn-AutoLine">{{ store.wording(pa.def.effectText) }}</p>
-          <p class="scn-StatHint">{{ pa.def.costText }}</p>
-          <p v-if="pa.inst.servedGenerations > 0" class="scn-StatHint">
-            Served {{ pa.inst.servedGenerations }} gen: +{{ pa.inst.servedGenerations * 25 }}% effect, +{{ pa.inst.servedGenerations * 20 }}% pay
-          </p>
+          <strong>{{ pa.title }}</strong>
+          <p class="scn-AutoLine">{{ store.wording(pa.standing.def.effectText) }}</p>
+          <p class="scn-StatHint">{{ pa.standing.def.costText }}</p>
+          <p class="scn-StatHint">{{ pa.service }}</p>
           <button
             type="button"
             class="scn-Action scn-Action-outline"
             data-testid="replace-pa"
             :disabled="props.locked"
-            @click="replace(choosing!, 'pa')"
+            @click="replace(choosing!, { pa: pa.chair })"
           >
             Let go
           </button>
@@ -104,6 +103,8 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
 import { RARITY_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
+import type { HireTarget } from '../stores/modules/office'
+import { paCards } from './paCard'
 
 // locked: the buttons show but ignore taps (just after a boss win)
 const props = defineProps<{ locked?: boolean; lockSeconds?: number }>()
@@ -111,12 +112,8 @@ const props = defineProps<{ locked?: boolean; lockSeconds?: number }>()
 const store = useGameStore()
 const offer = computed(() => store.headhunterOffer.map((id) => ADVISORS_BY_ID[id]).filter(Boolean))
 // An empty PA chair takes the next hire, so the office isn't full yet
-const seatsFull = computed(() => store.paChair !== null && store.officeSeats.every((s) => s !== null))
-const pa = computed(() => {
-  const inst = store.paChair
-  const def = inst ? ADVISORS_BY_ID[inst.advisorId] : undefined
-  return inst && def ? { inst, def } : null
-})
+const seatsFull = computed(() => store.paChairs.every((c) => c !== null) && store.officeSeats.every((s) => s !== null))
+const pas = computed(() => paCards(store.paChairs).filter((p) => p !== null))
 const seated = computed(() => store.officeSeats.map((s) => (s ? ADVISORS_BY_ID[s.advisorId] : null)).filter((a) => a !== null))
 
 // With the office full, Hire first asks who makes way, showing what each
@@ -136,7 +133,7 @@ function hire(i: number): void {
   }
 }
 
-function replace(i: number, seat: number | 'pa'): void {
+function replace(i: number, seat: HireTarget): void {
   choosing.value = null
   store.hireAdvisor(i, seat)
 }

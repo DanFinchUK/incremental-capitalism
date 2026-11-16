@@ -102,7 +102,7 @@ export function createInitialSceneState(): PersistedSceneState {
     heirChoices: [],
     abdicated: false,
     generation: 1,
-    office: { seats: [], paChair: null, offer: [], queued: 0 },
+    office: { seats: [], paChairs: [], offer: [], queued: 0 },
     familyTree: [],
     achievements: [],
     titles: 0,
@@ -196,11 +196,17 @@ function readAdvisor(raw: unknown): AdvisorInstance | null {
 }
 
 function readOffice(raw: unknown): OfficeState {
-  if (!raw || typeof raw !== 'object') return { seats: [], paChair: null, offer: [], queued: 0 }
+  if (!raw || typeof raw !== 'object') return { seats: [], paChairs: [], offer: [], queued: 0 }
   const o = raw as Record<string, unknown>
-  const paChair = readAdvisor(o.paChair)
-  // Each advisor exists once: drop repeated uids and any seat copy of the PA
-  const seen = new Set<string>(paChair ? [paChair.uid] : [])
+  // Older saves had a single PA chair
+  const chairsRaw = Array.isArray(o.paChairs) ? o.paChairs.slice(0, 12) : [o.paChair]
+  // Each advisor exists once: drop repeated uids and any seat copy of a PA
+  const seen = new Set<string>()
+  const paChairs = chairsRaw.map(readAdvisor).map((a) => {
+    if (!a || seen.has(a.uid)) return null
+    seen.add(a.uid)
+    return a
+  })
   const seats = (Array.isArray(o.seats) ? o.seats.slice(0, 8).map(readAdvisor) : []).map((a) => {
     if (!a || seen.has(a.uid)) return null
     seen.add(a.uid)
@@ -208,7 +214,7 @@ function readOffice(raw: unknown): OfficeState {
   })
   return {
     seats,
-    paChair,
+    paChairs,
     offer: Array.isArray(o.offer) ? o.offer.filter((id): id is string => typeof id === 'string' && !!ADVISORS_BY_ID[id]).slice(0, 3) : [],
     queued: typeof o.queued === 'number' && Number.isFinite(o.queued) ? Math.min(9, Math.max(0, Math.floor(o.queued))) : 0
   }

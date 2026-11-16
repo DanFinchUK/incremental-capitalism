@@ -209,9 +209,11 @@ function manageOffice(store: Store): void {
       }
     }
   }
-  if (!store.paChair) {
+  // Fill empty PA chairs from the office, so the best stay on at retirement
+  for (let guard = 0; guard < 8 && store.paChairs.some((c) => c === null); guard++) {
     const seat = store.officeSeats.findIndex((s) => s !== null)
-    if (seat >= 0) store.promoteToPA(seat)
+    if (seat < 0) break
+    store.promoteToPA(seat)
   }
 }
 

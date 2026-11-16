@@ -1,22 +1,93 @@
-// Family office rules: advisor effects and upkeep, the Personal Assistant's
-// seniority and payrises, lobbying campaigns and role bonuses.
+// Family office rules: advisor effects and upkeep, the Personal Assistants'
+// promotions and honours, lobbying campaigns and role bonuses.
 import { ADVISORS, ADVISORS_BY_ID, type AdvisorDef, type Campaign } from '../data/advisors'
-import { pickEventRarity } from '../data/events'
+import { pickEventRarity, type EventRarity } from '../data/events'
 import type { Sector } from '../data/items'
 import type { ModifierSource } from './modifiers'
 
 export interface AdvisorInstance {
   uid: string
   advisorId: string
-  // Generations served in the PA chair
+  // Generations served in a PA chair. A PA is promoted one tier every
+  // SERVICE_GENERATIONS_PER_TIER: up their advisor family's rarities, then
+  // through the honours
   servedGenerations: number
   // Active time in office, which drives lobbying campaigns
   campaignMs: number
 }
 
 export const BASE_OFFICE_SEATS = 3
-export const SENIORITY_PER_GENERATION = 0.25
-export const PAYRISE_PER_GENERATION = 0.2
+export const SERVICE_GENERATIONS_PER_TIER = 3
+// Tiers: 0 common, 1 rare, 2 legendary, then honours earned only by service
+export const HONOURS: ReadonlyArray<string> = ['MBE', 'OBE', 'Knighthood', 'Peerage']
+export const MAX_TIER = 2 + HONOURS.length
+// Each tier past what the family offers adds this much of its best advisor's
+// effect (and pay): a peer is three times a legendary
+export const HONOUR_STEP = 0.5
+// A PA's child arrives one tier below them, never above this: honours aren't inherited
+export const CHILD_MAX_TIER = 1
+
+const RARITY_TIER: Readonly<Record<EventRarity, number>> = { common: 0, rare: 1, legendary: 2 }
+
+// The advisor in a family at a tier, or its best below that
+function familyAdvisorAt(family: string, tier: number): AdvisorDef | undefined {
+  let best: AdvisorDef | undefined
+  for (const a of ADVISORS) {
+    if (a.family !== family || RARITY_TIER[a.rarity] > tier) continue
+    if (!best || RARITY_TIER[a.rarity] > RARITY_TIER[best.rarity]) best = a
+  }
+  return best
+}
+
+export function paTier(inst: AdvisorInstance): number {
+  const hired = ADVISORS_BY_ID[inst.advisorId]
+  if (!hired) return 0
+  return Math.min(MAX_TIER, RARITY_TIER[hired.rarity] + Math.floor(inst.servedGenerations / SERVICE_GENERATIONS_PER_TIER))
+}
+
+export interface PaStanding {
+  tier: number
+  // The advisor they now work as: promoted up the family where it goes
+  def: AdvisorDef
+  // The honour they hold, if any
+  honour: string | null
+  // Effect and pay, against def's own
+  scale: number
+  // Who they were hired as, when that differs
+  hiredAs: AdvisorDef | null
+  // Generations until the next promotion, or null at the top
+  nextPromotionIn: number | null
+}
+
+export function paStanding(inst: AdvisorInstance): PaStanding | null {
+  const hired = ADVISORS_BY_ID[inst.advisorId]
+  if (!hired) return null
+  const tier = paTier(inst)
+  const def = familyAdvisorAt(hired.family, tier) ?? hired
+  const scale = 1 + HONOUR_STEP * Math.max(0, tier - RARITY_TIER[def.rarity])
+  const honour = tier > 2 ? HONOURS[tier - 3] : null
+  const nextPromotionIn =
+    tier >= MAX_TIER ? null : SERVICE_GENERATIONS_PER_TIER - (inst.servedGenerations % SERVICE_GENERATIONS_PER_TIER)
+  return { tier, def, honour, scale, hiredAs: def.id === hired.id ? null : hired, nextPromotionIn }
+}
+
+// How a PA is named on screen: "Head Butler", "Head Butler, MBE"
+export function paTitle(standing: PaStanding): string {
+  if (!standing.honour) return standing.def.name
+  if (standing.honour === 'Knighthood') return `${standing.def.name}, knighted`
+  if (standing.honour === 'Peerage') return `${standing.def.name}, now in the Lords`
+  return `${standing.def.name}, ${standing.honour}`
+}
+
+// At elevation a PA hands over to their child, who grew up around the job:
+// one tier below the parent, never above Rare, with no service yet
+export function childOf(inst: AdvisorInstance, uid: string): AdvisorInstance | null {
+  const hired = ADVISORS_BY_ID[inst.advisorId]
+  if (!hired) return null
+  const tier = Math.max(0, Math.min(paTier(inst) - 1, CHILD_MAX_TIER))
+  const def = familyAdvisorAt(hired.family, tier) ?? hired
+  return { uid, advisorId: def.id, servedGenerations: 0, campaignMs: 0 }
+}
 
 const PRODUCT_KEYS = [
   'clickMult',
@@ -76,14 +147,15 @@ export function campaignSource(campaign: Campaign, campaignMs: number): Modifier
   }
 }
 
+// A PA works as their promoted advisor, scaled by any honours; pay follows
 function sourcesFor(def: AdvisorDef, inst: AdvisorInstance, isPA: boolean): ModifierSource[] {
-  const seniority = isPA ? 1 + SENIORITY_PER_GENERATION * inst.servedGenerations : 1
-  const payrise = isPA ? 1 + PAYRISE_PER_GENERATION * inst.servedGenerations : 1
-  return [scaleSource(def.mods, seniority), scaleSource(def.upkeep, payrise)]
+  const standing = isPA ? paStanding(inst) : null
+  if (!standing) return [def.mods, def.upkeep]
+  return [scaleSource(standing.def.mods, standing.scale), scaleSource(standing.def.upkeep, standing.scale)]
 }
 
-// Every modifier source the office contributes. paUid marks the PA.
-export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>, paUid: string | null): ModifierSource[] {
+// Every modifier source the office contributes. paUids marks the PAs.
+export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>, paUids: ReadonlySet<string>): ModifierSource[] {
   const sources: ModifierSource[] = []
   // Campaigners for the same cause pool their time: the cap is shared, so
   // duplicates reach it sooner rather than doubling it.
@@ -91,7 +163,7 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>, 
   for (const inst of advisors) {
     const def = ADVISORS_BY_ID[inst.advisorId]
     if (!def) continue
-    sources.push(...sourcesFor(def, inst, inst.uid === paUid))
+    sources.push(...sourcesFor(def, inst, paUids.has(inst.uid)))
     if (def.campaign) {
       const pooled = campaignTime.get(def.id) ?? { campaign: def.campaign, ms: 0 }
       pooled.ms += inst.campaignMs

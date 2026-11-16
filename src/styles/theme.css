@@ -1244,21 +1244,10 @@
   stop-color: var(--color-accent);
 }
 
-.scn-DeskAutoLine {
-  margin: 6px 0 0;
-  font-size: 11px;
-  color: var(--color-muted);
-}
-
 .scn-ThresholdLine {
   stroke: var(--color-gold);
   stroke-width: 1.4;
   stroke-dasharray: 6 3;
-}
-
-.scn-Swatch-threshold {
-  border-top: 2px dashed var(--color-gold);
-  margin-left: 6px;
 }
 
 .scn-PassiveLine {

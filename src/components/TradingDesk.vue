@@ -5,9 +5,7 @@
         <span class="scn-DeskLiveDot"></span>
         <span class="scn-DeskBrand">CITY TRADING DESK</span>
         <span class="scn-DeskSub">
-          FLOW {{ formatCurrency(latestRealised) }}/s · PASSIVE {{ formatCurrency(store.moneyPerSecond) }}/s<template
-            v-if="store.automationPill"
-          > · <span data-testid="desk-automation">{{ deskAutoText }}</span></template>
+          FLOW {{ formatCurrency(latestRealised) }}/s · PASSIVE {{ formatCurrency(store.moneyPerSecond) }}/s
         </span>
       </div>
       <button
@@ -168,14 +166,9 @@
             <span class="scn-LegendInline">
               <i class="scn-CandleDot scn-CandleDot-up"></i> Accumulating
               <i class="scn-CandleDot scn-CandleDot-down"></i> Capital deployed
-              <template v-if="thresholdY !== null"><i class="scn-Swatch scn-Swatch-threshold"></i> Next auto</template>
             </span>
             <span>High {{ formatCurrency(candleRange.max) }}</span>
           </div>
-          <p v-if="restockLine !== null" class="scn-DeskAutoLine" data-testid="desk-restock-line">
-            Auto restocks under {{ formatCurrency(restockLine) }}<template v-if="store.nextAutomation">
-              · <span data-testid="desk-next-auto">adds {{ store.nextAutomation.label }} at {{ formatCurrency(store.nextAutomation.cash) }} cash</span></template>
-          </p>
         </div>
       </div>
 
@@ -218,14 +211,6 @@ const gridYLines = [PAD_TOP, Math.round(PAD_TOP + PLOT_H * 0.5), PAD_TOP + PLOT_
 
 const store = useGameStore()
 
-// Automation, from perks, advisors, heirs and titles together
-const deskAutoText = computed(() =>
-  store.automationPill === 'Auto paused' ? 'AUTO PAUSED' : `AUTO <${store.automationLinePct}%`
-)
-// The price below which automation restocks right now
-const restockLine = computed(() =>
-  store.automationPill && store.automationPill !== 'Auto paused' ? store.money * store.automationLine : null
-)
 const hoverFlowIdx = ref<number | null>(null)
 const hoverCandleIdx = ref<number | null>(null)
 

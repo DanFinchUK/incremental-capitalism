@@ -37,23 +37,15 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     wrapper.unmount()
   })
 
-  it('shows the automation line on the desk once anything brings it', async () => {
+  it('shows the automation pill with the family\'s lasting effects, and no automation figures on the desk', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
-    expect(wrapper.find('[data-testid="desk-automation"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="desk-restock-line"]').exists()).toBe(false)
     store.perks.nepotism = 2
     store.money = 1_000_000
     await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="desk-automation"]').text()).toBe(`AUTO <${store.automationLinePct}%`)
-    // The pill sits with the family's lasting effects, not the temporary ones by Hustle
     expect(wrapper.find('[data-testid="header-bloodline-pills"]').text()).toContain(`Auto under ${store.automationLinePct}% of cash`)
     expect(wrapper.find('.scn-HustleRow').text()).not.toContain('Auto under')
-    expect(wrapper.find('[data-testid="desk-restock-line"]').text()).toContain('Auto restocks under')
-    store.toggleAutoBuyPaused()
-    await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="desk-automation"]').text()).toBe('AUTO PAUSED')
-    expect(wrapper.find('[data-testid="desk-restock-line"]').exists()).toBe(false)
+    expect(wrapper.find('.scn-Desk').text()).not.toMatch(/auto/i)
     wrapper.unmount()
   })
 
@@ -66,7 +58,6 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     const next = store.nextAutomation!
     expect(next.label).toBe('Gig delivery rider')
     expect(next.cash).toBeCloseTo(store.itemQuote('jobs', '1', 1).cost / store.automationLine)
-    expect(wrapper.find('[data-testid="desk-next-auto"]').text()).toContain('Gig delivery rider')
     store.toggleAutoBuy('jobs', '1')
     expect(store.nextAutomation?.label).not.toBe('Gig delivery rider')
     wrapper.unmount()

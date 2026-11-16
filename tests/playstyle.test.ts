@@ -5,6 +5,7 @@ import { MARKET_EVENTS } from '../src/data/events'
 import { HEIR_TRAITS, INHERITED_TRAITS } from '../src/data/heirs'
 import { LEGACY_PERKS } from '../src/data/perks'
 import { describeModifiers } from '../src/engine/family'
+import { FAVOUR_EVENTS } from '../src/data/favours'
 import { NEUTRAL_MODIFIERS } from '../src/engine/modifiers'
 import { forPlaystyle } from '../src/utils/playstyle'
 
@@ -14,6 +15,7 @@ function allGameText(): string[] {
   for (const a of ADVISORS) texts.push(a.effectText, a.costText)
   for (const b of BOSSES) texts.push(b.twistText, b.conditionText, b.blurb)
   for (const t of [...HEIR_TRAITS, ...INHERITED_TRAITS]) texts.push(t.description)
+  for (const e of FAVOUR_EVENTS) texts.push(e.title, e.effectText)
   for (const p of LEGACY_PERKS) texts.push(p.label, p.description, p.effectSummary(0), p.effectSummary(2))
   for (const e of MARKET_EVENTS) {
     texts.push(e.title, e.subtitle)

@@ -29,6 +29,8 @@ export interface Modifiers {
   twistStrength: number
   automationShareBonus: number
   windfallMult: number
+  // What the Interns earn, on top of the click pay they tap at
+  internMult: number
   // Extra taps' worth a second of allowance (Universal Credit)
   allowanceTapsAdd: number
   // Added to the share of passive income paid while away
@@ -56,6 +58,7 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   twistStrength: 1,
   automationShareBonus: 0,
   windfallMult: 1,
+  internMult: 1,
   allowanceTapsAdd: 0,
   offlineEfficiencyAdd: 0
 })
@@ -70,7 +73,8 @@ const PRODUCT_KEYS = [
   'bossTimeMult',
   'scandalSeverity',
   'twistStrength',
-  'windfallMult'
+  'windfallMult',
+  'internMult'
 ] as const
 
 const SUM_KEYS = [

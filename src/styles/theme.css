@@ -573,65 +573,22 @@
   opacity: 0.72;
 }
 
-/* An item lent by a favour */
-.scn-Card-lent {
-  border-color: var(--color-gold);
-}
-
-/* Old School Tie: where help went, help still here, and the button */
-.scn-Favours {
-  display: grid;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.scn-FavourRow {
-  padding: 7px 14px;
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.scn-FavourRow-help {
-  border: 1px dashed var(--color-gold);
-  background: var(--color-gold-bg);
-  color: var(--color-gold-fg);
-}
-
-.scn-FavourRow-gone {
-  border: 1px dashed var(--color-border);
-  color: var(--color-muted);
-}
-
-.scn-FavourRow-ending {
-  animation: scn-favour-ending 1s ease-in-out infinite;
-}
-
-@keyframes scn-favour-ending {
-  50% {
-    opacity: 0.55;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scn-FavourRow-ending {
-    animation: none;
-  }
-}
-
-.scn-Action.scn-FavourButton {
-  width: 100%;
-  background-color: var(--color-accent);
+/* Old School Tie: the button that calls in a favour, among the boosts */
+.scn-FavourCall {
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--color-accent);
   border-color: var(--color-accent);
   color: var(--color-accent-fg);
 }
 
-.scn-Action.scn-FavourButton:hover {
-  background-color: var(--color-accent-hover);
+.scn-FavourCall:hover {
+  background: var(--color-accent-hover);
+}
+
+.scn-FavourCall:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .scn-CardImage {

@@ -39,7 +39,6 @@ import {
   steadyHustle,
   computePassivePerSecond,
   computeSectorSlices,
-  favourIncome,
   itemMilestones,
   legacyMultiplier as calcLegacyMultiplier,
   maxHustleMultiplier,
@@ -91,7 +90,16 @@ import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type Achi
 import type { AdvisorInstance } from '../engine/office'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ROOMS, roomForClass, type RoomDef, type RoomId } from '../data/rooms'
-import { FAVOUR_LOAN_MS, emptyFavours, pickDeparture, type FavourKind, type FavourState } from '../data/favours'
+import {
+  FAVOUR_EVENTS,
+  FAVOUR_EVENTS_BY_ID,
+  FAVOUR_EVENT_MS,
+  emptyFavours,
+  favourEventSource,
+  pickEnding,
+  pickFavourOffer,
+  type FavourState
+} from '../data/favours'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
@@ -170,12 +178,12 @@ export const useGameStore = defineStore('game', () => {
   const favours = ref<FavourState>(initial.favours)
   const favoursTotal = computed(() => perks.value.nepotism)
   const favoursLeft = computed(() => Math.max(0, favoursTotal.value - favours.value.used))
-  // Units lent right now, by item, for the economy
-  const lentUnits = computed(() => {
-    const out: { jobs: Record<string, number>; businesses: Record<string, number> } = { jobs: {}, businesses: {} }
-    for (const l of favours.value.loans) out[l.kind][l.id] = (out[l.kind][l.id] ?? 0) + 1
-    return out
-  })
+  // The national events your favours have arranged, while they run
+  const favourSources = computed(() =>
+    favours.value.active.flatMap((e) => (FAVOUR_EVENTS_BY_ID[e.id] ? [favourEventSource(FAVOUR_EVENTS_BY_ID[e.id])] : []))
+  )
+  // Whether the favour dialog is showing; the offer itself is kept until chosen
+  const favourDialogOpen = ref(false)
   // Game text, reworded for the allowance when playing without tapping
   function wording(text: string): string {
     return forPlaystyle(text, noTap.value)
@@ -254,13 +262,16 @@ export const useGameStore = defineStore('game', () => {
   })
   const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value))
   // Every rule-bending source in play: stacked bloodline traits, the family office, achievements and titles
+  // Everything lasting: traits, the office, achievements and titles
+  const lastingSources = computed(() => [
+    ...bloodlineTraitSources(familyTree.value, heir.value),
+    ...office.officeSources.value,
+    achievementSource(achievements.value.length),
+    titleSource(titles.value)
+  ])
+  const baseModifiers = computed(() => combineModifiers(lastingSources.value))
   const modifiers = computed(() =>
-    combineModifiers([
-      ...bloodlineTraitSources(familyTree.value, heir.value),
-      ...office.officeSources.value,
-      achievementSource(achievements.value.length),
-      titleSource(titles.value)
-    ])
+    favourSources.value.length > 0 ? combineModifiers([...lastingSources.value, ...favourSources.value]) : baseModifiers.value
   )
   const bloodlineDeepestGate = computed(() =>
     currentBloodlineRecords(familyTree.value).reduce((max, r) => Math.max(max, r.deepestGate), 0)
@@ -412,8 +423,7 @@ export const useGameStore = defineStore('game', () => {
     clickBuffMultiplier: (activeClickBuff.value?.mult ?? 1) * twist.value.clickPayMult,
     hustleMultiplier: hustleMultiplier.value,
     noTap: noTap.value,
-    mods: modifiers.value,
-    loans: lentUnits.value
+    mods: modifiers.value
   }))
 
   // Share of cash under which an item's next unit restocks itself
@@ -438,8 +448,28 @@ export const useGameStore = defineStore('game', () => {
   }))
   const jobBaseMoneyPerClick = computed(() => computeClickIncome(jobBaseEconomyInput.value, false))
   const moneyPerSecond = computed(() => computePassivePerSecond(economyInput.value))
-  // Favours lend help while you play; time away earns nothing from it
-  const offlinePerSecond = computed(() => computePassivePerSecond({ ...economyInput.value, loans: undefined }))
+  // Favours help while you play; time away earns nothing from them
+  const offlinePerSecond = computed(() => computePassivePerSecond({ ...economyInput.value, mods: baseModifiers.value }))
+
+  // Income a second at these modifiers: passive, plus taps at your recent rate
+  function incomeWith(mods: typeof modifiers.value): number {
+    const input = { ...economyInput.value, mods }
+    const tapsPerSec = moneyPerClick.value > 0 ? manualRealisedPerSecond.value / moneyPerClick.value : 0
+    return computePassivePerSecond(input) + tapsPerSec * computeClickIncome(input, true)
+  }
+
+  // What running favours add a second, for the trading desk
+  const favourPerSecond = computed(() =>
+    favourSources.value.length > 0 ? Math.max(0, incomeWith(modifiers.value) - incomeWith(baseModifiers.value)) : 0
+  )
+
+  // What each event would add to income right now, as a share of it
+  function favourEventValue(id: string): number {
+    const def = FAVOUR_EVENTS_BY_ID[id]
+    const now = incomeWith(modifiers.value)
+    if (!def || now <= 0) return 0
+    return incomeWith(combineModifiers([...lastingSources.value, ...favourSources.value, favourEventSource(def)])) / now - 1
+  }
   // Income ignoring Market Opportunity buffs, so windfalls can't stack on them
   const unbuffedMoneyPerSecond = computed(() =>
     computePassivePerSecond({ ...economyInput.value, businessBuffMultiplier: 1, clickBuffMultiplier: 1 })
@@ -454,7 +484,9 @@ export const useGameStore = defineStore('game', () => {
   const allowanceTapRate = computed(() =>
     noTap.value ? (ALLOWANCE_TAPS_PER_SEC + modifiers.value.allowanceTapsAdd) * hustleMultiplier.value : 0
   )
-  const sectorSlices = computed(() => computeSectorSlices(economyInput.value, manualRealisedPerSecond.value, allowanceLabel.value))
+  const sectorSlices = computed(() =>
+    computeSectorSlices(economyInput.value, manualRealisedPerSecond.value, allowanceLabel.value, favourPerSecond.value)
+  )
 
   // Keeps the saved record of what has been seen in step with what is shown
   function refreshSeenItems(): void {
@@ -1057,7 +1089,7 @@ export const useGameStore = defineStore('game', () => {
       const { business, interns, allowance } = computeIncomeBreakdown(economyInput.value)
       creditMoney(business * deltaSec, 'passive', ts)
       creditClicks((interns + allowance) * deltaSec, 'passive', ts)
-      endFinishedLoans(ts)
+      endFinishedFavours(ts)
     }
 
     refreshSeenItems()
@@ -1065,8 +1097,7 @@ export const useGameStore = defineStore('game', () => {
     runAutoBuy(ts)
     observeBalance(telemetry.value, ts, money.value)
     if (ts - telemetry.value.lastSampleTs >= 250) {
-      const lentIncome = favourIncome(economyInput.value, manualRealisedPerSecond.value)
-      sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value, undefined, lentIncome.businessPerSec + lentIncome.clickPerSec)
+      sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value, undefined, favourPerSecond.value)
     }
     maybeSpawnRandomEvent(ts)
     bosses.evaluateAttempt()
@@ -1142,59 +1173,74 @@ export const useGameStore = defineStore('game', () => {
     return skipped
   }
 
-  // The item a favour would lend from a list: its bottom card, whatever it is
-  function favourTarget(kind: FavourKind): string | null {
-    const rows = kind === 'jobs' ? visibleJobs.value : visibleBusinesses.value
-    return rows.at(-1)?.item.id ?? null
+  // Old School Tie: call in a favour. The first call this generation draws
+  // three national events, weighted to what would help the family; the offer
+  // stays until one is chosen, so closing the dialog costs nothing.
+  function callInFavour(ts = Date.now()): boolean {
+    nowMs.value = ts
+    if (favoursLeft.value <= 0 || heirChoices.value.length > 0 || disgraceReport.value !== null) return false
+    if (favours.value.offer.length === 0) {
+      const weights = Object.fromEntries(FAVOUR_EVENTS.map((e) => [e.id, Math.max(0, favourEventValue(e.id))]))
+      const offer = pickFavourOffer(Math.random, weights)
+      if (offer.length === 0) return false
+      favours.value = { ...favours.value, offer }
+    }
+    favourDialogOpen.value = true
+    return true
   }
 
-  // Old School Tie: someone lends you one unit of the list's bottom rung for
-  // a few minutes, on its own clock. It earns at the family's rates but isn't
-  // yours: no net worth, no reveal of the rung after it, no change to prices.
-  function callInFavour(kind: FavourKind, ts = Date.now()): boolean {
+  function chooseFavour(index: number, ts = Date.now()): boolean {
     nowMs.value = ts
-    const id = favourTarget(kind)
-    if (!id || favoursLeft.value <= 0 || heirChoices.value.length > 0 || disgraceReport.value !== null) return false
+    const id = favours.value.offer[index]
+    const def = id ? FAVOUR_EVENTS_BY_ID[id] : undefined
+    if (!def || favoursLeft.value <= 0) return false
     favours.value = {
-      ...favours.value,
       used: favours.value.used + 1,
-      loans: [...favours.value.loans, { kind, id, untilMs: activeGenerationMs.value + FAVOUR_LOAN_MS }]
+      active: [...favours.value.active, { id, untilMs: activeGenerationMs.value + FAVOUR_EVENT_MS }],
+      offer: []
     }
-    plays.log(ts, 'favour', { kind, id })
-    cue('hire')
+    favourDialogOpen.value = false
+    plays.log(ts, 'favour', { id })
+    cue('perk')
+    announce(`${def.title}. ${def.effectText}`)
     flushSave(ts)
     return true
   }
 
-  // Help whose time is up leaves, and its row says where it went
-  function endFinishedLoans(ts: number): void {
+  function closeFavourDialog(): void {
+    favourDialogOpen.value = false
+  }
+
+  // An event whose time is up ends, and the news says how
+  function endFinishedFavours(ts: number): void {
     const now = activeGenerationMs.value
-    if (!favours.value.loans.some((l) => l.untilMs <= now)) return
-    const departures = [...favours.value.departures]
-    const loans = []
-    for (const l of favours.value.loans) {
-      if (l.untilMs > now) {
-        loans.push(l)
-        continue
-      }
-      const taken = departures.filter((d) => d.kind === l.kind && d.id === l.id).map((d) => d.text)
-      departures.push({ kind: l.kind, id: l.id, text: pickDeparture(Math.random, taken) })
-    }
-    favours.value = { ...favours.value, loans, departures }
+    const ended = favours.value.active.filter((e) => e.untilMs <= now)
+    if (ended.length === 0) return
+    favours.value = { ...favours.value, active: favours.value.active.filter((e) => e.untilMs > now) }
+    const news = ended.map((e) => `${FAVOUR_EVENTS_BY_ID[e.id]?.title ?? 'The favour'}: ${pickEnding(Math.random)}.`)
+    announce(news.join(' '))
     plays.log(ts, 'favour-end', {})
   }
 
-  // Help still here on an item, soonest to leave first, and where earlier help went
-  function favourLoansFor(kind: FavourKind, id: string): number[] {
-    return favours.value.loans
-      .filter((l) => l.kind === kind && l.id === id)
-      .map((l) => l.untilMs - activeGenerationMs.value)
-      .sort((a, b) => a - b)
-  }
+  // Running events for the boost strip, soonest to end first
+  const activeFavours = computed(() =>
+    favours.value.active
+      .map((e) => ({ id: e.id, title: FAVOUR_EVENTS_BY_ID[e.id]?.title ?? '', leftMs: e.untilMs - activeGenerationMs.value }))
+      .sort((a, b) => a.leftMs - b.leftMs)
+  )
 
-  function favourDeparturesFor(kind: FavourKind, id: string): string[] {
-    return favours.value.departures.filter((d) => d.kind === kind && d.id === id).map((d) => d.text)
-  }
+  // One favour needs no count, the way Buy doesn't say x1
+  const favourButtonLabel = computed(() =>
+    favoursTotal.value > 1 ? `Call in a favour (${favoursLeft.value}/${favoursTotal.value})` : 'Call in a favour'
+  )
+
+  // The offer on the table, with what each would add right now
+  const favourOffer = computed(() =>
+    favours.value.offer.flatMap((id) => {
+      const def = FAVOUR_EVENTS_BY_ID[id]
+      return def ? [{ def, value: favourEventValue(id) }] : []
+    })
+  )
 
   function startBossAttempt(): boolean {
     if (heirChoices.value.length > 0 || disgraceReport.value !== null || mustHireFirst.value || !bosses.startBossAttempt()) {
@@ -1690,12 +1736,16 @@ export const useGameStore = defineStore('game', () => {
     favours,
     favoursTotal,
     favoursLeft,
-    lentUnits,
     offlinePerSecond,
-    favourTarget,
+    favourPerSecond,
+    favourDialogOpen,
+    favourButtonLabel,
+    favourOffer,
+    activeFavours,
     callInFavour,
-    favourLoansFor,
-    favourDeparturesFor,
+    chooseFavour,
+    closeFavourDialog,
+    favourEventValue,
     abandonBossAttempt: bosses.abandonBossAttempt,
     classStatus,
     legacyMultiplier,

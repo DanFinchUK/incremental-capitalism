@@ -269,14 +269,17 @@ function readyToChallengeBoss(store: Store, cfg: BotConfig): boolean {
   }
 }
 
-// Favours go on a list that has hit a locked card: help from above the gate
-// while the bot climbs towards the boss
+// A favour once a list has hit a locked card: a push towards the boss.
+// The bot takes whichever event is worth most to it.
 function callInFavours(store: Store): void {
   if (store.favoursLeft <= 0 || store.bossAttempt) return
-  for (const kind of ['businesses', 'jobs'] as const) {
-    const rows = kind === 'jobs' ? store.visibleJobs : store.visibleBusinesses
-    if (rows.at(-1)?.mode === 'gated' && store.favoursLeft > 0) store.callInFavour(kind, store.nowMs)
-  }
+  const stuck = store.visibleJobs.at(-1)?.mode === 'gated' || store.visibleBusinesses.at(-1)?.mode === 'gated'
+  if (!stuck || !store.callInFavour(store.nowMs)) return
+  let best = 0
+  store.favourOffer.forEach((o, i) => {
+    if (o.value > store.favourOffer[best].value) best = i
+  })
+  store.chooseFavour(best, store.nowMs)
 }
 
 function decide(store: Store, cfg: BotConfig): void {

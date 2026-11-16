@@ -1,19 +1,17 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { BUSINESSES_BY_ID, JOBS, JOBS_BY_ID } from '../src/data/items'
-import { FAVOUR_DEPARTURES } from '../src/data/favours'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
-import { useGameStore } from '../src/stores/game'
 import {
-  BASE_CLICK_VALUE,
-  computeClickIncome,
-  computeIncomeBreakdown,
-  computeSectorSlices,
-  favourIncome,
-  legacyMultiplier,
-  type EconomySnapshotInput
-} from '../src/engine/economy'
+  FAVOUR_ENDINGS,
+  FAVOUR_EVENTS,
+  FAVOUR_EVENTS_BY_ID,
+  favourEventSource,
+  pickFavourOffer
+} from '../src/data/favours'
+import { computeIncomeBreakdown, computeSectorSlices, type EconomySnapshotInput } from '../src/engine/economy'
+import { combineModifiers } from '../src/engine/modifiers'
+import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
 
@@ -32,48 +30,36 @@ function input(over: Partial<EconomySnapshotInput> = {}): EconomySnapshotInput {
   }
 }
 
-describe('lent units', () => {
-  it('a lent Job pays one unit at the family\'s rates, ignoring any owned', () => {
-    const broker = JOBS_BY_ID['13']
-    const base = input({ legacyPoints: 2, classLevel: 3 })
-    const lent = input({ legacyPoints: 2, classLevel: 3, loans: { jobs: { '13': 1 }, businesses: {} } })
-    const familyRate = (1 + 0.15 * 3) * legacyMultiplier(2)
-    expect((computeClickIncome(lent, false) - computeClickIncome(base, false)) / (broker.moneyPerClick * familyRate)).toBeCloseTo(1)
-
-    // Owning 50 Brokers (well past a milestone) doesn't change what the lent one pays
-    const owned = input({ legacyPoints: 2, classLevel: 3, jobsPurchased: { '13': 50 } })
-    const ownedAndLent = input({ ...owned, loans: { jobs: { '13': 1 }, businesses: {} } })
-    expect((computeClickIncome(ownedAndLent, false) - computeClickIncome(owned, false)) / (broker.moneyPerClick * familyRate)).toBeCloseTo(1)
+describe('favour events', () => {
+  it('offers different events, in proportion to their worth, never ones worth nothing', () => {
+    const weights = Object.fromEntries(FAVOUR_EVENTS.map((e) => [e.id, 0]))
+    weights['planning'] = 1
+    weights['no-meetings'] = 1
+    expect(pickFavourOffer(Math.random, weights).sort()).toEqual(['no-meetings', 'planning'])
+    const all = Object.fromEntries(FAVOUR_EVENTS.map((e) => [e.id, 1]))
+    const offer = pickFavourOffer(Math.random, all)
+    expect(offer).toHaveLength(3)
+    expect(new Set(offer).size).toBe(3)
   })
 
-  it('a lent Business pays one unit, without milestones or synergy', () => {
-    const coffee = BUSINESSES_BY_ID['3']
-    // A synergy Job owned, which would boost an owned Coffee shop
-    const owned = input({ jobsPurchased: { '2': 40 } })
-    const lent = input({ jobsPurchased: { '2': 40 }, loans: { jobs: {}, businesses: { '3': 2 } } })
-    expect(computeIncomeBreakdown(lent).business - computeIncomeBreakdown(owned).business).toBeCloseTo(2 * coffee.moneyPerSecond)
+  it('does what each event says', () => {
+    const planning = combineModifiers([favourEventSource(FAVOUR_EVENTS_BY_ID['planning'])])
+    expect(planning.sectorBusinessMult.property).toBe(2)
+    expect(combineModifiers([favourEventSource(FAVOUR_EVENTS_BY_ID['no-meetings'])]).clickMult).toBe(1.5)
+    expect(combineModifiers([favourEventSource(FAVOUR_EVENTS_BY_ID['strong-pound'])])).toMatchObject({ clickMult: 1.25, businessMult: 1.25 })
+    const interns = combineModifiers([favourEventSource(FAVOUR_EVENTS_BY_ID['coffee-machine'])])
+    const base = input({ autoClickers: 2 })
+    expect(computeIncomeBreakdown({ ...base, mods: interns }).interns).toBeCloseTo(2 * computeIncomeBreakdown(base).interns)
   })
 
-  it('reports what favours bring in, by the second', () => {
-    const lent = input({ autoClickers: 2, loans: { jobs: { '1': 1 }, businesses: { '1': 1 } } })
-    const f = favourIncome(lent, 0)
-    expect(f.businessPerSec).toBeCloseTo(BUSINESSES_BY_ID['1'].moneyPerSecond)
-    // Two Interns tap a second, and a lent rider is £1 of the £2 click pay
-    expect(f.clickPerSec).toBeCloseTo(2 * JOBS_BY_ID['1'].moneyPerClick)
-    expect(computeClickIncome(lent, false)).toBeCloseTo(BASE_CLICK_VALUE + JOBS_BY_ID['1'].moneyPerClick)
-    expect(favourIncome(input(), 0)).toEqual({ businessPerSec: 0, clickPerSec: 0 })
-  })
-
-  it('gives favours their own slice of the revenue mix, taken out of the others', () => {
-    const lent = input({ autoClickers: 2, businessesOwned: { '1': 10 }, loans: { jobs: { '1': 1 }, businesses: { '1': 1 } } })
-    const slices = computeSectorSlices(lent, 0)
+  it('gives favours their own slice of the revenue mix, taken from the rest in proportion', () => {
+    const slices = computeSectorSlices(input({ businessesOwned: { '1': 10 }, autoClickers: 2 }), 0, 'Allowance', 5)
     const favours = slices.find((s) => s.id === 'favours')!
     expect(favours.label).toBe('Favours')
-    const f = favourIncome(lent, 0)
+    expect(favours.perSec).toBe(5)
     const total = slices.reduce((a, s) => a + s.perSec, 0)
-    expect(favours.perSec).toBeCloseTo(f.businessPerSec + f.clickPerSec)
-    expect(total).toBeCloseTo(computeIncomeBreakdown(lent).business + computeIncomeBreakdown(lent).interns)
-    expect(computeSectorSlices(input({ businessesOwned: { '1': 10 } }), 0).some((s) => s.id === 'favours')).toBe(false)
+    const without = computeSectorSlices(input({ businessesOwned: { '1': 10 }, autoClickers: 2 }), 0)
+    expect(total).toBeCloseTo(without.reduce((a, s) => a + s.perSec, 0))
   })
 })
 
@@ -83,82 +69,84 @@ describe('calling in a favour', () => {
     setActivePinia(createPinia())
   })
 
-  // A family at gate 3 with two favours, the Jobs list stopping at a locked card
+  // A family with businesses in food, two favours, and no Interns
   function family() {
     const store = useGameStore()
     store.hydrateFromStorage(T0)
     store.closeIntro(T0)
-    store.gatesBeaten = 2
     store.perks.nepotism = 2
-    for (const j of JOBS) if (j.baseCost <= store.costCeiling) store.jobsPurchased[j.id] = 1
+    store.businessesOwned = { '1': 50, '3': 20 }
     store.tick(T0)
     return store
   }
 
-  it('lends the bottom card, even a locked one, without making it yours', () => {
+  it('offers three events that would help, and never one worth nothing', () => {
     const store = family()
-    const bottom = store.visibleJobs.at(-1)!
-    expect(bottom.mode).toBe('gated')
-    const id = bottom.item.id
-    const worth = store.netWorth
-    const pay = store.baseMoneyPerClick
-    expect(store.callInFavour('jobs', T0)).toBe(true)
-    expect(store.lentUnits.jobs[id]).toBe(1)
-    expect(store.baseMoneyPerClick).toBeGreaterThan(pay)
-    expect(store.netWorth).toBe(worth)
-    expect(store.jobsPurchased[id]).toBeUndefined()
-    // Still locked, and nothing past it revealed
-    expect(store.visibleJobs.at(-1)).toMatchObject({ mode: 'gated', item: { id } })
-    expect(store.favoursLeft).toBe(1)
+    expect(store.callInFavour(T0)).toBe(true)
+    expect(store.favourDialogOpen).toBe(true)
+    expect(store.favourOffer.length).toBeGreaterThan(0)
+    for (const o of store.favourOffer) expect(o.value).toBeGreaterThan(0)
+    // No Interns and no media: neither is ever offered
+    for (let i = 0; i < 30; i++) {
+      store.favours = { ...store.favours, offer: [] }
+      store.callInFavour(T0)
+      expect(store.favours.offer).not.toContain('coffee-machine')
+      expect(store.favours.offer).not.toContain('licence-fee')
+    }
   })
 
-  it('runs each favour on its own clock, then says where the help went', () => {
+  it('closing keeps the favour and the same offer', () => {
     const store = family()
-    const id = store.favourTarget('jobs')!
-    store.callInFavour('jobs', T0)
-    // Two minutes of play later, a second favour
+    store.callInFavour(T0)
+    const offer = [...store.favours.offer]
+    store.closeFavourDialog()
+    expect(store.favoursLeft).toBe(2)
+    store.callInFavour(T0)
+    expect(store.favours.offer).toEqual(offer)
+  })
+
+  it('runs each event on its own clock, then the news says how it ended', () => {
+    const store = family()
+    const before = store.moneyPerSecond
+    store.favours = { ...store.favours, offer: ['sunny-bank-holiday'] }
+    store.chooseFavour(0, T0)
+    expect(store.favourDialogOpen).toBe(false)
+    expect(store.favoursLeft).toBe(1)
+    expect(store.moneyPerSecond).toBeGreaterThan(before)
+    expect(store.favourPerSecond).toBeGreaterThan(0)
+    expect(store.offlinePerSecond).toBeCloseTo(before)
     let t = T0
     for (let i = 0; i < 120; i++) store.tick((t += 1000))
-    store.callInFavour('jobs', t)
-    expect(store.favourLoansFor('jobs', id)).toHaveLength(2)
+    store.favours = { ...store.favours, offer: ['strong-pound'] }
+    store.chooseFavour(0, t)
+    expect(store.activeFavours).toHaveLength(2)
     expect(store.favoursLeft).toBe(0)
-    expect(store.callInFavour('jobs', t)).toBe(false)
-    // At three minutes the first leaves; the second has another two to run
+    expect(store.callInFavour(t)).toBe(false)
     for (let i = 0; i < 61; i++) store.tick((t += 1000))
-    expect(store.favourLoansFor('jobs', id)).toHaveLength(1)
-    expect(store.favourLoansFor('jobs', id)[0]).toBeGreaterThan(110_000)
-    expect(store.favourDeparturesFor('jobs', id)).toHaveLength(1)
-    expect(FAVOUR_DEPARTURES).toContain(store.favourDeparturesFor('jobs', id)[0])
-    for (let i = 0; i < 125; i++) store.tick((t += 1000))
-    expect(store.lentUnits.jobs[id]).toBeUndefined()
-    const gone = store.favourDeparturesFor('jobs', id)
-    expect(gone).toHaveLength(2)
-    expect(new Set(gone).size).toBe(2)
+    expect(store.activeFavours).toHaveLength(1)
+    expect(store.activeFavours[0].leftMs).toBeGreaterThan(110_000)
+    const news = store.bannerMessage ?? ''
+    expect(news).toContain(FAVOUR_EVENTS_BY_ID['sunny-bank-holiday'].title)
+    expect(FAVOUR_ENDINGS.some((e) => news.includes(e))).toBe(true)
   })
 
-  it('needs the perk, and ends with the generation', () => {
+  it('needs the perk, survives a reload, and ends with the generation', () => {
     const store = family()
     store.perks.nepotism = 0
-    expect(store.callInFavour('jobs', T0)).toBe(false)
+    expect(store.callInFavour(T0)).toBe(false)
     store.perks.nepotism = 1
-    expect(store.callInFavour('businesses', T0)).toBe(true)
-    store.retire(T0 + 10)
-    expect(store.favours).toEqual({ used: 0, loans: [], departures: [] })
-  })
-
-  it('survives a reload, but time away earns nothing from it', () => {
-    const store = family()
-    const id = store.favourTarget('jobs')!
-    store.callInFavour('jobs', T0)
-    store.callInFavour('businesses', T0)
-    // A lent Business earns while you play, but not while you're away
-    expect(store.moneyPerSecond).toBeGreaterThan(store.offlinePerSecond)
+    store.favours = { ...store.favours, offer: ['planning'] }
+    store.chooseFavour(0, T0)
     store.flushSave(T0 + 10)
     setActivePinia(createPinia())
     const again = useGameStore()
     again.hydrateFromStorage(T0 + 20)
-    expect(again.lentUnits.jobs[id]).toBe(1)
+    expect(again.activeFavours.map((f) => f.id)).toEqual(['planning'])
     expect(again.favoursLeft).toBe(0)
+    again.gatesBeaten = 1
+    again.addDebugMoney(1e9, T0 + 30)
+    again.retire(T0 + 40)
+    expect(again.favours).toEqual({ used: 0, active: [], offer: [] })
   })
 })
 
@@ -167,38 +155,35 @@ describe('favours on screen', () => {
     localStorage.clear()
   })
 
-  it('puts the button on the bottom card, lends it, and shows the help on the desk', async () => {
+  it('calls one in from the boost strip, offers three in a dialog, and shows it running', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
-    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
     const store = useGameStore()
     store.closeIntro(T0)
     if (store.tradingDeskCollapsed) store.toggleTradingDesk()
-    store.gatesBeaten = 2
     store.perks.nepotism = 1
-    for (const j of JOBS) if (j.baseCost <= store.costCeiling) store.jobsPurchased[j.id] = 1
-    store.businessesOwned = { '1': 5 }
+    store.businessesOwned = { '1': 50, '3': 20, '5': 10 }
     await wrapper.vm.$nextTick()
 
-    // One favour: no count on the button, and only on the bottom cards
-    const buttons = wrapper.findAll('[data-testid="call-in-favour"]')
-    expect(buttons.length).toBe(2)
-    expect(buttons[0].text()).toBe('Call in a favour')
+    // One favour: no count on the button
+    const call = wrapper.find('[data-testid="call-in-favour"]')
+    expect(call.text()).toBe('Call in a favour')
+    await call.trigger('click')
+    const modal = wrapper.find('[data-testid="favour-modal"]')
+    expect(modal.attributes('aria-modal')).toBe('true')
+    const options = modal.findAll('[data-testid="favour-option"]')
+    expect(options.length).toBe(3)
+    const title = store.favourOffer[0].def.title
+    await options[0].find('button').trigger('click')
+    expect(wrapper.find('[data-testid="favour-modal"]').exists()).toBe(false)
 
-    const id = store.favourTarget('businesses')!
     let t = Date.now()
-    store.callInFavour('businesses', t)
     for (let i = 0; i < 8; i++) store.tick((t += 500))
     await wrapper.vm.$nextTick()
-
-    const lent = wrapper.find(`[data-item-key="businesses-${id}"]`)
-    expect(lent.text()).toContain(`${BUSINESSES_BY_ID[id].label} (1)`)
-    expect(lent.find('[data-testid="favour-help"]').text()).toMatch(/^Lending you a hand for 2:5\d$/)
-    // The favour is spent, so no more buttons anywhere
-    expect(wrapper.findAll('[data-testid="call-in-favour"]')).toHaveLength(0)
-
+    expect(wrapper.find('[data-testid="favour-running"]').text()).toMatch(new RegExp(`^${title} · 2:5\\d$`))
+    expect(wrapper.find('[data-testid="call-in-favour"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="favour-band"]').exists()).toBe(true)
-    expect(wrapper.find('.scn-Desk').text()).toContain('From favours')
     expect(wrapper.find('.scn-SectorStrip').text()).toContain('Favours')
     wrapper.unmount()
   })

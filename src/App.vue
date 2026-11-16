@@ -30,6 +30,7 @@
       <HeirDraftModal />
       <AbdicationModal />
       <HireModal />
+      <FavourModal />
       <SettingsModal @reset="handleHardReset" />
       <DisgraceModal />
 
@@ -131,6 +132,7 @@ import MarketEvent from './components/MarketEvent.vue'
 import NewsTicker from './components/NewsTicker.vue'
 import AbdicationModal from './components/AbdicationModal.vue'
 import HireModal from './components/HireModal.vue'
+import FavourModal from './components/FavourModal.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import OverviewBar from './components/OverviewBar.vue'
 import TradingDesk from './components/TradingDesk.vue'

@@ -9,7 +9,7 @@ import type { AdvisorInstance } from './office'
 import { MAX_TREE_ENTRIES, currentBloodlineRecords, readGenerationRecord, type GenerationRecord } from './family'
 import type { OfficeState } from '../stores/modules/office'
 import { ROOMS, type RoomId } from '../data/rooms'
-import { emptyFavours, type FavourKind, type FavourState } from '../data/favours'
+import { FAVOUR_EVENTS_BY_ID, emptyFavours, type FavourState } from '../data/favours'
 
 export const STORAGE_KEY = 'state'
 // Saves from any earlier schema reset to a new game.
@@ -124,27 +124,19 @@ function readFavours(raw: unknown): FavourState {
   const state = emptyFavours()
   if (!raw || typeof raw !== 'object') return state
   const r = raw as Record<string, unknown>
-  const isKind = (k: unknown): k is FavourKind => k === 'jobs' || k === 'businesses'
   state.used = Math.floor(readNonNegativeNumber(r.used, 0))
-  if (Array.isArray(r.loans)) {
-    for (const l of r.loans) {
-      if (!l || typeof l !== 'object') continue
-      const o = l as Record<string, unknown>
-      if (isKind(o.kind) && typeof o.id === 'string' && typeof o.untilMs === 'number' && Number.isFinite(o.untilMs)) {
-        state.loans.push({ kind: o.kind, id: o.id, untilMs: o.untilMs })
+  if (Array.isArray(r.active)) {
+    for (const e of r.active) {
+      if (!e || typeof e !== 'object') continue
+      const o = e as Record<string, unknown>
+      if (typeof o.id === 'string' && FAVOUR_EVENTS_BY_ID[o.id] && typeof o.untilMs === 'number' && Number.isFinite(o.untilMs)) {
+        state.active.push({ id: o.id, untilMs: o.untilMs })
       }
     }
   }
-  if (Array.isArray(r.departures)) {
-    for (const d of r.departures) {
-      if (!d || typeof d !== 'object') continue
-      const o = d as Record<string, unknown>
-      if (isKind(o.kind) && typeof o.id === 'string' && typeof o.text === 'string') {
-        state.departures.push({ kind: o.kind, id: o.id, text: o.text })
-      }
-    }
+  if (Array.isArray(r.offer)) {
+    state.offer = r.offer.filter((id): id is string => typeof id === 'string' && !!FAVOUR_EVENTS_BY_ID[id]).slice(0, 5)
   }
-  state.used = Math.max(state.used, state.loans.length + state.departures.length)
   return state
 }
 

@@ -18,6 +18,18 @@
         <span v-if="store.isAutoBuyFrozen" class="scn-BuffPill scn-BuffPill-freeze">
           Auto paused ({{ store.autoBuyFreezeRemainingSec }}s)
         </span>
+        <span v-for="(f, i) in store.activeFavours" :key="`favour-${i}`" class="scn-BuffPill scn-BuffPill-favour" data-testid="favour-running">
+          {{ f.title }} · {{ formatClock(f.leftMs) }}
+        </span>
+        <button
+          v-if="store.favoursLeft > 0"
+          type="button"
+          class="scn-BuffPill scn-FavourCall"
+          data-testid="call-in-favour"
+          @click="store.callInFavour()"
+        >
+          {{ store.favourButtonLabel }}
+        </button>
       </div>
 
       <button
@@ -119,7 +131,7 @@
 import { press } from '../utils/press'
 import { computed, ref } from 'vue'
 import { useGameStore } from '../stores/game'
-import { formatCurrency, formatMultiplier } from '../utils/format'
+import { formatClock, formatCurrency, formatMultiplier } from '../utils/format'
 import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { peerageRank } from '../engine/peerage'
 import { legacyMultiplier as calcLegacyMultiplier } from '../engine/economy'

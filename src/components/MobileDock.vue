@@ -9,6 +9,16 @@
       <span v-if="store.activeBusinessBuff" class="mob-Buff">{{ store.activeBusinessBuff.label }} x{{ store.activeBusinessBuff.mult }} {{ store.activeBusinessBuff.remainingSec }}s</span>
       <span v-if="store.incomePenalty" class="mob-Penalty">Income x{{ store.incomePenalty.mult }} {{ store.incomePenalty.remainingSec }}s</span>
       <span v-if="store.isAutoBuyFrozen" class="mob-Penalty">Automation frozen {{ store.autoBuyFreezeRemainingSec }}s</span>
+      <span v-for="(f, i) in store.activeFavours" :key="`favour-${i}`" class="mob-Buff" data-testid="dock-favour-running">{{ f.title }} {{ formatClock(f.leftMs) }}</span>
+      <button
+        v-if="store.favoursLeft > 0"
+        type="button"
+        class="scn-BuffPill scn-FavourCall"
+        data-testid="dock-call-in-favour"
+        @click="store.callInFavour()"
+      >
+        {{ store.favourButtonLabel }}
+      </button>
     </div>
 
     <div v-if="boss" class="mob-Gate" :class="`mob-Gate-${boss.status}`" data-testid="dock-gate">
@@ -109,7 +119,7 @@ import type { ItemKind } from '../data/items'
 import { gateThreshold } from '../engine/bosses'
 import ElevateModal from './ElevateModal.vue'
 import { useGameStore } from '../stores/game'
-import { formatCurrency } from '../utils/format'
+import { formatClock, formatCurrency } from '../utils/format'
 
 export type PhoneTab = 'jobs' | 'businesses' | 'family'
 

@@ -56,7 +56,7 @@ test('a new player can reach their first business by touch', async ({ page }) =>
   // screen, and scrolling should be rare.
   // Only the list on the open tab is visible; the other stays in the page
   const buyButtons = page
-    .locator('[data-item-key] button.scn-Action:not(:disabled)', { hasText: /^(Get hired|Get Businessed)/ })
+    .locator('[data-item-key] button.scn-Action:not(:disabled)', { hasText: /^(Clock in|Acquire)/ })
     .filter({ visible: true })
   const tabs = [page.getByTestId('tab-jobs'), page.getByTestId('tab-businesses')]
   for (const tab of tabs) await expectTappable(tab, 'Section tab')

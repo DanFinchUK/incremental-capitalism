@@ -299,7 +299,7 @@ const buyPress = press(() => {
 })
 
 const buyButtonLabel = computed(() => {
-  const verb = props.kind === 'jobs' ? 'Get hired' : 'Get Businessed'
+  const verb = props.kind === 'jobs' ? 'Clock in' : 'Acquire'
   return quote.value.count > 1 ? `${verb} x${quote.value.count}` : verb
 })
 

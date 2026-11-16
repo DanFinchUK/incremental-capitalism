@@ -46,7 +46,7 @@ describe('App UI integration', () => {
     expect(x10Btn).toBeDefined()
     await x10Btn!.trigger('click')
     expect(store.bulkBuyMode).toBe(10)
-    expect(wrapper.text()).toContain('Get hired x10')
+    expect(wrapper.text()).toContain('Clock in x10')
 
     const networkBtn = wrapper.find('[data-testid="toggle-legacy-shop"]')
     await networkBtn.trigger('click')
@@ -180,7 +180,7 @@ describe('App UI integration', () => {
     expect(pauseBtn.text()).toContain('Automation: On')
     await pauseBtn.trigger('click')
     expect(pauseBtn.text()).toContain('Automation: Paused')
-    expect(wrapper.find('[data-item-key="businesses-1"]').text()).toContain('Get Businessed')
+    expect(wrapper.find('[data-item-key="businesses-1"]').text()).toContain('Acquire')
     wrapper.unmount()
   })
 

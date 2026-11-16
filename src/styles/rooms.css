@@ -43,6 +43,7 @@ body {
 /* Saloon bar: brass edging */
 :root[data-ornament='brass'] .lyt-Header,
 :root[data-ornament='brass'] .scn-Card,
+:root[data-ornament='brass'] .scn-Desk,
 :root[data-ornament='brass'] .scn-Modal {
   border-color: var(--color-gold);
 }
@@ -64,14 +65,16 @@ body {
 /* Smoking lounge: leather grain, with stitching just inside the edge */
 :root[data-ornament='stitched'] .lyt-Header,
 :root[data-ornament='stitched'] .scn-Modal,
-:root[data-ornament='stitched'] .scn-Card {
+:root[data-ornament='stitched'] .scn-Card,
+:root[data-ornament='stitched'] .scn-Desk {
   position: relative;
   background-image: var(--room-leather);
 }
 
 :root[data-ornament='stitched'] .lyt-Header::after,
 :root[data-ornament='stitched'] .scn-Modal::after,
-:root[data-ornament='stitched'] .scn-Card::after {
+:root[data-ornament='stitched'] .scn-Card::after,
+:root[data-ornament='stitched'] .scn-Desk::after {
   content: '';
   position: absolute;
   inset: 4px;
@@ -83,7 +86,8 @@ body {
 
 /* Alpine chalet: nothing added, softer edges and quiet capitals */
 :root[data-ornament='clean'] .lyt-Header,
-:root[data-ornament='clean'] .scn-Card {
+:root[data-ornament='clean'] .scn-Card,
+:root[data-ornament='clean'] .scn-Desk {
   border-color: var(--color-border-subtle);
 }
 
@@ -113,7 +117,8 @@ body {
   background: var(--room-corners), var(--color-card);
 }
 
-:root[data-ornament='gilt'] .scn-Card {
+:root[data-ornament='gilt'] .scn-Card,
+:root[data-ornament='gilt'] .scn-Desk {
   border-color: var(--color-gold);
 }
 
@@ -127,6 +132,7 @@ body {
   border-color: var(--color-gold);
 }
 
-:root[data-ornament='scaled'] .scn-Card {
+:root[data-ornament='scaled'] .scn-Card,
+:root[data-ornament='scaled'] .scn-Desk {
   border-top: 2px solid var(--color-gold);
 }

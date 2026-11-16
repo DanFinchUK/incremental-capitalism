@@ -192,9 +192,9 @@ describe('App UI integration', () => {
     store.gatesBeaten = 1 // beating gate 1 pays +1 Legacy
     await wrapper.vm.$nextTick()
 
-    const retireTrigger = wrapper.findAll('button').find((b) => b.text().includes('Retire for +1'))
-    expect(retireTrigger).toBeDefined()
-    await retireTrigger!.trigger('click')
+    const retireTrigger = wrapper.find('[data-testid="hero-retire"]')
+    expect(retireTrigger.text()).toContain('+1 Legacy')
+    await retireTrigger.trigger('click')
 
     const modal = wrapper.find('[data-testid="retire-modal"]')
     expect(modal.exists()).toBe(true)

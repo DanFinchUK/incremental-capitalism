@@ -63,17 +63,19 @@ describe('boss and splits UI', () => {
     wrapper.unmount()
   })
 
-  it('retire button pays by depth and is disabled before the first gate', async () => {
+  it('retire box pays by depth and only becomes a button after the first gate', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
     store.closeIntro()
     await wrapper.vm.$nextTick()
-    const retire = () => wrapper.findAll('button').find((b) => b.text().includes('Retire for'))!
-    expect(retire().attributes('disabled')).toBeDefined()
+    const retire = () => wrapper.find('[data-testid="hero-retire"]')
+    expect(retire().exists()).toBe(false)
+    expect(wrapper.find('[data-testid="hero-legacy"]').text()).toContain('Retire at Gate 1')
     store.gatesBeaten = 3
     await wrapper.vm.$nextTick()
-    expect(retire().text()).toContain(`Retire for +${legacyForRetiring(3, 0)}`)
-    expect(retire().attributes('disabled')).toBeUndefined()
+    expect(retire().element.tagName).toBe('BUTTON')
+    expect(retire().text()).toContain(`+${legacyForRetiring(3, 0)} Legacy`)
+    expect(retire().classes()).toContain('scn-RetireBox-pays')
     wrapper.unmount()
   })
 

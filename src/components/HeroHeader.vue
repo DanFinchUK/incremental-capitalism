@@ -76,14 +76,23 @@
             {{ formatCurrency(store.moneyPerSecond) }}/s<template v-if="!store.noTap"> · {{ formatCurrency(store.moneyPerClick) }}/click</template>
           </div>
         </div>
-        <div class="scn-StatBox">
+        <!-- Retiring lives here on desktop: the box is the button once it is allowed -->
+        <button
+          v-if="store.canRetire"
+          type="button"
+          class="scn-StatBox scn-RetireBox"
+          :class="{ 'scn-RetireBox-pays': store.legacyOnRetire > 0 }"
+          data-testid="hero-retire"
+          @click="emit('retire')"
+        >
+          <div class="scn-DataTitle">Retire</div>
+          <div class="scn-DataValue">+{{ store.legacyOnRetire }} Legacy</div>
+          <div class="scn-StatHint">You hold {{ legacyLine }}</div>
+        </button>
+        <div v-else class="scn-StatBox" data-testid="hero-legacy">
           <div class="scn-DataTitle">Legacy &amp; Interns</div>
-          <div class="scn-DataValue">
-            {{ store.legacyPoints }} (x{{ legacyMultLabel }}) · {{ store.modifiers.internsDisabled ? 'Interns barred' : `${store.autoClickers} intern${store.autoClickers === 1 ? '' : 's'}` }}
-          </div>
-          <div class="scn-StatHint">
-            Retiring now pays +{{ store.legacyOnRetire }} Legacy
-          </div>
+          <div class="scn-DataValue">{{ legacyLine }}</div>
+          <div class="scn-StatHint">{{ retireBlockedHint }}</div>
         </div>
       </div>
     </div>
@@ -100,6 +109,7 @@ import { peerageRank } from '../engine/peerage'
 
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
+  (e: 'retire'): void
 }>()
 
 // On a phone the dock carries Get paid and the headline numbers
@@ -112,6 +122,17 @@ const currentInherit = computed(() => (store.heir.inheritId ? INHERITED_BY_ID[st
 const payButtonRef = ref<HTMLButtonElement | null>(null)
 
 const legacyMultLabel = computed(() => formatMultiplier(store.legacyMultiplier))
+const legacyLine = computed(() => {
+  const interns = store.modifiers.internsDisabled
+    ? 'Interns barred'
+    : `${store.autoClickers} intern${store.autoClickers === 1 ? '' : 's'}`
+  return `${store.legacyPoints} (x${legacyMultLabel.value}) · ${interns}`
+})
+const retireBlockedHint = computed(() =>
+  store.gatesBeaten < store.minRetireGate
+    ? `Retire at Gate ${store.minRetireGate}`
+    : `Retiring now pays +${store.legacyOnRetire} Legacy`
+)
 
 defineExpose({ payButtonRef })
 </script>

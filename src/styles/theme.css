@@ -429,6 +429,40 @@
   border-radius: var(--radius);
 }
 
+/* The Legacy box once retiring is allowed: a button that still reads as a stat */
+.scn-RetireBox {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.scn-RetireBox:hover {
+  border-color: var(--color-accent);
+}
+
+.scn-RetireBox:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.scn-RetireBox-pays {
+  background: var(--color-perk-pill-bg);
+  border-color: var(--color-accent);
+}
+
+.scn-RetireBox-pays .scn-DataTitle {
+  color: var(--color-accent-text);
+  font-weight: 700;
+}
+
+.scn-RetireBox-pays:hover {
+  background: var(--color-card);
+}
+
 .scn-DataTitle {
   font-size: 13px;
   color: var(--color-muted);
@@ -1036,15 +1070,15 @@
   border-color: var(--color-danger-hover);
 }
 
-/* City Trading Desk (Terminal Panel) */
+/* City Trading Desk: dressed in the room's colours, like the cards */
 .scn-Desk {
   margin-bottom: 24px;
-  background: #0f141c;
-  color: #e2e8f0;
-  border: 1px solid #2a3444;
+  background: var(--color-card);
+  color: var(--color-body);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .scn-DeskTopBar {
@@ -1054,8 +1088,8 @@
   justify-content: space-between;
   gap: 8px 16px;
   padding: 8px 14px;
-  background: #161d28;
-  border-bottom: 1px solid #263142;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
   font-size: 13px;
 }
 
@@ -1070,25 +1104,24 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 6px #22c55e;
+  background: var(--color-green-bottom);
 }
 
 .scn-DeskBrand {
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: #f8fafc;
+  color: var(--color-body);
 }
 
 .scn-DeskSub {
-  color: #94a3b8;
+  color: var(--color-muted);
   font-size: 12px;
 }
 
 .scn-DeskToggle {
   background: transparent;
-  border: 1px solid #334155;
-  color: #cbd5e1;
+  border: 1px solid var(--color-border);
+  color: var(--color-body-secondary);
   padding: 3px 8px;
   border-radius: 2px;
   font-size: 12px;
@@ -1097,8 +1130,8 @@
 }
 
 .scn-DeskToggle:hover {
-  background: #1e293b;
-  color: #ffffff;
+  background: var(--color-btn-outline-hover);
+  color: var(--color-body);
 }
 
 .scn-DeskBody {
@@ -1121,8 +1154,8 @@
 }
 
 .scn-DeskMonitor {
-  background: #0b0f16;
-  border: 1px solid #232d3d;
+  background: var(--color-card-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius);
   padding: 10px 12px 8px;
   display: flex;
@@ -1141,8 +1174,8 @@
 .scn-TickerSym {
   font-size: 13px;
   font-weight: 700;
-  color: #f8fafc;
-  background: #1e293b;
+  color: var(--color-perk-pill-fg);
+  background: var(--color-perk-pill-bg);
   padding: 1px 6px;
   border-radius: 2px;
   margin-right: 8px;
@@ -1150,7 +1183,7 @@
 
 .scn-MonitorHint {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--color-muted);
 }
 
 .scn-MonitorQuote {
@@ -1162,12 +1195,12 @@
 .scn-QuoteVal {
   font-size: 15px;
   font-weight: 700;
-  color: #cdeb8e;
+  color: var(--color-accent-text);
 }
 
 .scn-QuoteSub {
   font-size: 12px;
-  color: #cbd5e1;
+  color: var(--color-body-secondary);
 }
 
 .scn-DeltaBadge {
@@ -1178,13 +1211,13 @@
 }
 
 .scn-DeltaBadge-up {
-  background: rgba(34, 197, 94, 0.18);
-  color: #4ade80;
+  background: var(--color-perk-pill-bg);
+  color: var(--color-green-text);
 }
 
 .scn-DeltaBadge-down {
-  background: rgba(239, 68, 68, 0.18);
-  color: #f87171;
+  background: var(--color-danger-bg);
+  color: var(--color-danger-fg);
 }
 
 .scn-ChartSvg {
@@ -1195,36 +1228,40 @@
 }
 
 .scn-GridLine {
-  stroke: #1c2533;
+  stroke: var(--color-border-subtle);
   stroke-width: 1;
 }
 
 .scn-FlowLine {
-  stroke: #a5c956;
+  stroke: var(--color-accent);
   stroke-width: 2;
   stroke-linejoin: round;
 }
 
+.scn-FlowStop {
+  stop-color: var(--color-accent);
+}
+
 .scn-PassiveLine {
-  stroke: #64748b;
+  stroke: var(--color-muted);
   stroke-width: 1.4;
   stroke-dasharray: 4 4;
 }
 
 .scn-MarkerLine {
-  stroke: #f59e0b;
+  stroke: var(--color-gold);
   stroke-width: 1;
   stroke-dasharray: 2 3;
 }
 
 .scn-MarkerLabel {
-  fill: #fbbf24;
+  fill: var(--color-gold-fg);
   font-size: 10px;
   font-weight: 700;
 }
 
 .scn-Crosshair {
-  stroke: #94a3b8;
+  stroke: var(--color-muted);
   stroke-width: 1;
   stroke-dasharray: 2 2;
 }
@@ -1235,7 +1272,7 @@
   justify-content: space-between;
   gap: 8px;
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--color-muted);
 }
 
 .scn-LegendInline {
@@ -1251,11 +1288,11 @@
 }
 
 .scn-Swatch-solid {
-  border-top: 2px solid #a5c956;
+  border-top: 2px solid var(--color-accent);
 }
 
 .scn-Swatch-dashed {
-  border-top: 2px dashed #94a3b8;
+  border-top: 2px dashed var(--color-muted);
   margin-left: 6px;
 }
 
@@ -1276,8 +1313,8 @@
 }
 
 .scn-SectorStrip {
-  background: #0b0f16;
-  border: 1px solid #232d3d;
+  background: var(--color-card-subtle);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius);
   padding: 9px 12px;
   display: flex;
@@ -1289,7 +1326,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: #94a3b8;
+  color: var(--color-muted);
 }
 
 .scn-SectorBar {
@@ -1298,7 +1335,7 @@
   height: 10px;
   border-radius: 2px;
   overflow: hidden;
-  background: #1e293b;
+  background: var(--color-track);
 }
 
 .scn-SectorSeg {
@@ -1314,7 +1351,7 @@
   line-height: 18px;
   /* Holds one line open before any income, so nothing jumps when it arrives */
   min-height: 18px;
-  color: #cbd5e1;
+  color: var(--color-body-secondary);
 }
 
 .scn-SectorItem {

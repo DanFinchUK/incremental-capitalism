@@ -31,11 +31,11 @@
       <SettingsModal @reset="handleHardReset" />
       <DisgraceModal />
 
-      <OverviewBar v-if="!phone || phoneTab === 'family'" @retire="handleRetire" />
+      <OverviewBar v-if="!phone || phoneTab === 'family'" :phone="phone" @retire="handleRetire" />
 
       <div class="lyt-Cockpit">
         <aside v-if="!phone || phoneTab === 'family'" class="lyt-CommandPane" aria-label="Command deck">
-          <HeroHeader ref="heroRef" :phone="phone" @paid="handleManualClick" />
+          <HeroHeader ref="heroRef" :phone="phone" @paid="handleManualClick" @retire="handleRetire" />
           <BossCard />
           <FamilyOffice />
           <SplitsPanel />

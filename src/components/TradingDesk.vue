@@ -47,8 +47,8 @@
           >
             <defs>
               <linearGradient id="ic-flow-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#a5c956" stop-opacity="0.42" />
-                <stop offset="100%" stop-color="#a5c956" stop-opacity="0.02" />
+                <stop offset="0%" class="scn-FlowStop" stop-opacity="0.42" />
+                <stop offset="100%" class="scn-FlowStop" stop-opacity="0.02" />
               </linearGradient>
             </defs>
 

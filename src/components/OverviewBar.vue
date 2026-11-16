@@ -32,7 +32,9 @@
         <span class="scn-BadgeCount">{{ networkBadgeText }}</span>
       </button>
 
+      <!-- Wider, the command deck's Retire box does this -->
       <button
+        v-if="phone"
         type="button"
         class="scn-Action"
         :disabled="!store.canRetire"
@@ -75,6 +77,8 @@ import { formatCurrency } from '../utils/format'
 const emit = defineEmits<{
   (e: 'retire'): void
 }>()
+
+defineProps<{ phone?: boolean }>()
 
 const store = useGameStore()
 const elevateOpen = ref(false)

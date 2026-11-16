@@ -49,10 +49,11 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     wrapper.unmount()
   })
 
-  it('shows what retiring would pay inside Lifetime earnings', () => {
+  it('says which gate opens retiring before it is allowed', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     expect(wrapper.find('.scn-Help').exists()).toBe(false)
-    expect(wrapper.text()).toContain('Retiring now pays +0 Legacy')
+    expect(wrapper.find('[data-testid="hero-legacy"]').text()).toContain('Retire at Gate 1')
+    expect(wrapper.find('[data-testid="hero-retire"]').exists()).toBe(false)
     wrapper.unmount()
   })
 })

@@ -1,7 +1,6 @@
 # Buyers and favours: automation redesign
 
-Status: design agreed in conversation, not built. Open questions are listed at
-the end. A clickable sketch of the favour button:
+Status: design agreed; being built in the order below. A clickable sketch of the favour button:
 https://claude.ai/artifact/KZLiWJcfXDNZxE31jRHPAu
 
 ## Why
@@ -212,15 +211,27 @@ income to things that last:
 dialog's label, its copy, and any story text that mentions the headhunter
 (including the example in CLAUDE.md).
 
-## Open questions
+## Decided late
 
-1. **Which advisors become buyers.** Today's Estate Manager, Head Butler and
-   Proxy are one automation family; candidate: they become Acquisitions, and a
-   new family of three becomes Recruiters.
-2. **The per-title Legacy step,** for example +15%, and how much of the flat
-   income per title survives.
-3. **New perks** (later, not this phase): an heir draft re-roll, scandal
-   protection, the trust fund, synergies.
+- **Buyer advisors.** Estate Manager, Head Butler and Proxy with Power of
+  Attorney become the Acquisitions family (common, rare, legendary). A new
+  family of three becomes the Recruiters.
+- **Per-title Legacy step.** Start at +15% a title and tune with the sim.
+
+## Later (not this phase)
+
+- **New perks** for areas that have none: an heir draft re-roll, scandal
+  protection, the trust fund, synergies.
+
+## Build order
+
+1. Favours (Old School Tie), with the trading desk's favour band, revenue
+   slice and worded chart pins.
+2. PAs and titles: promotion, honours, succession, a PA chair per title, the
+   per-title Legacy step.
+3. Buyers, Introductions, the list-heading controls and the candle markers.
+
+Each is pushed once `npm test`, `npm run typecheck` and `npm run sim` pass.
 
 ## Testing
 

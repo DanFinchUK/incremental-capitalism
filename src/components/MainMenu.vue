@@ -10,7 +10,7 @@
     <div class="scn-Modal scn-Menu">
       <div class="scn-MenuTop">
         <h1 id="menu-title">Incremental Capitalism</h1>
-        <p class="scn-StatHint">A dynasty in nine gates and five titles</p>
+        <p class="scn-StatHint">From a zero-hours rota to a dukedom</p>
       </div>
 
       <template v-if="!confirming">

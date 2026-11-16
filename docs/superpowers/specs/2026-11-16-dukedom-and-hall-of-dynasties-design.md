@@ -23,6 +23,10 @@ so the game has something to replay for.
 - No stakes (difficulty tiers) yet. See Later.
 - The victory and hiring screens hold their buttons back only when Get paid was
   tapped just before (built 2026-11-16).
+- The record times active play, so time away doesn't count.
+- No "not yet" on the finale: the dynasty is over, and the only way on is a
+  new one.
+- The game opens on a main menu instead of dropping straight into play.
 
 ## The finale
 
@@ -34,15 +38,23 @@ Elevating to Duke opens the finale in place of the usual elevation. It has:
   fastest line.
 - Everyone in the dynasty, line by line, under the rank that line held: the
   commoners, then the Barons, Viscounts, Earls, Marquesses and the Duke. Each
-  person shows their name, traits, deepest gate, time in charge, the staff who
-  served them, and "created Baron" (and so on) where they took the family up a
-  rank. The PAs who stayed through generations show with the honours they
-  earned.
-- Two buttons: found a new dynasty, or not yet. Not yet closes the finale and
-  leaves the Duke's family to look around; the family tree reopens it.
+  person shows their name, traits, deepest gate, time in charge and the staff
+  who served them. Whoever took the family up a rank heads that rank's line,
+  marked "Became Baron" (and so on), so the Duke closes the roll. The PAs who
+  stayed through generations show with the honours they earned.
+- One button: found a new dynasty, with a confirmation step and a way back.
 
 Founding a new dynasty asks for confirmation, since the save is replaced, then
-files the record in the Hall and starts a new family with a new surname.
+files the record in the Hall and starts a new family with a new surname. A
+finished dynasty's save stays on the finale until then.
+
+## The main menu
+
+The game opens on a menu: Continue (the current dynasty's name, generation and
+time so far), Found a new dynasty, Hall of Dynasties, How to play and
+Settings. Founding a new dynasty while one is under way asks first, since it
+abandons the current one; an abandoned dynasty doesn't go in the Hall. The
+first ever visit goes straight from the menu into the intro, as now.
 
 ## The Hall of Dynasties
 
@@ -64,9 +76,17 @@ person:
 The Hall is stored beside the save under its own key, so replacing the save
 never loses it.
 
+## Starting fights in late lines
+
+Pressing Take it on nine times a line is the slow part, not finding it. A boss
+the family has long outgrown should fall without a fight: once the shortlist
+is dealt with, a gate whose condition the family would meet many times over in
+its first second is beaten on its own, with the usual banner. The check uses
+income without tapping and the boss's twist, and needs a wide margin, since a
+lost fight ends the line. Anything closer is fought as now.
+
 ## Questions
 
-- Time measure: active play time (offline time excluded) is the proposal.
 - Variation between dynasties: scenarios (named rule changes such as no
   automation, no tapping, no family office) or origins (a strength and a
   weakness each). Scenarios were the latest idea; nothing is decided. Either
@@ -78,6 +98,7 @@ never loses it.
 - Stakes: harder settings unlocked by finishing, stacking, named as policy
   (death duties, windfall tax, mansion tax, a wealth tax). Parked by Dan on
   2026-11-16 to revisit once dynasties and their variations exist.
-- Starting fights quickly in late lines: Take it on where Get paid or the
-  allowance sits when a boss is ready, or the next gate offered from the win
-  banner. Waiting on which part was slow.
+- Elevation keeps the same person as head: whoever becomes Baron goes on
+  playing as the Baron, instead of handing straight to an heir. The finale
+  already groups people this way. Raised by Dan on 2026-11-16 as possibly too
+  big a change for now.

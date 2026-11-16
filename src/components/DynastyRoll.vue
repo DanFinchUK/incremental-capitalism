@@ -13,7 +13,7 @@
             Became {{ peerageRank(p.became) }}
           </span>
         </div>
-        <span class="scn-RollStats">Gate {{ p.record.deepestGate }} · {{ formatDuration(p.record.activeMs / 1000) }}</span>
+        <span class="scn-RollStats">Class {{ p.record.deepestGate }} · {{ formatDuration(p.record.activeMs / 1000) }}</span>
         <span class="scn-RollTraits">{{ traits(p.record) }}</span>
         <div v-if="staff(p.record).length > 0" class="scn-RollStaff">
           <span v-for="(s, j) in staff(p.record)" :key="j" :class="{ 'scn-RollPA': s.pa }">{{ s.name }}</span>

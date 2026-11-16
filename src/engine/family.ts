@@ -140,9 +140,9 @@ export function describeModifiers(m: Modifiers): TraitPill[] {
   if (Math.abs(m.legacyScale - 1) > 0.01) pills.push({ label: `Legacy value ${fmtMult(m.legacyScale)}`, negative: m.legacyScale < 1 })
   if (Math.abs(m.trustFundMult - 1) > 0.01) pills.push({ label: `Trust fund ${fmtMult(m.trustFundMult)}`, negative: m.trustFundMult < 1 })
   if (m.internsDisabled) pills.push({ label: 'Interns barred', negative: true })
-  if (Math.abs(m.bossTimeMult - 1) > 0.01) pills.push({ label: `Boss time ${fmtSignedPct(m.bossTimeMult - 1)}`, negative: m.bossTimeMult < 1 })
+  if (Math.abs(m.bossTimeMult - 1) > 0.01) pills.push({ label: `Ordeal time ${fmtSignedPct(m.bossTimeMult - 1)}`, negative: m.bossTimeMult < 1 })
   if (Math.abs(m.twistStrength - 1) > 0.01) {
-    pills.push({ label: `Boss twists ${fmtSignedPct(m.twistStrength - 1)}`, negative: m.twistStrength > 1 })
+    pills.push({ label: `Ordeal twists ${fmtSignedPct(m.twistStrength - 1)}`, negative: m.twistStrength > 1 })
   }
   if (Math.abs(m.eventIntervalMult - 1) > 0.01) {
     pills.push({ label: `Events ${fmtMult(1 / m.eventIntervalMult)} rate`, negative: m.eventIntervalMult > 1 })

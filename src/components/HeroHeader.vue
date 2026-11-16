@@ -152,7 +152,7 @@ const retireMultLabel = computed(() =>
 )
 // Before the gate that opens retiring, or while an heir draft or disgrace is pending
 const retireBlockedTitle = computed(() =>
-  store.gatesBeaten < store.minRetireGate ? `Retire at Gate ${store.minRetireGate}` : 'Legacy'
+  store.gatesBeaten < store.minRetireGate ? `Retire at class ${store.minRetireGate}` : 'Legacy'
 )
 
 defineExpose({ payButtonRef })

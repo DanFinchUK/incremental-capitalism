@@ -330,7 +330,7 @@ export const useGameStore = defineStore('game', () => {
       const prevBestKillMs = bestKillMs.value[gate] ?? null
       lastVictory.value = { gate, killMs, splitMs: activeGenerationMs.value, prevBestKillMs, firstTime }
       if (!firstTime) {
-        const title = bossForGate(gate)?.title ?? `Gate ${gate}`
+        const title = bossForGate(gate)?.title ?? `Class ${gate}`
         const best = prevBestKillMs !== null ? ` (best ${formatClock(prevBestKillMs)})` : ''
         announce(
           outgrown
@@ -353,7 +353,7 @@ export const useGameStore = defineStore('game', () => {
         heirName: heir.value.name,
         generation: generation.value,
         gate,
-        bossTitle: def?.title ?? `Gate ${gate}`,
+        bossTitle: def?.title ?? `Class ${gate}`,
         disgraceText: def?.disgraceText ?? 'The family name never recovers, and the line is wound up.',
         deepestGate: Math.max(gatesBeaten.value, bloodlineDeepestGate.value),
         legacyLost: legacyPoints.value

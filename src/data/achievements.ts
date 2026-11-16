@@ -19,12 +19,12 @@ export const ACHIEVEMENTS: ReadonlyArray<AchievementDef> = [
   { id: 'under-par', name: 'Under Par', description: 'Win the Charity Golf Match in 10 purchases or fewer.', hidden: false },
   { id: 'silver-service', name: 'Silver Service', description: 'Finish Polishing the Family Silver.', hidden: false },
   { id: 'garden-party', name: 'Invited Back Next Year', description: 'Survive the Royal Garden Party.', hidden: false },
-  { id: 'early-retirement', name: 'Early Retirement', description: 'Retire with two gates or fewer beaten.', hidden: false },
+  { id: 'early-retirement', name: 'Early Retirement', description: 'Retire having climbed two classes or fewer.', hidden: false },
   { id: 'lucky-streak', name: 'Born Lucky', description: 'Claim three Legendary opportunities in one generation.', hidden: false },
   { id: 'full-house', name: 'Full House', description: 'Fill every open seat in the family office.', hidden: false },
   { id: 'long-service', name: 'Long Service Award', description: 'Keep the same Personal Assistant for three generations.', hidden: false },
   { id: 'dynasty', name: 'Dynasty', description: 'Reach the fifth generation.', hidden: false },
-  { id: 'no-sweat', name: 'Didn\'t Break a Sweat', description: 'Beat a boss within three seconds.', hidden: true },
+  { id: 'no-sweat', name: 'Didn\'t Break a Sweat', description: 'Win an ordeal within three seconds.', hidden: true },
   { id: 'revolving-door', name: 'Revolving Door', description: 'Fire five advisors in one generation.', hidden: true },
   { id: 'spin-cycle', name: 'Spin Cycle', description: 'Talk your way through five scandals in one generation.', hidden: true }
 ]

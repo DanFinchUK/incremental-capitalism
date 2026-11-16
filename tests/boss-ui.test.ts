@@ -71,7 +71,7 @@ describe('boss and splits UI', () => {
     await wrapper.vm.$nextTick()
     const retire = () => wrapper.find('[data-testid="hero-retire"]')
     expect(retire().exists()).toBe(false)
-    expect(wrapper.find('[data-testid="hero-legacy"]').text()).toContain('Retire at Gate 1')
+    expect(wrapper.find('[data-testid="hero-legacy"]').text()).toContain('Retire at class 1')
     store.gatesBeaten = 3
     await wrapper.vm.$nextTick()
     expect(retire().element.tagName).toBe('BUTTON')

@@ -11,7 +11,7 @@
       <div class="scn-DrawerHeader">
         <div class="scn-ModalTop">
           <span class="scn-ModalKicker scn-ModalKicker-accent">
-            {{ victory ? `Gate ${victory.boss.gate} of 9 beaten` : celebratedDef ? 'New Lifetime Milestone' : 'The Great British Class Survey' }}
+            {{ victory ? `Class ${victory.boss.gate} of 9 reached` : celebratedDef ? 'New Lifetime Milestone' : 'The Great British Class Survey' }}
           </span>
           <h2 id="class-modal-title">
             <template v-if="victory">{{ victory.boss.title }}: won</template>
@@ -45,9 +45,9 @@
         <li v-if="victory.newJobs > 0 || victory.newBusinesses > 0">Unlocked: {{ unlockText }}</li>
         <li v-if="victory.nextBoss">Next: {{ victory.nextBoss.title }} at {{ formatCurrency(victory.nextThreshold) }}</li>
         <li v-if="victory.canRetireNow">
-          Retire now for +{{ victory.legacyNow }} Legacy<template v-if="victory.nextBoss">, or +{{ victory.legacyNext }} after the next gate</template>
+          Retire now for +{{ victory.legacyNow }} Legacy<template v-if="victory.nextBoss">, or +{{ victory.legacyNext }} after the next class</template>
         </li>
-        <li v-else-if="victory.nextBoss">Retiring opens at Gate {{ store.minRetireGate }}</li>
+        <li v-else-if="victory.nextBoss">Retiring opens at class {{ store.minRetireGate }}</li>
       </ul>
 
       <p v-if="victory && store.headhunterOffer.length > 0" class="scn-AutoLine" data-testid="victory-hire-next">

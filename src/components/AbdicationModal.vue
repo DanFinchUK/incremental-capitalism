@@ -19,8 +19,8 @@
         both of them know it.
       </p>
       <p class="scn-StatHint" data-testid="abdication-rules">
-        How abdication works: both of {{ firstName }}'s traits leave with them. The estate and this generation's gates
-        stay, no Legacy is paid, and it can happen once a generation.
+        How abdication works: both of {{ firstName }}'s traits leave with them. The estate and the classes this generation
+        has climbed stay, no Legacy is paid, and it can happen once a generation.
       </p>
       <div class="scn-HeirGrid">
         <article

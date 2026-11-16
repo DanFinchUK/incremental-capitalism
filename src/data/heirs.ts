@@ -35,7 +35,7 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     id: 'old-etonian',
     name: 'Old Etonian',
     rarity: 'common',
-    description: 'The old school tie opens every door: boss twists bite 40% less. The hands have never done a day\'s work, so clicks pay 25% less.',
+    description: 'The old school tie opens every door: ordeal twists bite 40% less. The hands have never done a day\'s work, so clicks pay 25% less.',
     mods: { twistStrength: 0.6, clickMult: 0.75 }
   },
   {
@@ -49,7 +49,7 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     id: 'gap-year',
     name: 'Gap Year Philanthropist',
     rarity: 'common',
-    description: 'Found themselves in three continents and a hedge fund. Boss fights last 50% longer, but the foundation quietly takes 3% of all income.',
+    description: 'Found themselves in three continents and a hedge fund. Ordeals last 50% longer, but the foundation quietly takes 3% of all income.',
     mods: { bossTimeMult: 1.5, incomeDrain: 0.03 }
   },
   {
@@ -98,7 +98,7 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     id: 'tax-exile',
     name: 'Tax Exile',
     rarity: 'rare',
-    description: 'Runs the family from a yacht off Monaco. Boss twists bite half as hard, and windfalls arrive doubled, untouched by HMRC.',
+    description: 'Runs the family from a yacht off Monaco. Ordeal twists bite half as hard, and windfalls arrive doubled, untouched by HMRC.',
     mods: { twistStrength: 0.5, windfallMult: 2 }
   },
   {
@@ -112,7 +112,7 @@ export const HEIR_TRAITS: ReadonlyArray<HeirTrait> = [
     id: 'the-favourite',
     name: 'The Favourite',
     rarity: 'legendary',
-    description: 'Granny\'s clear favourite and everyone knows it. Clicks and businesses earn 50% more, and boss fights last 25% longer.',
+    description: 'Granny\'s clear favourite and everyone knows it. Clicks and businesses earn 50% more, and ordeals last 25% longer.',
     mods: { clickMult: 1.5, businessMult: 1.5, bossTimeMult: 1.25 }
   },
   {
@@ -164,7 +164,7 @@ export const INHERITED_TRAITS: ReadonlyArray<InheritedTrait> = [
   {
     id: 'thick-skin',
     name: 'Thick Skin',
-    description: 'Boss twists bite 10% less.',
+    description: 'Ordeal twists bite 10% less.',
     mods: { twistStrength: 0.9 }
   },
   {
@@ -188,7 +188,7 @@ export const INHERITED_TRAITS: ReadonlyArray<InheritedTrait> = [
   {
     id: 'lawyered-up',
     name: 'Lawyered Up',
-    description: 'Boss fights last 10% longer, but legal fees take 1% of all income.',
+    description: 'Ordeals last 10% longer, but legal fees take 1% of all income.',
     mods: { bossTimeMult: 1.1, incomeDrain: 0.01 }
   }
 ]

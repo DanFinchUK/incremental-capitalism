@@ -17,11 +17,11 @@
 
       <div class="scn-ModalCallout scn-ModalCallout-danger">
         <div><strong>{{ report.heirName }}</strong> (Generation {{ report.generation }}) fell at {{ report.bossTitle }}.</div>
-        <div>Peak gate reached: {{ report.deepestGate }} / 9 · {{ report.legacyLost }} Legacy swept away.</div>
+        <div>Highest class reached: {{ report.deepestGate }} of 9 · {{ report.legacyLost }} Legacy swept away.</div>
       </div>
 
       <p class="scn-AutoLine">
-        Achievements, Peerage titles and best split times endure. A fresh founder awaits.
+        Achievements, Peerage titles and best times endure. A fresh founder awaits.
       </p>
 
       <div class="scn-ModalFooter">

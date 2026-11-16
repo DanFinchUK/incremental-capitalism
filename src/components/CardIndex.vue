@@ -107,13 +107,13 @@
     </section>
 
     <section id="bosses" class="idx-Section">
-      <h2>Bosses</h2>
-      <p class="idx-Rules">One guards each class gate. Win to move up a class.</p>
+      <h2>Ordeals</h2>
+      <p class="idx-Rules">One stands before each class. Win it to move up.</p>
       <div class="idx-Grid idx-Grid-wide">
         <article v-for="b in bosses" :key="b.id" class="idx-Card">
           <h3>{{ b.title }}</h3>
           <div class="idx-Pills">
-            <span class="idx-Pill">Gate {{ b.gate }}</span>
+            <span class="idx-Pill">Class {{ b.gate }}</span>
             <span class="idx-Pill">{{ SOCIAL_CLASSES[b.gate]?.label }}</span>
             <span class="idx-Pill">{{ formatDuration(b.timeLimitSec) }}</span>
           </div>
@@ -124,7 +124,7 @@
           </dl>
         </article>
       </div>
-      <p v-if="bosses.length === 0" class="idx-Empty">No bosses match.</p>
+      <p v-if="bosses.length === 0" class="idx-Empty">No ordeals match.</p>
     </section>
 
     <section id="market" class="idx-Section">
@@ -176,7 +176,7 @@
 
     <section id="classes" class="idx-Section">
       <h2>Social classes</h2>
-      <p class="idx-Rules">Reach the net worth to face the gate's boss.</p>
+      <p class="idx-Rules">Reach the net worth to face the class's ordeal.</p>
       <div class="idx-Grid">
         <article v-for="c in classes" :key="c.level" class="idx-Card">
           <h3>{{ c.label }}</h3>
@@ -273,8 +273,8 @@ const FAMILY_LABELS: Readonly<Record<string, string>> = {
   automation: 'Automation',
   windfalls: 'Windfalls',
   events: 'Market Wire',
-  bossTime: 'Boss time',
-  twists: 'Boss twists',
+  bossTime: 'Ordeal time',
+  twists: 'Ordeal twists',
   scandals: 'Scandals',
   trustFund: 'Trust fund',
   milestones: 'Milestones',
@@ -347,7 +347,7 @@ const heirTraits = computed(() =>
 const inheritedTraits = computed(() => INHERITED_TRAITS.filter((t) => matches(t.name, t.description, 'heir family inherited')))
 
 const bosses = computed(() =>
-  BOSSES.filter((b) => matches(b.title, b.blurb, b.twistText, b.conditionText, SOCIAL_CLASSES[b.gate]?.label, 'boss'))
+  BOSSES.filter((b) => matches(b.title, b.blurb, b.twistText, b.conditionText, SOCIAL_CLASSES[b.gate]?.label, 'ordeal boss'))
 )
 
 const opportunities = computed(() =>
@@ -383,7 +383,7 @@ const sections = computed(() => [
   { id: 'businesses', title: 'Businesses', count: businesses.value.length },
   { id: 'advisors', title: 'Advisors', count: advisorGroups.value.reduce((n, g) => n + g.advisors.length, 0) },
   { id: 'heirs', title: 'Heirs', count: heirTraits.value.length + inheritedTraits.value.length },
-  { id: 'bosses', title: 'Bosses', count: bosses.value.length },
+  { id: 'bosses', title: 'Ordeals', count: bosses.value.length },
   { id: 'market', title: 'Market Wire', count: opportunities.value.length + scandals.value.length },
   { id: 'perks', title: 'Perks', count: perks.value.length },
   { id: 'classes', title: 'Classes', count: classes.value.length },

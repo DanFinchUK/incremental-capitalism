@@ -12,7 +12,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     body: [
       'Tap "Get paid" to earn your first cash, then spend it on Jobs to boost every click.',
       'Tap fast to build a Hustle streak: up to 3x click pay.',
-      'Rather not tap? Turn on Play without tapping in Settings and Universal Credit replaces "Get paid". Slower, but every gate can be won.'
+      'Rather not tap? Turn on Play without tapping in Settings and Universal Credit replaces "Get paid". Slower, but every class can be reached.'
     ]
   },
   {
@@ -26,10 +26,10 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
   },
   {
     kicker: 'High stakes',
-    title: 'Climb the nine class gates',
+    title: 'Climb the nine classes',
     body: [
-      'Each class is guarded by a boss with its own twist. Beat it to move up, unlock new items and bring introductions to new advisors.',
-      'Choose your moment: losing a boss fight ends the bloodline.',
+      'Each class has an ordeal to get through first, each with its own twist. Win it to move up, unlock new items and bring introductions to new advisors.',
+      'Choose your moment: losing an ordeal ends the bloodline.',
       'Your home changes as you climb, from a bedsit to the State rooms and beyond. Settings can keep any room the family has reached.'
     ]
   },
@@ -37,7 +37,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     kicker: 'The dynasty',
     title: 'Retire and let your heir take over',
     body: [
-      'Retire to bank Legacy: +1 for each gate past the family best, and each point multiplies income by 4.5. The heir gets 5% of net worth, capped about a gate behind you, and keeps your Personal Assistants.',
+      'Retire to bank Legacy: +1 for each class past the family\'s best, and each point multiplies income by 4.5. The heir gets 5% of net worth, capped about a class below yours, and keeps your Personal Assistants.',
       'Each heir has their own trait, which retires with them, and a milder one they pass down. Passed-down traits stack until the family elevates.'
     ]
   }

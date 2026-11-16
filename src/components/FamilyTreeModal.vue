@@ -43,7 +43,7 @@
             <span class="scn-StatHint">Generation {{ store.generation }} · head of the family now</span>
           </div>
           <p class="scn-AutoLine">
-            {{ traitLine(store.heir.traitId, store.heir.inheritId ?? null) }} · deepest gate so far: {{ gateName(store.gatesBeaten) }} ·
+            {{ traitLine(store.heir.traitId, store.heir.inheritId ?? null) }} · furthest so far: {{ gateName(store.gatesBeaten) }} ·
             {{ formatClock(store.activeGenerationMs) }} played
           </p>
         </li>
@@ -56,7 +56,7 @@
             {{ traitLine(rec.traitId, rec.inheritId) }} · reached {{ gateName(rec.deepestGate) }} · {{ formatClock(rec.activeMs) }} played
           </p>
           <p v-if="rec.advisors.length > 0" class="scn-StatHint">Advisors: {{ rec.advisors.join(', ') }}</p>
-          <p v-if="splitText(rec.splits)" class="scn-StatHint" data-testid="tree-splits">Splits: {{ splitText(rec.splits) }}</p>
+          <p v-if="splitText(rec.splits)" class="scn-StatHint" data-testid="tree-splits">Times: {{ splitText(rec.splits) }}</p>
         </li>
       </ol>
       <p v-if="store.familyTree.length === 0" class="scn-AutoLine">
@@ -92,12 +92,12 @@ function traitLine(id: string | null, inheritId: string | null): string {
 
 function splitText(splits: ReadonlyArray<number | null>): string {
   return splits
-    .map((ms, gate) => (ms === null || gate === 0 ? null : `G${gate} ${formatClock(ms)}`))
+    .map((ms, gate) => (ms === null || gate === 0 ? null : `Class ${gate} ${formatClock(ms)}`))
     .filter((x): x is string => x !== null)
     .join(' · ')
 }
 
 function gateName(gate: number): string {
-  return gate > 0 ? (bossForGate(gate)?.title ?? `gate ${gate}`) : 'no gates yet'
+  return gate > 0 ? (bossForGate(gate)?.title ?? `class ${gate}`) : 'nowhere yet'
 }
 </script>

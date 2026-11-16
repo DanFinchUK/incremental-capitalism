@@ -72,7 +72,7 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
   it('says which gate opens retiring before it is allowed', () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     expect(wrapper.find('.scn-Help').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="hero-legacy"]').text()).toContain('Retire at Gate 1')
+    expect(wrapper.find('[data-testid="hero-legacy"]').text()).toContain('Retire at class 1')
     expect(wrapper.find('[data-testid="hero-retire"]').exists()).toBe(false)
     wrapper.unmount()
   })

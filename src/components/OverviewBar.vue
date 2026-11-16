@@ -80,14 +80,14 @@ const networkBadgeText = computed(() => {
 
 const retireLabel = computed(() => {
   if (store.gatesBeaten > 0 && store.gatesBeaten < store.minRetireGate) {
-    return `Retire at Gate ${store.minRetireGate}`
+    return `Retire at class ${store.minRetireGate}`
   }
   return `Retire for +${store.legacyOnRetire}`
 })
 
 const retireHint = computed(() => {
   if (store.gatesBeaten < store.minRetireGate) {
-    return `Beat Gate ${store.minRetireGate} to retire this generation`
+    return `Reach class ${store.minRetireGate} to retire this generation`
   }
   return ''
 })

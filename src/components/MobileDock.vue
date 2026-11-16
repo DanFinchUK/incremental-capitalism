@@ -25,10 +25,10 @@
       <div class="mob-GateText">
         <strong>{{ boss.def.title }}</strong>
         <span class="mob-GateSep" aria-hidden="true">·</span>
-        <span v-if="boss.status === 'locked'">Gate {{ boss.def.gate }} · {{ formatCurrency(Math.max(0, threshold - store.netWorth)) }} to go</span>
+        <span v-if="boss.status === 'locked'">Class {{ boss.def.gate }} · {{ formatCurrency(Math.max(0, threshold - store.netWorth)) }} to go</span>
         <span v-else-if="boss.status === 'active'">{{ pct }}% · {{ boss.remainingSec }}s left</span>
         <span v-else-if="boss.status === 'cooldown'">Regrouping, {{ boss.cooldownSec }}s</span>
-        <span v-else>Gate {{ boss.def.gate }} · ready when you are</span>
+        <span v-else>Class {{ boss.def.gate }} · ready when you are</span>
       </div>
       <!-- Between gates, retiring is the other choice: keep it in sight -->
       <div v-if="canRetireHere" class="mob-GateActions">
@@ -57,7 +57,7 @@
 
     <div v-if="!boss && store.canRetire" class="mob-Gate" data-testid="dock-gate">
       <div class="mob-GateText">
-        <strong>Every gate beaten</strong>
+        <strong>Top of the class survey</strong>
         <span v-if="store.canElevate">Take the family's seat in the Lords</span>
         <span v-else>Hand it all on to the next heir</span>
       </div>
@@ -156,7 +156,7 @@ onUnmounted(() => {
 const tabs: ReadonlyArray<{ id: PhoneTab; label: string }> = [
   { id: 'jobs', label: 'Jobs' },
   { id: 'businesses', label: 'Businesses' },
-  { id: 'family', label: 'Family & gates' }
+  { id: 'family', label: 'Family & classes' }
 ]
 
 const boss = computed(() => store.nextBoss)

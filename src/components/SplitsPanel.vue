@@ -1,10 +1,10 @@
 <template>
-  <section v-if="rows.length > 0" class="scn-SplitsPanel" data-testid="splits-panel" aria-label="Split times">
-    <h3 class="scn-DataTitle">Splits this generation</h3>
+  <section v-if="rows.length > 0" class="scn-SplitsPanel" data-testid="splits-panel" aria-label="Times this generation">
+    <h3 class="scn-DataTitle">Times this generation</h3>
     <table class="scn-SplitsTable">
       <thead>
         <tr>
-          <th scope="col">Gate</th>
+          <th scope="col">Ordeal</th>
           <th scope="col">Now</th>
           <th scope="col">Best</th>
           <th scope="col">+/-</th>

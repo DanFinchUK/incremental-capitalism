@@ -3,7 +3,7 @@
     class="scn-BossCard"
     :class="boss ? `scn-BossCard-${boss.status}` : ''"
     data-testid="boss-card"
-    aria-label="Class and next gate"
+    aria-label="Class and the next ordeal"
   >
     <div
       class="scn-ClassRung scn-ClassCard-clickable"
@@ -27,7 +27,7 @@
     <template v-if="boss">
       <div class="scn-BossTopRow">
         <span class="scn-ModalKicker scn-ModalKicker-accent">
-          Gate {{ boss.def.gate }} / 9<template v-if="store.classStatus.next"> → {{ store.classStatus.next.label }}</template>
+          Class {{ boss.def.gate }} of 9<template v-if="store.classStatus.next">: {{ store.classStatus.next.label }}</template>
         </span>
         <span v-if="lastKill !== null || boss.bestKillMs !== null" class="scn-StatHint" data-testid="boss-kill-times">
           <span v-if="lastKill !== null">Now {{ formatClock(lastKill) }}</span>
@@ -85,7 +85,7 @@
     </template>
 
     <template v-else>
-      <h2 class="scn-BossTitle">Every gate beaten</h2>
+      <h2 class="scn-BossTitle">Top of the class survey</h2>
       <p class="scn-StatHint" data-testid="boss-net-worth">Net worth {{ formatCurrency(store.netWorth) }}</p>
       <p class="scn-CardMeta" data-testid="top-of-pyramid">
         <template v-if="store.canElevate">Top of the British class pyramid reached. The Lords are expecting you.</template>

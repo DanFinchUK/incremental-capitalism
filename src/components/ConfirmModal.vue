@@ -18,8 +18,8 @@
       </div>
 
       <p class="scn-CardMeta">
-        The Jobs and Businesses are wound up and {{ inheritancePct }}% of net worth goes to the heir, capped about a gate
-        behind you. Legacy, perks, your PAs and passed-down traits stay with the family.
+        The Jobs and Businesses are wound up and {{ inheritancePct }}% of net worth goes to the heir, capped about a class
+        below yours. Legacy, perks, your PAs and passed-down traits stay with the family.
       </p>
 
       <div class="scn-ModalGrid">
@@ -42,7 +42,7 @@
           </div>
         </div>
         <div class="scn-StatBox">
-          <div class="scn-DataTitle">Deepest gate</div>
+          <div class="scn-DataTitle">Highest class</div>
           <div class="scn-DataValue">{{ store.gatesBeaten }} / 9</div>
         </div>
       </div>
@@ -88,7 +88,7 @@
       </div>
 
       <p class="scn-CardMeta">
-        Retire this disgraced or dead-end family line and begin Generation 1 with a fresh founder. Achievements, Peerage titles and best split times stay intact.
+        Retire this disgraced or dead-end family line and begin Generation 1 with a fresh founder. Achievements, Peerage titles and best times stay intact.
       </p>
 
       <div class="scn-ModalCallout scn-ModalCallout-danger">

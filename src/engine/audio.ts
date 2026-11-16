@@ -229,11 +229,11 @@ const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void
     const ring = 0.5 * (1 + (Math.random() - 0.5) * 0.09)
     for (const { freq, weight, x } of voices) {
       if (weight <= 0.01) continue
-      const level = 0.26 * weight * (1 + (Math.random() - 0.5) * 0.09)
+      const level = 0.16 * weight * (1 + (Math.random() - 0.5) * 0.09)
       // Higher voices ring a little shorter, like a struck glass
       tone(v, freq * tune, 0, Math.max(0.04, ring * (1 - 0.35 * x)), 'sine', level, { attack: 0.003 })
     }
-    if (intensity >= 0.99 && Math.random() < 0.35) tone(v, 3200, 0.03, 0.07, 'sine', 0.04)
+    if (intensity >= 0.99 && Math.random() < 0.35) tone(v, 3200, 0.03, 0.07, 'sine', 0.025)
   },
   // Clocking in: a stamp and a short chirp of the time card
   buyJob: (v, { count }) => {
@@ -445,7 +445,7 @@ export const SFX_KINDS = Object.keys(CUES) as SfxKind[]
 // doubled hats with a stab every bar near the end.
 
 const MUSIC_BPM = 132
-const MUSIC_LEVEL = 0.3
+const MUSIC_LEVEL = 0.45
 const STEP_SEC = 60 / MUSIC_BPM / 4
 const LOOKAHEAD_SEC = 0.12
 

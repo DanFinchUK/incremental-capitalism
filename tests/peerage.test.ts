@@ -77,6 +77,16 @@ describe('elevation in the store', () => {
     expect(store.officeSeats).toHaveLength(4) // one title or more: an extra seat
   })
 
+  it('starts the new line with no trust fund, so no gate opens before it can be fought', () => {
+    const store = lordReady()
+    store.addDebugMoney(1e60, T0)
+    store.elevateToLords(T0)
+    store.pickHeir(0)
+    expect(store.money).toBe(0)
+    expect(store.netWorth).toBe(0)
+    expect(store.nextBoss?.status).toBe('locked')
+  })
+
   it('titles multiply income and survive a reload', () => {
     const store = lordReady()
     store.elevateToLords(T0)

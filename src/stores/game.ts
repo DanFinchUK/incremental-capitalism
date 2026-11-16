@@ -1236,8 +1236,12 @@ export const useGameStore = defineStore('game', () => {
         ...(elevated ? { elevated: true } : {})
       }
     ].slice(-MAX_TREE_ENTRIES)
-    // Inheritance isn't earned, so it doesn't count toward lifetime earnings
-    const inheritance = heirInheritance(netWorth.value, gatesBeaten.value, modifiers.value.trustFundShareAdd)
+    // Inheritance isn't earned, so it doesn't count toward lifetime earnings.
+    // The trust fund is sized for an heir whose Legacy can hold the parent's
+    // depth. An elevated line starts with no Legacy, so it gets none: a fund
+    // that buys straight past gates its income can't fight would open bosses
+    // it can only lose, and losing ends the line.
+    const inheritance = elevated ? 0 : heirInheritance(netWorth.value, gatesBeaten.value, modifiers.value.trustFundShareAdd)
     // The outgoing head's traits now live on familyTree (only the inherited
     // one still counts); clear them here until pickHeir sets the next head
     heir.value = { name: heir.value.name, traitId: null, inheritId: null }

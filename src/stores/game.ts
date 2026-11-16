@@ -39,6 +39,7 @@ import {
   steadyHustle,
   computePassivePerSecond,
   computeSectorSlices,
+  favourIncome,
   itemMilestones,
   legacyMultiplier as calcLegacyMultiplier,
   maxHustleMultiplier,
@@ -90,11 +91,13 @@ import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type Achi
 import type { AdvisorInstance } from '../engine/office'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ROOMS, roomForClass, type RoomDef, type RoomId } from '../data/rooms'
+import { FAVOUR_LOAN_MS, emptyFavours, pickDeparture, type FavourKind, type FavourState } from '../data/favours'
 
 export type VisibleRow<T> =
   | { mode: 'revealed'; item: T }
-  | { mode: 'teaser'; key: string }
-  | { mode: 'gated'; key: string; bossTitle: string }
+  // A row not yet shown still knows its item, for a favour to lend it
+  | { mode: 'teaser'; key: string; item: T }
+  | { mode: 'gated'; key: string; bossTitle: string; item: T }
 
 export interface ActiveMarketEvent {
   id: number
@@ -163,6 +166,16 @@ export const useGameStore = defineStore('game', () => {
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
   const decor = ref<RoomId | 'auto'>(initial.decor)
   const noTap = ref<boolean>(initial.noTap)
+  // Old School Tie: favours called in this generation
+  const favours = ref<FavourState>(initial.favours)
+  const favoursTotal = computed(() => perks.value.nepotism)
+  const favoursLeft = computed(() => Math.max(0, favoursTotal.value - favours.value.used))
+  // Units lent right now, by item, for the economy
+  const lentUnits = computed(() => {
+    const out: { jobs: Record<string, number>; businesses: Record<string, number> } = { jobs: {}, businesses: {} }
+    for (const l of favours.value.loans) out[l.kind][l.id] = (out[l.kind][l.id] ?? 0) + 1
+    return out
+  })
   // Game text, reworded for the allowance when playing without tapping
   function wording(text: string): string {
     return forPlaystyle(text, noTap.value)
@@ -398,11 +411,13 @@ export const useGameStore = defineStore('game', () => {
     clickBuffMultiplier: (activeClickBuff.value?.mult ?? 1) * twist.value.clickPayMult,
     hustleMultiplier: hustleMultiplier.value,
     noTap: noTap.value,
-    mods: modifiers.value
+    mods: modifiers.value,
+    loans: lentUnits.value
   }))
 
   // Share of cash under which an item's next unit restocks itself
-  const automationLine = computed(() => automationShare(perks.value.nepotism, modifiers.value.automationShareBonus))
+  // Old School Tie now calls in favours, so only advisors, heirs and titles bring automation
+  const automationLine = computed(() => automationShare(0, modifiers.value.automationShareBonus))
   // The status pill: the whole automation line, from perks, advisors, heirs
   // and titles together. Empty until something brings automation; a freeze
   // has its own pill.
@@ -422,6 +437,8 @@ export const useGameStore = defineStore('game', () => {
   }))
   const jobBaseMoneyPerClick = computed(() => computeClickIncome(jobBaseEconomyInput.value, false))
   const moneyPerSecond = computed(() => computePassivePerSecond(economyInput.value))
+  // Favours lend help while you play; time away earns nothing from it
+  const offlinePerSecond = computed(() => computePassivePerSecond({ ...economyInput.value, loans: undefined }))
   // Income ignoring Market Opportunity buffs, so windfalls can't stack on them
   const unbuffedMoneyPerSecond = computed(() =>
     computePassivePerSecond({ ...economyInput.value, businessBuffMultiplier: 1, clickBuffMultiplier: 1 })
@@ -462,9 +479,9 @@ export const useGameStore = defineStore('game', () => {
         continue
       }
       if (item.baseCost > costCeiling.value) {
-        rows.push({ mode: 'gated', key: `${prefix}-gated-${item.id}`, bossTitle: bossForGate(gatesBeaten.value + 1)?.title ?? '' })
+        rows.push({ mode: 'gated', key: `${prefix}-gated-${item.id}`, bossTitle: bossForGate(gatesBeaten.value + 1)?.title ?? '', item })
       } else {
-        rows.push({ mode: 'teaser', key: `${prefix}-teaser-${item.id}` })
+        rows.push({ mode: 'teaser', key: `${prefix}-teaser-${item.id}`, item })
       }
       break
     }
@@ -516,6 +533,7 @@ export const useGameStore = defineStore('game', () => {
       muted: muted.value,
       introSeen: introSeen.value,
       tradingDeskCollapsed: tradingDeskCollapsed.value,
+      favours: favours.value,
       lastUpdate: ts
     }
   }
@@ -576,6 +594,7 @@ export const useGameStore = defineStore('game', () => {
     introSeen.value = loaded.introSeen
     introOpen.value = !loaded.introSeen
     tradingDeskCollapsed.value = loaded.tradingDeskCollapsed
+    favours.value = loaded.favours
     lastUpdate.value = loaded.lastUpdate
     plays.resetGateWatch(loaded.gatesBeaten, true)
     nowMs.value = ts
@@ -606,7 +625,7 @@ export const useGameStore = defineStore('game', () => {
 
     // No catch-up while the succession is undecided: the family is in mourning
     if (loaded.lastUpdate !== null && ts > loaded.lastUpdate && heirChoices.value.length === 0) {
-      const catchUp = computeOfflineCatchUp(ts - loaded.lastUpdate, moneyPerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
+      const catchUp = computeOfflineCatchUp(ts - loaded.lastUpdate, offlinePerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
       if (catchUp) {
         // Through creditMoney, so advisor drain applies offline too
         creditMoney(catchUp.moneyEarned, undefined, ts)
@@ -653,7 +672,7 @@ export const useGameStore = defineStore('game', () => {
     if (newClass <= prevClass) {
       return false
     }
-    markTelemetryEvent(telemetry.value, 'M')
+    markTelemetryEvent(telemetry.value, 'Class')
     if (newClass > highestClassReached.value) {
       highestClassReached.value = newClass
       celebratedClassLevel.value = newClass
@@ -709,7 +728,7 @@ export const useGameStore = defineStore('game', () => {
     const promoted = false
     // Automation crosses milestones quietly; only your own purchases get a banner
     if (crossedMilestone !== null && save) {
-      markTelemetryEvent(telemetry.value, 'M')
+      markTelemetryEvent(telemetry.value, 'Milestone')
       const step = (2 + MILESTONE_STEP_PER_DEREGULATION_RANK * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned: ${step}x output milestone!`)
     }
@@ -954,7 +973,7 @@ export const useGameStore = defineStore('game', () => {
       const slot = effect.type === 'clickBuff' ? clickBuff : businessBuff
       const current = buffView(slot.value)
       const target = effect.type === 'clickBuff' ? 'Click' : 'Business'
-      markTelemetryEvent(telemetry.value, '★')
+      markTelemetryEvent(telemetry.value, 'Opportunity')
       if (current && current.mult > effect.mult) {
         // Never downgrade a stronger buff that is still running
         announce(`${name}: your ${current.mult}x ${current.label} is stronger, so it keeps running.`)
@@ -967,7 +986,7 @@ export const useGameStore = defineStore('game', () => {
     }
     if (effect.type === 'windfall') {
       const windfall = Math.max(500, unbuffedMoneyPerSecond.value * effect.seconds) * modifiers.value.windfallMult
-      markTelemetryEvent(telemetry.value, '★')
+      markTelemetryEvent(telemetry.value, 'Opportunity')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       announce(`${rarityPrefix}${name}: ${formatDuration(effect.seconds)} of passive income wired offshore!`)
@@ -980,7 +999,7 @@ export const useGameStore = defineStore('game', () => {
     // Shady Deal: 50/50 windfall vs a freeze
     if (rng() < 0.5) {
       const windfall = Math.max(1500, unbuffedMoneyPerSecond.value * effect.winSeconds) * modifiers.value.windfallMult
-      markTelemetryEvent(telemetry.value, '★')
+      markTelemetryEvent(telemetry.value, 'Opportunity')
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       announce(`VIP-Lane Contract Approved! ${formatDuration(effect.winSeconds)} passive windfall!`)
@@ -1018,7 +1037,7 @@ export const useGameStore = defineStore('game', () => {
       }
       plays.log(ts, 'away', { ms: elapsedMs })
       bosses.bossAttempt.value = null
-      const catchUp = computeOfflineCatchUp(elapsedMs, moneyPerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
+      const catchUp = computeOfflineCatchUp(elapsedMs, offlinePerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
       if (catchUp) {
         creditMoney(catchUp.moneyEarned, undefined, ts)
         highestClassReached.value = Math.max(highestClassReached.value, classStatus.value.current.level)
@@ -1037,6 +1056,7 @@ export const useGameStore = defineStore('game', () => {
       const { business, interns, allowance } = computeIncomeBreakdown(economyInput.value)
       creditMoney(business * deltaSec, 'passive', ts)
       creditClicks((interns + allowance) * deltaSec, 'passive', ts)
+      endFinishedLoans(ts)
     }
 
     refreshSeenItems()
@@ -1044,7 +1064,8 @@ export const useGameStore = defineStore('game', () => {
     runAutoBuy(ts)
     observeBalance(telemetry.value, ts, money.value)
     if (ts - telemetry.value.lastSampleTs >= 250) {
-      sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value)
+      const lentIncome = favourIncome(economyInput.value, manualRealisedPerSecond.value)
+      sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value, undefined, lentIncome.businessPerSec + lentIncome.clickPerSec)
     }
     maybeSpawnRandomEvent(ts)
     bosses.evaluateAttempt()
@@ -1120,6 +1141,60 @@ export const useGameStore = defineStore('game', () => {
     return skipped
   }
 
+  // The item a favour would lend from a list: its bottom card, whatever it is
+  function favourTarget(kind: FavourKind): string | null {
+    const rows = kind === 'jobs' ? visibleJobs.value : visibleBusinesses.value
+    return rows.at(-1)?.item.id ?? null
+  }
+
+  // Old School Tie: someone lends you one unit of the list's bottom rung for
+  // a few minutes, on its own clock. It earns at the family's rates but isn't
+  // yours: no net worth, no reveal of the rung after it, no change to prices.
+  function callInFavour(kind: FavourKind, ts = Date.now()): boolean {
+    nowMs.value = ts
+    const id = favourTarget(kind)
+    if (!id || favoursLeft.value <= 0 || heirChoices.value.length > 0 || disgraceReport.value !== null) return false
+    favours.value = {
+      ...favours.value,
+      used: favours.value.used + 1,
+      loans: [...favours.value.loans, { kind, id, untilMs: activeGenerationMs.value + FAVOUR_LOAN_MS }]
+    }
+    plays.log(ts, 'favour', { kind, id })
+    cue('hire')
+    flushSave(ts)
+    return true
+  }
+
+  // Help whose time is up leaves, and its row says where it went
+  function endFinishedLoans(ts: number): void {
+    const now = activeGenerationMs.value
+    if (!favours.value.loans.some((l) => l.untilMs <= now)) return
+    const departures = [...favours.value.departures]
+    const loans = []
+    for (const l of favours.value.loans) {
+      if (l.untilMs > now) {
+        loans.push(l)
+        continue
+      }
+      const taken = departures.filter((d) => d.kind === l.kind && d.id === l.id).map((d) => d.text)
+      departures.push({ kind: l.kind, id: l.id, text: pickDeparture(Math.random, taken) })
+    }
+    favours.value = { ...favours.value, loans, departures }
+    plays.log(ts, 'favour-end', {})
+  }
+
+  // Help still here on an item, soonest to leave first, and where earlier help went
+  function favourLoansFor(kind: FavourKind, id: string): number[] {
+    return favours.value.loans
+      .filter((l) => l.kind === kind && l.id === id)
+      .map((l) => l.untilMs - activeGenerationMs.value)
+      .sort((a, b) => a - b)
+  }
+
+  function favourDeparturesFor(kind: FavourKind, id: string): string[] {
+    return favours.value.departures.filter((d) => d.kind === kind && d.id === id).map((d) => d.text)
+  }
+
   function startBossAttempt(): boolean {
     if (heirChoices.value.length > 0 || disgraceReport.value !== null || mustHireFirst.value || !bosses.startBossAttempt()) {
       return false
@@ -1173,6 +1248,7 @@ export const useGameStore = defineStore('game', () => {
     legacySpent.value = 0
     perks.value = { ...EMPTY_PERKS }
     office.loadState({ seats: [], paChair: null, offer: [], queued: 0 })
+    favours.value = emptyFavours()
     money.value = 0
     spentThisRun.value = 0
     jobsPurchased.value = {}
@@ -1268,6 +1344,8 @@ export const useGameStore = defineStore('game', () => {
     abdicated.value = false
     siblingChoices.value = []
     office.onRetire()
+    // Favours are a generation's; any help still here goes home
+    favours.value = emptyFavours()
     splits.value = emptySplits()
     lastKillMs.value = emptySplits()
     bosses.bossAttempt.value = null
@@ -1600,6 +1678,15 @@ export const useGameStore = defineStore('game', () => {
     canBackOut: bosses.canBackOut,
     backOutSec: bosses.backOutSec,
     startBossAttempt,
+    favours,
+    favoursTotal,
+    favoursLeft,
+    lentUnits,
+    offlinePerSecond,
+    favourTarget,
+    callInFavour,
+    favourLoansFor,
+    favourDeparturesFor,
     abandonBossAttempt: bosses.abandonBossAttempt,
     classStatus,
     legacyMultiplier,

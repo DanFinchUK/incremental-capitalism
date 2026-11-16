@@ -9,6 +9,7 @@ import type { AdvisorInstance } from './office'
 import { MAX_TREE_ENTRIES, currentBloodlineRecords, readGenerationRecord, type GenerationRecord } from './family'
 import type { OfficeState } from '../stores/modules/office'
 import { ROOMS, type RoomId } from '../data/rooms'
+import { emptyFavours, type FavourKind, type FavourState } from '../data/favours'
 
 export const STORAGE_KEY = 'state'
 // Saves from any earlier schema reset to a new game.
@@ -66,6 +67,8 @@ export interface PersistedSceneState {
   muted: boolean
   introSeen: boolean
   tradingDeskCollapsed: boolean
+  // Old School Tie: favours this generation
+  favours: FavourState
   lastUpdate: number | null
 }
 
@@ -112,8 +115,37 @@ export function createInitialSceneState(): PersistedSceneState {
     muted: false,
     introSeen: false,
     tradingDeskCollapsed: false,
+    favours: emptyFavours(),
     lastUpdate: null
   }
+}
+
+function readFavours(raw: unknown): FavourState {
+  const state = emptyFavours()
+  if (!raw || typeof raw !== 'object') return state
+  const r = raw as Record<string, unknown>
+  const isKind = (k: unknown): k is FavourKind => k === 'jobs' || k === 'businesses'
+  state.used = Math.floor(readNonNegativeNumber(r.used, 0))
+  if (Array.isArray(r.loans)) {
+    for (const l of r.loans) {
+      if (!l || typeof l !== 'object') continue
+      const o = l as Record<string, unknown>
+      if (isKind(o.kind) && typeof o.id === 'string' && typeof o.untilMs === 'number' && Number.isFinite(o.untilMs)) {
+        state.loans.push({ kind: o.kind, id: o.id, untilMs: o.untilMs })
+      }
+    }
+  }
+  if (Array.isArray(r.departures)) {
+    for (const d of r.departures) {
+      if (!d || typeof d !== 'object') continue
+      const o = d as Record<string, unknown>
+      if (isKind(o.kind) && typeof o.id === 'string' && typeof o.text === 'string') {
+        state.departures.push({ kind: o.kind, id: o.id, text: o.text })
+      }
+    }
+  }
+  state.used = Math.max(state.used, state.loans.length + state.departures.length)
+  return state
 }
 
 function readNumberMap(raw: unknown): Record<string, number> {
@@ -362,6 +394,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     muted: Boolean(s.muted),
     introSeen: Boolean(s.introSeen),
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),
+    favours: readFavours(s.favours),
     lastUpdate
   }
 }

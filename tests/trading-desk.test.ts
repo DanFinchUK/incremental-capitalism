@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
 import { useGameStore } from '../src/stores/game'
+import { hireFree } from './helpers'
 
 describe('City Trading Desk & Legacy bracket progress UI', () => {
   let pinia: ReturnType<typeof createPinia>
@@ -40,7 +41,7 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
   it('shows the automation pill with the family\'s lasting effects, and no automation figures on the desk', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
-    store.perks.nepotism = 2
+    hireFree(store, 'head-butler')
     store.money = 1_000_000
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-testid="header-bloodline-pills"]').text()).toContain(`Auto under ${store.automationLinePct}% of cash`)
@@ -52,7 +53,7 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
   it('names the next item automation will pick up, and the cash it needs', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
-    store.perks.nepotism = 2
+    hireFree(store, 'head-butler')
     store.money = 0
     await wrapper.vm.$nextTick()
     const next = store.nextAutomation!
@@ -68,16 +69,16 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     const store = useGameStore()
     store.closeIntro()
     if (store.tradingDeskCollapsed) store.toggleTradingDesk()
-    store.perks.nepotism = 2
+    hireFree(store, 'head-butler')
     store.autoBuyPaused = false
-    store.money = 1500 // the gig rider joins automation at about £2,167
+    store.money = 2500 // the gig rider joins automation at about £4,333
     const t0 = Date.now()
     for (let i = 1; i <= 8; i++) store.tick(t0 + i * 500)
     await wrapper.vm.$nextTick()
     expect(store.nextAutomation!.cash).toBeGreaterThan(store.money)
     expect(wrapper.find('[data-testid="desk-threshold-line"]').exists()).toBe(true)
     // Far out of reach: no line, only the words under the chart
-    // (once the £1,500 candles have left the chart's 80 seconds)
+    // (once the £2,500 candles have left the chart's 80 seconds)
     store.money = 10
     for (let i = 9; i <= 400; i++) {
       store.money = 10

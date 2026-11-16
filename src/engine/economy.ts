@@ -1,4 +1,4 @@
-import { BUSINESSES, JOBS, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
+import { BUSINESSES, BUSINESSES_BY_ID, JOBS, JOBS_BY_ID, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
 import { GATE_NET_WORTH, SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
 import { NEUTRAL_MODIFIERS, type Modifiers } from './modifiers'
 import {
@@ -196,6 +196,31 @@ export function maxHustleMultiplier(rank: number): number {
   return 3 + Math.max(0, rank)
 }
 
+export interface ItemLoans {
+  jobs: Readonly<Record<string, number>>
+  businesses: Readonly<Record<string, number>>
+}
+
+// Lent Jobs' tap pay before the family's multipliers: one unit each, no milestones
+function loanedClickRaw(input: EconomySnapshotInput): number {
+  let raw = 0
+  for (const [id, n] of Object.entries(input.loans?.jobs ?? {})) {
+    const job = JOBS_BY_ID[id]
+    if (job && n > 0) raw += job.moneyPerClick * n
+  }
+  return raw
+}
+
+// Lent Businesses' income before the family's multipliers: no milestones, no synergy
+function loanedBusinessRaw(input: EconomySnapshotInput, mods: Modifiers): number {
+  let raw = 0
+  for (const [id, n] of Object.entries(input.loans?.businesses ?? {})) {
+    const biz = BUSINESSES_BY_ID[id]
+    if (biz && n > 0) raw += biz.moneyPerSecond * n * (mods.sectorBusinessMult[biz.sector] ?? 1)
+  }
+  return raw
+}
+
 export interface EconomySnapshotInput {
   jobsPurchased: Readonly<Record<string, number>>
   businessesOwned: Readonly<Record<string, number>>
@@ -208,6 +233,9 @@ export interface EconomySnapshotInput {
   hustleMultiplier: number
   // Playing without tapping: the allowance is paid (at the current Hustle)
   noTap?: boolean
+  // Units lent by a favour (Old School Tie): each pays one unit at the
+  // family's rates, ignoring how many of the item are owned
+  loans?: Readonly<ItemLoans>
   // Heir traits, advisors and titles
   mods?: Modifiers
 }
@@ -237,7 +265,7 @@ export function businessUnitPerSecond(biz: BusinessDef, owned: number, input: Ec
 }
 
 export function computeClickIncome(input: EconomySnapshotInput, includeHustle: boolean): number {
-  let raw = BASE_CLICK_VALUE
+  let raw = BASE_CLICK_VALUE + loanedClickRaw(input)
   for (const job of JOBS) {
     const n = input.jobsPurchased[job.id] ?? 0
     if (n > 0) {
@@ -277,12 +305,29 @@ export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreak
         (mods.sectorBusinessMult[biz.sector] ?? 1)
     }
   }
+  rawBusinesses += loanedBusinessRaw(input, mods)
   const classMult = 1 + 0.15 * input.classLevel
   const bizIncome =
     rawBusinesses * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.businessBuffMultiplier * mods.businessMult
   const autoClickIncome = input.autoClickers * computeClickIncome(input, true)
   const allowance = input.noTap ? (ALLOWANCE_TAPS_PER_SEC + mods.allowanceTapsAdd) * computeClickIncome(input, true) : 0
   return { business: bizIncome, interns: autoClickIncome, allowance }
+}
+
+// What favours bring in a second: lent Businesses, and lent Jobs' share of
+// everything paid as taps (your own, the Interns and the allowance)
+export function favourIncome(input: EconomySnapshotInput, manualClickPerSec: number): { businessPerSec: number; clickPerSec: number } {
+  if (!input.loans) return { businessPerSec: 0, clickPerSec: 0 }
+  const mods = modsOf(input)
+  const classMult = 1 + 0.15 * input.classLevel
+  const businessPerSec =
+    loanedBusinessRaw(input, mods) * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.businessBuffMultiplier * mods.businessMult
+  const lentRaw = loanedClickRaw(input)
+  if (lentRaw <= 0) return { businessPerSec, clickPerSec: 0 }
+  const totalRaw = computeClickIncome(input, false) / (classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.clickBuffMultiplier * mods.clickMult)
+  const { interns, allowance } = computeIncomeBreakdown(input)
+  const clickPerSec = (lentRaw / totalRaw) * (interns + allowance + manualClickPerSec)
+  return { businessPerSec, clickPerSec }
 }
 
 export interface IncomeDeltaQuote {
@@ -366,6 +411,11 @@ export function computeSectorSlices(
   allowanceLabel = 'Allowance'
 ): SectorSlice[] {
   const rawEntries: Array<{ id: string; label: string; perSec: number }> = []
+  // Favours get their own slice, taken out of the tap-paid sources in proportion
+  const favours = favourIncome(input, manualClickPerSec)
+  const breakdown = computeIncomeBreakdown(input)
+  const clickPaid = breakdown.interns + breakdown.allowance + manualClickPerSec
+  const ownTapShare = clickPaid > 0 ? 1 - favours.clickPerSec / clickPaid : 1
 
   for (const biz of BUSINESSES) {
     const owned = input.businessesOwned[biz.id] ?? 0
@@ -378,19 +428,24 @@ export function computeSectorSlices(
   }
 
   if (input.autoClickers > 0) {
-    const internPerSec = input.autoClickers * computeClickIncome(input, true)
+    const internPerSec = input.autoClickers * computeClickIncome(input, true) * ownTapShare
     if (internPerSec > 0) {
       rawEntries.push({ id: 'interns', label: 'Unpaid Interns', perSec: internPerSec })
     }
   }
 
-  const allowancePerSec = computeIncomeBreakdown(input).allowance
+  const allowancePerSec = breakdown.allowance * ownTapShare
   if (allowancePerSec > 0) {
     rawEntries.push({ id: 'allowance', label: allowanceLabel, perSec: allowancePerSec })
   }
 
   if (manualClickPerSec > 0) {
-    rawEntries.push({ id: 'manual', label: 'Manual Hustle', perSec: manualClickPerSec })
+    rawEntries.push({ id: 'manual', label: 'Manual Hustle', perSec: manualClickPerSec * ownTapShare })
+  }
+
+  const favourPerSec = favours.businessPerSec + favours.clickPerSec
+  if (favourPerSec > 0) {
+    rawEntries.push({ id: 'favours', label: 'Favours', perSec: favourPerSec })
   }
 
   const total = rawEntries.reduce((acc, e) => acc + e.perSec, 0)
@@ -411,6 +466,7 @@ export function computeSectorSlices(
     label: entry.label,
     perSec: entry.perSec,
     pct: (entry.perSec / total) * 100,
-    color: SECTOR_PALETTE[index % SECTOR_PALETTE.length]
+    // Favours are gold, like the help on their cards
+    color: entry.id === 'favours' ? 'var(--color-gold)' : SECTOR_PALETTE[index % SECTOR_PALETTE.length]
   }))
 }

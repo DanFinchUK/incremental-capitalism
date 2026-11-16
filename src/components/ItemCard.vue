@@ -1,5 +1,26 @@
 <template>
-  <div v-if="row.mode === 'teaser'" class="scn-Card scn-Card-teaser">
+  <div
+    v-if="row.mode !== 'revealed' && lent > 0"
+    class="scn-Card scn-Card-lent"
+    :data-item-key="`${kind}-${row.item.id}`"
+    data-testid="lent-row"
+  >
+    <!-- A favour has lent a unit of an item you can't buy yet: show what it is, on this card only -->
+    <img class="scn-CardImage" :src="itemImageUrl(kind, row.item.label)" :alt="row.item.label">
+    <div class="scn-CardBody">
+      <div class="scn-CardHeader">
+        <h4 class="scn-CardTitle">{{ row.item.label }} ({{ lent }})</h4>
+      </div>
+      <p class="scn-CardMeta scn-IncomeLine">{{ lentIncomeText }}</p>
+      <p class="scn-AutoLine">
+        <template v-if="row.mode === 'gated'">Beat "{{ row.bossTitle }}" to buy your own</template>
+        <template v-else>Buy the tier above to buy your own</template>
+      </p>
+      <FavourRows :kind="kind" :item-id="row.item.id" />
+    </div>
+  </div>
+
+  <div v-else-if="row.mode === 'teaser'" class="scn-Card scn-Card-teaser">
     <div class="scn-TeaserBox">?</div>
     <div class="scn-CardBody">
       <div class="scn-CardHeader">
@@ -7,6 +28,7 @@
       </div>
       <p class="scn-CardMeta">Cost: ???</p>
       <p class="scn-AutoLine">Buy the tier above to reveal</p>
+      <FavourRows :kind="kind" :item-id="row.item.id" />
     </div>
   </div>
 
@@ -17,6 +39,7 @@
         <h4 class="scn-CardTitle">Locked</h4>
       </div>
       <p class="scn-AutoLine">Beat "{{ row.bossTitle }}" to unlock</p>
+      <FavourRows :kind="kind" :item-id="row.item.id" />
     </div>
   </div>
 
@@ -34,7 +57,7 @@
         :alt="row.item.label"
       >
       <div class="scn-CompactBody">
-        <span class="scn-CompactTitle">{{ row.item.label }} ({{ owned }})</span>
+        <span class="scn-CompactTitle">{{ row.item.label }} ({{ countText }})</span>
         <span v-if="mMultiplier > 1" class="scn-MilestoneBadge">
           x{{ formatMult(mMultiplier) }}
         </span>
@@ -73,7 +96,7 @@
 
       <div class="scn-CardBody">
         <div class="scn-CardHeader">
-          <h4 class="scn-CardTitle">{{ row.item.label }} ({{ owned }})</h4>
+          <h4 class="scn-CardTitle">{{ row.item.label }} ({{ countText }})</h4>
           <span v-if="mMultiplier > 1" class="scn-MilestoneBadge">
             x{{ formatMult(mMultiplier) }}
           </span>
@@ -95,6 +118,8 @@
         <p class="scn-CardMeta scn-IncomeLine">{{ incomeLineText }}</p>
 
         <p class="scn-SynergyLine">{{ synergyText }}</p>
+
+        <FavourRows :kind="kind" :item-id="row.item.id" />
 
         <div class="scn-Pips" aria-label="Ownership milestones">
           <span
@@ -153,6 +178,7 @@ import {
   milestoneMultiplier
 } from '../engine/economy'
 import { useGameStore, type VisibleRow } from '../stores/game'
+import FavourRows from './FavourRows.vue'
 import { formatCurrency } from '../utils/format'
 
 const props = defineProps<{
@@ -187,7 +213,14 @@ const compactEligible = computed(
     store.isAutoBuyEnabled(props.kind, props.row.item.id)
 )
 
-const isCompact = computed(() => compactEligible.value && !manualExpand.value)
+// A card with favour rows on it always shows them
+const hasFavourRows = computed(
+  () =>
+    lent.value > 0 ||
+    store.favourDeparturesFor(props.kind, props.row.item.id).length > 0 ||
+    (store.favoursLeft > 0 && store.favourTarget(props.kind) === props.row.item.id)
+)
+const isCompact = computed(() => compactEligible.value && !manualExpand.value && !hasFavourRows.value)
 
 const canRefold = computed(() => compactEligible.value && manualExpand.value)
 
@@ -196,6 +229,24 @@ function handleCardClick(): void {
     manualExpand.value = true
   }
 }
+
+// Units lent by a favour: they earn, but aren't yours
+const lent = computed(() => store.lentUnits[props.kind][props.row.item.id] ?? 0)
+
+const countText = computed(() => (lent.value > 0 ? `${owned.value} + ${lent.value}` : `${owned.value}`))
+
+// One lent unit at the family's rates, ignoring milestones and synergy
+const lentUnitIncome = computed(() => {
+  if (props.kind === 'jobs') {
+    const perClick = jobUnitClickIncome(props.row.item as JobDef, 1, store.jobBaseEconomyInput)
+    return store.noTap ? perClick * store.allowanceTapRate : perClick
+  }
+  return businessUnitPerSecond(props.row.item as BusinessDef, 1, { ...store.economyInput, jobsPurchased: {} })
+})
+
+const lentIncomeText = computed(
+  () => `Income: ${formatCurrency(lentUnitIncome.value)}/${props.kind === 'jobs' && !store.noTap ? 'click' : 's'} each, on your family's rates`
+)
 
 const owned = computed(() => {
   if (props.row.mode !== 'revealed') return 0

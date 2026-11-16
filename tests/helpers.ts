@@ -8,3 +8,11 @@ export function hireEstateManager(store: ReturnType<typeof useGameStore>): void 
   store.hireAdvisor(0)
   store.money = cash
 }
+
+// Seat any advisor without paying the hiring fee
+export function hireFree(store: ReturnType<typeof useGameStore>, advisorId: string): void {
+  const cash = store.money
+  store.headhunterOffer = [advisorId]
+  store.hireAdvisor(0)
+  store.money = cash
+}

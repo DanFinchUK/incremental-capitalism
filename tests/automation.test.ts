@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { automationShare, isWithinAutomationLine, MAX_AUTOMATION_PURCHASES_PER_TICK } from '../src/engine/automation'
 import { useGameStore } from '../src/stores/game'
 import { JOBS_BY_ID } from '../src/data/items'
-import { hireEstateManager } from './helpers'
+import { hireEstateManager, hireFree } from './helpers'
 
 describe('automation line', () => {
   it('is zero until someone brings automation; Old School Tie brings 3% per rank on its own', () => {
@@ -73,13 +73,21 @@ describe('mastery automation in the store', () => {
     expect(store.jobsPurchased['19']).toBe(owned)
   })
 
-  it('Old School Tie moves the line closer to the frontier', () => {
+  it('a Head Butler moves the line closer to the frontier', () => {
     // 3% of cash clears the Cleaner twice over; 1% would stay under it
     const store = fresh(JOBS_BY_ID['2'].baseCost / 0.015)
-    store.perks.nepotism = 2
+    hireFree(store, 'head-butler')
     // The per-second cap means the cheapest items fill first
     for (let i = 1; i <= 20; i++) store.tick(1000 + i * 1100)
     expect(store.jobsPurchased['2'] ?? 0).toBeGreaterThan(0)
+  })
+
+  it('Old School Tie no longer brings automation: it calls in favours', () => {
+    const store = fresh(1e9)
+    const line = store.automationLine
+    store.perks.nepotism = 2
+    expect(store.automationLine).toBe(line)
+    expect(store.favoursTotal).toBe(2)
   })
 
   it('buys at most a capped number of units per second', () => {

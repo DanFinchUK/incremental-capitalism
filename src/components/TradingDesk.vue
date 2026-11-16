@@ -63,6 +63,7 @@
             />
 
             <path :d="flowAreaPath" fill="url(#ic-flow-grad)" />
+            <path v-if="hasFavourBand" :d="favourBandPath" class="scn-FavourBand" data-testid="favour-band" />
             <path :d="passiveLinePath" fill="none" class="scn-PassiveLine" />
             <path :d="flowLinePath" fill="none" class="scn-FlowLine" />
 
@@ -86,6 +87,7 @@
             <span class="scn-LegendInline">
               <i class="scn-Swatch scn-Swatch-solid"></i> Realised 1s
               <i class="scn-Swatch scn-Swatch-dashed"></i> Passive floor
+              <template v-if="hasFavourBand"><i class="scn-Swatch scn-Swatch-favour"></i> From favours</template>
             </span>
             <span>High {{ formatCurrency(flowRange.max) }}/s</span>
           </div>
@@ -219,7 +221,8 @@ const flowSamples = computed<CashflowSample[]>(() => {
   const livePoint: CashflowSample = {
     ts: store.nowMs,
     realisedPerSec: store.realisedPerSecond,
-    passivePerSec: store.moneyPerSecond
+    passivePerSec: store.moneyPerSecond,
+    favourPerSec: list.at(-1)?.favourPerSec
   }
   return list.length > 0 ? [...list, livePoint] : [livePoint]
 })
@@ -285,6 +288,19 @@ const flowLinePath = computed(() => {
 const flowAreaPath = computed(() => {
   const base = PAD_TOP + PLOT_H
   return `${flowLinePath.value} L ${SVG_W} ${base} L 0 ${base} Z`
+})
+
+// What favours bring in: a gold band hanging from the line, as deep as their share
+const hasFavourBand = computed(() => flowSamples.value.some((p) => (p.favourPerSec ?? 0) > 0))
+
+const favourBandPath = computed(() => {
+  const pts = flowSamples.value
+  if (pts.length < 2) return ''
+  const top = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xForFlow(i, pts.length)} ${yForFlow(p.realisedPerSec)}`)
+  const bottom = pts
+    .map((p, i) => `L ${xForFlow(i, pts.length)} ${yForFlow(Math.max(0, p.realisedPerSec - (p.favourPerSec ?? 0)))}`)
+    .reverse()
+  return `${top.join(' ')} ${bottom.join(' ')} Z`
 })
 
 const passiveLinePath = computed(() => {

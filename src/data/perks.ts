@@ -68,10 +68,10 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'nepotism',
     label: 'Old School Tie',
-    description: 'Automation for the whole bloodline: +3% of cash a rank, advisor or not.',
-    maxRank: 4,
+    description: 'Call in a favour: someone you were at school with lends you the bottom rung of a list for 3 minutes, even one you couldn\'t buy yet. One favour a generation, a rank.',
+    maxRank: 3,
     costForRank: () => 1,
-    effectSummary: (r) => `+${3 * r}% to the automation line`
+    effectSummary: (r) => `${r} favour${r === 1 ? '' : 's'} a generation`
   },
   {
     id: 'deregulation',

@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import ItemCard from '../src/components/ItemCard.vue'
 import { JOBS_BY_ID } from '../src/data/items'
 import { useGameStore } from '../src/stores/game'
-import { hireEstateManager } from './helpers'
+import { hireEstateManager, hireFree } from './helpers'
 
 describe('item card without automation', () => {
   let pinia: ReturnType<typeof createPinia>
@@ -30,7 +30,7 @@ describe('item card without automation', () => {
   it('quotes the boss a locked card is waiting on', () => {
     useGameStore().hydrateFromStorage(1000)
     const wrapper = mount(ItemCard, {
-      props: { kind: 'jobs', row: { mode: 'gated', bossTitle: 'Polishing the Family Silver' } as never },
+      props: { kind: 'jobs', row: { mode: 'gated', key: 'g', bossTitle: 'Polishing the Family Silver', item: JOBS_BY_ID['13'] } as never },
       global: { plugins: [pinia] }
     })
     expect(wrapper.text()).toContain('Beat "Polishing the Family Silver" to unlock')
@@ -47,7 +47,7 @@ describe('item card without automation', () => {
     expect(store.automationPill).toBe('')
     hireEstateManager(store)
     expect(store.automationPill).toBe('Auto under 1% of cash')
-    store.perks.nepotism = 2
+    hireFree(store, 'head-butler')
     expect(store.automationPill).toMatch(/^Auto under [\d.]+% of cash$/)
     expect(store.automationPill).not.toBe('Auto under 1% of cash')
     store.toggleAutoBuyPaused()

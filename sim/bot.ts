@@ -267,6 +267,16 @@ function readyToChallengeBoss(store: Store, cfg: BotConfig): boolean {
   }
 }
 
+// Favours go on a list that has hit a locked card: help from above the gate
+// while the bot climbs towards the boss
+function callInFavours(store: Store): void {
+  if (store.favoursLeft <= 0 || store.bossAttempt) return
+  for (const kind of ['businesses', 'jobs'] as const) {
+    const rows = kind === 'jobs' ? store.visibleJobs : store.visibleBusinesses
+    if (rows.at(-1)?.mode === 'gated' && store.favoursLeft > 0) store.callInFavour(kind, store.nowMs)
+  }
+}
+
 function decide(store: Store, cfg: BotConfig): void {
   manageOffice(store)
   const ev = store.activeEvent
@@ -276,6 +286,8 @@ function decide(store: Store, cfg: BotConfig): void {
   } else if (ev && !ev.corked && !ev.def.shady) {
     store.claimMarketEvent(store.nowMs)
   }
+
+  callInFavours(store)
 
   if (readyToChallengeBoss(store, cfg)) {
     store.startBossAttempt()

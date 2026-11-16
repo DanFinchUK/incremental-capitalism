@@ -1,5 +1,6 @@
 export type IncomeSource = 'passive' | 'manual' | 'windfall'
-export type TelemetryMarker = 'M' | '★'
+// Pins on the cashflow chart, in words
+export type TelemetryMarker = 'Milestone' | 'Class' | 'Opportunity'
 
 export interface IncomeEntry {
   ts: number
@@ -11,6 +12,8 @@ export interface CashflowSample {
   ts: number
   realisedPerSec: number
   passivePerSec: number
+  // What favours bring in a second, drawn as a band under the line
+  favourPerSec?: number
   marker?: TelemetryMarker
 }
 
@@ -124,7 +127,8 @@ export function observeBalance(state: TelemetryState, ts: number, cash: number):
 }
 
 export function markTelemetryEvent(state: TelemetryState, marker: TelemetryMarker): void {
-  if (state.pendingMarker !== '★') {
+  // An opportunity outranks a milestone landing in the same sample
+  if (state.pendingMarker !== 'Opportunity') {
     state.pendingMarker = marker
   }
 }
@@ -134,7 +138,8 @@ export function sampleTelemetry(
   ts: number,
   passivePerSec: number,
   cash: number,
-  explicitMarker?: TelemetryMarker
+  explicitMarker?: TelemetryMarker,
+  favourPerSec = 0
 ): CashflowSample {
   observeBalance(state, ts, cash)
   const realisedPerSec = currentRealisedPerSec(state, ts)
@@ -142,9 +147,9 @@ export function sampleTelemetry(
   state.pendingMarker = null
   state.lastSampleTs = ts
 
-  const sample: CashflowSample = marker
-    ? { ts, realisedPerSec, passivePerSec, marker }
-    : { ts, realisedPerSec, passivePerSec }
+  const sample: CashflowSample = { ts, realisedPerSec, passivePerSec }
+  if (marker) sample.marker = marker
+  if (favourPerSec > 0) sample.favourPerSec = favourPerSec
 
   state.samples.push(sample)
   if (state.samples.length > MAX_SAMPLES) {

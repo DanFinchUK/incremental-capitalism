@@ -95,9 +95,9 @@ describe('catalogue & static data', () => {
     expect(perkNextCost('hustleCap', 0)).toBe(1)
     expect(perkNextCost('hustleCap', 4)).toBe(1)
     expect(perkNextCost('hustleCap', 5)).toBeNull()
-    expect(perkNextCost('nepotism', 4)).toBeNull()
+    expect(perkNextCost('nepotism', 3)).toBeNull()
     // The whole finite tree costs 24 Legacy, more than a bloodline's 9; Interns are the open-ended sink
-    expect(perkSpend({ autoClicker: 0, hustleCap: 5, offshore: 5, nepotism: 4, deregulation: 4, insider: 4, officeSeats: 2 })).toBe(24)
+    expect(perkSpend({ autoClicker: 0, hustleCap: 5, offshore: 5, nepotism: 3, deregulation: 4, insider: 4, officeSeats: 2 })).toBe(23)
     expect(perkSpend({ ...EMPTY_PERKS, autoClicker: 10 })).toBe(9)
     expect(MARKET_EVENTS.some((e) => e.shady)).toBe(true)
     // Rarity tiers: 60/30/10, and the 7x Overtime only in Legendary

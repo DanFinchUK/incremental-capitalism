@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { SFX_KINDS, playSfx, shepardVoices } from '../src/engine/audio'
+import { SFX_KINDS, SHEPARD_STEPS, playSfx, shepardVoices } from '../src/engine/audio'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
@@ -19,20 +19,21 @@ describe('sound', () => {
 
   it('the tap climbs forever: every step rises, a full octave lands back where it began', () => {
     const level = (step: number) => shepardVoices(step).reduce((sum, v) => sum + v.weight, 0)
-    for (let step = 0; step < 24; step++) {
+    const n = SHEPARD_STEPS
+    for (let step = 0; step < n * 2; step++) {
       // Every tap is equally loud
       expect(level(step)).toBeCloseTo(1, 6)
-      // Twelve semitone steps (one octave) give exactly the same sound
-      expect(shepardVoices(step + 12)).toEqual(shepardVoices(step))
+      // A full octave of steps gives exactly the same sound
+      expect(shepardVoices(step + n)).toEqual(shepardVoices(step))
     }
     // At the wrap the top voice leaves and a new one enters at the bottom,
     // both close to silent, so the join can't be heard
-    const last = shepardVoices(11)
-    const first = shepardVoices(12)
+    const last = shepardVoices(n - 1)
+    const first = shepardVoices(n)
     expect(last[last.length - 1].weight).toBeLessThan(0.01)
     expect(first[0].weight).toBe(0)
     // Within an octave every voice rises from one tap to the next
-    for (let step = 0; step < 11; step++) {
+    for (let step = 0; step < n - 1; step++) {
       const now = shepardVoices(step)
       const next = shepardVoices(step + 1)
       now.forEach((v, i) => expect(next[i].freq).toBeGreaterThan(v.freq))

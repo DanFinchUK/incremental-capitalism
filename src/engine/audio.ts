@@ -188,26 +188,27 @@ function brass(v: Voice, notes: ReadonlyArray<number>, at: number, dur: number, 
 }
 
 // The tap's endless climb (a Shepard scale). Each tap sounds the same note in
-// several octaves at once and moves up a semitone, so there is no tune to
-// recognise. Loudness peaks mid-range and fades to nothing at both ends, so
-// the top voice slips away as a new one rises in at the bottom: it always
-// sounds as if it is going up, yet never leaves the same range.
-const SHEPARD_STEPS = 12
-const SHEPARD_OCTAVES = 4
-const SHEPARD_LOWEST = 330
+// nine octaves at once and moves up a nineteenth of an octave, a step that
+// fits no familiar scale, so there is no tune to recognise. Loudness peaks
+// mid-range and fades to nothing at both ends, so the top voice slips away as
+// a new one rises in at the bottom: it always sounds as if it is going up,
+// yet never leaves the same range. Taps ring long enough to overlap.
+export const SHEPARD_STEPS = 19
+const SHEPARD_OCTAVES = 9
+const SHEPARD_LOWEST = 80
 let shepardStep = 0
 
-export function shepardVoices(step: number): Array<{ freq: number; weight: number }> {
+export function shepardVoices(step: number): Array<{ freq: number; weight: number; x: number }> {
   const n = SHEPARD_STEPS
   const pos = (((step % n) + n) % n) / n
-  const voices: Array<{ freq: number; weight: number }> = []
+  const voices: Array<{ freq: number; weight: number; x: number }> = []
   for (let octave = 0; octave < SHEPARD_OCTAVES; octave++) {
     // Where this voice sits in the range, 0 at the bottom to 1 at the top
     const x = (octave + pos) / SHEPARD_OCTAVES
     // Raised cosine: across equally spaced octaves these always sum to half
     // the octave count, so every tap is equally loud
     const weight = (0.5 - 0.5 * Math.cos(2 * Math.PI * x)) / (SHEPARD_OCTAVES / 2)
-    voices.push({ freq: SHEPARD_LOWEST * 2 ** (octave + pos), weight })
+    voices.push({ freq: SHEPARD_LOWEST * 2 ** (octave + pos), weight, x })
   }
   return voices
 }
@@ -217,16 +218,19 @@ const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void
   click: (v, { intensity }) => {
     const voices = shepardVoices(shepardStep++)
     // Small differences on every tap, so no two rounds of the climb sound the
-    // same: up to 10 cents of tuning (all voices together, keeping the
-    // octaves true), a slightly longer or shorter ring, and each voice a
-    // touch louder or softer
-    const tune = 2 ** ((Math.random() - 0.5) * (20 / 1200))
-    const dur = 0.06 + Math.random() * 0.025
-    for (const { freq, weight } of voices) {
-      const level = 0.22 * weight * (0.85 + Math.random() * 0.3)
-      if (weight > 0.01) tone(v, freq * tune, 0, dur, 'sine', level, { attack: 0.002 })
+    // same: a few cents of tuning (all voices together, keeping the octaves
+    // true), a slightly longer or shorter ring, each voice a touch louder or
+    // softer
+    const tune = 2 ** ((Math.random() - 0.5) * (6 / 1200))
+    const ring = 0.5 * (1 + (Math.random() - 0.5) * 0.09)
+    for (const { freq, weight, x } of voices) {
+      // Past 20 kHz nobody hears it
+      if (weight <= 0.01 || freq * tune > 20000) continue
+      const level = 0.26 * weight * (1 + (Math.random() - 0.5) * 0.09)
+      // Higher voices ring a little shorter, like a struck glass
+      tone(v, freq * tune, 0, Math.max(0.04, ring * (1 - 0.35 * x)), 'sine', level, { attack: 0.003 })
     }
-    if (intensity >= 0.99 && Math.random() < 0.35) tone(v, 3200, 0.03, 0.07, 'sine', 0.05)
+    if (intensity >= 0.99 && Math.random() < 0.35) tone(v, 3200, 0.03, 0.07, 'sine', 0.04)
   },
   // Clocking in: a stamp and a short chirp of the time card
   buyJob: (v, { count }) => {

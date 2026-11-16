@@ -574,6 +574,12 @@
 }
 
 /* Old School Tie: the button that calls in a favour, among the boosts */
+.scn-SwapPicker .scn-Action {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
 .scn-FavourCall {
   cursor: pointer;
   font-family: inherit;

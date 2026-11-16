@@ -44,7 +44,8 @@
           <p class="scn-AutoLine">{{ store.wording(seat.def.effectText) }}</p>
           <p v-if="seat.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(seat.inst.campaignMs / 60000) }} min</p>
           <!-- Every PA chair taken: choose who steps down to the open office -->
-          <div v-if="swapping === s" class="scn-SeatPicker" data-testid="pa-swap-picker">
+          <div v-if="swapping === s" class="scn-SeatPicker scn-SwapPicker" data-testid="pa-swap-picker">
+            <span class="scn-StatHint">Swap with:</span>
             <button
               v-for="pa in pas.filter((p) => p !== null)"
               :key="pa!.chair"
@@ -53,7 +54,7 @@
               data-testid="pa-swap"
               @click="swapInto(s, pa!.chair)"
             >
-              Swap with {{ pa!.title }}
+              {{ pa!.title }}
             </button>
             <button type="button" class="scn-Action scn-Action-outline" @click="swapping = null">Cancel</button>
           </div>

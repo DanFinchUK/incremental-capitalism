@@ -88,47 +88,54 @@ It is a heir's own trait, so it lasts their lifetime only.
 
 ## Old School Tie: calling in a favour
 
-Old School Tie stops being automation and becomes favours: getting a leg up
-from people you were at school with, beyond what you could otherwise reach.
+Reworked after play. Lending the bottom card's item was wildly overpowered:
+a rung earns about 100 times the one below, and the sim's favour report
+(`sim/favour.report.sim.ts`) found one lent unit typically worth 25x to 940x
+income. A favour is now a themed national event: your connections arrange
+for Britain, briefly, to work, and it mostly works for you.
 
-- **Where.** A "Call in a favour (n/n)" button on the bottom card of the Jobs
-  list and of the Businesses list, whatever that card is: locked above a gate,
-  not yet revealed, or the last item in the game. Full width of the card's
-  text side, under its text.
-- **What a press does.** Lends one unit of that item for 3 minutes. Pressing
-  again lends another unit, as buying would. Each loan has its own clock: a
-  second favour with 5 seconds left on the first runs both for 5 seconds,
-  then the first drops off and the second runs on for 2:55.
-- **Favours.** Shared between the two lists. They reset each generation;
-  ranks add more. With one favour the button just says "Call in a favour";
-  with more it shows what's left, "Call in a favour (1/2)", the way Buy
-  doesn't show x1. It must be strong enough to be worth Legacy.
-- **The button while a loan runs.** The pressed button becomes a countdown row
-  for that loan, "Lending you a hand for 2:58", not clickable. If favours
-  remain, another "Call in a favour (1/2)" button appears below it. Each
-  running loan has its own row. When a loan ends its row stays, greyed, in
-  the order the favours were called in, until the generation ends; it stays
-  even after the card locks again. Each finished row says where the helper
-  went, picked at random with no repeats on a card. Each line has a sting
-  about privilege, revolving doors or favours not being free, and fits a
-  phone-width row: "Flew back to Dubai", "Headed back to Mayfair", "Signing
-  in at the Lords", "Gone to Davos to fight inequality", "Took a non-exec at
-  a water firm", "Now advising your rivals", "Left a card and an invoice",
-  "Lunch at the club ran to dinner", "Called away to a shoot", "Recalled to
-  the Treasury", "Back on the yacht", "Off to a select committee".
-- **The card while a loan runs.** Shows the loaned item, only on that card;
-  the rung after it stays hidden. While the item is locked for buying, the
-  title shows just the number lent, "Broker (1)". Once it can be bought, it
-  shows owned and lent, "Broker (2 + 1)", next to the usual Buy button.
-- **Earnings.** A lent unit earns what one unit earns at the family's rates
-  (Legacy, class, heir traits, advisors, titles), ignoring any of the same
-  item owned: no milestones, no synergy.
-- **Not yours.** Lent units add nothing to net worth, don't reveal the next
-  rung, and don't change the price of buying the item.
-- **Gates.** Beating the gate mid-loan unlocks the card as normal and the
-  loans run on: own 3 and have 2 lent, and all 5 earn. Lending above the
-  price ceiling is allowed; it skips the shopping restriction, not the boss.
-- **Retiring** ends any running loans.
+- **Calling one in.** A "Call in a favour" button sits with the temporary
+  boosts (beside Hustle on desktop, in the stats row on phones). With more
+  than one favour it shows what's left, "Call in a favour (1/2)". It opens a
+  dialog offering three events, like Introductions and the heir draft.
+  Closing it without choosing keeps the favour.
+- **Weighted to you.** Each event is offered in proportion to what it would
+  add to the family's income right now; an event worth nothing (Interns on a
+  heir who bars them, Media with no media businesses) is never offered.
+  The rare all-round events are offered less often.
+- **Effects.** Each lasts 3 minutes on its own clock; favours stack.
+  - A business sector earns double (+100%).
+  - Tap pay +50% (which also pays the Interns and the allowance more).
+  - Interns +100%.
+  - Rare: all income +25%.
+- **Favours a generation.** One per Old School Tie rank, up to 3. They reset
+  each generation, and retiring ends any event still running.
+- **While it runs.** The button strip shows the event and its countdown,
+  "All trains run on time · 2:41". When it ends, the news says how:
+  "All trains run on time: quietly reversed after the election."
+
+| Event | Effect |
+|---|---|
+| All trains run on time | Infrastructure businesses earn double |
+| Potholes fixed overnight, nationwide | Infrastructure businesses earn double |
+| Planning permission granted by return of post | Property businesses earn double |
+| The regulator goes on a long lunch | Finance businesses earn double |
+| A bank holiday that's actually sunny | Food and drink businesses earn double |
+| The licence fee quietly redirected | Media businesses earn double |
+| Every contract goes to a friend of a friend | Services businesses earn double |
+| Meetings that could have been an email outlawed | Tap pay +50% |
+| Nobody replies-all for a whole week | Tap pay +50% |
+| The interns find the coffee machine | Interns earn double |
+| The trains and the Wi-Fi both work | All income +25% (rare) |
+| The pound strengthens and nobody knows why | All income +25% (rare) |
+
+How they end (picked at random): "Quietly reversed after the election",
+"Ruled unlawful by the Supreme Court", "Rebranded as a levelling-up fund",
+"Scrapped in the next reshuffle", "Paused pending a review", "Blamed on the
+previous government", "Leaked to the Guardian", "Sunk by a select
+committee".
+
+Open: five options instead of three, perhaps at Old School Tie rank 3.
 
 ## Keeping the team together
 

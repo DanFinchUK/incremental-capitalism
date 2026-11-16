@@ -36,6 +36,7 @@
         </span>
       </div>
       <h2 class="scn-BossTitle">{{ boss.def.title }}</h2>
+      <p class="scn-BossBlurb" data-testid="boss-blurb">{{ boss.def.blurb }}</p>
       <p v-if="boss.status !== 'locked'" class="scn-StatHint" data-testid="boss-net-worth">
         Net worth {{ formatCurrency(store.netWorth) }}<template v-if="gainedThisFight !== null">
           · up {{ formatCurrency(gainedThisFight) }} this fight</template>

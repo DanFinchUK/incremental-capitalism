@@ -36,6 +36,8 @@ describe('boss and splits UI', () => {
     const card = () => wrapper.find('[data-testid="boss-card"]')
     expect(card().text()).toContain('Zero-Hours Walkout')
     expect(wrapper.find('[data-testid="boss-start"]').exists()).toBe(false)
+    // The story is there from the start, before the fight can be taken on
+    expect(card().find('[data-testid="boss-blurb"]').text()).toBe(BOSSES[0].blurb)
 
     store.addDebugMoney(gateThreshold(1))
     await wrapper.vm.$nextTick()

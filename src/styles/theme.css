@@ -1505,6 +1505,14 @@
   font-size: 18px;
 }
 
+.scn-BossBlurb {
+  margin: 0;
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
 .scn-BossRule {
   margin: 0;
   font-size: 13px;

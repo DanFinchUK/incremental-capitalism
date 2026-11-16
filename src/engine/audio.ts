@@ -409,8 +409,11 @@ export function playSfx(kind: SfxKind, muted: boolean, options: SfxOptions = {})
 
 // Renders one cue offline and measures it: for checking every cue makes a
 // sound, ends in good time and stays below clipping
-export async function renderSfx(kind: SfxKind, options: SfxOptions = {}): Promise<{ peak: number; seconds: number }> {
-  const sampleRate = 22050
+export async function renderSfx(
+  kind: SfxKind,
+  options: SfxOptions = {},
+  sampleRate = 22050
+): Promise<{ peak: number; seconds: number; samples: Float32Array }> {
   const ctx = new OfflineAudioContext(1, sampleRate * 4, sampleRate)
   const compressor = ctx.createDynamicsCompressor()
   compressor.threshold.value = -18
@@ -428,7 +431,171 @@ export async function renderSfx(kind: SfxKind, options: SfxOptions = {}): Promis
     if (a > peak) peak = a
     if (a > 0.001) last = i
   }
-  return { peak, seconds: last / sampleRate }
+  return { peak, seconds: last / sampleRate, samples: data }
 }
 
 export const SFX_KINDS = Object.keys(CUES) as SfxKind[]
+
+// ---------------------------------------------------------------------------
+// Boss music: a driving minor-key loop for the length of a fight, built from
+// the same voices as the cues. A small scheduler books each sixteenth note a
+// moment ahead, so timers that run late never put it off the beat. Layers
+// join as the fight goes on (intensity 0 to 1): bass and kick from the start,
+// stabs, snare and hats after two bars, an arpeggio past halfway, and
+// doubled hats with a stab every bar near the end.
+
+const MUSIC_BPM = 132
+const MUSIC_LEVEL = 0.3
+const STEP_SEC = 60 / MUSIC_BPM / 4
+const LOOKAHEAD_SEC = 0.12
+
+// Cm, Ab, Fm, G: two bars each. The G major gives it a harmonic-minor menace.
+const MUSIC_CHORDS: ReadonlyArray<{ root: number; third: number }> = [
+  { root: 36, third: 3 },
+  { root: 44, third: 4 },
+  { root: 41, third: 3 },
+  { root: 43, third: 4 }
+]
+// The bass line over a bar of sixteenths: semitones above the root, or null to rest
+const BASS_LINE: ReadonlyArray<number | null> = [0, null, 0, 12, 0, null, 0, 12, 0, null, 0, 12, 0, null, 12, 0]
+
+function midiFreq(n: number): number {
+  return 440 * 2 ** ((n - 69) / 12)
+}
+
+interface MusicState {
+  ctx: BaseAudioContext
+  bus: GainNode
+  timer: ReturnType<typeof setInterval> | null
+  step: number
+  nextTime: number
+  intensity: number
+}
+
+let music: MusicState | null = null
+
+function scheduleStep(m: MusicState, step: number, time: number): void {
+  const v: Voice = { ctx: m.ctx, out: m.bus }
+  const at = Math.max(0, time - m.ctx.currentTime)
+  const inBar = step % 16
+  const bar = Math.floor(step / 16)
+  const chord = MUSIC_CHORDS[Math.floor(bar / 2) % MUSIC_CHORDS.length]
+  const triad = [0, chord.third, 7]
+  const built = bar >= 2
+  const late = m.intensity >= 0.85
+
+  // Kick on every beat: a sine dropping fast
+  if (inBar % 4 === 0) tone(v, 150, at, 0.18, 'sine', 0.35, { glideTo: 45, attack: 0.002 })
+
+  // Bass
+  const b = BASS_LINE[inBar]
+  if (b !== null) {
+    tone(v, midiFreq(chord.root + b), at, STEP_SEC * 1.6, 'sawtooth', 0.12, { lowpass: 600 + m.intensity * 600, attack: 0.004 })
+  }
+
+  if (!built) return
+
+  // Snare on two and four
+  if (inBar === 4 || inBar === 12) {
+    noise(v, at, 0.14, 0.32, { type: 'bandpass', freq: 1800, q: 0.8 })
+    tone(v, 190, at, 0.08, 'triangle', 0.08)
+  }
+
+  // Hats on the off-beats, every sixteenth near the end
+  if (late ? inBar % 2 === 1 || inBar % 4 === 2 : inBar % 4 === 2) {
+    noise(v, at, 0.035, inBar % 4 === 2 ? 0.12 : 0.06, { type: 'highpass', freq: 7000 })
+  }
+
+  // Brass stabs at the top of each chord, and on every bar near the end
+  if ((bar % 2 === 0 || late) && (inBar === 0 || inBar === 3)) {
+    brass(v, triad.map((i) => midiFreq(chord.root + 24 + i)), at, inBar === 0 ? 0.22 : 0.12, 0.018)
+  }
+
+  // Arpeggio past halfway: up and down the chord in sixteenths
+  if (m.intensity >= 0.5) {
+    const shape = [0, 1, 2, 3, 2, 1, 2, 3]
+    const note = [...triad, 12][shape[inBar % shape.length]]
+    tone(v, midiFreq(chord.root + 36 + note), at, STEP_SEC * 0.9, 'square', 0.022, { lowpass: 2600, attack: 0.003 })
+  }
+}
+
+function runScheduler(m: MusicState): void {
+  // In a background tab timers slow to a crawl: rest, then pick up on the beat
+  if (typeof document !== 'undefined' && document.hidden) {
+    m.nextTime = m.ctx.currentTime + 0.1
+    return
+  }
+  // Never try to catch up a backlog: skip ahead rather than play it in a heap
+  if (m.nextTime < m.ctx.currentTime - 0.05) m.nextTime = m.ctx.currentTime + 0.02
+  while (m.nextTime < m.ctx.currentTime + LOOKAHEAD_SEC) {
+    scheduleStep(m, m.step, m.nextTime)
+    m.step += 1
+    m.nextTime += STEP_SEC
+  }
+}
+
+export function startBossMusic(intensity = 0): void {
+  if (music) return
+  try {
+    const ctx = getAudioContext()
+    if (!ctx || !master) return
+    const bus = ctx.createGain()
+    bus.gain.setValueAtTime(0.0001, ctx.currentTime)
+    bus.gain.exponentialRampToValueAtTime(MUSIC_LEVEL, ctx.currentTime + 0.6)
+    bus.connect(master)
+    const m: MusicState = { ctx, bus, timer: setInterval(() => runScheduler(m), 25), step: 0, nextTime: ctx.currentTime + 0.05, intensity }
+    music = m
+    runScheduler(m)
+  } catch {
+    music = null
+  }
+}
+
+export function setBossMusicIntensity(intensity: number): void {
+  if (music) music.intensity = Math.max(0, Math.min(1, intensity))
+}
+
+export function stopBossMusic(): void {
+  const m = music
+  if (!m) return
+  music = null
+  if (m.timer) clearInterval(m.timer)
+  try {
+    const t = m.ctx.currentTime
+    m.bus.gain.cancelScheduledValues(t)
+    m.bus.gain.setValueAtTime(Math.max(0.0001, m.bus.gain.value), t)
+    m.bus.gain.exponentialRampToValueAtTime(0.0001, t + 0.35)
+    setTimeout(() => m.bus.disconnect(), 600)
+  } catch {
+    // Ignore audio errors in headless or restricted environments
+  }
+}
+
+export function isBossMusicPlaying(): boolean {
+  return music !== null
+}
+
+// Renders the boss music offline: for checking its level and hearing a bar
+// count at a given intensity without a fight
+export async function renderBossMusic(bars: number, intensity: number, sampleRate = 44100): Promise<{ samples: Float32Array; peak: number; rms: number }> {
+  const seconds = bars * 16 * STEP_SEC + 0.5
+  const ctx = new OfflineAudioContext(1, Math.ceil(sampleRate * seconds), sampleRate)
+  const compressor = ctx.createDynamicsCompressor()
+  compressor.threshold.value = -18
+  compressor.ratio.value = 6
+  const bus = ctx.createGain()
+  bus.gain.value = MUSIC_LEVEL * 0.9
+  bus.connect(compressor)
+  compressor.connect(ctx.destination)
+  const m: MusicState = { ctx, bus, timer: null, step: 0, nextTime: 0, intensity }
+  for (let step = 0; step < bars * 16; step++) scheduleStep(m, step, step * STEP_SEC)
+  const samples = (await ctx.startRendering()).getChannelData(0)
+  let peak = 0
+  let sum = 0
+  for (let i = 0; i < samples.length; i++) {
+    const a = Math.abs(samples[i])
+    if (a > peak) peak = a
+    sum += samples[i] * samples[i]
+  }
+  return { samples, peak, rms: Math.sqrt(sum / samples.length) }
+}

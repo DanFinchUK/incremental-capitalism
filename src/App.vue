@@ -100,11 +100,11 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { BUSINESSES_BY_ID, JOBS_BY_ID, type ItemKind } from './data/items'
 import { itemMilestones } from './engine/economy'
 import type { PerkId } from './data/perks'
-import { playSfx } from './engine/audio'
+import { playSfx, setBossMusicIntensity, startBossMusic, stopBossMusic } from './engine/audio'
 import { installTapGuard } from './utils/tapGuard'
 import { applyRoom } from './utils/applyRoom'
 import { useGameStore } from './stores/game'
@@ -193,6 +193,28 @@ watch(
   (n) => {
     if (n === 0) return
     for (const c of store.sfxQueue.splice(0)) playSfx(c.kind, store.muted, c.options)
+  }
+)
+
+// Boss music plays for the length of a fight, unless muted. It builds with
+// whichever is further along: the clock or the target.
+const bossMusicIntensity = computed(() => {
+  const boss = store.nextBoss
+  const tracker = store.bossAttempt
+  if (boss?.status !== 'active' || !tracker) return null
+  const total = boss.def.timeLimitSec * tracker.timeMult
+  const timeUsed = total > 0 ? 1 - boss.remainingSec / total : 0
+  return Math.max(0, Math.min(1, Math.max(timeUsed, boss.progress)))
+})
+watch(
+  () => [bossMusicIntensity.value !== null && !store.muted, bossMusicIntensity.value] as const,
+  ([playing, intensity]) => {
+    if (!playing) {
+      stopBossMusic()
+      return
+    }
+    startBossMusic(intensity ?? 0)
+    setBossMusicIntensity(intensity ?? 0)
   }
 )
 
@@ -355,6 +377,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  stopBossMusic()
   removeTapGuard?.()
   if (rafId !== null) {
     window.cancelAnimationFrame(rafId)

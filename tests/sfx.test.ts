@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { SFX_KINDS, SHEPARD_STEPS, playSfx, shepardVoices } from '../src/engine/audio'
+import { SFX_KINDS, SHEPARD_STEPS, isBossMusicPlaying, playSfx, setBossMusicIntensity, shepardVoices, startBossMusic, stopBossMusic } from '../src/engine/audio'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
@@ -15,6 +15,16 @@ describe('sound', () => {
   it('has a distinct cue for each kind of moment, and none throws without audio', () => {
     expect(SFX_KINDS.length).toBeGreaterThanOrEqual(20)
     for (const k of SFX_KINDS) expect(() => playSfx(k, false, { intensity: 1, count: 5 })).not.toThrow()
+  })
+
+  it('boss music starts, builds and stops without audio, and never throws', () => {
+    expect(() => {
+      startBossMusic(0)
+      setBossMusicIntensity(0.9)
+      stopBossMusic()
+      stopBossMusic()
+    }).not.toThrow()
+    expect(isBossMusicPlaying()).toBe(false)
   })
 
   it('the tap climbs forever: every step rises, a full octave lands back where it began', () => {

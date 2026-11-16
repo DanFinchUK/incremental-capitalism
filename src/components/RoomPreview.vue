@@ -122,7 +122,7 @@ const corners = computed(() => (props.room.ornament === 'gilt' ? ['tl', 'tr', 'b
   margin: 2px 0 0;
   font-family: var(--font-display);
   font-size: 18px;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .rm-NetWorth {

@@ -26,7 +26,7 @@ const TEXT_PAIRS: ReadonlyArray<[keyof RoomPalette, keyof RoomPalette]> = [
   ['btnFg', 'btnBg'],
   ['btnFg', 'btnHover'],
   ['btnOutlineFg', 'btnOutlineBg'],
-  ['accent', 'card'],
+  ['accentText', 'card'],
   ['accentFg', 'accent'],
   ['accentFg', 'accentHover'],
   ['accentPillFg', 'accentPillBg'],

@@ -56,6 +56,9 @@ export interface BotConfig {
   // The order Legacy goes into perks: the first one still buyable wins.
   // Defaults to office seats, then Interns
   perkPriority?: ReadonlyArray<PerkId>
+  // Elevate to the Lords this many times when a bloodline completes, and play
+  // the new lines, instead of stopping at the first completed bloodline
+  elevations?: number
 }
 
 // The player the pacing targets are set for: taps about five times a second
@@ -434,6 +437,7 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe): Gen
   let lastGates = 0
   let stayedFinite = true
   let clickCredit = 0
+  let elevationsLeft = cfg.elevations ?? 0
 
   const finishGeneration = () => {
     results.push({
@@ -527,6 +531,20 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe): Gen
     if (stalled && !store.canRetire && store.canAbdicate && store.offerAbdication()) {
       store.pickSibling(0)
       lastGateAtMs = genMs
+    }
+    if (store.gatesBeaten >= 9 && elevationsLeft > 0 && store.canElevate && !store.bossAttempt) {
+      finishGeneration()
+      cumulativeMs += genMs
+      store.elevateToLords(ts)
+      pickHeir(store)
+      buyPerks(store, cfg)
+      elevationsLeft -= 1
+      generation += 1
+      bloodlineBest = 0
+      netWorthAt4Min = 0
+      lastGateAtMs = 0
+      lastGates = 0
+      continue
     }
     if (store.canRetire && (store.gatesBeaten >= 9 || stalled) && !store.bossAttempt) {
       finishGeneration()

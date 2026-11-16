@@ -69,7 +69,9 @@ describe('elevation in the store', () => {
     expect(store.titlesOnElevation).toBe(4)
     expect(store.elevateToLords(T0)).toBe(true)
     expect(store.titles).toBe(4)
-    expect(store.legacyPoints).toBe(0)
+    // Each title starts the new line with 2 Legacy, which doesn't count towards the next title
+    expect(store.legacyPoints).toBe(8)
+    expect(store.titlesOnElevation).toBe(0)
     expect(store.legacySpent).toBe(0)
     expect(store.perks.hustleCap).toBe(0)
     // The PA hands over to their child, one tier down: the rare Lobbyist's
@@ -127,6 +129,8 @@ describe('elevation in the store', () => {
     store.heir = { name: 'Test', traitId: null }
     store.gatesBeaten = 9
     store.businessesOwned = { '1': 5 }
+    // Income alone, without the Legacy the titles start the line with
+    store.legacyPoints = 0
     const withTitles = store.moneyPerSecond
     store.titles = 0
     expect(withTitles / store.moneyPerSecond).toBeCloseTo(3) // 1 + 0.5 x 4

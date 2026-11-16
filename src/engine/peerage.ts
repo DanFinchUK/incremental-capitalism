@@ -31,6 +31,14 @@ export function titleSource(titles: number): ModifierSource {
   }
 }
 
+// Each title starts every new line with this much Legacy, so elevating is a
+// step up from the first second. It doesn't count towards the next title.
+export const STARTING_LEGACY_PER_TITLE = 2
+
+export function titleStartingLegacy(titles: number): number {
+  return STARTING_LEGACY_PER_TITLE * Math.max(0, Math.floor(titles))
+}
+
 // One PA chair, and one more per title: more of the office stays through
 // every retirement
 export function titlePaChairs(titles: number): number {

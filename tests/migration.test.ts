@@ -65,4 +65,13 @@ describe('schema 8 saves', () => {
     expect(parseSavedState('{nope')).toEqual(createInitialSceneState())
     expect(parseSavedState(null)).toEqual(createInitialSceneState())
   })
+
+  it('gives a line that elevated before titles brought starting Legacy its 2 a title, once', () => {
+    const old = JSON.stringify({ schemaVersion: 8, scene: { titles: 1, legacyPoints: 0 } })
+    const loaded = parseSavedState(old)
+    expect(loaded.legacyPoints).toBe(2)
+    expect(loaded.titleLegacyGranted).toBe(true)
+    // Saved again, it isn't given twice
+    expect(parseSavedState(JSON.stringify({ schemaVersion: 8, scene: { ...loaded } })).legacyPoints).toBe(2)
+  })
 })

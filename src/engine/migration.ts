@@ -2,6 +2,7 @@ import { SOCIAL_CLASSES } from '../data/classes'
 import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } from '../data/perks'
 import type { BulkBuyMode } from './economy'
 import { emptySplits } from './splits'
+import { titleStartingLegacy } from './peerage'
 import { INHERITED_BY_ID, TRAITS_BY_ID, type Heir } from '../data/heirs'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ACHIEVEMENTS_BY_ID, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
@@ -69,6 +70,8 @@ export interface PersistedSceneState {
   tradingDeskCollapsed: boolean
   // Old School Tie: favours this generation
   favours: FavourState
+  // Lines that elevated before titles brought starting Legacy get it once, on load
+  titleLegacyGranted: boolean
   lastUpdate: number | null
 }
 
@@ -116,6 +119,7 @@ export function createInitialSceneState(): PersistedSceneState {
     introSeen: false,
     tradingDeskCollapsed: false,
     favours: emptyFavours(),
+    titleLegacyGranted: true,
     lastUpdate: null
   }
 }
@@ -278,7 +282,9 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     ? s.familyTree.map(readGenerationRecord).filter((r): r is GenerationRecord => r !== null).slice(-MAX_TREE_ENTRIES)
     : []
   const bloodlineBest = currentBloodlineRecords(familyTree).reduce((max, r) => Math.max(max, r.deepestGate), 0)
-  const legacyPoints = fromSchema7 ? bloodlineBest : Math.floor(readNonNegativeNumber(s.legacyPoints, 0))
+  const titles = Math.floor(readNonNegativeNumber(s.titles, 0))
+  const savedLegacy = fromSchema7 ? bloodlineBest : Math.floor(readNonNegativeNumber(s.legacyPoints, 0))
+  const legacyPoints = savedLegacy + (s.titleLegacyGranted === true ? 0 : titleStartingLegacy(titles))
 
   const lpRaw = s.lifetimePurchases && typeof s.lifetimePurchases === 'object'
     ? (s.lifetimePurchases as Record<string, unknown>)
@@ -381,7 +387,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       ? [...new Set(s.achievements.filter((id): id is string => typeof id === 'string' && !!ACHIEVEMENTS_BY_ID[id]))]
       : [],
     achievementProgress: readProgress(s.achievementProgress),
-    titles: Math.floor(readNonNegativeNumber(s.titles, 0)),
+    titles,
     familyTree,
     gatesBeaten: Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.gatesBeaten, 0))),
     bulkBuyMode: parseBulkMode(s.bulkBuyMode),
@@ -393,6 +399,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     introSeen: Boolean(s.introSeen),
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),
     favours: readFavours(s.favours),
+    titleLegacyGranted: true,
     lastUpdate
   }
 }

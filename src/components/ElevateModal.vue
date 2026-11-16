@@ -30,7 +30,7 @@
         </div>
       </div>
       <div class="scn-ModalCallout scn-ModalCallout-perk">
-        <p>Every title adds 50% to all income and makes Legacy 15% stronger, for good, and adds a PA chair, so one more of your staff stays through every retirement. Two titles bring a fourth heir to choose from.</p>
+        <p>Every title, for good: 50% more income, Legacy 15% stronger, 2 Legacy to start each new line with, and a PA chair, so one more of your staff stays through every retirement. Two titles bring a fourth heir to choose from.</p>
       </div>
       <div class="scn-ModalFooter">
         <button type="button" class="scn-Action scn-Action-outline" @click="emit('close')">Not yet</button>

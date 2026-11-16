@@ -85,7 +85,7 @@ import {
   describeBloodlineTraits,
   type GenerationRecord
 } from '../engine/family'
-import { heirChoiceCount, peerageRank, titlePaChairs, titleSource, titlesFor } from '../engine/peerage'
+import { heirChoiceCount, peerageRank, titlePaChairs, titleSource, titleStartingLegacy, titlesFor } from '../engine/peerage'
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
 import type { AdvisorInstance } from '../engine/office'
 import { ADVISORS_BY_ID } from '../data/advisors'
@@ -250,7 +250,10 @@ export const useGameStore = defineStore('game', () => {
   const titles = ref<number>(initial.titles)
   // Elevation needs the Royal Garden Party beaten at least once, ever
   // Counts the Legacy this generation would bank, since elevating ends it
-  const titlesOnElevation = computed(() => titlesFor(legacyPoints.value + legacyOnRetire.value))
+  // Only Legacy the line earned counts towards titles, not what the titles gave it
+  const titlesOnElevation = computed(() =>
+    titlesFor(Math.max(0, legacyPoints.value - titleStartingLegacy(titles.value)) + legacyOnRetire.value)
+  )
   const canElevate = computed(() => bestSplits.value[9] != null && titlesOnElevation.value >= 1)
   const office = createOfficeModule({
     money,
@@ -567,6 +570,7 @@ export const useGameStore = defineStore('game', () => {
       introSeen: introSeen.value,
       tradingDeskCollapsed: tradingDeskCollapsed.value,
       favours: favours.value,
+      titleLegacyGranted: true,
       lastUpdate: ts
     }
   }
@@ -1427,7 +1431,8 @@ export const useGameStore = defineStore('game', () => {
     cue('elevate')
     endGeneration(ts, 0, true)
     plays.resetGateWatch(0)
-    legacyPoints.value = 0
+    // The titles give the new line its first Legacy
+    legacyPoints.value = titleStartingLegacy(titles.value)
     legacySpent.value = 0
     perks.value = { ...EMPTY_PERKS }
     // The PAs hand over to their children, who grew up around the job

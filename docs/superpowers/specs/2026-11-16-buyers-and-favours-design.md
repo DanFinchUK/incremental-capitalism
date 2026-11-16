@@ -32,9 +32,15 @@ Automation becomes staff who press Buy.
   Acquisitions advisor at a time. A better one offered by the headhunter is an
   upgrade decision, not a pile-up.
 - **Budget.** Each buyer gets its own budget each second: a share of the cash
-  in hand at that moment, set by its rarity. Both work from the same snapshot.
-  With £100 in hand and 6% each, each may spend up to £6, so at most £12 leaves
-  the account.
+  in hand at that moment. Both work from the same snapshot. With £100 in hand
+  and 20% each, each may spend up to £20, so at most £40 leaves the account.
+  - Rarity sets the share: common 20%, rare 40%, legendary 60%. Honours tiers
+    (below) raise it further.
+  - A 2-rank perk adds +20% a rank to every buyer, so a legendary buyer with
+    both ranks reaches 100%. Full automation is something to go for.
+  - If the two buyers' shares together come to more than 100%, each is scaled
+    down in proportion: 80% and 60% become about 57% and 43% of the cash, so
+    together they never spend more than you hold.
 - **What it buys.** Each second, each buyer takes the best return-per-pound
   item that fits its budget, at the current bulk setting, then the next best
   that still fits, up to its number of item types. It never buys the same item
@@ -56,7 +62,8 @@ New rungs start with the worst return per pound, so buyers rarely buy the
 first unit of a new rung. Older rungs get about 12% dearer per unit, so once
 they are topped up a newer rung becomes the best value and buyers move on to
 it. Full automation, buyers keeping up with the newest rungs, should be
-reachable late on, which mostly means rarity budgets that climb high enough.
+reachable late on: a legendary buyer with both perk ranks, ideally kept as a
+PA so it survives retirement and climbs the honours.
 
 ## Landed Gentry: buyers in a trait
 
@@ -122,6 +129,55 @@ from people you were at school with, beyond what you could otherwise reach.
   price ceiling is allowed; it skips the shopping restriction, not the boss.
 - **Retiring** ends any running loans.
 
+## Keeping the team together
+
+Retiring dismantles the family office: only the PA stays. The aim is a team
+that builds up over generations and is slowly improved, not reset each time.
+
+- **A PA chair per title.** Each title adds one PA chair, so a titled family
+  keeps more of its staff through every retirement. (This replaces the Baron
+  rank's extra office seat.)
+- **Promotion through service.** A PA moves up its advisor family with service:
+  common to rare after 3 generations served, rare to legendary after 3 more.
+  The card shows it: "Estate Manager, promoted to Head Butler". Pay rises with
+  the tier, as upkeep already grows with rarity. This replaces today's flat
+  +25% effect and +20% pay per generation served.
+- **Honours, by service only.** Past legendary, PAs earn honours "for services
+  to the family". The headhunter never offers them.
+
+  | Tier | Reached by | Shown as |
+  |---|---|---|
+  | Common, Rare, Legendary | Hiring, or 3 generations' service each | as now |
+  | MBE | 3 generations at legendary | "Head Butler, MBE" |
+  | OBE | 3 more | "Head Butler, OBE" |
+  | Knighthood | 3 more | "Sir/Dame ..." |
+  | Peerage | 3 more | "Lord/Lady ..." |
+
+  A common hire who stays is legendary after 6 generations and a peer after
+  18. Each honours tier keeps growing the effect, for example +50% of the
+  legendary effect a tier (a peer at 3x legendary), with pay to match; the sim
+  settles the numbers. A buyer PA's budget climbs with it.
+- **Succession at elevation.** Elevating no longer fires the PAs. Each is
+  replaced by their child, who grew up around the job: one tier below the
+  parent, but never above Rare, since honours aren't inherited. Pay resets
+  with the new tier.
+
+## Titles and Legacy
+
+Each title is worth far less than the Legacy it costs (about 9 Legacy, x765,000
+income, for x1.5), so elevating feels like a step down. Titles move from flat
+income to things that last:
+
+- **A PA chair per title** (above).
+- **Legacy worth more per title**, from the first title, for example +15% a
+  title, replacing the Earl's single +50% at three titles. Legacy resets each
+  bloodline, so this speeds every climb without becoming an ever-rising
+  multiplier. It loosens the +1/+2/+3 pacing for titled families, which is the
+  intent; the sim's rules for titled lines get adjusted to match.
+- The flat +50% income per title goes, or shrinks.
+- The two-title fourth heir choice stays. The five-title automation goes (it
+  belonged to the old automation).
+
 ## The favour on the trading desk
 
 - **Cashflow chart (LON:FLOW).** While loans run, the lent units' income sits
@@ -143,22 +199,26 @@ only the cash chart's threshold line (to be revisited once buyers exist).
 
 ## Open questions
 
-1. **Item types beyond Landed Gentry.** With Old School Tie gone to favours,
-   only the Landed Gentry traits add item types. Should titles or a perk add
-   them too, so most families' buyers handle more than one item a second?
-2. **Five titles.** They used to bring automation. Candidate: +1 item type for
-   good.
-3. **Rarity budgets.** For example common 2%, rare 4%, legendary 6%, settled by
-   the sim. They need to climb high enough late on for buyers to reach new
-   rungs.
-4. **Which advisors become buyers.** Today's Estate Manager, Head Butler and
-   Proxy are one automation family. Buyers need a Recruiter and an
-   Acquisitions family, each common, rare and legendary.
-5. **New perks** for areas that have none: an heir draft re-roll, scandal
-   protection, the trust fund, synergies, bosses.
-6. **Pill wording** once buyers exist.
+1. **Item types beyond Landed Gentry.** Only the Landed Gentry traits add item
+   types. Should titles or the budget perk add them too, so most families'
+   buyers handle more than one item a second?
+2. **Which advisors become buyers.** Today's Estate Manager, Head Butler and
+   Proxy are one automation family; candidate: they become Acquisitions, and a
+   new family of three becomes Recruiters.
+3. **The per-title Legacy step,** for example +15%, and how much of the flat
+   income per title survives.
+4. **Renaming the headhunter.** "The headhunter is coming" reads as a threat.
+   Candidate: "Introductions" ("Some people would like to be introduced");
+   alternatives "The shortlist" or "The agency calls".
+5. **The child's cap.** Rare as decided, or Legendary: honours aren't
+   inherited, but being very good at the job might be.
+6. **Pill wording** once buyers exist, for example "Recruiter 40% ·
+   Acquisitions 60%".
 7. **The trading desk line.** It sits just above the candles because it marks
-   the next restock. Revisit what, if anything, it should mark under buyers.
+   the next restock. Candidate under buyers: drop it and put a small marker on
+   the candle where a buyer bought, named in a tooltip.
+8. **New perks** (later, not this phase): an heir draft re-roll, scandal
+   protection, the trust fund, synergies.
 
 ## Testing
 

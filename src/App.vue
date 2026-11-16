@@ -140,6 +140,7 @@ import SettingsModal from './components/SettingsModal.vue'
 import OverviewBar from './components/OverviewBar.vue'
 import TradingDesk from './components/TradingDesk.vue'
 import WelcomeModal from './components/WelcomeModal.vue'
+import { noteTap } from './components/victoryLock'
 
 const MAX_ACTIVE_FLOATS = 60
 
@@ -279,6 +280,7 @@ function scheduleAutoFloats(): void {
 }
 
 function handleManualClick(ev: MouseEvent): void {
+  noteTap()
   const earned = store.manualClick(Date.now())
   // The chink climbs as Hustle builds
   const hustle = (store.hustleMultiplier - 1) / Math.max(0.01, store.maxHustle - 1)

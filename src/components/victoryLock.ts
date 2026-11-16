@@ -2,7 +2,22 @@ import { onUnmounted, ref, watch, type Ref } from 'vue'
 
 // A boss fight ends mid-tap, so the victory screen ignores choices for a
 // moment: otherwise the next tap of the fight picks an advisor by accident.
+// Only while you were tapping: with no Get paid tap just before, there's
+// nothing stray to catch, and the screen waits for no one.
 export const VICTORY_LOCK_MS = 2500
+// How recent a Get paid tap must be for the lock to start
+export const TAPPING_WINDOW_MS = 1500
+
+let lastPaidTapAt = -Infinity
+
+// Called on every Get paid tap
+export function noteTap(at = Date.now()): void {
+  lastPaidTapAt = at
+}
+
+function tappingJustNow(): boolean {
+  return Date.now() - lastPaidTapAt < TAPPING_WINDOW_MS
+}
 
 export function useVictoryLock(active: () => boolean): { locked: Ref<boolean>; secondsLeft: Ref<number> } {
   const locked = ref(false)
@@ -18,7 +33,7 @@ export function useVictoryLock(active: () => boolean): { locked: Ref<boolean>; s
     active,
     (isActive) => {
       stop()
-      if (!isActive) {
+      if (!isActive || !tappingJustNow()) {
         locked.value = false
         return
       }

@@ -7,7 +7,7 @@ import { ADVISORS_BY_ID } from '../src/data/advisors'
 import { parseSavedState, serializeState, STORAGE_KEY } from '../src/engine/migration'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
-import { VICTORY_LOCK_MS } from '../src/components/victoryLock'
+import { noteTap, VICTORY_LOCK_MS } from '../src/components/victoryLock'
 
 const T0 = 1_000_000
 
@@ -110,10 +110,23 @@ describe('headhunter offers', () => {
     expect(parseSavedState(serializeState({ ...loaded, office: { ...loaded.office, queued: -4 } })).office.queued).toBe(0)
   })
 
-  it('the hiring modal ignores taps for a moment, so fight taps cannot pick an advisor', async () => {
+  it('without tapping, the hiring modal takes a choice straight away', async () => {
+    vi.useFakeTimers()
+    const store = fresh()
+    noteTap(Date.now() - 5000)
+    const wrapper = mount(HireModal, { global: { plugins: [pinia] } })
+    store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
+    await wrapper.vm.$nextTick()
+    const hire = wrapper.findAll('[data-testid="hire-modal"] [data-testid="hire-advisor"]')
+    expect(hire[0].attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="hire-locked"]').exists()).toBe(false)
+  })
+
+  it('after tapping, the hiring modal ignores taps for a moment, so fight taps cannot pick an advisor', async () => {
     vi.useFakeTimers()
     const store = fresh()
     const wrapper = mount(HireModal, { global: { plugins: [pinia] } })
+    noteTap()
     store.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']
     await wrapper.vm.$nextTick()
     const hire = () => wrapper.findAll('[data-testid="hire-modal"] [data-testid="hire-advisor"]')

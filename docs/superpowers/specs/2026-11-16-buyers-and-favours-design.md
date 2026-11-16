@@ -98,9 +98,15 @@ from people you were at school with, beyond what you could otherwise reach.
 - **The button while a loan runs.** The pressed button becomes a countdown row
   for that loan, "Lending you a hand for 2:58", not clickable. If favours
   remain, another "Call in a favour (1/2)" button appears below it. Each
-  running loan has its own row. When a loan ends its row stays, greyed, as
-  "Favour used", in the order the favours were called in, until the
-  generation ends; it stays even after the card locks again.
+  running loan has its own row. When a loan ends its row stays, greyed, in
+  the order the favours were called in, until the generation ends; it stays
+  even after the card locks again. Each finished row says where the helper
+  went, picked at random with no repeats on a card: "Headed back to
+  Mayfair", "Flew back to Dubai", "Needed elsewhere", "Back to the yacht",
+  "Off to Verbier for the season", "Called away to a shoot in Perthshire",
+  "Gone to Henley for the regatta", "Back to the club for a long lunch",
+  "Off to Monaco for the Grand Prix", "Returned to the family office",
+  "Back to Cheltenham for the races", "Recalled to the Treasury".
 - **The card while a loan runs.** Shows the loaned item, only on that card;
   the rung after it stays hidden. While the item is locked for buying, the
   title shows just the number lent, "Broker (1)". Once it can be bought, it

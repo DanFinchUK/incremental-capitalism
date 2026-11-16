@@ -85,9 +85,12 @@
           data-testid="hero-retire"
           @click="emit('retire')"
         >
-          <div class="scn-DataTitle">Retire</div>
-          <div class="scn-DataValue">+{{ store.legacyOnRetire }} Legacy</div>
-          <div class="scn-StatHint">You hold {{ legacyLine }}</div>
+          <div class="scn-DataTitle">Retire for +{{ store.legacyOnRetire }} Legacy</div>
+          <div v-if="store.legacyOnRetire > 0" class="scn-DataValue" data-testid="hero-retire-mult">
+            x{{ legacyMultLabel }} → x{{ retireMultLabel }}
+          </div>
+          <div v-else class="scn-DataValue">x{{ legacyMultLabel }}</div>
+          <div class="scn-StatHint">Income multiplier · {{ internsLine }}</div>
         </button>
         <div v-else class="scn-StatBox" data-testid="hero-legacy">
           <div class="scn-DataTitle">Legacy &amp; Interns</div>
@@ -106,6 +109,7 @@ import { useGameStore } from '../stores/game'
 import { formatCurrency, formatMultiplier } from '../utils/format'
 import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { peerageRank } from '../engine/peerage'
+import { legacyMultiplier as calcLegacyMultiplier } from '../engine/economy'
 
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
@@ -122,12 +126,15 @@ const currentInherit = computed(() => (store.heir.inheritId ? INHERITED_BY_ID[st
 const payButtonRef = ref<HTMLButtonElement | null>(null)
 
 const legacyMultLabel = computed(() => formatMultiplier(store.legacyMultiplier))
-const legacyLine = computed(() => {
-  const interns = store.modifiers.internsDisabled
+const retireMultLabel = computed(() =>
+  formatMultiplier(calcLegacyMultiplier(store.legacyPoints + store.legacyOnRetire, store.modifiers.legacyScale))
+)
+const internsLine = computed(() =>
+  store.modifiers.internsDisabled
     ? 'Interns barred'
     : `${store.autoClickers} intern${store.autoClickers === 1 ? '' : 's'}`
-  return `${store.legacyPoints} (x${legacyMultLabel.value}) · ${interns}`
-})
+)
+const legacyLine = computed(() => `${store.legacyPoints} (x${legacyMultLabel.value}) · ${internsLine.value}`)
 const retireBlockedHint = computed(() =>
   store.gatesBeaten < store.minRetireGate
     ? `Retire at Gate ${store.minRetireGate}`

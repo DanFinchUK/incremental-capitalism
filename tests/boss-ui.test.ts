@@ -5,7 +5,8 @@ import App from '../src/App.vue'
 import { useGameStore } from '../src/stores/game'
 import { gateThreshold, legacyForRetiring } from '../src/engine/bosses'
 import { BOSSES } from '../src/data/bosses'
-import { formatClock } from '../src/utils/format'
+import { formatClock, formatMultiplier } from '../src/utils/format'
+import { legacyMultiplier } from '../src/engine/economy'
 import { VICTORY_LOCK_MS } from '../src/components/victoryLock'
 
 const nulls = (n: number) => Array(n).fill(null)
@@ -74,7 +75,8 @@ describe('boss and splits UI', () => {
     store.gatesBeaten = 3
     await wrapper.vm.$nextTick()
     expect(retire().element.tagName).toBe('BUTTON')
-    expect(retire().text()).toContain(`+${legacyForRetiring(3, 0)} Legacy`)
+    expect(retire().text()).toContain(`Retire for +${legacyForRetiring(3, 0)} Legacy`)
+    expect(retire().text()).toContain(`x1 → x${formatMultiplier(legacyMultiplier(legacyForRetiring(3, 0)))}`)
     expect(retire().classes()).toContain('scn-RetireBox-pays')
     wrapper.unmount()
   })

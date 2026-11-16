@@ -1,3 +1,4 @@
+import { forPlaystyle } from '../utils/playstyle'
 import type { SfxKind, SfxOptions } from '../engine/audio'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
@@ -29,6 +30,7 @@ import {
   type PerkRanks
 } from '../data/perks'
 import {
+  ALLOWANCE_TAPS_PER_SEC,
   bulkBuyQuote,
   computeClickIncome,
   computeIncomeBreakdown,
@@ -165,6 +167,10 @@ export const useGameStore = defineStore('game', () => {
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
   const decor = ref<RoomId | 'auto'>(initial.decor)
   const noTap = ref<boolean>(initial.noTap)
+  // Game text, reworded for the allowance when playing without tapping
+  function wording(text: string): string {
+    return forPlaystyle(text, noTap.value)
+  }
   const settingsOpen = ref(false)
   // Sound cues raised by the game, for the page to play; capped so a sim or
   // a page that never plays them can't let it grow
@@ -263,7 +269,7 @@ export const useGameStore = defineStore('game', () => {
     activeMs: () => activeGenerationMs.value,
     allRevealedOwned: () => allRevealedOwned(),
     handleClassPromotion: (prev) => handleClassPromotion(prev),
-    announce: (msg) => announce(msg),
+    announce: (msg) => announce(wording(msg)),
     onBossWon: (gate, killMs, purchases) => {
       if (gate === 1) unlockAchievement('solidarity')
       if (gate === 4 && purchases <= 10) unlockAchievement('under-par')
@@ -420,6 +426,11 @@ export const useGameStore = defineStore('game', () => {
   // The founder scrapes by on the state; heirs, born rich, get an allowance
   const allowanceLabel = computed(() => (heir.value.traitId === null ? 'Universal Credit' : 'Allowance from Granny'))
   const allowancePerSecond = computed(() => computeIncomeBreakdown(economyInput.value).allowance)
+  // Playing without tapping, a Job's click pay reaches you through the
+  // allowance: this many taps' worth a second, at the steady Hustle
+  const allowanceTapRate = computed(() =>
+    noTap.value ? (ALLOWANCE_TAPS_PER_SEC + modifiers.value.allowanceTapsAdd) * hustleMultiplier.value : 0
+  )
   const sectorSlices = computed(() => computeSectorSlices(economyInput.value, manualRealisedPerSecond.value, allowanceLabel.value))
 
   // Keeps the saved record of what has been seen in step with what is shown
@@ -962,7 +973,7 @@ export const useGameStore = defineStore('game', () => {
         announce(`${name}: your ${current.mult}x ${current.label} is stronger, so it keeps running.`)
       } else {
         slot.value = { kind: def.kind, label: def.buffLabel, mult: effect.mult, until: ts + dur * 1000 }
-        announce(`${rarityPrefix}${name}: ${effect.mult}x ${target} income for ${dur}s!`)
+        announce(wording(`${rarityPrefix}${name}: ${effect.mult}x ${target} income for ${dur}s!`))
       }
       flushSave(ts)
       return 'golden'
@@ -1554,6 +1565,7 @@ export const useGameStore = defineStore('game', () => {
     pickSibling,
     generation,
     bloodlineTraitPills,
+    wording,
     modifiers,
     pickHeir,
     bossTarget,
@@ -1616,6 +1628,7 @@ export const useGameStore = defineStore('game', () => {
     sectorSlices,
     allowanceLabel,
     allowancePerSecond,
+    allowanceTapRate,
     visibleJobs,
     visibleBusinesses,
     hydrateFromStorage,

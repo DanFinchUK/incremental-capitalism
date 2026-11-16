@@ -34,12 +34,12 @@
           <div>
             <div class="scn-CardHeader">
               <h4 class="scn-CardTitle">
-                {{ perk.label }}
+                {{ store.wording(perk.label) }}
                 ({{ store.perks[perk.id] }}<span v-if="perk.maxRank !== null">/{{ perk.maxRank }}</span>)
               </h4>
             </div>
-            <p class="scn-PerkEffect">{{ perk.effectSummary(store.perks[perk.id]) }}</p>
-            <p class="scn-AutoLine">{{ perk.description }}</p>
+            <p class="scn-PerkEffect">{{ store.wording(perk.effectSummary(store.perks[perk.id])) }}</p>
+            <p class="scn-AutoLine">{{ store.wording(perk.description) }}</p>
           </div>
 
           <div>

@@ -20,7 +20,7 @@
       <article v-for="(a, i) in offer" :key="a.id" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${a.rarity}`">
         <span class="scn-MarketEventTag">{{ RARITY_LABELS[a.rarity] }} · {{ a.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
         <strong>{{ a.name }}</strong>
-        <p class="scn-AutoLine">{{ a.effectText }}</p>
+        <p class="scn-AutoLine">{{ store.wording(a.effectText) }}</p>
         <p class="scn-StatHint">{{ a.costText }} Fee: {{ Math.round(a.hireFeeShare * 100) }}% cash.</p>
         <div v-if="choosing === i && seatsFull" class="scn-SeatPicker" data-testid="seat-picker">
           <p class="scn-AutoLine">Who makes way?</p>
@@ -34,7 +34,7 @@
             @click="replace(i, s)"
           >
             <strong>{{ seat.name }}</strong>
-            <span>{{ seat.effectText }}</span>
+            <span>{{ store.wording(seat.effectText) }}</span>
           </button>
           <button type="button" class="scn-Action scn-Action-outline" @click="choosing = null">Cancel</button>
         </div>

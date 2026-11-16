@@ -26,7 +26,7 @@
             class="scn-TraitPill"
             :class="{ 'scn-TraitPill-neg': pill.negative }"
           >
-            {{ pill.label }}
+            {{ store.wording(pill.label) }}
           </span>
         </div>
         <span v-else class="scn-AutoLine">None yet. Each heir passes one trait down the bloodline.</span>

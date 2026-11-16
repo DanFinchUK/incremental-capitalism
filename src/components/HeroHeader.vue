@@ -64,7 +64,7 @@
           class="scn-TraitPill"
           :class="{ 'scn-TraitPill-neg': pill.negative }"
         >
-          {{ pill.label }}
+          {{ store.wording(pill.label) }}
         </span>
       </div>
 

@@ -5,7 +5,10 @@ import { gateThreshold } from '../src/engine/bosses'
 import { ALLOWANCE_TAPS_PER_SEC, computeOfflineCatchUp } from '../src/engine/economy'
 import { combineModifiers, type Modifiers } from '../src/engine/modifiers'
 import { rollAdvisorOffer } from '../src/engine/office'
+import { mount } from '@vue/test-utils'
+import App from '../src/App.vue'
 import { useGameStore } from '../src/stores/game'
+import { formatCurrency } from '../src/utils/format'
 
 const T0 = 1_000_000
 
@@ -47,6 +50,24 @@ describe('playing without tapping', () => {
     store.perks.hustleCap = 2
     expect(store.hustleMultiplier).toBe(2)
     expect(store.allowancePerSecond).toBeCloseTo(before * 2)
+  })
+
+  it('Jobs show what they add to the allowance a second, and the text talks about the allowance', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = fresh()
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    store.jobsPurchased = { '1': 10 }
+    await wrapper.vm.$nextTick()
+    const card = wrapper.find('[data-item-key="jobs-1"]').text()
+    expect(card).not.toContain('/click')
+    // The rider's stack is the whole allowance, bar the £1 everyone gets
+    expect(card).toContain(`${formatCurrency(store.allowancePerSecond - store.allowanceTapRate)} total`)
+    expect(card).toContain("/s each")
+    expect(store.wording('Clicks pay double.')).toBe('Your allowance pays double.')
+    store.toggleNoTap()
+    expect(store.wording('Clicks pay double.')).toBe('Clicks pay double.')
+    wrapper.unmount()
   })
 
   it('the setting survives a reload', () => {

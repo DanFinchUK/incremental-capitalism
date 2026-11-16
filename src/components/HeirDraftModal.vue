@@ -30,7 +30,7 @@
           class="scn-TraitPill"
           :class="{ 'scn-TraitPill-neg': pill.negative }"
         >
-          {{ pill.label }}
+          {{ store.wording(pill.label) }}
         </span>
       </div>
       <div class="scn-HeirGrid">
@@ -44,9 +44,9 @@
           <span class="scn-MarketEventTag">{{ choice.trait ? RARITY_LABELS[choice.trait.rarity] : 'Founder' }}</span>
           <h3 class="scn-HeirName">{{ choice.name }}</h3>
           <strong class="scn-HeirTrait">{{ choice.trait?.name }}</strong>
-          <p class="scn-AutoLine">{{ choice.trait?.description }}</p>
+          <p class="scn-AutoLine">{{ store.wording(choice.trait?.description ?? '') }}</p>
           <p v-if="choice.inherit" class="scn-HeirInherit" data-testid="heir-inherit">
-            <span class="scn-StatHint">Passes down:</span> <strong>{{ choice.inherit.name }}</strong>. {{ choice.inherit.description }}
+            <span class="scn-StatHint">Passes down:</span> <strong>{{ choice.inherit.name }}</strong>. {{ store.wording(choice.inherit.description) }}
           </p>
           <div v-if="choice.effect.length > 0" class="scn-TraitPillRow" data-testid="heir-effect">
             <span class="scn-StatHint">With this heir:</span>
@@ -56,7 +56,7 @@
               class="scn-TraitPill"
               :class="{ 'scn-TraitPill-neg': pill.negative }"
             >
-              {{ pill.label }}
+              {{ store.wording(pill.label) }}
             </span>
           </div>
           <button type="button" class="scn-Action scn-Action-accent" @click="store.pickHeir(i)">

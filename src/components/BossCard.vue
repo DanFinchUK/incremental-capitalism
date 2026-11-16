@@ -50,8 +50,8 @@
       </template>
 
       <template v-else>
-        <p v-if="boss.def.twistText" class="scn-BossRule"><strong>Twist:</strong> {{ boss.def.twistText }}</p>
-        <p class="scn-BossRule"><strong>To win:</strong> {{ boss.def.conditionText }}</p>
+        <p v-if="boss.def.twistText" class="scn-BossRule"><strong>Twist:</strong> {{ store.wording(boss.def.twistText) }}</p>
+        <p class="scn-BossRule"><strong>To win:</strong> {{ store.wording(boss.def.conditionText) }}</p>
         <p class="scn-BossRule"><strong>Target:</strong> {{ formatCurrency(target) }}</p>
       </template>
 

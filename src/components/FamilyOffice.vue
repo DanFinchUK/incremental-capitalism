@@ -17,7 +17,7 @@
             <span class="scn-MarketEventTag">{{ RARITY_LABELS[pa.def.rarity] }} · {{ pa.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
           </div>
           <strong>{{ pa.def.name }}</strong>
-          <p class="scn-AutoLine">{{ pa.def.effectText }}</p>
+          <p class="scn-AutoLine">{{ store.wording(pa.def.effectText) }}</p>
           <p v-if="pa.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(pa.inst.campaignMs / 60000) }} min</p>
           <p v-if="pa.inst.servedGenerations > 0" class="scn-StatHint">
             Served {{ pa.inst.servedGenerations }} gen: +{{ pa.inst.servedGenerations * 25 }}% effect, +{{ pa.inst.servedGenerations * 20 }}% pay
@@ -39,7 +39,7 @@
         <template v-if="seat">
           <span class="scn-MarketEventTag">{{ RARITY_LABELS[seat.def.rarity] }} · {{ seat.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
           <strong>{{ seat.def.name }}</strong>
-          <p class="scn-AutoLine">{{ seat.def.effectText }}</p>
+          <p class="scn-AutoLine">{{ store.wording(seat.def.effectText) }}</p>
           <p v-if="seat.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(seat.inst.campaignMs / 60000) }} min</p>
           <div class="scn-SeatPicker">
             <button type="button" class="scn-Action scn-Action-outline" data-testid="promote-pa" @click="store.promoteToPA(s)">Make PA</button>

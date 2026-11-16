@@ -11,13 +11,13 @@
       {{ RARITY_LABELS[store.activeEvent.def.rarity] }} Scandal · {{ secondsLeft }}s
     </span>
     <div class="scn-CardTitle">{{ store.activeEvent.def.title }}</div>
-    <div class="scn-AutoLine">{{ store.activeEvent.def.subtitle }}</div>
+    <div class="scn-AutoLine">{{ store.wording(store.activeEvent.def.subtitle) }}</div>
     <div class="scn-ScandalOptions">
       <div v-for="(option, i) in scandal.options" :key="option.label" class="scn-ScandalOption">
         <button type="button" class="scn-Action" data-testid="scandal-option" v-on="optionPress[i]">
-          {{ option.label }}
+          {{ store.wording(option.label) }}
         </button>
-        <span class="scn-StatHint">{{ option.detail }}</span>
+        <span class="scn-StatHint">{{ store.wording(option.detail) }}</span>
       </div>
     </div>
   </div>
@@ -34,7 +34,7 @@
       {{ store.activeEvent.def.shady ? '50/50 Risk' : 'Opportunity' }} · {{ secondsLeft }}s
     </span>
     <div class="scn-CardTitle">{{ store.activeEvent.def.title }}</div>
-    <div class="scn-AutoLine">{{ store.activeEvent.def.subtitle }}</div>
+    <div class="scn-AutoLine">{{ store.wording(store.activeEvent.def.subtitle) }}</div>
     <div v-if="store.activeEvent.corked" class="scn-AutoLine scn-Corked">This one smells a bit off...</div>
   </button>
 </template>

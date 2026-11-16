@@ -232,7 +232,9 @@ const mMultiplier = computed(() =>
 const effectiveUnitIncome = computed(() => {
   if (props.row.mode !== 'revealed') return 0
   if (props.kind === 'jobs') {
-    return jobUnitClickIncome(props.row.item as JobDef, owned.value, store.jobBaseEconomyInput)
+    const perClick = jobUnitClickIncome(props.row.item as JobDef, owned.value, store.jobBaseEconomyInput)
+    // Without tapping, Jobs pay through the allowance, by the second
+    return store.noTap ? perClick * store.allowanceTapRate : perClick
   }
   return businessUnitPerSecond(props.row.item as BusinessDef, owned.value, store.economyInput)
 })
@@ -241,19 +243,23 @@ const stackTotal = computed(() => effectiveUnitIncome.value * owned.value)
 
 const empireSharePct = computed(() => {
   if (owned.value <= 0) return 0
-  const denom = props.kind === 'jobs' ? store.jobBaseMoneyPerClick : store.moneyPerSecond
+  const denom =
+    props.kind === 'jobs'
+      ? store.jobBaseMoneyPerClick * (store.noTap ? store.allowanceTapRate : 1)
+      : store.moneyPerSecond
   if (denom <= 0) return 0
   return Math.min(100, (stackTotal.value / denom) * 100)
 })
 
-const unitSuffix = computed(() => (props.kind === 'jobs' ? 'click' : 's'))
+const perClick = computed(() => props.kind === 'jobs' && !store.noTap)
+const unitSuffix = computed(() => (perClick.value ? 'click' : 's'))
 
 const incomeLineText = computed(() => {
   if (props.row.mode !== 'revealed') return ''
   if (owned.value > 0) {
     return `Income: ${formatCurrency(effectiveUnitIncome.value)}/${unitSuffix.value} each · ${formatCurrency(stackTotal.value)} total (${empireSharePct.value.toFixed(1)}%)`
   }
-  return `Income: ${formatCurrency(effectiveUnitIncome.value)} / ${props.kind === 'jobs' ? 'click' : 'second'} each`
+  return `Income: ${formatCurrency(effectiveUnitIncome.value)} / ${perClick.value ? 'click' : 'second'} each`
 })
 
 const compactIncomeText = computed(() => {

@@ -42,7 +42,7 @@ export const SCENARIOS: ReadonlyArray<ScenarioDef> = [
     id: 'absent-landlord',
     name: 'Absent Landlord',
     blurb: 'The family has never set foot in its own businesses and has no plans to start.',
-    rules: 'No tapping: Play without tapping stays on for the whole dynasty.',
+    rules: 'No tapping: "Play without tapping" stays on for the whole dynasty.',
     noTap: true,
     blockedPerks: []
   },

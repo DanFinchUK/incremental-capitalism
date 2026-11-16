@@ -12,7 +12,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     body: [
       'Tap "Get paid" to earn your first cash, then spend it on Jobs to boost every click.',
       'Tap fast to build a Hustle streak: up to 3x click pay.',
-      'Rather not tap? Turn on Play without tapping in Settings and Universal Credit replaces "Get paid". Slower, but every class can be reached.'
+      'Rather not tap? Turn on "Play without tapping" in Settings and Universal Credit replaces "Get paid". Slower, but every class can be reached.'
     ]
   },
   {

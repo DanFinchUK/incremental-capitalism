@@ -8,13 +8,16 @@ describe('formatCurrency', () => {
     expect(formatCurrency(123456.789)).toBe('£123,456.79')
   })
 
-  it('shows whole pounds with commas from £1M up to £1T', () => {
+  it('shows whole pounds with commas from £1M up to £100M', () => {
     expect(formatCurrency(1_000_000)).toBe('£1,000,000')
     expect(formatCurrency(12_500_000.95)).toBe('£12,500,000')
-    expect(formatCurrency(250_000_000_000)).toBe('£250,000,000,000')
+    expect(formatCurrency(99_999_999)).toBe('£99,999,999')
   })
 
-  it('uses compact suffixes from £1T upwards', () => {
+  it('uses compact suffixes from £100M upwards', () => {
+    expect(formatCurrency(100_000_000)).toBe('£100.00M')
+    expect(formatCurrency(240_000_000)).toBe('£240.00M')
+    expect(formatCurrency(250_000_000_000)).toBe('£250.00B')
     expect(formatCurrency(3e12)).toBe('£3.00T')
     expect(formatCurrency(15.2e15)).toBe('£15.20Qa')
     expect(formatCurrency(4.5e18)).toBe('£4.50Qi')

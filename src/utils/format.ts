@@ -19,8 +19,13 @@ const COMPACT_TIERS: ReadonlyArray<{ threshold: number; suffix: string }> = [
   { threshold: 1e21, suffix: 'Sx' },
   { threshold: 1e18, suffix: 'Qi' },
   { threshold: 1e15, suffix: 'Qa' },
-  { threshold: 1e12, suffix: 'T' }
+  { threshold: 1e12, suffix: 'T' },
+  { threshold: 1e9, suffix: 'B' },
+  { threshold: 1e6, suffix: 'M' }
 ]
+
+// Below this, money reads in full; from here on it collapses to a suffix
+const COMPACT_FROM = 1e8
 
 export function formatCurrency(value: number): string {
   if (!Number.isFinite(value)) {
@@ -33,7 +38,7 @@ export function formatCurrency(value: number): string {
     return `${sign}£${abs.toExponential(2)}`
   }
   for (const tier of COMPACT_TIERS) {
-    if (abs >= tier.threshold) {
+    if (abs >= COMPACT_FROM && abs >= tier.threshold) {
       return `${sign}£${(abs / tier.threshold).toFixed(2)}${tier.suffix}`
     }
   }

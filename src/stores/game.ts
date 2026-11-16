@@ -325,7 +325,8 @@ export const useGameStore = defineStore('game', () => {
       const boss = bosses.nextBoss.value
       return tracker && boss ? { gate: tracker.gate, startedActiveMs: tracker.startedActiveMs, progress: boss.progress } : null
     },
-    hustle: () => hustleMultiplier.value
+    hustle: () => hustleMultiplier.value,
+    onGateOpen: () => cue('gateOpen')
   })
   plays.resetGateWatch(initial.gatesBeaten)
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))

@@ -17,6 +17,8 @@ interface PlayLogDeps {
   openGate: () => number | null
   attempt: () => { gate: number; startedActiveMs: number; progress: number } | null
   hustle: () => number
+  // Once per gate, as its boss first becomes available (not on loading a save)
+  onGateOpen?: (gate: number) => void
 }
 
 type Fields = Record<string, string | number | boolean>
@@ -58,6 +60,7 @@ export function createPlayLogModule(initial: PlayLog, deps: PlayLogDeps) {
     if (open !== null && open > lastOpenGate) {
       lastOpenGate = open
       log(ts, 'gate-open', { gate: open })
+      deps.onGateOpen?.(open)
     }
     const attempt = deps.attempt()
     if (attempt) {

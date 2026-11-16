@@ -16,6 +16,7 @@ export type SfxKind =
   | 'shadyFreeze'
   | 'scandalPay'
   // Bosses
+  | 'gateOpen'
   | 'bossStart'
   | 'bossTick'
   | 'bossWin'
@@ -291,6 +292,11 @@ const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void
   scandalPay: (v) => {
     for (let i = 0; i < 4; i++) bell(v, 1900 - i * 160, i * 0.09, 0.18, 0.03)
     tone(v, NOTE.G3, 0.36, 0.25, 'triangle', 0.04, { lowpass: 700 })
+  },
+  // The servants' bell: someone is waiting to see you
+  gateOpen: (v) => {
+    for (let i = 0; i < 3; i++) bell(v, NOTE.E6 * (1 + (Math.random() - 0.5) * 0.01), i * 0.11, 0.5, 0.05)
+    tone(v, NOTE.B4, 0.02, 0.45, 'triangle', 0.03)
   },
   // A timpani roll building to a horn
   bossStart: (v) => {

@@ -61,6 +61,42 @@ describe('sound', () => {
     expect(kinds).toEqual(expect.arrayContaining(['bossStart', 'hire', 'pass', 'perk']))
   })
 
+  it('rings once as the next boss becomes available, and not again on dipping back under', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    store.closeIntro(T0)
+    store.tick(T0)
+    store.sfxQueue.splice(0)
+    const gateOpens = () => store.sfxQueue.filter((c) => c.kind === 'gateOpen').length
+    store.addDebugMoney(gateThreshold(1) * 1.1, T0)
+    store.tick(T0 + 100)
+    expect(store.nextBoss?.status).toBe('available')
+    expect(gateOpens()).toBe(1)
+    // Spend below the line and earn back over it: no second bell
+    store.money = 0
+    store.tick(T0 + 200)
+    expect(store.nextBoss?.status).toBe('locked')
+    store.addDebugMoney(gateThreshold(1) * 1.1, T0 + 300)
+    store.tick(T0 + 300)
+    expect(gateOpens()).toBe(1)
+  })
+
+  it('stays quiet when a save loads with the boss already available', () => {
+    const first = useGameStore()
+    first.hydrateFromStorage(T0)
+    first.closeIntro(T0)
+    first.addDebugMoney(gateThreshold(1) * 1.1, T0)
+    first.tick(T0)
+    first.flushSave(T0)
+    setActivePinia(createPinia())
+    const store = useGameStore()
+    store.hydrateFromStorage(T0 + 1000)
+    store.tick(T0 + 1000)
+    store.tick(T0 + 1100)
+    expect(store.nextBoss?.status).toBe('available')
+    expect(store.sfxQueue.some((c) => c.kind === 'gateOpen')).toBe(false)
+  })
+
   it('never lets undelivered cues pile up', () => {
     const store = useGameStore()
     store.hydrateFromStorage(T0)

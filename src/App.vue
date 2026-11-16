@@ -101,7 +101,8 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import type { ItemKind } from './data/items'
+import { BUSINESSES_BY_ID, JOBS_BY_ID, type ItemKind } from './data/items'
+import { itemMilestones } from './engine/economy'
 import type { PerkId } from './data/perks'
 import { playSfx } from './engine/audio'
 import { useGameStore } from './stores/game'
@@ -175,12 +176,20 @@ let autoFloatTimer: ReturnType<typeof setInterval> | null = null
 let bannerTimer: ReturnType<typeof setTimeout> | null = null
 const pendingTimeouts = new Set<ReturnType<typeof setTimeout>>()
 
+// The store raises sound cues as things happen; play them as they arrive
 watch(
-  () => store.celebratedClassLevel,
-  (lvl) => {
-    if (lvl !== null) {
-      playSfx('milestone', store.muted)
-    }
+  () => store.sfxQueue.length,
+  (n) => {
+    if (n === 0) return
+    for (const c of store.sfxQueue.splice(0)) playSfx(c.kind, store.muted, c.options)
+  }
+)
+
+// The clock ticks through the last ten seconds of a boss fight
+watch(
+  () => (store.nextBoss?.status === 'active' ? store.nextBoss.remainingSec : null),
+  (sec, prev) => {
+    if (sec !== null && sec !== prev && sec <= 10 && sec > 0) playSfx('bossTick', store.muted)
   }
 )
 
@@ -231,7 +240,9 @@ function scheduleAutoFloats(): void {
 
 function handleManualClick(ev: MouseEvent): void {
   const earned = store.manualClick(Date.now())
-  playSfx('click', store.muted)
+  // The chink climbs as Hustle builds
+  const hustle = (store.hustleMultiplier - 1) / Math.max(0.01, store.maxHustle - 1)
+  playSfx('click', store.muted, { intensity: hustle })
   let x = ev.clientX
   let y = ev.clientY
   const btn = payButton()
@@ -245,25 +256,33 @@ function handleManualClick(ev: MouseEvent): void {
 
 function handleBuyItem(kind: ItemKind, id: string): void {
   const res = store.buyItem(kind, id)
-  if (res.bought > 0) {
-    playSfx(res.hitMilestone || res.promotedClass ? 'milestone' : 'buy', store.muted)
+  if (res.bought === 0) return
+  if (res.hitMilestone || res.promotedClass) {
+    // Brighter the further up the item's milestones it has climbed
+    const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
+    const owned = (kind === 'jobs' ? store.jobsPurchased[id] : store.businessesOwned[id]) ?? 0
+    const reached = def ? itemMilestones(def.scaleFactor).filter((m) => owned >= m).length : 1
+    playSfx('milestone', store.muted, { intensity: reached / 7 })
+  } else {
+    playSfx(kind === 'jobs' ? 'buyJob' : 'buyBusiness', store.muted, { count: res.bought })
   }
 }
 
 function handleBuyPerk(id: PerkId): void {
-  if (store.buyPerk(id)) {
-    playSfx('milestone', store.muted)
-  }
+  store.buyPerk(id)
 }
 
 function handleScandalChoice(option: number): void {
   store.claimMarketEvent(Date.now(), Math.random, option)
+  playSfx('scandalPay', store.muted)
 }
 
 function handleClaimEvent(): void {
   const outcome = store.claimMarketEvent(Date.now())
-  if (outcome === 'golden' || outcome === 'shadyWin') {
+  if (outcome === 'golden') {
     playSfx('golden', store.muted)
+  } else if (outcome === 'shadyWin') {
+    playSfx('shadyWin', store.muted)
   } else if (outcome === 'shadyFreeze') {
     playSfx('shadyFreeze', store.muted)
   }
@@ -280,7 +299,6 @@ function confirmRetire(): void {
     if (store.legacyAvailable > 0) {
       store.legacyDrawerOpen = true
     }
-    playSfx('milestone', store.muted)
   }
 }
 

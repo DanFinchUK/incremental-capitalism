@@ -1,3 +1,4 @@
+import type { SfxKind, SfxOptions } from '../engine/audio'
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
@@ -163,6 +164,12 @@ export const useGameStore = defineStore('game', () => {
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
   const noTap = ref<boolean>(initial.noTap)
   const settingsOpen = ref(false)
+  // Sound cues raised by the game, for the page to play; capped so a sim or
+  // a page that never plays them can't let it grow
+  const sfxQueue = ref<Array<{ kind: SfxKind; options?: SfxOptions }>>([])
+  function cue(kind: SfxKind, options?: SfxOptions): void {
+    if (sfxQueue.value.length < 8) sfxQueue.value.push({ kind, options })
+  }
   const muted = ref<boolean>(initial.muted)
   const introSeen = ref<boolean>(initial.introSeen)
   const introOpen = ref<boolean>(!initial.introSeen)
@@ -292,6 +299,8 @@ export const useGameStore = defineStore('game', () => {
     twistStrength: () => modifiers.value.twistStrength,
     onAttemptEnded: (ended) => {
       plays.onAttemptEnded(nowMs.value, ended)
+      if (ended.result === 'won') cue('bossWin')
+      else if (ended.result === 'lost') cue('bossLose')
       // Corked bottles belong to the tasting; they leave with the sommelier
       if (activeEvent.value?.corked) {
         activeEvent.value = null
@@ -571,6 +580,7 @@ export const useGameStore = defineStore('game', () => {
         creditMoney(catchUp.moneyEarned, undefined, ts)
         highestClassReached.value = Math.max(highestClassReached.value, classStatus.value.current.level)
         offlineReport.value = catchUp
+        cue('welcomeBack')
         resetTelemetry(telemetry.value, ts, money.value)
         refreshSeenItems()
       }
@@ -759,6 +769,7 @@ export const useGameStore = defineStore('game', () => {
     }
     if (bought > 0) {
       lastAutoBuyAt.value = ts
+      cue('autoBuy')
     }
   }
 
@@ -804,6 +815,7 @@ export const useGameStore = defineStore('game', () => {
 
   function showMarketEvent(def: MarketEventDef, ts: number, rng: () => number, corked = false): void {
     nextEventSeq.value += 1
+    cue(def.effect.type === 'scandal' ? 'scandal' : 'eventSpawn')
     activeEvent.value = {
       id: nextEventSeq.value,
       def,
@@ -998,6 +1010,7 @@ export const useGameStore = defineStore('game', () => {
         creditMoney(catchUp.moneyEarned, undefined, ts)
         highestClassReached.value = Math.max(highestClassReached.value, classStatus.value.current.level)
         offlineReport.value = catchUp
+        cue('welcomeBack')
         resetTelemetry(telemetry.value, ts, money.value)
       }
     } else {
@@ -1052,6 +1065,7 @@ export const useGameStore = defineStore('game', () => {
     perks.value[id] += 1
     legacySpent.value += cost
     plays.log(nowMs.value, 'perk', { id, rank: perks.value[id] })
+    cue('perk')
     flushSave(nowMs.value)
     return true
   }
@@ -1079,13 +1093,19 @@ export const useGameStore = defineStore('game', () => {
   function hireAdvisor(offerIndex: number, replaceSeat?: number): boolean {
     const advisorId = office.headhunterOffer.value[offerIndex]
     const hired = office.hireAdvisor(offerIndex, replaceSeat)
-    if (hired) plays.log(nowMs.value, 'hire', { advisor: advisorId, replaced: replaceSeat !== undefined })
+    if (hired) {
+      plays.log(nowMs.value, 'hire', { advisor: advisorId, replaced: replaceSeat !== undefined })
+      cue('hire')
+    }
     return hired
   }
 
   function skipAdvisorOffer(): boolean {
     const skipped = office.skipOffer()
-    if (skipped) plays.log(nowMs.value, 'skip-hire', {})
+    if (skipped) {
+      plays.log(nowMs.value, 'skip-hire', {})
+      cue('pass')
+    }
     return skipped
   }
 
@@ -1101,6 +1121,7 @@ export const useGameStore = defineStore('game', () => {
       maxHustle: maxHustle.value,
       target: bossTarget(gate)
     })
+    cue('bossStart')
     return true
   }
 
@@ -1112,6 +1133,7 @@ export const useGameStore = defineStore('game', () => {
     }
     if (gatesBeaten.value <= 2) unlockAchievement('early-retirement')
     plays.log(ts, 'retire', { gate: gatesBeaten.value, legacy: gain, netWorth: netWorth.value })
+    cue('retire')
     const inheritance = endGeneration(ts, gain)
     plays.resetGateWatch(0)
     announce(
@@ -1250,6 +1272,7 @@ export const useGameStore = defineStore('game', () => {
     }
     titles.value += gain
     plays.log(ts, 'elevate', { titles: gain })
+    cue('elevate')
     endGeneration(ts, 0, true)
     plays.resetGateWatch(0)
     legacyPoints.value = 0
@@ -1299,6 +1322,7 @@ export const useGameStore = defineStore('game', () => {
     plays.log(nowMs.value, 'abdicate', { from: heir.value.traitId ?? 'none', to: chosen.traitId ?? 'none', inherit: chosen.inheritId ?? 'none' })
     heir.value = chosen
     abdicated.value = true
+    cue('abdicate')
     siblingChoices.value = []
     announce(`${outgoing} abdicates. ${chosen.name} takes over the family firm.`)
     flushSave(nowMs.value)
@@ -1311,6 +1335,7 @@ export const useGameStore = defineStore('game', () => {
       return
     }
     heir.value = chosen
+    cue('heir')
     plays.log(nowMs.value, 'heir', { trait: chosen.traitId ?? 'none', inherit: chosen.inheritId ?? 'none', options: heirChoices.value.length })
     heirChoices.value = []
     generation.value += 1
@@ -1331,6 +1356,7 @@ export const useGameStore = defineStore('game', () => {
       return
     }
     achievements.value = [...achievements.value, id]
+    cue('achievement')
     announce(`Achievement: ${def.name}! Income +${Math.round(ACHIEVEMENT_INCOME_BONUS * 100)}% for good.`)
   }
 
@@ -1447,6 +1473,7 @@ export const useGameStore = defineStore('game', () => {
     noTap,
     toggleNoTap,
     settingsOpen,
+    sfxQueue,
     muted,
     introSeen,
     introOpen,

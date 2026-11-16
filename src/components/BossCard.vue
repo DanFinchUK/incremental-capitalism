@@ -48,7 +48,8 @@
 
       <template v-else>
         <p v-if="boss.def.twistText" class="scn-BossRule"><strong>Twist:</strong> {{ boss.def.twistText }}</p>
-        <p class="scn-BossRule"><strong>To win:</strong> {{ boss.def.conditionText }} · {{ formatCurrency(target) }}</p>
+        <p class="scn-BossRule"><strong>To win:</strong> {{ boss.def.conditionText }}</p>
+        <p class="scn-BossRule"><strong>Target:</strong> {{ formatCurrency(target) }}</p>
       </template>
 
       <template v-if="boss.status === 'active'">

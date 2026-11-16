@@ -6,6 +6,7 @@
         <span class="scn-BuffPill scn-BuffPill-streak">
           {{ store.hustleMultiplier.toFixed(1) }}x Hustle
         </span>
+        <span v-if="store.automationPill" class="scn-BuffPill" data-testid="automation-pill">{{ store.automationPill }}</span>
         <span v-if="store.activeBusinessBuff" class="scn-BuffPill">
           {{ store.activeBusinessBuff.mult }}x {{ store.activeBusinessBuff.label }} ({{ store.activeBusinessBuff.remainingSec }}s)
         </span>

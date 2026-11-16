@@ -33,12 +33,16 @@ describe('item card without automation', () => {
     expect(wrapper.text()).not.toMatch(/automat/i)
   })
 
-  it('describes the automation line once an Estate Manager is hired', async () => {
-    const { store, wrapper } = card()
+  it('sums the automation line into one status pill once anything brings it', () => {
+    const { store } = card()
+    expect(store.automationPill).toBe('')
     hireEstateManager(store)
-    await wrapper.vm.$nextTick()
-    expect(wrapper.text()).toContain('Income:')
-    expect(wrapper.text()).toContain('under 1% of cash')
+    expect(store.automationPill).toBe('Auto under 1% of cash')
+    store.perks.nepotism = 2
+    expect(store.automationPill).toMatch(/^Auto under [\d.]+% of cash$/)
+    expect(store.automationPill).not.toBe('Auto under 1% of cash')
+    store.toggleAutoBuyPaused()
+    expect(store.automationPill).toBe('Auto paused')
   })
 
   it('shows job income at the base rate, ignoring Hustle', async () => {
@@ -56,8 +60,10 @@ describe('item card without automation', () => {
     store.money = JOBS_BY_ID['1'].baseCost * 1e6 // far under the line: automated
     store.tick(2000)
     await wrapper.vm.$nextTick()
-    expect(store.isAutomationShown('jobs', '1')).toBe(true)
-    expect(wrapper.text()).toContain('restocking under 1% of cash')
+    expect(store.isAutomated('jobs', '1')).toBe(true)
+    // Automated cards look like any other: no shading and no status line
+    expect(wrapper.find('[data-item-key="jobs-1"]').classes()).not.toContain('scn-Card-automated')
+    expect(wrapper.text()).not.toContain('restocking')
     const buy = wrapper.find('.scn-Actions button.scn-Action')
     expect(buy.exists()).toBe(true)
     // The per-click gain is on the Income line, so the cost line doesn't repeat it
@@ -70,7 +76,7 @@ describe('item card without automation', () => {
     store.compactAutoBuy = true
     store.money = 0 // nothing is under the line
     await wrapper.vm.$nextTick()
-    expect(store.isAutomationShown('jobs', '1')).toBe(false)
+    expect(store.isAutomated('jobs', '1')).toBe(false)
     expect(wrapper.classes()).toContain('scn-Card-compact')
     expect(wrapper.find('.scn-Action-compact').exists()).toBe(true)
 

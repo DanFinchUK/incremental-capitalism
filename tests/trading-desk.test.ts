@@ -37,6 +37,63 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     wrapper.unmount()
   })
 
+  it('shows the automation line on the desk once anything brings it', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    expect(wrapper.find('[data-testid="desk-automation"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="desk-restock-line"]').exists()).toBe(false)
+    store.perks.nepotism = 2
+    store.money = 1_000_000
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="desk-automation"]').text()).toBe(`AUTO <${store.automationLinePct}%`)
+    expect(wrapper.find('[data-testid="desk-restock-line"]').text()).toContain('Auto restocks under')
+    store.toggleAutoBuyPaused()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="desk-automation"]').text()).toBe('AUTO PAUSED')
+    expect(wrapper.find('[data-testid="desk-restock-line"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('names the next item automation will pick up, and the cash it needs', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.perks.nepotism = 2
+    store.money = 0
+    await wrapper.vm.$nextTick()
+    const next = store.nextAutomation!
+    expect(next.label).toBe('Gig delivery rider')
+    expect(next.cash).toBeCloseTo(store.itemQuote('jobs', '1', 1).cost / store.automationLine)
+    expect(wrapper.find('[data-testid="desk-next-auto"]').text()).toContain('Gig delivery rider')
+    store.toggleAutoBuy('jobs', '1')
+    expect(store.nextAutomation?.label).not.toBe('Gig delivery rider')
+    wrapper.unmount()
+  })
+
+  it('draws the next automation threshold on the cash chart when it is within reach', async () => {
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro()
+    if (store.tradingDeskCollapsed) store.toggleTradingDesk()
+    store.perks.nepotism = 2
+    store.autoBuyPaused = false
+    store.money = 1500 // the gig rider joins automation at about £2,167
+    const t0 = Date.now()
+    for (let i = 1; i <= 8; i++) store.tick(t0 + i * 500)
+    await wrapper.vm.$nextTick()
+    expect(store.nextAutomation!.cash).toBeGreaterThan(store.money)
+    expect(wrapper.find('[data-testid="desk-threshold-line"]').exists()).toBe(true)
+    // Far out of reach: no line, only the words under the chart
+    // (once the £1,500 candles have left the chart's 80 seconds)
+    store.money = 10
+    for (let i = 9; i <= 400; i++) {
+      store.money = 10
+      store.tick(t0 + i * 500)
+    }
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="desk-threshold-line"]').exists()).toBe(false)
+    wrapper.unmount()
+  })
+
   it('collapses and expands the City Trading Desk', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     expect(wrapper.findAll('.scn-DeskMonitor')).toHaveLength(2)

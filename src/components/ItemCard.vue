@@ -24,10 +24,7 @@
     v-else
     class="scn-Card"
     :data-item-key="`${kind}-${row.item.id}`"
-    :class="{
-      'scn-Card-automated': isAutoActive,
-      'scn-Card-compact': isCompact
-    }"
+    :class="{ 'scn-Card-compact': isCompact }"
     @click="handleCardClick"
   >
     <template v-if="isCompact">
@@ -110,7 +107,6 @@
           </span>
         </div>
 
-        <p v-if="autoStatusText" class="scn-AutoLine scn-AutoStatus">{{ autoStatusText }}</p>
       </div>
 
       <div class="scn-Actions" @click.stop>
@@ -180,10 +176,6 @@ watch(
 
 // Steadied in the store, so the dashed style and compact cards don't blink as
 // cash moves. The buy button shows either way: you can always top up by hand.
-const isAutoActive = computed(() =>
-  props.row.mode === 'revealed' ? store.isAutomationShown(props.kind, props.row.item.id) : false
-)
-
 // Compact follows the Automate tick (and the global pause), never the price,
 // so cards don't fold and unfold as cash moves
 const compactEligible = computed(
@@ -282,18 +274,6 @@ const synergyText = computed(() => {
   if (!synJob) return ''
   const synCount = store.jobsPurchased[synJob.id] ?? 0
   return synCount > 0 ? `+${synCount}% from ${synJob.label}` : `+1% per ${synJob.label} hired`
-})
-
-const autoStatusText = computed(() => {
-  if (props.row.mode !== 'revealed' || store.automationLine <= 0) return ''
-  const linePct = Math.round(store.automationLine * 100)
-  if (!store.isAutoBuyEnabled(props.kind, props.row.item.id)) {
-    return 'Auto off'
-  }
-  if (store.autoBuyPaused) {
-    return 'Auto paused'
-  }
-  return isAutoActive.value ? `Auto: restocking under ${linePct}% of cash` : `Auto once under ${linePct}% of cash`
 })
 
 // Nothing automates until an advisor, heir, perk or title brings it

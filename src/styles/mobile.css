@@ -82,6 +82,10 @@ html {
   box-sizing: border-box;
 }
 
+.mob-Auto {
+  font-weight: 700;
+}
+
 .mob-Hustle {
   font-weight: 700;
   color: var(--color-accent-text);
@@ -328,8 +332,7 @@ html {
 
   /* Automation is set for the whole estate on a phone: no per-item boxes,
      and no line on every card repeating the same automation rule */
-  .ic-Shell-phone .scn-AutoBuy,
-  .ic-Shell-phone .scn-AutoStatus {
+  .ic-Shell-phone .scn-AutoBuy {
     display: none;
   }
 

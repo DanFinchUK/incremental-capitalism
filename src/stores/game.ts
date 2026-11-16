@@ -135,10 +135,6 @@ export interface DisgraceReport {
 
 const SAVE_THROTTLE_MS = 2000
 const AUTO_BUY_COOLDOWN_MS = 1000
-// An automated item stays shown that way until its next unit costs more than
-// this many times the automation line. One restock only makes the next unit a
-// little over 1x, so restocking never flips the card back.
-const AUTOMATION_DISPLAY_SLACK = 3
 // Income multiplier while a freeze lands on a family with no automation
 const FREEZE_INCOME_MULT = 0.5
 
@@ -191,7 +187,6 @@ export const useGameStore = defineStore('game', () => {
   const lastSavedMs = ref<number>(0)
   const lastAutoBuyAt = ref<number>(0)
   // Items currently shown as automated on their cards (not saved)
-  const automationShownKeys = ref<Record<string, boolean>>({})
   const hustleBonus = ref<number>(0)
   const lastManualClickAt = ref<number>(0)
   const clickBuff = ref<TimedBuff | null>(null)
@@ -408,6 +403,15 @@ export const useGameStore = defineStore('game', () => {
 
   // Share of cash under which an item's next unit restocks itself
   const automationLine = computed(() => automationShare(perks.value.nepotism, modifiers.value.automationShareBonus))
+  // The status pill: the whole automation line, from perks, advisors, heirs
+  // and titles together. Empty until something brings automation; a freeze
+  // has its own pill.
+  const automationPill = computed(() => {
+    if (automationLine.value <= 0 || isAutoBuyFrozen.value) return ''
+    if (autoBuyPaused.value || twist.value.automationPaused) return 'Auto paused'
+    return `Auto under ${automationLinePct.value}% of cash`
+  })
+  const automationLinePct = computed(() => Math.round(automationLine.value * 1000) / 10)
 
   const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
   const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
@@ -721,6 +725,25 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  // The cash at which the next item joins automation: its next unit's price
+  // over the automation line. For the trading desk's threshold line.
+  const nextAutomation = computed<{ label: string; cash: number } | null>(() => {
+    if (!automationPill.value || automationPill.value === 'Auto paused') return null
+    let best: { label: string; cash: number } | null = null
+    for (const [kind, rows] of [
+      ['jobs', visibleJobs.value],
+      ['businesses', visibleBusinesses.value]
+    ] as const) {
+      for (const r of rows) {
+        if (r.mode !== 'revealed' || !isAutoBuyEnabled(kind, r.item.id) || r.item.baseCost > costCeiling.value) continue
+        if (isAutomated(kind, r.item.id)) continue
+        const cash = itemQuote(kind, r.item.id, 1).cost / automationLine.value
+        if (!best || cash < best.cash) best = { label: r.item.label, cash }
+      }
+    }
+    return best
+  })
+
   function isAutomated(kind: ItemKind, id: string): boolean {
     if (autoBuyDisabled.value[kind][id] || twist.value.automationPaused || isAutoBuyFrozen.value) {
       return false
@@ -730,43 +753,6 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
     return isWithinAutomationLine(itemQuote(kind, id, 1).cost, money.value, automationLine.value)
-  }
-
-  // Whether an item card shows as automated (dashed, and collapsed in compact
-  // mode). Automation spends cash every second and income refills it, so an
-  // item near the line crosses it back and forth; showing that would make the
-  // card blink between styles and sizes. Once automated, an item
-  // stays shown that way until its next unit is well past the line (a big
-  // drop in cash, say). Switching automation off, or a boss pausing it,
-  // shows at once.
-  function automationDisplayAllowed(kind: ItemKind, id: string): boolean {
-    return !autoBuyPaused.value && isAutoBuyEnabled(kind, id) && !twist.value.automationPaused && !isAutoBuyFrozen.value
-  }
-
-  function withinAutomationSlack(kind: ItemKind, id: string): boolean {
-    const def = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
-    if (!def || def.baseCost > costCeiling.value) return false
-    return isWithinAutomationLine(itemQuote(kind, id, 1).cost, money.value, automationLine.value * AUTOMATION_DISPLAY_SLACK)
-  }
-
-  function isAutomationShown(kind: ItemKind, id: string): boolean {
-    if (!automationDisplayAllowed(kind, id)) return false
-    if (isAutomated(kind, id)) return true
-    return Boolean(automationShownKeys.value[`${kind}-${id}`]) && withinAutomationSlack(kind, id)
-  }
-
-  function noteAutomatedItems(): void {
-    for (const [kind, rows] of [
-      ['jobs', visibleJobs.value],
-      ['businesses', visibleBusinesses.value]
-    ] as const) {
-      for (const r of rows) {
-        if (r.mode !== 'revealed') continue
-        const key = `${kind}-${r.item.id}`
-        const shown = isAutomationShown(kind, r.item.id)
-        if (shown !== Boolean(automationShownKeys.value[key])) automationShownKeys.value[key] = shown
-      }
-    }
   }
 
   // Once a second, restock every item behind the automation line, cheapest
@@ -1055,9 +1041,7 @@ export const useGameStore = defineStore('game', () => {
 
     refreshSeenItems()
     // Before and after: restocking is what pushes an item back over the line
-    noteAutomatedItems()
     runAutoBuy(ts)
-    noteAutomatedItems()
     observeBalance(telemetry.value, ts, money.value)
     if (ts - telemetry.value.lastSampleTs >= 250) {
       sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value)
@@ -1661,8 +1645,10 @@ export const useGameStore = defineStore('game', () => {
     toggleAutoBuy,
     isAutoBuyEnabled,
     isAutomated,
-    isAutomationShown,
     automationLine,
+    automationPill,
+    automationLinePct,
+    nextAutomation,
     buyPerk,
     retire,
     hardReset,

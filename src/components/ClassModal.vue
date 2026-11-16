@@ -116,7 +116,15 @@
           :disabled="lock.locked.value"
           @click="store.closeClassModal()"
         >
-          {{ victory ? 'Back to work' : celebratedDef ? 'Assume your rightful place' : 'Back to the market' }}
+          {{
+            victory
+              ? store.headhunterOffer.length > 0
+                ? 'Meet the shortlist'
+                : 'Back to work'
+              : celebratedDef
+                ? 'Assume your rightful place'
+                : 'Back to the market'
+          }}
         </button>
       </div>
     </div>

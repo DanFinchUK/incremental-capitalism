@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="store.achievementsOpen"
-    class="scn-ModalBackdrop"
+    class="scn-ModalBackdrop scn-ModalBackdrop-over"
     role="dialog"
     aria-modal="true"
     aria-labelledby="achievements-title"

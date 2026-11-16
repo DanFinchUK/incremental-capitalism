@@ -57,14 +57,29 @@ describe('the main menu', () => {
     const surname = store.familySurname
     store.openMenu()
     await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="menu-continue"]').text()).toContain('generation 4 · Viscount')
+    expect(wrapper.find('[data-testid="menu-continue"]').text()).toContain('Generation 4 · Viscount')
     await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-confirm-abandon"]').text()).toContain("doesn't go in the Hall")
     await wrapper.find('[data-testid="menu-confirm-new-dynasty"]').trigger('click')
-    expect(store.menuOpen).toBe(false)
+    // Back to the title screen, with a new family ready to begin
+    expect(store.menuOpen).toBe(true)
+    expect(wrapper.find('[data-testid="menu-continue"]').text()).toContain('Begin')
     expect(store.familySurname).not.toBe(surname)
     expect(store).toMatchObject({ generation: 1, titles: 0 })
     expect(store.hall).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  it('a full reset goes back to the menu', async () => {
+    const { wrapper, store } = app()
+    store.closeIntro(T0)
+    store.generation = 3
+    await wrapper.vm.$nextTick()
+    ;(wrapper.vm as unknown as { $: { setupState: { confirmHardReset: () => void } } }).$.setupState.confirmHardReset()
+    await wrapper.vm.$nextTick()
+    expect(store.menuOpen).toBe(true)
+    expect(store.generation).toBe(1)
+    expect(wrapper.find('[data-testid="menu-continue"]').text()).toContain('Begin')
     wrapper.unmount()
   })
 

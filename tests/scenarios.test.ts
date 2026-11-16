@@ -122,11 +122,32 @@ describe('choosing a scenario on screen', () => {
     s.closeIntro(T0)
     s.openMenu()
     await wrapper.vm.$nextTick()
+    // A family yet to start has nothing to abandon, and no scenarios to choose from
+    expect(wrapper.find('[data-testid="menu-new-dynasty"]').exists()).toBe(false)
+    s.dynastyMs = 60_000
+    await wrapper.vm.$nextTick()
     await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
     expect(wrapper.find('[data-testid="scenario-picker"]').exists()).toBe(false)
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-testid="scenario-picker"]').exists()).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('a family yet to start can choose its scenario from the menu', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
+    const s = useGameStore()
+    s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
+    s.openMenu()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="menu-new-dynasty"]').text()).toBe('Choose a scenario')
+    await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
+    await wrapper.find('[data-testid="scenario-austerity"]').trigger('click')
+    await wrapper.find('[data-testid="menu-confirm-new-dynasty"]').trigger('click')
+    expect(s.scenario).toBe('austerity')
+    expect(s.menuOpen).toBe(true)
     wrapper.unmount()
   })
 })

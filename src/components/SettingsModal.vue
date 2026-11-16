@@ -81,6 +81,9 @@
         <button type="button" class="scn-Action scn-Action-outline" data-testid="download-save" @click="downloadSave">
           Download save
         </button>
+        <button v-if="!store.menuOpen" type="button" class="scn-Action scn-Action-outline" data-testid="settings-new-bloodline" @click="newBloodline">
+          New bloodline
+        </button>
         <button type="button" class="scn-Action" data-testid="open-reset" @click="reset">Reset game</button>
       </div>
 
@@ -108,7 +111,7 @@ import { useGameStore } from '../stores/game'
 import { useEscapeKey } from '../utils/useEscapeKey'
 import { roomForClass, type RoomId } from '../data/rooms'
 
-const emit = defineEmits<{ (e: 'reset'): void }>()
+const emit = defineEmits<{ (e: 'reset'): void; (e: 'new-bloodline'): void }>()
 
 const store = useGameStore()
 useEscapeKey(() => store.settingsOpen, () => (store.settingsOpen = false))
@@ -127,6 +130,11 @@ const classRoomName = computed(() => roomForClass(store.classStatus.current.leve
 function openIntro(): void {
   store.settingsOpen = false
   store.openIntro()
+}
+
+function newBloodline(): void {
+  store.settingsOpen = false
+  emit('new-bloodline')
 }
 
 function reset(): void {

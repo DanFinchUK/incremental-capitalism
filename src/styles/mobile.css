@@ -253,10 +253,6 @@ html {
     background: var(--color-bg);
   }
 
-  .ic-Shell-phone .lyt-Footer {
-    padding-bottom: calc(var(--dock-h, 240px) + 16px);
-  }
-
   /* Touch targets: 44px is the comfortable minimum */
   .scn-Action,
   .scn-BulkBtn {
@@ -302,13 +298,7 @@ html {
   /* Family tab and Settings: one full-width button per row, easy to hit */
   .ic-Shell-phone .scn-Overview,
   .ic-Shell-phone .scn-OverviewControls,
-  .ic-Shell-phone .lyt-Footer,
-  .ic-Shell-phone .lyt-FooterActions {
-    width: 100%;
-  }
-
   .ic-Shell-phone .scn-OverviewControls,
-  .ic-Shell-phone .lyt-FooterActions,
   .scn-SettingsActions {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -316,14 +306,8 @@ html {
   }
 
   .ic-Shell-phone .scn-OverviewControls > .scn-Action,
-  .ic-Shell-phone .lyt-FooterActions > .scn-Action,
   .scn-SettingsActions > .scn-Action {
     width: 100%;
-  }
-
-  .ic-Shell-phone .lyt-Footer {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   /* Automation is set for the whole estate on a phone: no per-item boxes,

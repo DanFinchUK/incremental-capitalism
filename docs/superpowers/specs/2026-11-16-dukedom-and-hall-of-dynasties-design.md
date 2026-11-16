@@ -50,11 +50,14 @@ finished dynasty's save stays on the finale until then.
 
 ## The main menu
 
-The game opens on a menu: Continue (the current dynasty's name, generation and
-time so far), Found a new dynasty, Hall of Dynasties, How to play and
-Settings. Founding a new dynasty while one is under way asks first, since it
-abandons the current one; an abandoned dynasty doesn't go in the Hall. The
-first ever visit goes straight from the menu into the intro, as now.
+The game opens on a title screen: the family's coat of arms (drawn from the
+surname, with a coronet for its rank and a Latin motto), Continue (the
+family, generation, rank and time so far), then Found a new dynasty or
+Abandon this dynasty, Hall of Dynasties, Achievements, How to play and
+Settings. Abandoning asks first, doesn't go in the Hall, and comes back to
+the menu with a new family ready to begin; so does a full reset. A family
+yet to start can choose its scenario there, once scenarios are open. The
+first ever visit goes from the menu into the intro.
 
 ## The Hall of Dynasties
 

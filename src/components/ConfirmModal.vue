@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="mode !== null"
-    class="scn-ModalBackdrop"
+    class="scn-ModalBackdrop scn-ModalBackdrop-over"
     role="dialog"
     aria-modal="true"
     :aria-labelledby="mode === 'retire' ? 'retire-modal-title' : mode === 'bloodline' ? 'bloodline-modal-title' : 'reset-modal-title'"

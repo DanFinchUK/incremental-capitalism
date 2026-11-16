@@ -35,7 +35,7 @@
       <!-- The menu sits over the game; what it opens sits over the menu -->
       <MainMenu />
       <IntroModal />
-      <SettingsModal @reset="handleHardReset" />
+      <SettingsModal @reset="handleHardReset" @new-bloodline="handleNewBloodline" />
       <HallModal />
 
       <OverviewBar v-if="!phone || phoneTab === 'family'" :phone="phone" @retire="handleRetire" />
@@ -92,7 +92,8 @@
       </div>
     </div>
 
-    <footer v-if="!phone || phoneTab === 'family'" class="lyt-Footer">
+    <!-- On a phone these live in Settings and the main menu -->
+    <footer v-if="!phone" class="lyt-Footer">
       <span>Incremental Capitalism · Empire &amp; Privilege Edition</span>
       <div class="lyt-FooterActions">
         <button type="button" class="scn-Action scn-Action-outline" data-testid="open-achievements" @click="store.achievementsOpen = true">
@@ -368,6 +369,8 @@ function handleHardReset(): void {
 function confirmHardReset(): void {
   activeDialog.value = null
   store.hardReset(Date.now())
+  // Back to the title screen, to begin again from there
+  store.openMenu()
 }
 
 function onBeforeUnload(): void {

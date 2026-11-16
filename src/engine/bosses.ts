@@ -76,6 +76,9 @@ export interface BossTracker {
   countsGain: boolean
   // Time-limit multiplier from heir traits and advisors, fixed at the start
   timeMult: number
+  // A quiet look at a boss the family may have outgrown: won at once, it's
+  // waved through; otherwise it's called off as if it never started
+  probe?: boolean
 }
 
 export function newTracker(gate: number, activeMs: number, timeMult = 1, startNetWorth = 0, countsGain = false): BossTracker {

@@ -146,6 +146,8 @@ export interface DisgraceReport {
 }
 
 const SAVE_THROTTLE_MS = 2000
+// How often a gate that wasn't waved through gets another look
+const PROBE_EVERY_MS = 30_000
 const AUTO_BUY_COOLDOWN_MS = 1000
 // Income multiplier while a freeze lands on a family with no automation
 const FREEZE_INCOME_MULT = 0.5
@@ -303,7 +305,7 @@ export const useGameStore = defineStore('game', () => {
     allRevealedOwned: () => allRevealedOwned(),
     handleClassPromotion: (prev) => handleClassPromotion(prev),
     announce: (msg) => announce(wording(msg)),
-    onBossWon: (gate, killMs, purchases) => {
+    onBossWon: (gate, killMs, purchases, outgrown) => {
       if (gate === 1) unlockAchievement('solidarity')
       if (gate === 4 && purchases <= 10) unlockAchievement('under-par')
       if (gate === 6) unlockAchievement('silver-service')
@@ -316,14 +318,19 @@ export const useGameStore = defineStore('game', () => {
       if (!firstTime) {
         const title = bossForGate(gate)?.title ?? `Gate ${gate}`
         const best = prevBestKillMs !== null ? ` (best ${formatClock(prevBestKillMs)})` : ''
-        announce(`${title} beaten in ${formatClock(killMs)}${best}. Class: ${classStatus.value.current.label}.`)
+        announce(
+          outgrown
+            ? `${title} waved you through without a fight. Class: ${classStatus.value.current.label}.`
+            : `${title} beaten in ${formatClock(killMs)}${best}. Class: ${classStatus.value.current.label}.`
+        )
       }
       splits.value = withSplit(splits.value, gate, activeGenerationMs.value)
       lastKillMs.value = withSplit(lastKillMs.value, gate, killMs)
       bestSplits.value = mergeBests(bestSplits.value, splits.value)
       bestKillMs.value = mergeBests(bestKillMs.value, lastKillMs.value)
-      // After the final gate the Lords are next, not a new hire
-      if (bossForGate(gate + 1)) office.rollOffer()
+      // After the final gate the Lords are next, not a new hire; and nobody
+      // queues to be introduced over a formality
+      if (bossForGate(gate + 1) && !outgrown) office.rollOffer()
     },
     onBossLost: (gate) => {
       const def = bossForGate(gate)
@@ -1112,6 +1119,7 @@ export const useGameStore = defineStore('game', () => {
     }
     maybeSpawnRandomEvent(ts)
     bosses.evaluateAttempt()
+    maybeWaveThrough()
     plays.onTick(ts)
     checkStateAchievements()
 
@@ -1252,6 +1260,28 @@ export const useGameStore = defineStore('game', () => {
       return def ? [{ def, value: favourEventValue(id) }] : []
     })
   )
+
+  // A gate the family has beaten before, with nothing waiting on the player,
+  // gets a quiet look now and then: if the family has outgrown its boss it
+  // falls at once, and otherwise nothing happened
+  let lastProbe = { gate: 0, atMs: 0 }
+  function maybeWaveThrough(): void {
+    const next = bosses.nextBoss.value
+    if (
+      bosses.bossAttempt.value ||
+      next?.status !== 'available' ||
+      bestKillMs.value[next.def.gate] == null ||
+      mustHireFirst.value ||
+      heirChoices.value.length > 0 ||
+      disgraceReport.value !== null
+    ) {
+      return
+    }
+    const since = activeGenerationMs.value - lastProbe.atMs
+    if (lastProbe.gate === next.def.gate && since >= 0 && since < PROBE_EVERY_MS) return
+    lastProbe = { gate: next.def.gate, atMs: activeGenerationMs.value }
+    bosses.probeBoss()
+  }
 
   function startBossAttempt(): boolean {
     if (heirChoices.value.length > 0 || disgraceReport.value !== null || mustHireFirst.value || !bosses.startBossAttempt()) {

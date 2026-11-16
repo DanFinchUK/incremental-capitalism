@@ -40,8 +40,9 @@ export interface BossModuleDeps {
   allRevealedOwned: () => boolean
   handleClassPromotion: (prevClass: number) => boolean
   announce: (msg: string) => void
-  // purchases: strokes taken, for the Golf achievement
-  onBossWon: (gate: number, killMs: number, purchases: number) => void
+  // purchases: strokes taken, for the Golf achievement; outgrown: waved
+  // through without a fight
+  onBossWon: (gate: number, killMs: number, purchases: number, outgrown: boolean) => void
   onBossLost: (gate: number) => void
   bestKillFor: (gate: number) => number | null
   // Called whenever an attempt ends, however it ends
@@ -55,6 +56,8 @@ export interface BossModuleDeps {
 
 // Abandoning in the first seconds is treated as a misclick and is free.
 const FREE_ABANDON_MS = 10_000
+// A boss the family has outgrown falls within this long of being looked at
+export const OUTGROWN_MS = 1000
 
 export interface BossModule {
   bossAttempt: Ref<BossTracker | null>
@@ -64,6 +67,8 @@ export interface BossModule {
   canBackOut: ComputedRef<boolean>
   backOutSec: ComputedRef<number>
   startBossAttempt: () => boolean
+  // Look at the next boss quietly: it falls if outgrown, or nothing happened
+  probeBoss: () => boolean
   abandonBossAttempt: () => void
   evaluateAttempt: () => void
 }
@@ -133,12 +138,27 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
   })
 
   function startBossAttempt(): boolean {
+    // Pressed during a quiet look: the look becomes the fight
+    const looking = bossAttempt.value
+    if (looking?.probe) {
+      const def = bossForGate(looking.gate)!
+      bossAttempt.value = { ...looking, probe: false }
+      deps.announce(def.twistText ? `${def.title}: ${def.twistText}` : def.title)
+      return true
+    }
     if (nextBoss.value?.status !== 'available') {
       return false
     }
     const def = nextBoss.value.def
     bossAttempt.value = newTracker(def.gate, deps.activeMs(), deps.bossTimeMult(), deps.netWorth(), deps.countsGain(def.gate))
     deps.announce(def.twistText ? `${def.title}: ${def.twistText}` : def.title)
+    return true
+  }
+
+  function probeBoss(): boolean {
+    if (nextBoss.value?.status !== 'available') return false
+    const def = nextBoss.value.def
+    bossAttempt.value = { ...newTracker(def.gate, deps.activeMs(), deps.bossTimeMult(), deps.netWorth(), deps.countsGain(def.gate)), probe: true }
     return true
   }
 
@@ -160,6 +180,11 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
       return
     }
     const result = currentEvaluation(def, tracker)
+    // A look that didn't settle it at once: called off, no loss, no record
+    if (tracker.probe && !result.won && (result.lost || deps.activeMs() - tracker.startedActiveMs >= OUTGROWN_MS)) {
+      bossAttempt.value = null
+      return
+    }
     if (result.won) {
       const prevClass = deps.gatesBeaten.value
       const killMs = deps.activeMs() - tracker.startedActiveMs
@@ -168,7 +193,7 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
       if (!deps.handleClassPromotion(prevClass)) {
         deps.announce(`${def.title} beaten!`)
       }
-      deps.onBossWon(def.gate, killMs, tracker.purchases)
+      deps.onBossWon(def.gate, killMs, tracker.purchases, tracker.probe === true)
       deps.onAttemptEnded({ gate: def.gate, result: 'won', ms: killMs, progress: 1 })
     } else if (result.lost) {
       const elapsedMs = deps.activeMs() - tracker.startedActiveMs
@@ -178,5 +203,5 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
     }
   }
 
-  return { bossAttempt, bossCooldownUntilMs, twist, nextBoss, canBackOut, backOutSec, startBossAttempt, abandonBossAttempt, evaluateAttempt }
+  return { bossAttempt, bossCooldownUntilMs, twist, nextBoss, canBackOut, backOutSec, startBossAttempt, probeBoss, abandonBossAttempt, evaluateAttempt }
 }

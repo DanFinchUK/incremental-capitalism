@@ -39,7 +39,7 @@
 
       <template v-if="boss.status === 'locked'">
         <p class="scn-AutoLine">
-          Opens at {{ formatCurrency(threshold) }} net worth · {{ formatCurrency(Math.max(0, threshold - store.netWorth)) }} to go
+          Opens at {{ formatCurrency(threshold) }} net worth
         </p>
         <div class="scn-MiniProgressTrack" role="progressbar" :aria-valuenow="pct" aria-valuemin="0" aria-valuemax="100">
           <div class="scn-MiniProgressFill" :style="{ width: `${pct}%` }"></div>

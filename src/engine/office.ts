@@ -39,6 +39,18 @@ function familyAdvisorAt(family: string, tier: number): AdvisorDef | undefined {
   return best
 }
 
+// A buyer is worth offering only if they'd beat the one you have for that list
+export function buyerTierOf(kind: 'jobs' | 'businesses', seats: ReadonlyArray<AdvisorInstance | null>, chairs: ReadonlyArray<AdvisorInstance | null>): number {
+  let best = -1
+  for (const s of seats) if (s && ADVISORS_BY_ID[s.advisorId]?.buyer === kind) best = Math.max(best, RARITY_TIER[ADVISORS_BY_ID[s.advisorId].rarity])
+  for (const p of chairs) if (p && ADVISORS_BY_ID[p.advisorId]?.buyer === kind) best = Math.max(best, paTier(p))
+  return best
+}
+
+export function rarityTier(a: AdvisorDef): number {
+  return RARITY_TIER[a.rarity]
+}
+
 export function paTier(inst: AdvisorInstance): number {
   const hired = ADVISORS_BY_ID[inst.advisorId]
   if (!hired) return 0
@@ -183,11 +195,14 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>, 
 
 // The allowance family only does anything while playing without tapping, so
 // the headhunter only brings them then
-export function rollAdvisorOffer(rng: () => number, noTap = false): string[] {
+// skip: advisors not worth offering, such as a buyer no better than yours
+export function rollAdvisorOffer(rng: () => number, noTap = false, skip: (a: AdvisorDef) => boolean = () => false): string[] {
   const offer: string[] = []
   for (let guard = 0; offer.length < 3 && guard < 50; guard++) {
     const rarity = pickEventRarity(rng())
-    const pool = ADVISORS.filter((a) => a.rarity === rarity && !offer.includes(a.id) && (noTap || a.family !== 'allowance'))
+    const pool = ADVISORS.filter(
+      (a) => a.rarity === rarity && !offer.includes(a.id) && (noTap || a.family !== 'allowance') && !skip(a)
+    )
     if (pool.length === 0) continue
     offer.push(pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))].id)
   }

@@ -109,9 +109,21 @@
       </details>
 
       <div class="scn-ModalFooter">
+        <!-- The final gate: the Lords are next -->
         <button
+          v-if="victory && !victory.nextBoss && store.canElevate"
           type="button"
           class="scn-Action scn-Action-accent"
+          data-testid="victory-elevate"
+          :disabled="lock.locked.value"
+          @click="goToTheLords"
+        >
+          Elevate to the Lords
+        </button>
+        <button
+          type="button"
+          class="scn-Action"
+          :class="victory && !victory.nextBoss && store.canElevate ? 'scn-Action-outline' : 'scn-Action-accent'"
           data-testid="close-class-modal"
           :disabled="lock.locked.value"
           @click="store.closeClassModal()"
@@ -129,10 +141,14 @@
       </div>
     </div>
   </div>
+  <Teleport to="body">
+    <ElevateModal :open="elevateOpen" @close="elevateOpen = false" />
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import ElevateModal from './ElevateModal.vue'
 import { useVictoryLock } from './victoryLock'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
@@ -141,6 +157,12 @@ import { useGameStore } from '../stores/game'
 import { formatClock, formatCurrency } from '../utils/format'
 
 const store = useGameStore()
+const elevateOpen = ref(false)
+
+function goToTheLords(): void {
+  store.closeClassModal()
+  elevateOpen.value = true
+}
 
 const pyramidRungs = computed(() => [...SOCIAL_CLASSES].reverse())
 

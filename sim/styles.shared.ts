@@ -1,24 +1,14 @@
 // Different ways to play (sim/bot.ts PLAYSTYLES), each over three seeded
 // campaigns. They needn't be equally strong, but each one must finish a
 // bloodline in reasonable time and none may break the prestige rule
-// (docs/pacing.md). Run with `npm run sim`.
+// (docs/pacing.md). One file per playstyle (styles.*.sim.ts), so their
+// campaigns run in parallel.
 import { describe, expect, it } from 'vitest'
-import { PLAYSTYLES, runCampaign, type GenerationResult } from './bot'
+import { PLAYSTYLES, runCampaign } from './bot'
+import { SEEDS, firstKillHours, median } from './pacing.shared'
 
-const HOUR = 3_600_000
-const SEEDS = [1, 2, 3]
-
-function median(xs: number[]): number {
-  const sorted = [...xs].sort((a, b) => a - b)
-  return sorted[Math.floor(sorted.length / 2)]
-}
-
-function firstKillHours(gens: GenerationResult[], gate: number): number {
-  const gen = gens.find((g) => g.splitsMs[gate] !== null)
-  return gen ? (gen.cumulativeActiveMs + gen.splitsMs[gate]!) / HOUR : Infinity
-}
-
-for (const style of PLAYSTYLES) {
+export function checkPlaystyle(index: number): void {
+  const style = PLAYSTYLES[index]
   describe(`playstyle: ${style.name}`, () => {
     const campaigns = SEEDS.map((seed) => runCampaign(style.finishWithinHours + 1, style.cfg, seed))
     const played = campaigns.flat().filter((g) => g.bestBefore < 9 && g.activeMinutes > 0)

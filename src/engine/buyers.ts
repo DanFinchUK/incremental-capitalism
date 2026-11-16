@@ -30,6 +30,9 @@ export interface BuyerInputs {
   // Landed Gentry and kin: extra item types, and the family's own staff when
   // no buyer is hired
   extraItemTypes: number
+  // Buyers stood down: they keep their own budget, but leave the whole of
+  // the cash to whoever is still at work
+  paused?: Readonly<Partial<Record<ItemKind, boolean>>>
 }
 
 function tierOf(inst: AdvisorInstance, isPA: boolean): number {
@@ -53,7 +56,8 @@ function buyerOf(kind: ItemKind, inputs: BuyerInputs): { name: string; tier: num
   return inputs.extraItemTypes > 0 ? { name: "The family's staff", tier: 0 } : null
 }
 
-// Both buyers, with budgets scaled down together if they would spend more than you hold
+// Both buyers, with the working ones' budgets scaled down together if they
+// would spend more than you hold
 export function familyBuyers(inputs: BuyerInputs): Record<ItemKind, Buyer | null> {
   const raw: Record<ItemKind, Buyer | null> = { jobs: null, businesses: null }
   for (const kind of ['jobs', 'businesses'] as const) {
@@ -68,9 +72,10 @@ export function familyBuyers(inputs: BuyerInputs): Record<ItemKind, Buyer | null
       itemTypes: TYPES_BY_TIER[base] + honours + inputs.extraItemTypes
     }
   }
-  const total = (raw.jobs?.share ?? 0) + (raw.businesses?.share ?? 0)
+  const working = [raw.jobs, raw.businesses].filter((b): b is Buyer => b !== null && !inputs.paused?.[b.kind])
+  const total = working.reduce((a, b) => a + b.share, 0)
   if (total > 1) {
-    for (const b of [raw.jobs, raw.businesses]) if (b) b.share /= total
+    for (const b of working) b.share /= total
   }
   return raw
 }

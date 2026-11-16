@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { mount } from '@vue/test-utils'
+import HeadhunterOffer from '../src/components/HeadhunterOffer.vue'
 import { bestValue, familyBuyers, type BuyerInputs } from '../src/engine/buyers'
 import { JOBS_BY_ID } from '../src/data/items'
 import { useGameStore } from '../src/stores/game'
@@ -30,6 +32,16 @@ describe('who buys, and with how much', () => {
     const b = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')], signingRanks: 2 }))
     expect(b.jobs!.share + b.businesses!.share).toBeCloseTo(1)
     expect(b.jobs!.share).toBeCloseTo(0.5)
+  })
+
+  it('a buyer stood down leaves the whole of the cash to the other', () => {
+    const b = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')], signingRanks: 2, paused: { jobs: true } }))
+    expect(b.businesses!.share).toBeCloseTo(1)
+    // Both at 60%: together over 100%, so scaled; with one stood down, the other keeps its own 60%
+    const two = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')] }))
+    expect(two.businesses!.share).toBeCloseTo(0.5)
+    const one = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')], paused: { jobs: true } }))
+    expect(one.businesses!.share).toBeCloseTo(0.6)
   })
 
   it('picks the best return per pound', () => {
@@ -119,5 +131,33 @@ describe('buyers in the store', () => {
     store.tick(2100)
     const buys = store.telemetry.candles.flatMap((c) => c.buys ?? [])
     expect(buys.some((b) => b.startsWith('Temping Agency bought '))).toBe(true)
+  })
+})
+
+describe('introducing buyers', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
+
+  it('never introduces a buyer no better than the one you have, and offers the better ones as an upgrade', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    store.closeIntro(1000)
+    hireFree(store, 'recruitment-consultant')
+    for (let i = 0; i < 200; i++) {
+      store.headhunterOffer = []
+      store.rollOffer()
+      expect(store.headhunterOffer).not.toContain('temp-agency')
+      expect(store.headhunterOffer).not.toContain('recruitment-consultant')
+    }
+    store.headhunterOffer = ['executive-search', 'sommelier']
+    const wrapper = mount(HeadhunterOffer, { global: { plugins: [pinia] } })
+    const buttons = wrapper.findAll('[data-testid="hire-advisor"]')
+    expect(buttons[0].text()).toBe('Upgrade')
+    expect(buttons[1].text()).toBe('Hire')
+    expect(wrapper.find('[data-testid="replaces-buyer"]').text()).toBe('Replaces your Recruitment Consultant')
   })
 })

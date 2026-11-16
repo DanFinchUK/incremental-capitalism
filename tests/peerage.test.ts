@@ -1,9 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { VICTORY_LOCK_MS } from '../src/components/victoryLock'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
 import { peerageRank, titlePaChairs, titlesFor, titleSource } from '../src/engine/peerage'
 import { useGameStore } from '../src/stores/game'
+import { gateThreshold } from '../src/engine/bosses'
 
 const T0 = 1_000_000
 
@@ -110,6 +112,36 @@ describe('elevation in the store', () => {
     await wrapper.find('[data-testid="boss-elevate"]').trigger('click')
     expect(document.body.querySelector('[data-testid="elevate-modal"]')).not.toBeNull()
     wrapper.unmount()
+  })
+
+  it('after the final gate, the victory screen points to the Lords instead of Introductions', async () => {
+    vi.useFakeTimers()
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro(T0)
+    store.gatesBeaten = 8
+    store.familyTree = [{ generation: 1, name: 'Old Test', traitId: null, inheritId: null, deepestGate: 0, legacyEarned: 0, activeMs: 1, advisors: [], splits: [] }]
+    store.legacyPoints = 8
+    store.addDebugMoney(gateThreshold(9) * 10, T0)
+    store.tick(T0)
+    expect(store.startBossAttempt()).toBe(true)
+    // New ground: the Garden Party counts what the fight adds
+    store.addDebugMoney(gateThreshold(9) * 10, T0)
+    store.tick(T0 + 1000)
+    await wrapper.vm.$nextTick()
+    expect(store.gatesBeaten).toBe(9)
+    expect(store.headhunterOffer).toEqual([])
+    expect(store.canElevate).toBe(true)
+    // The victory screen ignores taps for a moment after the fight
+    vi.advanceTimersByTime(VICTORY_LOCK_MS + 600)
+    await wrapper.vm.$nextTick()
+    await wrapper.find('[data-testid="victory-elevate"]').trigger('click')
+    expect(store.classModalOpen).toBe(false)
+    expect(document.body.querySelector('[data-testid="elevate-modal"]')).not.toBeNull()
+    wrapper.unmount()
+    vi.useRealTimers()
   })
 
   it('starts the new line with no trust fund, so no gate opens before it can be fought', () => {

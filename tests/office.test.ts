@@ -5,6 +5,8 @@ import { combineModifiers } from '../src/engine/modifiers'
 import { childOf, officeModifierSources, paStanding, paTitle, rollAdvisorOffer, type AdvisorInstance } from '../src/engine/office'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
+import { mount } from '@vue/test-utils'
+import FamilyOffice from '../src/components/FamilyOffice.vue'
 
 const T0 = 1_000_000
 const inst = (advisorId: string, servedGenerations = 0, campaignMs = 0): AdvisorInstance => ({
@@ -222,5 +224,48 @@ describe('the family office in the store', () => {
     const again = useGameStore()
     again.hydrateFromStorage(T0 + 3000)
     expect(again.paChairs[0]?.advisorId).toBe('stockbroker')
+  })
+})
+
+describe('the family office on screen', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('with every PA chair taken, Make PA asks who swaps out', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    store.closeIntro(T0)
+    store.titles = 1
+    for (const id of ['head-butler', 'recruitment-consultant', 'sovereign-grant-adviser']) {
+      store.headhunterOffer = [id]
+      store.hireAdvisor(0)
+    }
+    expect(store.paChairs.map((p) => p?.advisorId)).toEqual(['head-butler', 'recruitment-consultant'])
+    const wrapper = mount(FamilyOffice, { global: { plugins: [pinia] } })
+    await wrapper.find('[data-testid="promote-pa"]').trigger('click')
+    const swaps = wrapper.findAll('[data-testid="pa-swap"]')
+    expect(swaps.map((b) => b.text())).toEqual(['Swap with Head Butler', 'Swap with Recruitment Consultant'])
+    await swaps[1].trigger('click')
+    expect(store.paChairs.map((p) => p?.advisorId)).toEqual(['head-butler', 'sovereign-grant-adviser'])
+    expect(store.officeSeats[0]?.advisorId).toBe('recruitment-consultant')
+  })
+
+  it('without tapping, the lasting pills show the total allowance', () => {
+    setActivePinia(createPinia())
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    store.closeIntro(T0)
+    expect(store.allowancePill).toBeNull()
+    store.toggleNoTap()
+    expect(store.allowancePill).toBeNull()
+    for (const id of ['sovereign-grant-adviser', 'productivity-guru']) {
+      store.headhunterOffer = [id]
+      store.hireAdvisor(0)
+    }
+    // (2 + 10 taps) / 2, and the Guru's 50% on click pay
+    expect(store.allowancePill?.label).toBe('Total allowance x9')
   })
 })

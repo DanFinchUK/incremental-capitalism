@@ -266,6 +266,14 @@ export const useGameStore = defineStore('game', () => {
     noTap: () => noTap.value
   })
   const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value))
+  // Playing without tapping: the whole allowance against plain Universal
+  // Credit, from allowance advisors and everything that raises click pay
+  const allowancePill = computed(() => {
+    if (!noTap.value) return null
+    const mods = baseModifiers.value
+    const mult = ((ALLOWANCE_TAPS_PER_SEC + mods.allowanceTapsAdd) / ALLOWANCE_TAPS_PER_SEC) * mods.clickMult
+    return Math.abs(mult - 1) > 0.01 ? { label: `Total allowance x${formatMultiplier(mult)}`, negative: mult < 1 } : null
+  })
   // Every rule-bending source in play: stacked bloodline traits, the family office, achievements and titles
   // Everything lasting: traits, the office, achievements and titles
   const lastingSources = computed(() => [
@@ -314,7 +322,8 @@ export const useGameStore = defineStore('game', () => {
       lastKillMs.value = withSplit(lastKillMs.value, gate, killMs)
       bestSplits.value = mergeBests(bestSplits.value, splits.value)
       bestKillMs.value = mergeBests(bestKillMs.value, lastKillMs.value)
-      office.rollOffer()
+      // After the final gate the Lords are next, not a new hire
+      if (bossForGate(gate + 1)) office.rollOffer()
     },
     onBossLost: (gate) => {
       const def = bossForGate(gate)
@@ -438,7 +447,8 @@ export const useGameStore = defineStore('game', () => {
       seats: office.officeSeats.value,
       paChairs: office.paChairs.value,
       signingRanks: perks.value.signingAuthority,
-      extraItemTypes: modifiers.value.buyerItemTypes
+      extraItemTypes: modifiers.value.buyerItemTypes,
+      paused: buyersPaused.value
     })
   )
   const hasBuyers = computed(() => buyers.value.jobs !== null || buyers.value.businesses !== null)
@@ -1694,6 +1704,7 @@ export const useGameStore = defineStore('game', () => {
     pickSibling,
     generation,
     bloodlineTraitPills,
+    allowancePill,
     wording,
     modifiers,
     pickHeir,

@@ -45,7 +45,7 @@
           :disabled="props.locked"
           @click="hire(i)"
         >
-          Hire
+          {{ replaces(a.id) ? 'Upgrade' : 'Hire' }}
         </button>
       </article>
     </div>

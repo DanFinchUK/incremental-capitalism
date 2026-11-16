@@ -1,11 +1,13 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue'
-import { ADVISORS_BY_ID } from '../../data/advisors'
+import { ADVISORS_BY_ID, type AdvisorDef } from '../../data/advisors'
 import {
   BASE_OFFICE_SEATS,
   childOf,
   officeModifierSources,
+  buyerTierOf,
   paStanding,
   paTitle,
+  rarityTier,
   rollAdvisorOffer,
   type AdvisorInstance
 } from '../../engine/office'
@@ -67,7 +69,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     headhunterOffer.value = []
     if (queuedOffers.value > 0) {
       queuedOffers.value -= 1
-      headhunterOffer.value = rollAdvisorOffer(Math.random, deps.noTap?.() ?? false)
+      headhunterOffer.value = rollAdvisorOffer(Math.random, deps.noTap?.() ?? false, notWorthOffering)
     }
   }
 
@@ -180,13 +182,18 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     deps.flushSave()
   }
 
+  // No point introducing a buyer who's no better than the one you have
+  function notWorthOffering(a: AdvisorDef): boolean {
+    return !!a.buyer && rarityTier(a) <= buyerTierOf(a.buyer, officeSeats.value, paChairs.value)
+  }
+
   // Each boss win earns one offer. If one is already open, the new one waits.
   function rollOffer(rng: () => number = Math.random): void {
     if (headhunterOffer.value.length > 0) {
       queuedOffers.value += 1
       return
     }
-    headhunterOffer.value = rollAdvisorOffer(rng, deps.noTap?.() ?? false)
+    headhunterOffer.value = rollAdvisorOffer(rng, deps.noTap?.() ?? false, notWorthOffering)
   }
 
   // Open-seat advisors leave with the outgoing generation; PAs stay on, and

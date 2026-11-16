@@ -102,9 +102,17 @@ shows the climb after an elevation).
 
 ## Tools
 
-- `npm run sim`: every pacing check.
-- `sim/report.sim.ts`: one campaign's generations, splits and kill times
+- `npm run sim`: every pacing check. The checks are split across files
+  (`pacing.*.sim.ts`, `styles.*.sim.ts`) so their campaigns run in parallel.
+- `npm run sim:reports`: the tuning reports below, which print numbers and
+  check nothing. Run one on its own with
+  `npx vitest run --config vitest.sim.config.ts sim/<name>.report.sim.ts`.
+- `sim/campaign.report.sim.ts`: one campaign's generations, splits and kill times
   (`SIM_PACE`, `SIM_SEED`, `SIM_HOURS`).
 - `sim/frontier.report.sim.ts`: per generation, how long each +k took
   (`PROBE_FROM` and `PROBE_MIN` make the player stop giving up from a given
   generation, to measure +3 and +4).
+- `sim/favour.report.sim.ts`: what a favour's three offered events would be
+  worth, as a share of income, by stage.
+- `sim/elevation.report.sim.ts`: a bloodline played through an elevation,
+  and the new line's climb.

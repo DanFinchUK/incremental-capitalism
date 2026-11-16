@@ -191,6 +191,36 @@
       <p v-if="classes.length === 0" class="idx-Empty">No classes match.</p>
     </section>
 
+    <section id="rooms" class="idx-Section">
+      <h2>Rooms</h2>
+      <p class="idx-Rules">Preview: the game's look will follow your class through these rooms. Each room shows its light and dark version.</p>
+      <article v-for="r in rooms" :key="r.room.id" class="idx-RoomRow" :data-testid="`room-${r.room.id}`">
+        <header class="idx-RoomHead">
+          <h3>{{ r.room.name }}</h3>
+          <div class="idx-Pills">
+            <span v-for="c in r.classes" :key="c.level" class="idx-Pill">{{ c.label }}</span>
+          </div>
+          <p class="idx-Flavour">{{ r.room.blurb }}</p>
+          <p class="idx-Note">{{ r.room.materials }}</p>
+        </header>
+        <div class="idx-RoomPair">
+          <RoomPreview
+            v-for="scheme in SCHEMES"
+            :key="scheme"
+            :room="r.room"
+            :scheme="scheme"
+            :level="r.classes[0].level"
+            :class-label="r.classes[0].label"
+            :net-worth="formatCurrency(r.netWorth)"
+            :item-label="r.item.label"
+            :next-cost="formatCurrency(r.item.baseCost)"
+            :image="itemImageUrl('jobs', r.item.label)"
+          />
+        </div>
+      </article>
+      <p v-if="rooms.length === 0" class="idx-Empty">No rooms match.</p>
+    </section>
+
     <section id="achievements" class="idx-Section">
       <h2>Achievements</h2>
       <p class="idx-Rules">Each one adds {{ pct(ACHIEVEMENT_INCOME_BONUS) }} to all income, for good. Hidden ones show as ??? in the game until earned.</p>
@@ -219,6 +249,11 @@ import { LEGACY_PERKS } from '../data/perks'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { ACHIEVEMENTS, ACHIEVEMENT_INCOME_BONUS } from '../data/achievements'
 import { formatCurrency, formatDuration } from '../utils/format'
+import { ROOMS } from '../data/rooms'
+import { GATE_NET_WORTH } from '../data/classes'
+import RoomPreview from './RoomPreview.vue'
+
+const SCHEMES = ['light', 'dark'] as const
 
 const query = ref('')
 
@@ -329,6 +364,18 @@ const scandals = computed(() =>
 
 const perks = computed(() => LEGACY_PERKS.filter((p) => matches(p.label, p.description, 'perk legacy')))
 const classes = computed(() => SOCIAL_CLASSES.filter((c) => matches(c.label, c.description, c.perkSummary, 'class')))
+// Each room with its classes, a net worth part way to its first gate and a Job from that stretch of the ladder
+const rooms = computed(() =>
+  ROOMS.map((room) => {
+    const classes = SOCIAL_CLASSES.filter((c) => room.classLevels.includes(c.level))
+    const level = classes[0]?.level ?? 0
+    const nextGate = GATE_NET_WORTH[level + 1] ?? GATE_NET_WORTH[level] * 1e6
+    const item = JOBS[Math.round((level / (SOCIAL_CLASSES.length - 1)) * (JOBS.length - 1))]
+    return { room, classes, netWorth: nextGate * 0.4, item }
+  }).filter(({ room, classes }) =>
+    matches(room.name, room.blurb, room.materials, ...classes.map((c) => c.label), 'room theme decor')
+  )
+)
 const achievements = computed(() => ACHIEVEMENTS.filter((a) => matches(a.name, a.description, 'achievement')))
 
 const sections = computed(() => [
@@ -340,6 +387,7 @@ const sections = computed(() => [
   { id: 'market', title: 'Market Wire', count: opportunities.value.length + scandals.value.length },
   { id: 'perks', title: 'Perks', count: perks.value.length },
   { id: 'classes', title: 'Classes', count: classes.value.length },
+  { id: 'rooms', title: 'Rooms', count: rooms.value.length },
   { id: 'achievements', title: 'Achievements', count: achievements.value.length }
 ])
 </script>
@@ -592,6 +640,43 @@ body {
 .idx-Note {
   color: var(--color-synergy);
   font-size: 13px;
+}
+
+.idx-RoomRow {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) minmax(0, 3fr);
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.idx-RoomHead {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.idx-RoomHead h3 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.idx-RoomHead p {
+  margin: 0;
+}
+
+.idx-RoomPair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 860px) {
+  .idx-RoomRow,
+  .idx-RoomPair {
+    grid-template-columns: 1fr;
+  }
 }
 
 .idx-Empty {

@@ -1,5 +1,6 @@
 <template>
   <div class="scn-Overview">
+    <!-- Only where the command deck stacks above the lists; wider, its Money box stays in view -->
     <div class="scn-OverviewStats">
       <span>Money: {{ formatCurrency(store.money) }}</span>
       <span>{{ formatCurrency(store.moneyPerSecond) }} /s</span>

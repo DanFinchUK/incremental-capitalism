@@ -69,9 +69,12 @@
       </div>
 
       <div v-if="!phone" class="scn-CompactStats">
-        <div class="scn-StatBox">
-          <div class="scn-DataTitle">Net worth</div>
-          <div class="scn-DataValue">{{ formatCurrency(store.netWorth) }}</div>
+        <div class="scn-StatBox" data-testid="hero-money">
+          <div class="scn-DataTitle">Money</div>
+          <div class="scn-DataValue">{{ formatCurrency(store.money) }}</div>
+          <div class="scn-StatHint">
+            {{ formatCurrency(store.moneyPerSecond) }}/s<template v-if="!store.noTap"> · {{ formatCurrency(store.moneyPerClick) }}/click</template>
+          </div>
         </div>
         <div class="scn-StatBox">
           <div class="scn-DataTitle">Legacy &amp; Interns</div>

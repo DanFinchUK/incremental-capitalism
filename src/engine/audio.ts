@@ -187,20 +187,19 @@ function brass(v: Voice, notes: ReadonlyArray<number>, at: number, dur: number, 
   }
 }
 
-// The tap's endless climb (a Shepard scale). Each tap sounds the same scale
-// degree in several octaves at once and moves one step up a major scale.
-// Loudness peaks mid-range and fades to nothing at both ends, so the top
-// voice slips away as a new one rises in at the bottom: it always sounds as
-// if it is going up, yet never leaves the same range.
-const SHEPARD_SCALE = [0, 2, 4, 5, 7, 9, 11]
+// The tap's endless climb (a Shepard scale). Each tap sounds the same note in
+// several octaves at once and moves up a semitone, so there is no tune to
+// recognise. Loudness peaks mid-range and fades to nothing at both ends, so
+// the top voice slips away as a new one rises in at the bottom: it always
+// sounds as if it is going up, yet never leaves the same range.
+const SHEPARD_STEPS = 12
 const SHEPARD_OCTAVES = 4
 const SHEPARD_LOWEST = 330
 let shepardStep = 0
 
 export function shepardVoices(step: number): Array<{ freq: number; weight: number }> {
-  const n = SHEPARD_SCALE.length
-  const degree = ((step % n) + n) % n
-  const pos = SHEPARD_SCALE[degree] / 12
+  const n = SHEPARD_STEPS
+  const pos = (((step % n) + n) % n) / n
   const voices: Array<{ freq: number; weight: number }> = []
   for (let octave = 0; octave < SHEPARD_OCTAVES; octave++) {
     // Where this voice sits in the range, 0 at the bottom to 1 at the top
@@ -217,8 +216,15 @@ const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void
   // A coin chink that climbs forever, one step a tap, with a glint at full Hustle
   click: (v, { intensity }) => {
     const voices = shepardVoices(shepardStep++)
+    // Small differences on every tap, so no two rounds of the climb sound the
+    // same: up to 10 cents of tuning (all voices together, keeping the
+    // octaves true), a slightly longer or shorter ring, and each voice a
+    // touch louder or softer
+    const tune = 2 ** ((Math.random() - 0.5) * (20 / 1200))
+    const dur = 0.06 + Math.random() * 0.025
     for (const { freq, weight } of voices) {
-      if (weight > 0.01) tone(v, freq, 0, 0.07, 'sine', 0.22 * weight, { attack: 0.002 })
+      const level = 0.22 * weight * (0.85 + Math.random() * 0.3)
+      if (weight > 0.01) tone(v, freq * tune, 0, dur, 'sine', level, { attack: 0.002 })
     }
     if (intensity >= 0.99 && Math.random() < 0.35) tone(v, 3200, 0.03, 0.07, 'sine', 0.05)
   },

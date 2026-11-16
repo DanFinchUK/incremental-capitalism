@@ -17,22 +17,22 @@ describe('sound', () => {
     for (const k of SFX_KINDS) expect(() => playSfx(k, false, { intensity: 1, count: 5 })).not.toThrow()
   })
 
-  it('the tap climbs a scale forever: every step rises, a full scale lands back where it began', () => {
+  it('the tap climbs forever: every step rises, a full octave lands back where it began', () => {
     const level = (step: number) => shepardVoices(step).reduce((sum, v) => sum + v.weight, 0)
-    for (let step = 0; step < 14; step++) {
+    for (let step = 0; step < 24; step++) {
       // Every tap is equally loud
       expect(level(step)).toBeCloseTo(1, 6)
-      // Seven steps (one octave of the scale) give exactly the same sound
-      expect(shepardVoices(step + 7)).toEqual(shepardVoices(step))
+      // Twelve semitone steps (one octave) give exactly the same sound
+      expect(shepardVoices(step + 12)).toEqual(shepardVoices(step))
     }
     // At the wrap the top voice leaves and a new one enters at the bottom,
     // both close to silent, so the join can't be heard
-    const last = shepardVoices(6)
-    const first = shepardVoices(7)
+    const last = shepardVoices(11)
+    const first = shepardVoices(12)
     expect(last[last.length - 1].weight).toBeLessThan(0.01)
     expect(first[0].weight).toBe(0)
     // Within an octave every voice rises from one tap to the next
-    for (let step = 0; step < 6; step++) {
+    for (let step = 0; step < 11; step++) {
       const now = shepardVoices(step)
       const next = shepardVoices(step + 1)
       now.forEach((v, i) => expect(next[i].freq).toBeGreaterThan(v.freq))

@@ -26,7 +26,8 @@
       <details v-for="(d, i) in store.hall" :key="`${d.surname}-${d.finishedAt}`" class="scn-HallEntry" data-testid="hall-entry">
         <summary>
           <strong>The {{ pluralSurname(d.surname) }}</strong>
-          <span v-if="best === d" class="scn-HallBest">Best</span>
+          <span v-if="d.scenario !== 'standard'" class="scn-ScenarioTag">{{ SCENARIOS_BY_ID[d.scenario].name }}</span>
+          <span v-if="bestOf(d) === d" class="scn-HallBest">Best</span>
           <span class="scn-HallStats">
             {{ formatDuration(d.activeMs / 1000) }} · {{ d.roll.length }} generations · {{ rollLines(d.roll).length }} lines
             <template v-if="d.finishedAt > 0"> · {{ dateText(d.finishedAt) }}</template>
@@ -41,15 +42,18 @@
 
 <script setup lang="ts">
 // Every family that reached Duke, newest first, each with its roll
-import { computed } from 'vue'
 import DynastyRoll from './DynastyRoll.vue'
-import { bestDynasty, rollLines } from '../engine/hall'
+import { SCENARIOS_BY_ID } from '../data/scenarios'
+import { bestDynasty, rollLines, type DynastyRecord } from '../engine/hall'
 import { useGameStore } from '../stores/game'
 import { formatDuration, pluralSurname } from '../utils/format'
 import { useEscapeKey } from '../utils/useEscapeKey'
 
 const store = useGameStore()
-const best = computed(() => bestDynasty(store.hall))
+// Each scenario keeps its own best
+function bestOf(d: DynastyRecord): DynastyRecord | null {
+  return bestDynasty(store.hall, d.scenario)
+}
 useEscapeKey(() => store.hallOpen, () => (store.hallOpen = false))
 
 function dateText(ts: number): string {

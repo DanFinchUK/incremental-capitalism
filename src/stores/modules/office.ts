@@ -22,6 +22,8 @@ export interface OfficeModuleDeps {
   flushSave: () => void
   // Playing without tapping (the headhunter brings allowance advisors then)
   noTap?: () => boolean
+  // No family office at all (the Austerity scenario)
+  officeClosed?: () => boolean
 }
 
 // Where a hire goes when the office is full: an office seat, or a PA chair
@@ -189,6 +191,8 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
 
   // Each boss win earns one offer. If one is already open, the new one waits.
   function rollOffer(rng: () => number = Math.random): void {
+    // Austerity: the headhunter doesn't call
+    if (deps.officeClosed?.()) return
     if (headhunterOffer.value.length > 0) {
       queuedOffers.value += 1
       return

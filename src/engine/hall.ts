@@ -2,6 +2,7 @@
 // save so founding a new dynasty never loses it
 import { readGenerationRecord, titlesHeld, type GenerationRecord } from './family'
 import { rankLine } from './peerage'
+import { readScenarioId, type ScenarioId } from '../data/scenarios'
 
 export const HALL_KEY = 'hall'
 export const MAX_HALL_ENTRIES = 50
@@ -14,6 +15,7 @@ export interface DynastyRecord {
   activeMs: number
   // Everyone in it, founder first
   roll: GenerationRecord[]
+  scenario: ScenarioId
 }
 
 function readDynasty(raw: unknown): DynastyRecord | null {
@@ -24,7 +26,8 @@ function readDynasty(raw: unknown): DynastyRecord | null {
     surname: r.surname,
     finishedAt: typeof r.finishedAt === 'number' && Number.isFinite(r.finishedAt) ? r.finishedAt : 0,
     activeMs: Math.max(0, r.activeMs),
-    roll: Array.isArray(r.roll) ? r.roll.map(readGenerationRecord).filter((g): g is GenerationRecord => g !== null) : []
+    roll: Array.isArray(r.roll) ? r.roll.map(readGenerationRecord).filter((g): g is GenerationRecord => g !== null) : [],
+    scenario: readScenarioId(r.scenario)
   }
 }
 
@@ -43,11 +46,19 @@ export function addToHall(hall: ReadonlyArray<DynastyRecord>, record: DynastyRec
   return [record, ...hall].slice(0, MAX_HALL_ENTRIES)
 }
 
-// The quickest dynasty, or null
-export function bestDynasty(hall: ReadonlyArray<DynastyRecord>): DynastyRecord | null {
+// The quickest dynasty, of a scenario if given, or null
+export function bestDynasty(hall: ReadonlyArray<DynastyRecord>, scenario?: ScenarioId): DynastyRecord | null {
   let best: DynastyRecord | null = null
-  for (const d of hall) if (!best || d.activeMs < best.activeMs) best = d
+  for (const d of hall) {
+    if (scenario && d.scenario !== scenario) continue
+    if (!best || d.activeMs < best.activeMs) best = d
+  }
   return best
+}
+
+// Scenarios open once any family has made Duke
+export function scenariosOpen(hall: ReadonlyArray<DynastyRecord>): boolean {
+  return hall.length > 0
 }
 
 export interface RollLine {

@@ -9,7 +9,9 @@
   >
     <div class="scn-Modal scn-Modal-xl scn-Dukedom">
       <div class="scn-ModalTop">
-        <span class="scn-ModalKicker scn-ModalKicker-gold">The dukedom</span>
+        <span class="scn-ModalKicker scn-ModalKicker-gold">
+          The dukedom<template v-if="store.scenario !== 'standard'"> · {{ store.scenarioDef.name }}</template>
+        </span>
         <h2 id="dukedom-title">The {{ store.familySurname }} dynasty</h2>
         <p class="scn-DukedomStyle">Duke {{ store.familySurname }}, of {{ seat }}</p>
       </div>
@@ -42,7 +44,7 @@
           <dd>{{ staffCount }}</dd>
         </div>
         <div v-if="best">
-          <dt>Hall of Dynasties best</dt>
+          <dt>Hall of Dynasties best<template v-if="store.scenario !== 'standard'">, {{ store.scenarioDef.name }}</template></dt>
           <dd>{{ formatDuration(best.activeMs / 1000) }} <small>the {{ pluralSurname(best.surname) }}</small></dd>
         </div>
       </dl>
@@ -54,6 +56,7 @@
           The new family starts with nothing: no money, no titles, no staff. The {{ store.familySurname }} record goes in the
           Hall of Dynasties. Achievements and settings stay.
         </p>
+        <ScenarioPicker v-model="next" />
         <div class="scn-ModalFooter">
           <button type="button" class="scn-Action scn-Action-outline" @click="confirming = false">Back</button>
           <button type="button" class="scn-Action scn-Action-accent" data-testid="confirm-new-dynasty" @click="found">
@@ -75,6 +78,8 @@
 // took, and the only way on, a new family
 import { computed, ref } from 'vue'
 import DynastyRoll from './DynastyRoll.vue'
+import ScenarioPicker from './ScenarioPicker.vue'
+import type { ScenarioId } from '../data/scenarios'
 import { bestDynasty, rollLines } from '../engine/hall'
 import { useGameStore } from '../stores/game'
 import { formatDuration, pluralSurname } from '../utils/format'
@@ -92,7 +97,8 @@ const fastest = computed(() => {
   return best
 })
 const staffCount = computed(() => new Set(store.familyTree.flatMap((r) => r.advisors)).size)
-const best = computed(() => bestDynasty(store.hall))
+const best = computed(() => bestDynasty(store.hall, store.scenario))
+const next = ref<ScenarioId>('standard')
 
 // Where the family is Duke of: a seat picked by the surname, so it never changes
 const SEATS = [
@@ -112,6 +118,6 @@ const seat = computed(() => {
 
 function found(): void {
   confirming.value = false
-  store.foundNewDynasty()
+  store.foundNewDynasty(Date.now(), next.value)
 }
 </script>

@@ -8,6 +8,7 @@ import { BUSINESSES, JOBS, type ItemKind } from '../src/data/items'
 import type { PerkId } from '../src/data/perks'
 import { TRAITS_BY_ID } from '../src/data/heirs'
 import { ADVISORS_BY_ID } from '../src/data/advisors'
+import { SCENARIOS_BY_ID, type ScenarioId } from '../src/data/scenarios'
 import { useGameStore } from '../src/stores/game'
 
 // The sim plays hours in one synchronous loop. jsdom's localStorage queues a
@@ -59,6 +60,8 @@ export interface BotConfig {
   // Elevate to the Lords this many times when a bloodline completes, and play
   // the new lines, instead of stopping at the first completed bloodline
   elevations?: number
+  // The dynasty's scenario (src/data/scenarios.ts)
+  scenario?: ScenarioId
 }
 
 // The player the pacing targets are set for: taps about five times a second
@@ -121,6 +124,14 @@ export const PLAYSTYLES: ReadonlyArray<{ name: string; cfg: BotConfig; finishWit
     cfg: { ...ZERO_TAP, perkPriority: ['signingAuthority', 'officeSeats', 'nepotism', 'deregulation', 'autoClicker'] },
     finishWithinHours: 4
   }
+]
+
+// The scenarios, played by the fast tapper (or for Absent Landlord, the
+// player who never taps), each with Legacy going where it still does good
+export const SCENARIO_PLAYS: ReadonlyArray<{ cfg: BotConfig; finishWithinHours: number }> = [
+  { cfg: { ...FAST_TAPPER, scenario: 'hands-on', perkPriority: ['hustleCap', 'officeSeats', 'deregulation', 'nepotism', 'offshore'] }, finishWithinHours: 3 },
+  { cfg: { ...ZERO_TAP, scenario: 'absent-landlord' }, finishWithinHours: 3.5 },
+  { cfg: { ...FAST_TAPPER, scenario: 'austerity', perkPriority: ['autoClicker', 'hustleCap', 'deregulation', 'nepotism'] }, finishWithinHours: 3 }
 ]
 
 // A steady player who taps once a second, start to finish, and still buys,
@@ -425,6 +436,10 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe): Gen
   store.hydrateFromStorage(ts)
   store.closeIntro(ts)
   if (cfg.noTap) store.toggleNoTap()
+  if (cfg.scenario) {
+    store.scenario = cfg.scenario
+    store.noTap = SCENARIOS_BY_ID[cfg.scenario].noTap ?? store.noTap
+  }
   // Buyers follow the bulk setting; a player with staff buys to the next milestone
   store.bulkBuyMode = 'next'
   store.tick(ts)

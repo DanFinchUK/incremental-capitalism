@@ -56,7 +56,8 @@ import {
   serializeState,
   type PersistedSceneState
 } from '../engine/migration'
-import { HALL_KEY, addToHall, parseHall, type DynastyRecord } from '../engine/hall'
+import { HALL_KEY, addToHall, parseHall, scenariosOpen, type DynastyRecord } from '../engine/hall'
+import { SCENARIOS_BY_ID, type ScenarioId } from '../data/scenarios'
 import {
   createTelemetryState,
   currentManualPerSec,
@@ -259,6 +260,9 @@ export const useGameStore = defineStore('game', () => {
   // The dynasty: active time since it began, and whether it has reached Duke
   const dynastyMs = ref<number>(initial.dynastyMs)
   const dynastyComplete = ref<boolean>(initial.dynastyComplete)
+  // The rule the dynasty is played under
+  const scenario = ref<ScenarioId>(initial.scenario)
+  const scenarioDef = computed(() => SCENARIOS_BY_ID[scenario.value])
   // Every dynasty that reached Duke, newest first; kept apart from the save
   const hall = ref<DynastyRecord[]>([])
   // Elevation needs the Royal Garden Party beaten at least once, ever
@@ -274,7 +278,8 @@ export const useGameStore = defineStore('game', () => {
     paChairCount: () => titlePaChairs(titles.value),
     announce: (msg) => announce(msg),
     flushSave: () => flushSave(nowMs.value),
-    noTap: () => noTap.value
+    noTap: () => noTap.value,
+    officeClosed: () => scenarioDef.value.noOffice === true
   })
   const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value))
   // Playing without tapping: the whole allowance against plain Universal
@@ -411,7 +416,9 @@ export const useGameStore = defineStore('game', () => {
       heirChoices.value.length === 0 &&
       disgraceReport.value === null
   )
-  const autoClickers = computed(() => (modifiers.value.internsDisabled ? 0 : perks.value.autoClicker * INTERNS_PER_RANK))
+  const autoClickers = computed(() =>
+    modifiers.value.internsDisabled || scenarioDef.value.noAutomation ? 0 : perks.value.autoClicker * INTERNS_PER_RANK
+  )
   const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
   // Without tapping, Hustle holds steady (Grindset Coaching raises it) and
   // the allowance and Interns ride it
@@ -459,7 +466,9 @@ export const useGameStore = defineStore('game', () => {
   // Buyers: a Recruiter for Jobs and Acquisitions for Businesses, or the
   // family's own staff on a Landed Gentry heir (engine/buyers.ts)
   const buyers = computed(() =>
-    familyBuyers({
+    scenarioDef.value.noAutomation
+      ? { jobs: null, businesses: null }
+      : familyBuyers({
       seats: office.officeSeats.value,
       paChairs: office.paChairs.value,
       signingRanks: perks.value.signingAuthority,
@@ -606,6 +615,7 @@ export const useGameStore = defineStore('game', () => {
       titleLegacyGranted: true,
       dynastyMs: dynastyMs.value,
       dynastyComplete: dynastyComplete.value,
+      scenario: scenario.value,
       lastUpdate: ts
     }
   }
@@ -655,6 +665,7 @@ export const useGameStore = defineStore('game', () => {
     titles.value = loaded.titles
     dynastyMs.value = loaded.dynastyMs
     dynastyComplete.value = loaded.dynastyComplete
+    scenario.value = loaded.scenario
     achievementProgress.value = loaded.achievementProgress
     penalty.value = null
     bosses.bossAttempt.value = null
@@ -663,7 +674,8 @@ export const useGameStore = defineStore('game', () => {
     buyersPaused.value = loaded.buyersPaused
     compactAutoBuy.value = loaded.compactAutoBuy
     decor.value = loaded.decor
-    noTap.value = loaded.noTap
+    // A scenario may hold Play without tapping on or off
+    noTap.value = SCENARIOS_BY_ID[loaded.scenario].noTap ?? loaded.noTap
     muted.value = loaded.muted
     introSeen.value = loaded.introSeen
     introOpen.value = !loaded.introSeen
@@ -1159,7 +1171,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function buyPerk(id: PerkId): boolean {
-    if (legacyPoints.value < 1) {
+    if (legacyPoints.value < 1 || scenarioDef.value.blockedPerks.includes(id)) {
       return false
     }
     const cost = perkNextCost(id, perks.value[id])
@@ -1647,33 +1659,44 @@ export const useGameStore = defineStore('game', () => {
 
   // After the dukedom: file the dynasty in the Hall and start a new family
   // with nothing. Achievements and settings stay; they aren't power.
-  function foundNewDynasty(ts = Date.now()): boolean {
+  // next: the scenario the new family plays, once any family has made Duke
+  function foundNewDynasty(ts = Date.now(), next: ScenarioId = 'standard'): boolean {
     if (!dynastyComplete.value) return false
-    const record: DynastyRecord = { surname: familySurname.value, finishedAt: ts, activeMs: dynastyMs.value, roll: [...familyTree.value] }
+    const record: DynastyRecord = {
+      surname: familySurname.value,
+      finishedAt: ts,
+      activeMs: dynastyMs.value,
+      roll: [...familyTree.value],
+      scenario: scenario.value
+    }
     hall.value = addToHall(hall.value, record)
     try {
       localStorage.setItem(HALL_KEY, JSON.stringify(hall.value))
     } catch {
       // A full or blocked store: the Hall lives for this visit only
     }
-    beginDynasty(ts, record.surname)
+    beginDynasty(ts, record.surname, next)
     return true
   }
 
   // Give up on the dynasty under way: a new family, and nothing in the Hall
-  function abandonDynasty(ts = Date.now()): void {
+  function abandonDynasty(ts = Date.now(), next: ScenarioId = 'standard'): void {
     const previous = familySurname.value
     plays.log(ts, 'abandon-dynasty', { surname: previous, activeMs: dynastyMs.value })
-    beginDynasty(ts, previous)
+    beginDynasty(ts, previous, next)
   }
 
-  function beginDynasty(ts: number, previousSurname: string): void {
+  function beginDynasty(ts: number, previousSurname: string, next: ScenarioId): void {
+    // Scenarios open once a family has made Duke
+    const chosen = scenariosOpen(hall.value) ? next : 'standard'
     const record = { surname: previousSurname, activeMs: dynastyMs.value }
     const fresh = createInitialSceneState()
     fresh.achievements = [...achievements.value]
     fresh.bulkBuyMode = bulkBuyMode.value
     fresh.compactAutoBuy = compactAutoBuy.value
-    fresh.noTap = noTap.value
+    // The player's own choice, unless the old scenario made it for them
+    fresh.noTap = scenarioDef.value.noTap === undefined ? noTap.value : false
+    fresh.scenario = chosen
     fresh.muted = muted.value
     fresh.introSeen = true
     fresh.tradingDeskCollapsed = tradingDeskCollapsed.value
@@ -1685,7 +1708,7 @@ export const useGameStore = defineStore('game', () => {
     offlineReport.value = null
     legacyDrawerOpen.value = false
     successionShop.value = null
-    plays.log(ts, 'new-dynasty', { previous: record.surname, activeMs: record.activeMs })
+    plays.log(ts, 'new-dynasty', { previous: record.surname, activeMs: record.activeMs, scenario: chosen })
     announce(`A new dynasty: the ${surname} family enters the market with nothing but ambition.`)
     flushSave(ts)
   }
@@ -1739,6 +1762,7 @@ export const useGameStore = defineStore('game', () => {
 
   // Any time, either way: the allowance and tapping never come together
   function toggleNoTap(): void {
+    if (scenarioDef.value.noTap !== undefined) return
     noTap.value = !noTap.value
     hustleBonus.value = 0
     flushSave(nowMs.value)
@@ -1857,6 +1881,8 @@ export const useGameStore = defineStore('game', () => {
     titles,
     dynastyMs,
     dynastyComplete,
+    scenario,
+    scenarioDef,
     hall,
     foundNewDynasty,
     titlesOnElevation,

@@ -38,6 +38,7 @@
           The {{ pluralSurname(store.familySurname) }} are {{ formatDuration(store.dynastyMs / 1000) }} into their climb. A new
           family starts from nothing, and an unfinished dynasty doesn't go in the Hall.
         </p>
+        <ScenarioPicker v-if="scenariosOpen(store.hall)" v-model="next" />
         <div class="scn-ModalFooter">
           <button type="button" class="scn-Action scn-Action-outline" @click="confirming = false">Back</button>
           <button type="button" class="scn-Action scn-Action-accent" data-testid="menu-confirm-new-dynasty" @click="abandon">
@@ -53,13 +54,16 @@
 // The way in: carry on with the family, start another, look round the Hall,
 // read the rules or change the settings. The game waits behind it.
 import { computed, ref } from 'vue'
-import { bestDynasty } from '../engine/hall'
+import ScenarioPicker from './ScenarioPicker.vue'
+import type { ScenarioId } from '../data/scenarios'
+import { bestDynasty, scenariosOpen } from '../engine/hall'
 import { peerageRank } from '../engine/peerage'
 import { useGameStore } from '../stores/game'
 import { formatDuration, pluralSurname } from '../utils/format'
 
 const store = useGameStore()
 const confirming = ref(false)
+const next = ref<ScenarioId>('standard')
 const best = computed(() => bestDynasty(store.hall))
 
 // Nothing played yet: there's no family to carry on, only one to begin
@@ -69,7 +73,8 @@ const continueLine = computed(() => {
   if (fresh.value) return `The ${pluralSurname(store.familySurname)} enter the market`
   if (store.dynastyComplete) return `The ${pluralSurname(store.familySurname)} made Duke`
   const rank = store.titles > 0 ? ` · ${peerageRank(store.titles)}` : ''
-  return `The ${pluralSurname(store.familySurname)} · generation ${store.generation}${rank} · ${formatDuration(store.dynastyMs / 1000)}`
+  const scenario = store.scenario !== 'standard' ? ` · ${store.scenarioDef.name}` : ''
+  return `The ${pluralSurname(store.familySurname)}${scenario} · generation ${store.generation}${rank} · ${formatDuration(store.dynastyMs / 1000)}`
 })
 
 // A finished dynasty has its own way on, in the finale; an unfinished one
@@ -84,7 +89,7 @@ function newDynasty(): void {
 
 function abandon(): void {
   confirming.value = false
-  store.abandonDynasty()
+  store.abandonDynasty(Date.now(), next.value)
   store.closeMenu()
 }
 

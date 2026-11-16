@@ -10,6 +10,7 @@ import type { AdvisorInstance } from './office'
 import { MAX_TREE_ENTRIES, currentBloodlineRecords, readGenerationRecord, type GenerationRecord } from './family'
 import type { OfficeState } from '../stores/modules/office'
 import { ROOMS, type RoomId } from '../data/rooms'
+import { readScenarioId, type ScenarioId } from '../data/scenarios'
 import { FAVOUR_EVENTS_BY_ID, emptyFavours, type FavourState } from '../data/favours'
 
 export const STORAGE_KEY = 'state'
@@ -77,6 +78,8 @@ export interface PersistedSceneState {
   dynastyMs: number
   // The family reached Duke: the dynasty is over and the finale stays up
   dynastyComplete: boolean
+  // The rule the dynasty is played under
+  scenario: ScenarioId
   lastUpdate: number | null
 }
 
@@ -127,6 +130,7 @@ export function createInitialSceneState(): PersistedSceneState {
     titleLegacyGranted: true,
     dynastyMs: 0,
     dynastyComplete: false,
+    scenario: 'standard',
     lastUpdate: null
   }
 }
@@ -422,6 +426,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
       : familyTree.reduce((a, r) => a + r.activeMs, 0) + readNonNegativeNumber(s.activeGenerationMs, 0),
     // A family already at Duke when the dukedom became the end has finished
     dynastyComplete: s.dynastyComplete === true || titles >= DUKE_TITLES,
+    scenario: readScenarioId(s.scenario),
     lastUpdate
   }
 }

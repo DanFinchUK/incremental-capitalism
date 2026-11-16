@@ -30,7 +30,7 @@
       </div>
 
       <div class="scn-PerkGrid">
-        <div v-for="perk in LEGACY_PERKS" :key="perk.id" class="scn-PerkCard">
+        <div v-for="perk in shownPerks" :key="perk.id" class="scn-PerkCard">
           <div>
             <div class="scn-CardHeader">
               <h4 class="scn-CardTitle">
@@ -71,6 +71,9 @@ const emit = defineEmits<{
 const store = useGameStore()
 // Straight after choosing an heir, the club is the last step of succession
 const succession = computed(() => store.successionShop === 'open')
+
+// A scenario keeps perks with nothing to do off the shelf
+const shownPerks = computed(() => LEGACY_PERKS.filter((p) => !store.scenarioDef.blockedPerks.includes(p.id)))
 
 function canBuy(id: PerkId): boolean {
   if (store.legacyPoints < 1) {

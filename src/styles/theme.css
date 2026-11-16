@@ -2270,3 +2270,52 @@
 .scn-ModalBackdrop-over {
   z-index: 50;
 }
+
+/* Choosing a scenario for a new dynasty */
+.scn-ScenarioPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  text-align: left;
+}
+
+.scn-ScenarioOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-card);
+  cursor: pointer;
+}
+
+.scn-ScenarioOption > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.scn-ScenarioOption input {
+  margin-top: 3px;
+  accent-color: var(--color-accent);
+}
+
+.scn-ScenarioOption-chosen {
+  border-color: var(--color-accent);
+  outline: 1px solid var(--color-accent);
+}
+
+.scn-ScenarioTag {
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--color-pip-bg);
+}

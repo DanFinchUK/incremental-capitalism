@@ -22,12 +22,16 @@
               "Get paid" goes. Instead the family draws Universal Credit (an allowance, for heirs) worth two taps a second,
               Hustle holds steady and Grindset Coaching raises it. Switch either way, any time.
             </p>
+            <p v-if="store.scenarioDef.noTap !== undefined" class="scn-StatHint" data-testid="no-tap-locked">
+              Set by the {{ store.scenarioDef.name }} scenario for this dynasty.
+            </p>
           </div>
           <button
             type="button"
             class="scn-Action scn-Action-outline"
             :class="{ 'scn-Action-activeToggle': store.noTap }"
             data-testid="toggle-no-tap"
+            :disabled="store.scenarioDef.noTap !== undefined"
             @click="store.toggleNoTap()"
           >
             {{ store.noTap ? 'On' : 'Off' }}

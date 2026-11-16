@@ -48,8 +48,8 @@ describe('the roll', () => {
 
 describe('the Hall of Dynasties', () => {
   it('keeps the newest first, finds the best, and shrugs off a damaged store', () => {
-    const a = { surname: 'A', finishedAt: 1, activeMs: 5000, roll: [person(1)] }
-    const b = { surname: 'B', finishedAt: 2, activeMs: 3000, roll: [] }
+    const a = { surname: 'A', finishedAt: 1, activeMs: 5000, roll: [person(1)], scenario: 'standard' as const }
+    const b = { surname: 'B', finishedAt: 2, activeMs: 3000, roll: [], scenario: 'hands-on' as const }
     const hall = addToHall(addToHall([], a), b)
     expect(hall.map((d) => d.surname)).toEqual(['B', 'A'])
     expect(bestDynasty(hall)?.surname).toBe('B')

@@ -92,13 +92,28 @@ at again 30 seconds later. Pressing Take it on during the look turns it into
 the fight. A boss waved through brings no shortlist: Dan passed on every late
 shortlist anyway.
 
-## Questions
+## Scenarios
 
-- Variation between dynasties: scenarios (named rule changes such as no
-  automation, no tapping, no family office) or origins (a strength and a
-  weakness each). Scenarios were the latest idea; nothing is decided. Either
-  would unlock by finishing dynasties, and each would keep its own best time.
-- Whether scenarios are open from the start or only after the first dukedom.
+Decided: scenarios, not origins, and they open once any family has made Duke.
+A scenario changes one rule for a whole dynasty; it is chosen when founding a
+new dynasty (from the finale, or the menu once scenarios are open), shown on
+the finale and the menu, and each keeps its own best time in the Hall.
+
+Built first:
+
+- Hands-On: no Interns, no buyers and no allowance; Unpaid Interns and Signing
+  Authority are off the shelf.
+- Absent Landlord: Play without tapping held on for the whole dynasty.
+- Austerity: no family office; the headhunter never calls and the office
+  extension is off the shelf.
+
+The sim checks each can be won (sim/scenarios.*.sim.ts). At first build the
+bots completed the first bloodline in about 1.7 hours (Hands-On), 2.2 (Absent
+Landlord) and 1.9 (Austerity). The bot buys by its own arithmetic, so Hands-On
+costs it little; for a person it means pressing every Buy.
+
+More from the earlier list (Trust Fund Kid, Single Heir, Short Reign, Property
+Ladder and others) can follow as data plus a rule each.
 
 ## Later
 

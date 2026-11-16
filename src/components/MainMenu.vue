@@ -114,7 +114,6 @@
           </button>
         </div>
         <nav class="ttl-Nav" aria-label="Settings">
-          <a class="ttl-Item" href="./cards.html" target="_blank" rel="noopener">Card index</a>
           <button type="button" class="ttl-Item" data-testid="menu-download-save" @click="downloadSave(store)">Download save</button>
           <button type="button" class="ttl-Item ttl-Item-danger" data-testid="menu-reset" @click="emit('reset')">Reset game</button>
         </nav>
@@ -531,10 +530,6 @@ const COINS = Array.from({ length: 16 }, (_, i) => ({
 
 .ttl-Head-compact .ttl-TitleSmall {
   font-size: 11px;
-}
-
-a.ttl-Item {
-  text-decoration: none;
 }
 
 .ttl-Page {

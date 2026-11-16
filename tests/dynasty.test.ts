@@ -162,3 +162,38 @@ describe('the finale on screen', () => {
     wrapper.unmount()
   })
 })
+
+describe('the Hall on screen', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('opens from the family tree and lists each dynasty with its roll, best marked', async () => {
+    localStorage.setItem(
+      HALL_KEY,
+      JSON.stringify([
+        { surname: 'Quick', finishedAt: 2, activeMs: 3_600_000, roll: [person(1), person(2, { elevated: true })] },
+        { surname: 'Slow', finishedAt: 1, activeMs: 9_000_000, roll: [person(1)] }
+      ])
+    )
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
+    store.closeIntro(T0)
+    store.familyTreeOpen = true
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="dynasty-time"]').text()).toContain('Dynasty time so far')
+    await wrapper.find('[data-testid="open-hall"]').trigger('click')
+    const hall = wrapper.find('[data-testid="hall-modal"]')
+    expect(hall.attributes('aria-modal')).toBe('true')
+    const entries = hall.findAll('[data-testid="hall-entry"]')
+    expect(entries).toHaveLength(2)
+    expect(entries[0].text()).toContain('The Quicks')
+    expect(entries[0].text()).toContain('Best')
+    expect(entries[1].text()).not.toContain('Best')
+    expect(entries[0].findAll('[data-testid="roll-person"]')).toHaveLength(2)
+    wrapper.unmount()
+  })
+})

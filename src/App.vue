@@ -33,6 +33,7 @@
       <FavourModal />
       <SettingsModal @reset="handleHardReset" />
       <DisgraceModal />
+      <HallModal />
       <DukedomModal />
 
       <OverviewBar v-if="!phone || phoneTab === 'family'" :phone="phone" @retire="handleRetire" />
@@ -136,6 +137,7 @@ import NewsTicker from './components/NewsTicker.vue'
 import AbdicationModal from './components/AbdicationModal.vue'
 import HireModal from './components/HireModal.vue'
 import DukedomModal from './components/DukedomModal.vue'
+import HallModal from './components/HallModal.vue'
 import FavourModal from './components/FavourModal.vue'
 import BuyerControl from './components/BuyerControl.vue'
 import SettingsModal from './components/SettingsModal.vue'

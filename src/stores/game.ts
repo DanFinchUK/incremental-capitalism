@@ -249,6 +249,7 @@ export const useGameStore = defineStore('game', () => {
   const generation = ref<number>(initial.generation)
   const familyTree = ref<GenerationRecord[]>(initial.familyTree)
   const familyTreeOpen = ref(false)
+  const hallOpen = ref(false)
   const achievements = ref<string[]>(initial.achievements)
   const achievementProgress = ref<AchievementProgress>(initial.achievementProgress)
   const achievementsOpen = ref(false)
@@ -1810,6 +1811,7 @@ export const useGameStore = defineStore('game', () => {
     bossConditionText,
     familyTree,
     familyTreeOpen,
+    hallOpen,
     officeSeats: office.officeSeats,
     paChairs: office.paChairs,
     headhunterOffer: office.headhunterOffer,

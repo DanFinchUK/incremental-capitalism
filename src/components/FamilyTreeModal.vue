@@ -13,6 +13,10 @@
         <div class="scn-ModalTop">
           <span class="scn-ModalKicker scn-ModalKicker-accent">Burke's Peerage, abridged</span>
           <h2 id="family-tree-title">The {{ store.familySurname }} family tree</h2>
+          <span class="scn-StatHint" data-testid="dynasty-time">
+            Dynasty time so far: {{ formatDuration(store.dynastyMs / 1000) }}
+            <button type="button" class="scn-LinkButton" data-testid="open-hall" @click="openHall">Hall of Dynasties</button>
+          </span>
         </div>
         <button type="button" class="scn-Action scn-Action-outline" @click="store.familyTreeOpen = false">Close</button>
       </div>
@@ -67,10 +71,15 @@ import { computed } from 'vue'
 import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { bossForGate } from '../engine/bosses'
 import { useGameStore } from '../stores/game'
-import { formatClock } from '../utils/format'
+import { formatClock, formatDuration } from '../utils/format'
 import { useEscapeKey } from '../utils/useEscapeKey'
 
 const store = useGameStore()
+
+function openHall(): void {
+  store.familyTreeOpen = false
+  store.hallOpen = true
+}
 useEscapeKey(() => store.familyTreeOpen, () => (store.familyTreeOpen = false))
 
 const newestFirst = computed(() => [...store.familyTree].reverse())

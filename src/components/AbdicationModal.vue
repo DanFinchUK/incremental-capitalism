@@ -15,8 +15,7 @@
       </div>
       <p class="scn-CardMeta">
         {{ store.heir.name }} has decided the family firm isn't for them after all, and is off to find themselves
-        somewhere warm. A younger sibling has agreed to step in. There is only ever one spare, and the spare is never
-        quite as impressive as the heir.
+        somewhere warm. {{ siblingsLine }}
       </p>
       <p class="scn-StatHint" data-testid="abdication-rules">
         How abdication works: both of {{ firstName }}'s traits leave with them. The estate and this generation's gates
@@ -72,6 +71,11 @@ const store = useGameStore()
 useEscapeKey(() => store.siblingChoices.length > 0, () => store.cancelAbdication())
 
 const firstName = computed(() => store.heir.name.split(' ')[0])
+const siblingsLine = computed(() =>
+  store.siblingChoices.length === 1
+    ? 'A younger sibling has agreed to step in, though the spare is never quite as impressive as the heir.'
+    : 'Two younger siblings have offered to step in. Neither is quite as impressive as the heir, and both of them know it.'
+)
 
 const options = computed(() =>
   store.siblingChoices.map((h) => ({

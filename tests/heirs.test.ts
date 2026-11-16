@@ -3,6 +3,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { HEIR_TRAITS, INHERITED_TRAITS, rollHeirChoices } from '../src/data/heirs'
 import { combineModifiers } from '../src/engine/modifiers'
 import { gateThreshold } from '../src/engine/bosses'
+import { mount } from '@vue/test-utils'
+import App from '../src/App.vue'
 import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
@@ -241,6 +243,20 @@ describe('abdication', () => {
     expect(store.businessesOwned).toEqual(owned)
     expect(store.canAbdicate).toBe(false)
     expect(store.offerAbdication()).toBe(false)
+  })
+
+  it('the abdication screen speaks of as many siblings as it shows', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    const store = withHeir()
+    store.offerAbdication()
+    await wrapper.vm.$nextTick()
+    const modal = wrapper.find('[data-testid="abdication"]')
+    expect(modal.findAll('[data-testid="sibling-option"]')).toHaveLength(2)
+    expect(modal.text()).toContain('Two younger siblings')
+    expect(modal.text()).not.toContain('only ever one')
+    wrapper.unmount()
   })
 
   it('a new generation can abdicate again, and the limit survives a reload', () => {

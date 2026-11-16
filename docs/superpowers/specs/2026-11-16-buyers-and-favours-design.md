@@ -46,8 +46,10 @@ Automation becomes staff who press Buy.
   that still fits, up to its number of item types. It never buys the same item
   twice in one second. Unspent budget stays in the account and doesn't roll
   over.
-- **Item types.** A buyer handles one item type a second at base. Landed
-  Gentry traits add more (below).
+- **Item types.** Rarity widens what a buyer handles each second as well as
+  its budget: common 1 item type, rare 2, legendary 3, and +1 for each
+  honours tier (a peer handles 7). Landed Gentry traits add more on top
+  (below).
 - **Bulk setting.** Buyers follow the same x1 / x10 / Next / Max picker as the
   player's own Buy buttons. Max means as much of the single best item as the
   budget allows, so on Max a buyer concentrates on one item (revisit if it
@@ -199,25 +201,22 @@ only the cash chart's threshold line (to be revisited once buyers exist).
 
 ## Open questions
 
-1. **Item types beyond Landed Gentry.** Only the Landed Gentry traits add item
-   types. Should titles or the budget perk add them too, so most families'
-   buyers handle more than one item a second?
-2. **Which advisors become buyers.** Today's Estate Manager, Head Butler and
+1. **Which advisors become buyers.** Today's Estate Manager, Head Butler and
    Proxy are one automation family; candidate: they become Acquisitions, and a
    new family of three becomes Recruiters.
-3. **The per-title Legacy step,** for example +15%, and how much of the flat
+2. **The per-title Legacy step,** for example +15%, and how much of the flat
    income per title survives.
-4. **Renaming the headhunter.** "The headhunter is coming" reads as a threat.
+3. **Renaming the headhunter.** "The headhunter is coming" reads as a threat.
    Candidate: "Introductions" ("Some people would like to be introduced");
    alternatives "The shortlist" or "The agency calls".
-5. **The child's cap.** Rare as decided, or Legendary: honours aren't
+4. **The child's cap.** Rare as decided, or Legendary: honours aren't
    inherited, but being very good at the job might be.
-6. **Pill wording** once buyers exist, for example "Recruiter 40% ·
+5. **Pill wording** once buyers exist, for example "Recruiter 40% ·
    Acquisitions 60%".
-7. **The trading desk line.** It sits just above the candles because it marks
+6. **The trading desk line.** It sits just above the candles because it marks
    the next restock. Candidate under buyers: drop it and put a small marker on
    the candle where a buyer bought, named in a tooltip.
-8. **New perks** (later, not this phase): an heir draft re-roll, scandal
+7. **New perks** (later, not this phase): an heir draft re-roll, scandal
    protection, the trust fund, synergies.
 
 ## Testing

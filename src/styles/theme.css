@@ -1606,15 +1606,22 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px;
-  border: 2px dashed var(--color-accent);
-  border-radius: var(--radius);
 }
 
 .scn-AdvisorGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
   gap: 8px;
+}
+
+/* Stretches the cards across the row instead of leaving empty columns */
+.scn-AdvisorGrid-fill {
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+}
+
+.scn-SeatPickerTitle {
+  margin-top: 8px;
+  font-weight: 700;
 }
 
 .scn-AdvisorCard {
@@ -1676,6 +1683,11 @@
   color: #111111;
 }
 
+.scn-AdvisorCard-chosen {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .scn-AdvisorCard-empty {
   border-style: dashed;
   background: transparent;
@@ -1690,31 +1702,6 @@
   flex-direction: column;
   gap: 6px;
   margin-top: auto;
-}
-
-.scn-SeatOption {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-  padding: 8px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.scn-SeatOption span {
-  color: var(--color-muted);
-  font-size: 12px;
-}
-
-.scn-SeatOption:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 
 /* Family tree */

@@ -1117,7 +1117,7 @@ export const useGameStore = defineStore('game', () => {
     return withPlayLog(localStorage.getItem(STORAGE_KEY) ?? '', plays.playLog.value)
   }
 
-  function hireAdvisor(offerIndex: number, replaceSeat?: number): boolean {
+  function hireAdvisor(offerIndex: number, replaceSeat?: number | 'pa'): boolean {
     const advisorId = office.headhunterOffer.value[offerIndex]
     const hired = office.hireAdvisor(offerIndex, replaceSeat)
     if (hired) {

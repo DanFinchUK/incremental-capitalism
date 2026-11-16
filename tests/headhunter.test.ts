@@ -173,6 +173,24 @@ describe('headhunter offers', () => {
     expect(store.officeSeats[1]!.advisorId).toBe('spin-doctor')
     expect(store.headhunterOffer).toHaveLength(0)
   })
+
+  it('with the office full, the Personal Assistant can make way too', async () => {
+    const store = fresh()
+    for (const id of ['proxy', 'lobbyist', 'sommelier', 'accountant']) {
+      store.headhunterOffer = [id]
+      store.hireAdvisor(0)
+    }
+    const seatsBefore = store.officeSeats.map((s) => s!.advisorId)
+    store.headhunterOffer = ['spin-doctor']
+    const wrapper = mount(HeadhunterOffer, { global: { plugins: [pinia] } })
+    await wrapper.find('[data-testid="hire-advisor"]').trigger('click')
+    const paCard = wrapper.find('[data-testid="replace-pa-card"]')
+    expect(paCard.text()).toContain(ADVISORS_BY_ID.proxy.name)
+    await wrapper.find('[data-testid="replace-pa"]').trigger('click')
+    expect(store.paChair!.advisorId).toBe('spin-doctor')
+    expect(store.officeSeats.map((s) => s!.advisorId)).toEqual(seatsBefore)
+    expect(store.headhunterOffer).toHaveLength(0)
+  })
 })
 
 describe('the hiring modal waits its turn', () => {

@@ -8,8 +8,10 @@
       </div>
 
       <FloatingPayouts :floats="floats" />
-      <!-- On a phone, pop-ups sit in the dock above Get paid, not over the lists -->
-      <Teleport to="#dock-events" :disabled="!phone" defer>
+      <!-- On a phone, pop-ups sit in the dock above Get paid, not over the lists.
+           Keyed on the layout: a Teleport finds its target only when it mounts,
+           so it must remount when the dock (and #dock-events) comes or goes. -->
+      <Teleport :key="phone ? 'dock' : 'inline'" to="#dock-events" :disabled="!phone" defer>
         <MarketEvent @claim="handleClaimEvent" @choose="handleScandalChoice" />
       </Teleport>
       <IntroModal />

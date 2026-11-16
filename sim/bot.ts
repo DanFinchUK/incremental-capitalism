@@ -373,11 +373,14 @@ function seededRandom(seed: number): () => number {
   }
 }
 
-export function runCampaign(hours: number, cfg: BotConfig = FAST_TAPPER, seed = 1): GenerationResult[] {
+// probe: called once a minute of play, to look at the game without changing it
+export type CampaignProbe = (store: Store, generation: number) => void
+
+export function runCampaign(hours: number, cfg: BotConfig = FAST_TAPPER, seed = 1, probe?: CampaignProbe): GenerationResult[] {
   const realRandom = Math.random
   Math.random = seededRandom(seed)
   try {
-    return playCampaign(hours, cfg)
+    return playCampaign(hours, cfg, probe)
   } finally {
     Math.random = realRandom
   }
@@ -408,7 +411,7 @@ export function runTapOnly(minutes: number, tapsPerSec = 1): TapOnlyResult {
   return { itemsOwned: count(store.jobsPurchased) + count(store.businessesOwned), netWorth: store.netWorth }
 }
 
-function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
+function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe): GenerationResult[] {
   localStorage.clear()
   setActivePinia(createPinia())
   const store = useGameStore()
@@ -491,6 +494,7 @@ function playCampaign(hours: number, cfg: BotConfig): GenerationResult[] {
       lastGateAtMs = genMs
       if (store.classModalOpen) store.closeClassModal()
     }
+    if (probe && genMs % 60_000 === 0) probe(store, generation)
     if ((ts / 1000) % cfg.decideEverySec === 0) {
       decide(store, cfg)
       if (freshClimb) recordHandovers()

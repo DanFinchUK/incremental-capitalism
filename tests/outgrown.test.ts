@@ -42,18 +42,24 @@ describe('outgrown bosses', () => {
     expect(store.disgraceReport).toBeNull()
   })
 
-  it('waiting shortlists queue up, open one at a time when asked, and survive a reload', () => {
+  it('waiting shortlists open one at a time, move on after each decision, and can be closed for later', () => {
     const store = family(0)
     store.rollOffer(Math.random, true)
     store.rollOffer(Math.random, true)
     expect(store.waitingOffers).toBe(2)
     expect(store.showWaitingOffer()).toBe(true)
     expect(store.headhunterOffer).toHaveLength(3)
+    expect(store.offerOptional).toBe(true)
     expect(store.waitingOffers).toBe(1)
     // Only one at a time
     expect(store.showWaitingOffer()).toBe(false)
+    // Deciding moves straight on to the next set
     store.skipAdvisorOffer()
-    // Sending them packing doesn't bring the next one in uninvited
+    expect(store.headhunterOffer).toHaveLength(3)
+    expect(store.waitingOffers).toBe(0)
+    // Close puts it back as it was, for later
+    const shortlist = [...store.headhunterOffer]
+    expect(store.closeOffer()).toBe(true)
     expect(store.headhunterOffer).toHaveLength(0)
     expect(store.waitingOffers).toBe(1)
     store.flushSave(T0 + 500)
@@ -61,6 +67,21 @@ describe('outgrown bosses', () => {
     const again = useGameStore()
     again.hydrateFromStorage(T0 + 600)
     expect(again.waitingOffers).toBe(1)
+    expect(again.showWaitingOffer()).toBe(true)
+    expect(again.headhunterOffer).toEqual(shortlist)
+  })
+
+  it("a shortlist a fought win brings can't be closed, and comes before the waiting ones", () => {
+    const store = family(0)
+    store.rollOffer(Math.random, true)
+    store.showWaitingOffer()
+    // A win while going through them: its shortlist is owed next
+    store.rollOffer(Math.random)
+    expect(store.queuedOffers).toBe(1)
+    store.skipAdvisorOffer()
+    expect(store.headhunterOffer).toHaveLength(3)
+    expect(store.offerOptional).toBe(false)
+    expect(store.closeOffer()).toBe(false)
   })
 
   it('a boss still worth fighting is left alone, with no loss and no record', () => {
@@ -133,6 +154,10 @@ describe('outgrown bosses', () => {
     await waiting.find('[data-testid="show-introductions"]').trigger('click')
     expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="waiting-introductions"]').exists()).toBe(false)
+    // Close leaves them for later
+    await wrapper.find('[data-testid="close-introductions"]').trigger('click')
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="waiting-introductions"]').text()).toContain('An introduction is waiting')
     wrapper.unmount()
   })
 })

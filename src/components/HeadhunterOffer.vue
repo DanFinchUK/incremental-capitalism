@@ -2,17 +2,23 @@
   <div v-if="offer.length > 0" class="scn-Headhunter" data-testid="headhunter">
     <div class="scn-OfficeHeader">
       <span class="scn-StatHint">
-        <template v-if="store.queuedOffers > 0">{{ store.queuedOffers }} more to follow</template>
+        <template v-if="toFollow > 0">{{ toFollow }} more to follow</template>
       </span>
-      <button
-        type="button"
-        class="scn-Action scn-Action-outline"
-        data-testid="skip-advisor"
-        :disabled="props.locked"
-        @click="store.skipAdvisorOffer()"
-      >
-        Pass
-      </button>
+      <div class="scn-HeadhunterActions">
+        <!-- An introduction you asked for can wait for another time -->
+        <button v-if="store.offerOptional" type="button" class="scn-Action scn-Action-outline" data-testid="close-introductions" @click="store.closeOffer()">
+          Close
+        </button>
+        <button
+          type="button"
+          class="scn-Action scn-Action-outline"
+          data-testid="skip-advisor"
+          :disabled="props.locked"
+          @click="store.skipAdvisorOffer()"
+        >
+          Pass
+        </button>
+      </div>
     </div>
     <p v-if="props.locked" class="scn-AutoLine" data-testid="hire-locked">Catch your breath: choose in {{ props.lockSeconds }}s.</p>
     <p v-else-if="seatsFull && !chosen" class="scn-AutoLine">Office full: hiring means someone makes way.</p>
@@ -104,6 +110,10 @@ const offer = computed(() => store.headhunterOffer.map((id) => ADVISORS_BY_ID[id
 // An empty PA chair takes the next hire, so the office isn't full yet
 const seatsFull = computed(() => store.paChairs.every((c) => c !== null) && store.officeSeats.every((s) => s !== null))
 const pas = computed(() => paCards(store.paChairs).filter((p) => p !== null))
+// Shortlists still to come: those owed by fought wins, and while going
+// through the waiting introductions, the rest of those
+const toFollow = computed(() => store.queuedOffers + (store.offerOptional ? store.waitingOffers : 0))
+
 // The office's advisors as they stand (the picker shows only when it's full)
 const seated = computed(() => store.officeSeats.filter((s): s is AdvisorInstance => s !== null))
 

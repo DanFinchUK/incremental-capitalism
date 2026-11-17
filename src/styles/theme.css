@@ -1758,6 +1758,11 @@
   font-size: 13px;
 }
 
+.scn-HeadhunterActions {
+  display: flex;
+  gap: 8px;
+}
+
 .scn-Headhunter {
   display: flex;
   flex-direction: column;

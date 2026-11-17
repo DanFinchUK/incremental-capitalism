@@ -1983,6 +1983,8 @@ export const useGameStore = defineStore('game', () => {
     exportSave,
     rollOffer: office.rollOffer,
     waitingOffers: office.waitingOffers,
+    offerOptional: office.offerOptional,
+    closeOffer: office.closeOffer,
     showWaitingOffer: office.showWaitingOffer,
     mustHireFirst,
     fireAdvisor,

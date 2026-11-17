@@ -38,6 +38,11 @@ export interface OfficeState {
   // Offers from ordeals the family was waved through: kept until the
   // player asks to see them, never opened at them
   waiting?: number
+  // The open shortlist came from that queue, so it can be closed for later
+  optional?: boolean
+  // A waiting shortlist closed unanswered, kept as it was for when it's next
+  // shown (so closing and reopening can't fish for better candidates)
+  parked?: string[]
 }
 
 export interface OfficeModule {
@@ -46,6 +51,10 @@ export interface OfficeModule {
   headhunterOffer: Ref<string[]>
   queuedOffers: Ref<number>
   waitingOffers: Ref<number>
+  // The open shortlist was asked for, and can be closed to answer later
+  offerOptional: Ref<boolean>
+  // Puts an asked-for shortlist back, unanswered, for later
+  closeOffer: () => boolean
   officeSources: ComputedRef<ModifierSource[]>
   hireAdvisor: (offerIndex: number, replaceSeat?: HireTarget) => boolean
   // The advisor a hire would replace because they buy the same list, if any
@@ -72,15 +81,22 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   const headhunterOffer = ref<string[]>([])
   const queuedOffers = ref(0)
   const waitingOffers = ref(0)
+  const offerOptional = ref(false)
+  const parkedOffer = ref<string[]>([])
   let nextUid = 1
 
   // The current offer is settled: bring forward the next one owed, if any
   function nextOffer(): void {
+    const wasOptional = offerOptional.value
     headhunterOffer.value = []
+    offerOptional.value = false
     if (queuedOffers.value > 0) {
       queuedOffers.value -= 1
       headhunterOffer.value = rollAdvisorOffer(Math.random, deps.noTap?.() ?? false, notWorthOffering)
+      return
     }
+    // Going through the waiting introductions: straight on to the next set
+    if (wasOptional) showWaitingOffer()
   }
 
   // Seat count follows the perk; extra stored seats beyond it are kept but hidden.
@@ -216,7 +232,18 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   function showWaitingOffer(): boolean {
     if (deps.officeClosed?.() || waitingOffers.value <= 0 || headhunterOffer.value.length > 0) return false
     waitingOffers.value -= 1
-    headhunterOffer.value = rollAdvisorOffer(Math.random, deps.noTap?.() ?? false, notWorthOffering)
+    headhunterOffer.value = parkedOffer.value.length > 0 ? parkedOffer.value : rollAdvisorOffer(Math.random, deps.noTap?.() ?? false, notWorthOffering)
+    parkedOffer.value = []
+    offerOptional.value = true
+    return true
+  }
+
+  function closeOffer(): boolean {
+    if (!offerOptional.value || headhunterOffer.value.length === 0) return false
+    parkedOffer.value = headhunterOffer.value
+    headhunterOffer.value = []
+    offerOptional.value = false
+    waitingOffers.value += 1
     return true
   }
 
@@ -227,6 +254,8 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     headhunterOffer.value = []
     queuedOffers.value = 0
     waitingOffers.value = 0
+    offerOptional.value = false
+    parkedOffer.value = []
     const news: string[] = []
     paStore.value = paChairs.value.map((pa) => {
       if (!pa) return null
@@ -267,10 +296,12 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     headhunterOffer.value = state.offer
     queuedOffers.value = state.queued
     waitingOffers.value = state.waiting ?? 0
+    offerOptional.value = state.optional === true && state.offer.length > 0
+    parkedOffer.value = state.parked ?? []
   }
 
   function snapshot(): OfficeState {
-    return { seats: seatStore.value, paChairs: paStore.value, offer: headhunterOffer.value, queued: queuedOffers.value, waiting: waitingOffers.value }
+    return { seats: seatStore.value, paChairs: paStore.value, offer: headhunterOffer.value, queued: queuedOffers.value, waiting: waitingOffers.value, optional: offerOptional.value, parked: parkedOffer.value }
   }
 
   return {
@@ -279,6 +310,8 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     headhunterOffer,
     queuedOffers,
     waitingOffers,
+    offerOptional,
+    closeOffer,
     officeSources,
     hireAdvisor,
     replacedBuyer,

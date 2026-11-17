@@ -241,7 +241,9 @@ function readOffice(raw: unknown): OfficeState {
     paChairs,
     offer: Array.isArray(o.offer) ? o.offer.filter((id): id is string => typeof id === 'string' && !!ADVISORS_BY_ID[id]).slice(0, 3) : [],
     queued: typeof o.queued === 'number' && Number.isFinite(o.queued) ? Math.min(9, Math.max(0, Math.floor(o.queued))) : 0,
-    waiting: typeof o.waiting === 'number' && Number.isFinite(o.waiting) ? Math.min(9, Math.max(0, Math.floor(o.waiting))) : 0
+    waiting: typeof o.waiting === 'number' && Number.isFinite(o.waiting) ? Math.min(9, Math.max(0, Math.floor(o.waiting))) : 0,
+    optional: o.optional === true,
+    parked: Array.isArray(o.parked) ? o.parked.filter((id): id is string => typeof id === 'string' && !!ADVISORS_BY_ID[id]).slice(0, 3) : []
   }
 }
 

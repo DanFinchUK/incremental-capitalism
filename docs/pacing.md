@@ -78,7 +78,11 @@ several gates past it. Retuning one side means retuning the other.
 
 The heir's trust fund (5% of the estate, capped at about one gate short of the
 parent's deepest) skips the re-climb, so most of a generation is spent at the
-frontier rather than repeating old gates.
+frontier rather than repeating old gates. A parent who plays on after their
+last new gate raises the cap: how far they got towards the next gate, on the
+gates' log scale, lifts it towards their own deepest gate, and never past it.
+Playing on still pays the heir, though in the sim it costs about twice what it
+saves, so retiring promptly stays the faster route.
 
 A whole bloodline earns 9 Legacy, so perks cost 1 point a rank (the first
 pair of Interns is free) and the capped perks alone (22 ranks) are more than

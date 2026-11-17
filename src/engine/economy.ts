@@ -28,10 +28,29 @@ export const HEIR_INHERITANCE_SHARE = 0.05
 // is taken of the estate up to a cap instead: at the base share the trust
 // fund lands the heir about one gate short of where the parent got to.
 const INHERITANCE_ESTATE_CAP_GATES_BACK = 1
+// Pushing on towards a gate the parent never reached raises the cap: how far
+// they got, on the same log scale as the gates, moves it from one gate short
+// towards the parent's own deepest gate, so playing on after the last new
+// gate still pays the heir. It never goes past the parent's deepest gate:
+// beyond it only money made during a fight counts, so cash can't win one.
+// (Sim: pushing on costs about half the time it did; pacing is unchanged.)
+
+// How far a net worth has got from one gate towards the next, 0 to 1
+export function pushTowardsNextGate(netWorth: number, deepestGate: number): number {
+  const d = Math.floor(deepestGate)
+  if (d < 1 || d + 1 >= GATE_NET_WORTH.length || netWorth <= GATE_NET_WORTH[d]) return 0
+  const lo = GATE_NET_WORTH[d]
+  const hi = GATE_NET_WORTH[d + 1]
+  return Math.min(1, Math.log(netWorth / lo) / Math.log(hi / lo))
+}
 
 export function inheritableEstate(netWorth: number, deepestGate: number): number {
-  const capGate = Math.max(1, Math.floor(deepestGate) - INHERITANCE_ESTATE_CAP_GATES_BACK)
-  const cap = GATE_NET_WORTH[Math.min(capGate, GATE_NET_WORTH.length - 1)] / HEIR_INHERITANCE_SHARE
+  const d = Math.floor(deepestGate)
+  const capGate = Math.max(1, d - INHERITANCE_ESTATE_CAP_GATES_BACK)
+  const base = GATE_NET_WORTH[Math.min(capGate, GATE_NET_WORTH.length - 1)]
+  const top = GATE_NET_WORTH[Math.min(Math.max(1, d), GATE_NET_WORTH.length - 1)]
+  const lift = pushTowardsNextGate(netWorth, deepestGate)
+  const cap = (base * Math.pow(top / base, lift)) / HEIR_INHERITANCE_SHARE
   return Math.min(Math.max(0, netWorth), cap)
 }
 

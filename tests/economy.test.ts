@@ -8,6 +8,7 @@ import {
   LEGACY_INCOME_PER_POINT,
   bulkBuyQuote,
   heirInheritance,
+  pushTowardsNextGate,
   computeClickIncome,
   legacyMultiplier,
   computeOfflineCatchUp,
@@ -142,15 +143,23 @@ describe('economy engine', () => {
     expect(deltaJob.deltaPerSec).toBeGreaterThan(0)
   })
 
-  it('pays the heir 5% of the estate, capped one gate short of the deepest gate beaten', () => {
+  it('pays the heir 5% of the estate, capped one gate short of the deepest gate beaten, rising as the parent pushes on', () => {
     // A small estate passes on 5%
     expect(heirInheritance(1000, 3)).toBe(50)
-    // A deep estate passes on the threshold of the gate before the deepest
-    expect(heirInheritance(1e60, 3) / GATE_NET_WORTH[2]).toBeCloseTo(1, 9)
+    // Retiring at the deepest gate passes on the threshold of the gate before it
+    expect(heirInheritance(GATE_NET_WORTH[3], 3) / GATE_NET_WORTH[2]).toBeCloseTo(1, 9)
+    // Halfway (on the gates' log scale) to the next gate: halfway up to the deepest gate
+    const halfway = Math.sqrt(GATE_NET_WORTH[3] * GATE_NET_WORTH[4])
+    expect(pushTowardsNextGate(halfway, 3)).toBeCloseTo(0.5, 9)
+    expect(heirInheritance(halfway, 3) / Math.sqrt(GATE_NET_WORTH[2] * GATE_NET_WORTH[3])).toBeCloseTo(1, 6)
+    // At the next gate's door: the deepest gate itself, and never past it
+    expect(heirInheritance(GATE_NET_WORTH[4], 3) / GATE_NET_WORTH[3]).toBeCloseTo(1, 9)
+    expect(heirInheritance(1e60, 3) / GATE_NET_WORTH[3]).toBeCloseTo(1, 9)
+    // With no gate left to push towards, one short as before
     expect(heirInheritance(1e60, 9) / GATE_NET_WORTH[8]).toBeCloseTo(1, 9)
     // Retiring after gate 1 still caps at gate 1, and a bigger share scales the cap
     expect(heirInheritance(1e60, 1) / GATE_NET_WORTH[1]).toBeCloseTo(1, 9)
-    expect(heirInheritance(1e60, 3, 0.05) / GATE_NET_WORTH[2]).toBeCloseTo(2, 9)
+    expect(heirInheritance(GATE_NET_WORTH[3], 3, 0.05) / GATE_NET_WORTH[2]).toBeCloseTo(2, 9)
   })
 
   it('multiplies income by 4.5 per Legacy point, +1x/rank Hustle cap, and offline catch-up', () => {

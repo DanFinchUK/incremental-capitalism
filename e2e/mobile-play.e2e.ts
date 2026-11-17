@@ -36,6 +36,9 @@ test('a new player can reach their first business by touch', async ({ page }) =>
   await page.evaluate(() => localStorage.clear())
   await page.reload()
   await page.getByTestId('menu-continue').tap()
+  // Into the register: one tap hurries the clerk, the next begins
+  await page.getByTestId('census-begin').tap()
+  await page.getByTestId('census-begin').tap()
 
   // The intro explains the game; skipping it must be easy
   const skip = page.getByTestId('intro-skip')

@@ -15,6 +15,9 @@ export async function newGame(page: Page): Promise<void> {
   await page.evaluate(() => localStorage.clear())
   await page.reload()
   await page.getByTestId('menu-continue').tap()
+  // Into the register: one tap hurries the clerk, the next begins
+  await page.getByTestId('census-begin').tap()
+  await page.getByTestId('census-begin').tap()
   await page.getByTestId('intro-skip').tap()
 }
 

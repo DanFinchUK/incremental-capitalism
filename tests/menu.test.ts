@@ -28,8 +28,17 @@ describe('the main menu', () => {
     expect(wrapper.find('[data-testid="intro-modal"]').exists()).toBe(false)
     expect(menu.find('[data-testid="menu-continue"]').text()).toContain('Begin')
     expect(menu.find('[data-testid="menu-new-dynasty"]').exists()).toBe(false)
+    // Nobody is named until they are written into the register
+    expect(menu.text()).not.toContain(store.familySurname)
     await menu.find('[data-testid="menu-continue"]').trigger('click')
     expect(wrapper.find('[data-testid="main-menu"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="census"]').text()).toContain(store.heir.name)
+    expect(wrapper.find('[data-testid="intro-modal"]').exists()).toBe(false)
+    // The first tap hurries the clerk, the second begins
+    await wrapper.find('[data-testid="census-begin"]').trigger('click')
+    await wrapper.find('[data-testid="census-begin"]').trigger('click')
+    expect(wrapper.find('[data-testid="census"]').exists()).toBe(false)
+    expect(store.menuOpen).toBe(false)
     expect(wrapper.find('[data-testid="intro-modal"]').exists()).toBe(true)
     wrapper.unmount()
   })
@@ -61,9 +70,10 @@ describe('the main menu', () => {
     await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-confirm-abandon"]').text()).toContain("doesn't go in the Hall")
     await wrapper.find('[data-testid="menu-confirm-new-dynasty"]').trigger('click')
-    // Back to the title screen, with a new family ready to begin
-    expect(store.menuOpen).toBe(true)
-    expect(wrapper.find('[data-testid="menu-continue"]').text()).toContain('Begin')
+    // The new family goes into the register, under the old one struck off
+    const census = wrapper.find('[data-testid="census"]')
+    expect(census.exists()).toBe(true)
+    expect(census.find('.cen-Entry-struck').text()).toContain(surname)
     expect(store.familySurname).not.toBe(surname)
     expect(store).toMatchObject({ generation: 1, titles: 0 })
     expect(store.hall).toHaveLength(0)

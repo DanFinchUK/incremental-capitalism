@@ -118,9 +118,10 @@ describe('choosing a scenario on screen', () => {
     expect(s.scenario).toBe('austerity')
     expect(s.dynastyComplete).toBe(false)
     expect(s.hall).toHaveLength(1)
-    // The menu stays, on its front page, for the new family to begin
-    expect(s.menuOpen).toBe(true)
-    expect(wrapper.find('[data-testid="menu-continue"]').text()).toContain('Begin')
+    // The new family is written into the register, under its terms
+    const census = wrapper.find('[data-testid="census"]')
+    expect(census.text()).toContain('Austerity')
+    expect(census.find('[data-testid="census-earlier"]').text()).toContain('Duke')
     wrapper.unmount()
   })
 

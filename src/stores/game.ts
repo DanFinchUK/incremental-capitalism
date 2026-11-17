@@ -136,6 +136,14 @@ export interface ActiveBuffView {
   remainingSec: number
 }
 
+// How the family before the new one left the register
+export type CensusDeparture = 'duke' | 'abandoned' | 'folded'
+
+export interface CensusEntry {
+  previous: string | null
+  departure: CensusDeparture | null
+}
+
 export interface DisgraceReport {
   familySurname: string
   heirName: string
@@ -256,10 +264,17 @@ export const useGameStore = defineStore('game', () => {
   // The page the menu opens on: its front, or straight to founding the next
   // family when a finished dynasty asks for it
   const menuPage = ref<'main' | 'found'>('main')
+  // A new family being written into the register: who came before it, and
+  // how they left. Null when the register isn't open.
+  const census = ref<CensusEntry | null>(null)
   const achievements = ref<string[]>(initial.achievements)
   const achievementProgress = ref<AchievementProgress>(initial.achievementProgress)
   const achievementsOpen = ref(false)
   const titles = ref<number>(initial.titles)
+  // A family that hasn't started: nothing played, nothing to carry on
+  const familyIsFresh = computed(
+    () => generation.value === 1 && familyTree.value.length === 0 && gatesBeaten.value === 0 && titles.value === 0 && dynastyMs.value < 1000
+  )
   // The dynasty: active time since it began, and whether it has reached Duke
   const dynastyMs = ref<number>(initial.dynastyMs)
   const dynastyComplete = ref<boolean>(initial.dynastyComplete)
@@ -1109,9 +1124,9 @@ export const useGameStore = defineStore('game', () => {
     }
     const elapsedMs = Math.max(0, ts - lastTickMs.value)
     lastTickMs.value = ts
-    if (heirChoices.value.length > 0 || disgraceReport.value !== null || dynastyComplete.value || menuOpen.value) {
-      // The game pauses while succession or disgrace is on screen, and stops
-      // once the dynasty is over
+    if (heirChoices.value.length > 0 || disgraceReport.value !== null || dynastyComplete.value || menuOpen.value || census.value) {
+      // The game pauses while succession, disgrace, the menu or the register
+      // is on screen, and stops once the dynasty is over
       return
     }
 
@@ -1431,7 +1446,9 @@ export const useGameStore = defineStore('game', () => {
     nowMs.value = ts
     disgraceReport.value = null
     plays.log(ts, 'new-bloodline', { generation: generation.value, legacy: legacyPoints.value })
+    const previous = familySurname.value
     resetBloodline(ts)
+    census.value = { previous, departure: 'folded' }
     announce(`New bloodline: the ${familySurname.value} family enters the market.`)
   }
 
@@ -1691,14 +1708,18 @@ export const useGameStore = defineStore('game', () => {
       // A full or blocked store: the Hall lives for this visit only
     }
     beginDynasty(ts, record.surname, next)
+    census.value = { previous: record.surname, departure: 'duke' }
     return true
   }
 
   // Give up on the dynasty under way: a new family, and nothing in the Hall
   function abandonDynasty(ts = Date.now(), next: ScenarioId = 'standard'): void {
     const previous = familySurname.value
+    const wasFresh = familyIsFresh.value
     plays.log(ts, 'abandon-dynasty', { surname: previous, activeMs: dynastyMs.value })
     beginDynasty(ts, previous, next)
+    // A family nobody had heard of yet needs no striking off
+    census.value = { previous: wasFresh ? null : previous, departure: wasFresh ? null : 'abandoned' }
   }
 
   function beginDynasty(ts: number, previousSurname: string, next: ScenarioId): void {
@@ -1731,6 +1752,18 @@ export const useGameStore = defineStore('game', () => {
   function openMenu(page: 'main' | 'found' = 'main'): void {
     menuPage.value = page
     menuOpen.value = true
+  }
+
+  // Write a family that hasn't started into the register, from the menu
+  function openCensus(): void {
+    census.value = { previous: null, departure: null }
+  }
+
+  // The ink is dry: into the game
+  function closeCensus(ts = Date.now()): void {
+    census.value = null
+    if (menuOpen.value) closeMenu(ts)
+    else lastTickMs.value = ts
   }
 
   function closeMenu(ts = Date.now()): void {
@@ -1878,6 +1911,10 @@ export const useGameStore = defineStore('game', () => {
     hallOpen,
     menuOpen,
     menuPage,
+    census,
+    familyIsFresh,
+    openCensus,
+    closeCensus,
     openMenu,
     closeMenu,
     abandonDynasty,

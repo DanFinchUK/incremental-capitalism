@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="store.menuOpen"
+    v-if="store.menuOpen && !store.census"
     class="scn-ModalBackdrop scn-MenuBackdrop ttl-Screen"
     role="dialog"
     aria-modal="true"
@@ -15,7 +15,7 @@
 
     <div class="ttl-Stage">
       <header class="ttl-Head" :class="{ 'ttl-Head-compact': view !== 'main' }">
-        <FamilyCrest v-if="view === 'main'" class="ttl-Crest" :surname="store.familySurname" :titles="store.titles" />
+        <FamilyCrest v-if="view === 'main' && !fresh" class="ttl-Crest" :surname="store.familySurname" :titles="store.titles" />
         <h1 id="menu-title" class="ttl-Title">
           <span class="ttl-TitleSmall">Incremental</span>
           <span class="ttl-TitleBig">Capitalism</span>
@@ -25,11 +25,11 @@
       </header>
 
       <template v-if="view === 'main'">
-        <button type="button" class="ttl-Continue" data-testid="menu-continue" @click="store.closeMenu()">
+        <button type="button" class="ttl-Continue" data-testid="menu-continue" @click="carryOn">
           <span class="ttl-ContinueLabel">{{ fresh ? 'Begin' : 'Continue' }}</span>
-          <span class="ttl-ContinueFamily">The {{ pluralSurname(store.familySurname) }}</span>
+          <span class="ttl-ContinueFamily">{{ fresh ? 'A new family' : `The ${pluralSurname(store.familySurname)}` }}</span>
           <span class="ttl-ContinueLine">{{ continueLine }}</span>
-          <span class="ttl-ContinueMotto">{{ arms.motto }}: “{{ arms.translation }}”</span>
+          <span v-if="!fresh" class="ttl-ContinueMotto">{{ arms.motto }}: “{{ arms.translation }}”</span>
         </button>
 
         <nav class="ttl-Nav" aria-label="Main menu">
@@ -198,14 +198,18 @@ const next = ref<ScenarioId>('standard')
 const best = computed(() => bestDynasty(store.hall))
 const arms = computed(() => armsFor(store.familySurname))
 
-// A family that hasn't started: nothing to carry on, only one to begin
-const fresh = computed(
-  () => store.generation === 1 && store.familyTree.length === 0 && store.gatesBeaten === 0 && store.titles === 0 && store.dynastyMs < 1000
-)
+// A family that hasn't started: nothing to carry on, only one to begin, and
+// no name until it is written into the register
+const fresh = computed(() => store.familyIsFresh)
+
+function carryOn(): void {
+  if (fresh.value) store.openCensus()
+  else store.closeMenu()
+}
 
 const continueLine = computed(() => {
   const scenario = store.scenario !== 'standard' ? `${store.scenarioDef.name} · ` : ''
-  if (fresh.value) return `${scenario}Nothing to their name but ambition`
+  if (fresh.value) return `${scenario}Not yet in the register`
   if (store.dynastyComplete) return `${scenario}Made Duke in ${formatDuration(store.dynastyMs / 1000)}`
   const rank = store.titles > 0 ? ` · ${peerageRank(store.titles)}` : ''
   return `${scenario}Generation ${store.generation}${rank} · ${formatDuration(store.dynastyMs / 1000)}`
@@ -217,7 +221,7 @@ const newDynastyLabel = computed(() => {
 })
 
 // A finished dynasty is founded anew, an unfinished one abandoned, both after
-// asking; either way the menu stays for the next family
+// asking; either way the next family goes into the register
 function newDynasty(): void {
   next.value = store.scenario
   view.value = 'confirm'

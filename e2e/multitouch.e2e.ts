@@ -63,6 +63,9 @@ test.describe('with a mouse', () => {
     await page.evaluate(() => localStorage.clear())
     await page.reload()
     await page.getByTestId('menu-continue').click()
+    // Into the register: one click hurries the clerk, the next begins
+    await page.getByTestId('census-begin').click()
+    await page.getByTestId('census-begin').click()
     await page.getByTestId('intro-skip').click()
     const pay = page.getByRole('button', { name: 'Get paid' })
     const before = await taps(page)

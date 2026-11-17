@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="store.introOpen && !store.menuOpen"
+    v-if="store.introOpen && !store.menuOpen && !store.census"
     class="scn-ModalBackdrop scn-ModalBackdrop-over"
     role="dialog"
     aria-modal="true"

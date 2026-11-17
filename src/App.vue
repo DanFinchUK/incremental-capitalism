@@ -1,17 +1,17 @@
 <template>
   <div class="ic-Shell" :class="{ 'ic-Shell-phone': phone }">
-    <NewsTicker />
+    <NewsTicker v-if="showGame" />
 
     <div class="lyt-Content">
-      <div v-if="visibleBanner" class="scn-Milestone" role="status">
+      <div v-if="showGame && visibleBanner" class="scn-Milestone" role="status">
         {{ visibleBanner }}
       </div>
 
-      <FloatingPayouts :floats="floats" />
+      <FloatingPayouts v-if="showGame" :floats="floats" />
       <!-- On a phone, pop-ups sit in the dock above Get paid, not over the lists.
            Keyed on the layout: a Teleport finds its target only when it mounts,
            so it must remount when the dock (and #dock-events) comes or goes. -->
-      <Teleport :key="phone ? 'dock' : 'inline'" to="#dock-events" :disabled="!phone" defer>
+      <Teleport v-if="showGame" :key="phone ? 'dock' : 'inline'" to="#dock-events" :disabled="!phone" defer>
         <MarketEvent @claim="handleClaimEvent" @choose="handleScandalChoice" />
       </Teleport>
       <WelcomeModal v-if="!store.introOpen" />
@@ -32,68 +32,72 @@
       <FavourModal />
       <DisgraceModal />
       <DukedomModal />
-      <!-- The menu sits over the game; what it opens sits over the menu -->
+      <!-- The menu and the register are screens of their own: the game isn't
+           drawn while either is up. What the menu opens sits over it. -->
       <MainMenu @reset="handleHardReset" />
+      <CensusEntry />
       <IntroModal />
       <SettingsModal @reset="handleHardReset" @new-bloodline="handleNewBloodline" />
       <HallModal />
 
-      <OverviewBar v-if="!phone || phoneTab === 'family'" :phone="phone" @retire="handleRetire" />
+      <template v-if="showGame">
+        <OverviewBar v-if="!phone || phoneTab === 'family'" :phone="phone" @retire="handleRetire" />
 
-      <div class="lyt-Cockpit">
-        <aside v-if="!phone || phoneTab === 'family'" class="lyt-CommandPane" aria-label="Command deck">
-          <HeroHeader ref="heroRef" :phone="phone" @paid="handleManualClick" @retire="handleRetire" />
-          <BossCard />
-          <FamilyOffice />
-          <SplitsPanel />
-          <TradingDesk v-if="phone" />
-        </aside>
+        <div class="lyt-Cockpit">
+          <aside v-if="!phone || phoneTab === 'family'" class="lyt-CommandPane" aria-label="Command deck">
+            <HeroHeader ref="heroRef" :phone="phone" @paid="handleManualClick" @retire="handleRetire" />
+            <BossCard />
+            <FamilyOffice />
+            <SplitsPanel />
+            <TradingDesk v-if="phone" />
+          </aside>
 
-        <!-- v-show keeps both lists alive, so switching tabs doesn't reload them -->
-        <div v-show="!phone || phoneTab !== 'family'" class="lyt-MarketPane">
-          <TradingDesk v-if="!phone" />
-          <div class="lyt-Columns">
-            <section v-show="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
-              <div class="lyt-Items">
-                <div class="lyt-ListHead">
-                  <h2 class="scn-ColumnTitle">Jobs</h2>
-                  <BuyerControl kind="jobs" />
-                  <BulkPicker v-if="phone" />
+          <!-- v-show keeps both lists alive, so switching tabs doesn't reload them -->
+          <div v-show="!phone || phoneTab !== 'family'" class="lyt-MarketPane">
+            <TradingDesk v-if="!phone" />
+            <div class="lyt-Columns">
+              <section v-show="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
+                <div class="lyt-Items">
+                  <div class="lyt-ListHead">
+                    <h2 class="scn-ColumnTitle">Jobs</h2>
+                    <BuyerControl kind="jobs" />
+                    <BulkPicker v-if="phone" />
+                  </div>
+                  <ItemCard
+                    v-for="row in store.visibleJobs"
+                    :key="row.mode === 'revealed' ? `job-${row.item.id}` : row.key"
+                    kind="jobs"
+                    :row="row"
+                    @buy="handleBuyItem"
+                  />
                 </div>
-                <ItemCard
-                  v-for="row in store.visibleJobs"
-                  :key="row.mode === 'revealed' ? `job-${row.item.id}` : row.key"
-                  kind="jobs"
-                  :row="row"
-                  @buy="handleBuyItem"
-                />
-              </div>
-            </section>
+              </section>
 
-            <section v-show="!phone || phoneTab === 'businesses'" class="lyt-Column" aria-label="Businesses">
-              <div class="lyt-Items">
-                <div class="lyt-ListHead">
-                  <h2 class="scn-ColumnTitle">Businesses</h2>
-                  <BuyerControl kind="businesses" />
-                  <BulkPicker v-if="phone" />
+              <section v-show="!phone || phoneTab === 'businesses'" class="lyt-Column" aria-label="Businesses">
+                <div class="lyt-Items">
+                  <div class="lyt-ListHead">
+                    <h2 class="scn-ColumnTitle">Businesses</h2>
+                    <BuyerControl kind="businesses" />
+                    <BulkPicker v-if="phone" />
+                  </div>
+                  <ItemCard
+                    v-for="row in store.visibleBusinesses"
+                    :key="row.mode === 'revealed' ? `biz-${row.item.id}` : row.key"
+                    kind="businesses"
+                    :row="row"
+                    @buy="handleBuyItem"
+                  />
                 </div>
-                <ItemCard
-                  v-for="row in store.visibleBusinesses"
-                  :key="row.mode === 'revealed' ? `biz-${row.item.id}` : row.key"
-                  kind="businesses"
-                  :row="row"
-                  @buy="handleBuyItem"
-                />
-              </div>
-            </section>
+              </section>
+            </div>
+
           </div>
-
         </div>
-      </div>
+      </template>
     </div>
 
     <!-- On a phone these live in Settings and the main menu -->
-    <footer v-if="!phone" class="lyt-Footer">
+    <footer v-if="showGame && !phone" class="lyt-Footer">
       <span>Incremental Capitalism · Empire &amp; Privilege Edition</span>
       <div class="lyt-FooterActions">
         <button type="button" class="scn-Action scn-Action-outline" data-testid="open-achievements" @click="store.achievementsOpen = true">
@@ -105,7 +109,7 @@
       </div>
     </footer>
 
-    <MobileDock v-if="phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" @retire="handleRetire" />
+    <MobileDock v-if="showGame && phone" ref="dockRef" :tab="phoneTab" @paid="handleManualClick" @tab="switchPhoneTab" @rules="showBossRules" @retire="handleRetire" />
   </div>
 </template>
 
@@ -138,6 +142,7 @@ import LegacyShop from './components/LegacyShop.vue'
 import MarketEvent from './components/MarketEvent.vue'
 import NewsTicker from './components/NewsTicker.vue'
 import AbdicationModal from './components/AbdicationModal.vue'
+import CensusEntry from './components/CensusEntry.vue'
 import HireModal from './components/HireModal.vue'
 import DukedomModal from './components/DukedomModal.vue'
 import HallModal from './components/HallModal.vue'
@@ -154,6 +159,9 @@ const MAX_ACTIVE_FLOATS = 60
 
 const store = useGameStore()
 store.hydrateFromStorage(Date.now())
+
+// The game itself, drawn only once the player is past the menu and the register
+const showGame = computed(() => !store.menuOpen && !store.census)
 
 const heroRef = ref<InstanceType<typeof HeroHeader> | null>(null)
 const dockRef = ref<InstanceType<typeof MobileDock> | null>(null)

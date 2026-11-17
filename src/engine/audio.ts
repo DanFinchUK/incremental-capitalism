@@ -31,6 +31,9 @@ export type SfxKind =
   | 'elevate'
   | 'achievement'
   | 'welcomeBack'
+  // The register
+  | 'quill'
+  | 'stamp'
 
 export interface SfxOptions {
   // 0 to 1: how hard things are going (Hustle for taps, size for buys)
@@ -47,7 +50,8 @@ const MIN_GAP_MS: Partial<Record<SfxKind, number>> = {
   buyBusiness: 60,
   eventSpawn: 1500,
   bossTick: 400,
-  achievement: 300
+  achievement: 300,
+  quill: 120
 }
 
 let sharedContext: AudioContext | null = null
@@ -383,6 +387,22 @@ const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void
       noise(v, at, 0.02, 0.12, { type: 'bandpass', freq: 2500 + i * 60, q: 4 })
     }
     bell(v, NOTE.C7, 0.68, 0.5, 0.05)
+  },
+  // A nib dragged across rag paper: a few dry scratches, each a little
+  // different. intensity sets how long the stroke runs.
+  quill: (v, { intensity }) => {
+    const strokes = 3 + Math.round(intensity * 5)
+    for (let i = 0; i < strokes; i++) {
+      const at = i * 0.045 + Math.random() * 0.02
+      const freq = 3200 + Math.random() * 2600
+      noise(v, at, 0.03 + Math.random() * 0.03, 0.05 + Math.random() * 0.03, { type: 'bandpass', freq, q: 6, sweepTo: freq * 0.8 })
+    }
+  },
+  // A rubber stamp brought down on a desk: a dull thud and the slap of paper
+  stamp: (v) => {
+    noise(v, 0, 0.16, 0.5, { type: 'lowpass', freq: 420, sweepTo: 90 })
+    tone(v, 92, 0, 0.18, 'sine', 0.35, { attack: 0.002 })
+    noise(v, 0.005, 0.05, 0.18, { type: 'highpass', freq: 2400 })
   }
 }
 

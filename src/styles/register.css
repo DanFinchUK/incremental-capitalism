@@ -276,14 +276,22 @@
 }
 
 /* Moving between the game's screens (menu, register, finale): a fade, not a
-   cut. A screen on its way out still takes taps, so a doubled tap can't land
-   on whatever is underneath. */
+   cut. A screen on its way out takes taps for its first quarter-second, so a
+   doubled tap can't land on whatever is underneath, then lets them through,
+   so tapping the game straight away still counts. */
 .screen-enter-active {
   transition: opacity 0.6s ease;
 }
 
 .screen-leave-active {
   transition: opacity 0.7s ease;
+  animation: screen-let-through 0s linear 0.25s forwards;
+}
+
+@keyframes screen-let-through {
+  to {
+    pointer-events: none;
+  }
 }
 
 .screen-enter-from,

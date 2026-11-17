@@ -10,6 +10,13 @@ export const TAP_GUARD_MS = 400
 export const TAP_GUARD_RADIUS_PX = 40
 
 const DIALOG_SELECTOR = '[aria-modal="true"]'
+// A screen fading out (Vue's leave transition) closed when the fade began:
+// its removal at the end of the fade is no tap's doing
+const LEAVING_CLASS = 'screen-leave-active'
+
+function openDialogsIn(root: Document): Set<Element> {
+  return new Set([...root.querySelectorAll(DIALOG_SELECTOR)].filter((d) => !d.classList.contains(LEAVING_CLASS)))
+}
 const GUARDED_EVENTS = ['pointerdown', 'pointerup', 'click'] as const
 
 interface Spot {
@@ -21,10 +28,10 @@ interface Spot {
 export function installTapGuard(root: Document = document, now: () => number = () => performance.now()): () => void {
   let lastTouch: Spot | null = null
   let guard: Spot | null = null
-  let openDialogs = new Set<Element>(root.querySelectorAll(DIALOG_SELECTOR))
+  let openDialogs = openDialogsIn(root)
 
   const observer = new MutationObserver(() => {
-    const current = new Set<Element>(root.querySelectorAll(DIALOG_SELECTOR))
+    const current = openDialogsIn(root)
     const changed = current.size !== openDialogs.size || [...current].some((d) => !openDialogs.has(d))
     openDialogs = current
     // Only a change a tap just caused: a dialog that turns up on its own has
@@ -33,7 +40,8 @@ export function installTapGuard(root: Document = document, now: () => number = (
       guard = { x: lastTouch.x, y: lastTouch.y, at: now() }
     }
   })
-  observer.observe(root.body, { childList: true, subtree: true })
+  // Class changes too, to see a screen start to fade out
+  observer.observe(root.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] })
 
   function isTouch(ev: MouseEvent): boolean {
     const type = (ev as PointerEvent).pointerType

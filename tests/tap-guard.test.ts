@@ -68,6 +68,24 @@ describe('tap guard', () => {
     expect(presses).toEqual([])
   })
 
+  it('counts a screen as closed when it starts to fade out, not when the fade ends', async () => {
+    // The tap starts the fade: the guard starts with it
+    document.body.dispatchEvent(pointer('pointerdown', 'touch'))
+    document.getElementById('dialog')!.classList.add('screen-leave-active')
+    await flush()
+    clock += 50
+    under.dispatchEvent(pointer('click', 'touch'))
+    expect(presses).toEqual([])
+    // The fade ends while the player taps the game: no new guard on their taps
+    clock += TAP_GUARD_MS + 1
+    under.dispatchEvent(pointer('pointerdown', 'touch'))
+    document.getElementById('dialog')!.remove()
+    await flush()
+    clock += 50
+    under.dispatchEvent(pointer('click', 'touch'))
+    expect(presses).toEqual(['pointerdown', 'click'])
+  })
+
   it('does nothing when a dialog closes without a tap', async () => {
     document.getElementById('dialog')!.remove()
     await flush()

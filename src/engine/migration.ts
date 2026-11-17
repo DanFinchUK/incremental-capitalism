@@ -12,6 +12,7 @@ import type { OfficeState } from '../stores/modules/office'
 import { ROOMS, type RoomId } from '../data/rooms'
 import { readScenarioId, type ScenarioId } from '../data/scenarios'
 import { FAVOUR_EVENTS_BY_ID, emptyFavours, type FavourState } from '../data/favours'
+import type { BossTracker } from './bosses'
 
 export const STORAGE_KEY = 'state'
 // Saves from any earlier schema reset to a new game.
@@ -80,6 +81,11 @@ export interface PersistedSceneState {
   dynastyComplete: boolean
   // The rule the dynasty is played under
   scenario: ScenarioId
+  // A boss fight under way, so a reload carries on with it (never a quiet
+  // look), and the wait after backing out of one. Both run on active play
+  // time, so the clock stood still while the page was away.
+  bossFight: BossTracker | null
+  bossCooldownUntilMs: number
   lastUpdate: number | null
 }
 
@@ -131,6 +137,8 @@ export function createInitialSceneState(): PersistedSceneState {
     dynastyMs: 0,
     dynastyComplete: false,
     scenario: 'standard',
+    bossFight: null,
+    bossCooldownUntilMs: 0,
     lastUpdate: null
   }
 }
@@ -254,6 +262,29 @@ function readSplits(raw: unknown): (number | null)[] {
     }
   }
   return result
+}
+
+// A saved fight, if it's whole: anything malformed is dropped, which only
+// means the fight has to be started again
+function readBossFight(raw: unknown): BossTracker | null {
+  if (!raw || typeof raw !== 'object') return null
+  const r = raw as Record<string, unknown>
+  const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0
+  if (!num(r.gate) || !Number.isInteger(r.gate) || r.gate < 1 || r.gate >= SOCIAL_CLASSES.length) return null
+  const fields = ['startedActiveMs', 'clickEarningsAtFullHustle', 'earnedAfterTax', 'polish', 'purchases', 'startNetWorth', 'timeMult'] as const
+  if (!fields.every((f) => num(r[f])) || (r.timeMult as number) <= 0) return null
+  return {
+    gate: r.gate,
+    startedActiveMs: r.startedActiveMs as number,
+    clickEarningsAtFullHustle: r.clickEarningsAtFullHustle as number,
+    earnedAfterTax: r.earnedAfterTax as number,
+    polish: r.polish as number,
+    purchases: r.purchases as number,
+    startNetWorth: r.startNetWorth as number,
+    countsGain: r.countsGain === true,
+    timeMult: r.timeMult as number,
+    ...(num(r.ownPurchases) ? { ownPurchases: r.ownPurchases } : {})
+  }
 }
 
 function readNonNegativeNumber(val: unknown, fallback = 0): number {
@@ -427,6 +458,8 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     // A family already at Duke when the dukedom became the end has finished
     dynastyComplete: s.dynastyComplete === true || titles >= DUKE_TITLES,
     scenario: readScenarioId(s.scenario),
+    bossFight: readBossFight(s.bossFight),
+    bossCooldownUntilMs: readNonNegativeNumber(s.bossCooldownUntilMs, 0),
     lastUpdate
   }
 }

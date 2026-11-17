@@ -409,7 +409,7 @@ export const useGameStore = defineStore('game', () => {
       return boss && boss.status !== 'locked' ? boss.def.gate : null
     },
     attempt: () => {
-      const tracker = bosses.bossAttempt.value
+      const tracker = bosses.fight.value
       const boss = bosses.nextBoss.value
       return tracker && boss ? { gate: tracker.gate, startedActiveMs: tracker.startedActiveMs, progress: boss.progress } : null
     },
@@ -645,6 +645,8 @@ export const useGameStore = defineStore('game', () => {
       dynastyMs: dynastyMs.value,
       dynastyComplete: dynastyComplete.value,
       scenario: scenario.value,
+      bossFight: bosses.fight.value,
+      bossCooldownUntilMs: bosses.bossCooldownUntilMs.value,
       lastUpdate: ts
     }
   }
@@ -697,8 +699,12 @@ export const useGameStore = defineStore('game', () => {
     scenario.value = loaded.scenario
     achievementProgress.value = loaded.achievementProgress
     penalty.value = null
-    bosses.bossAttempt.value = null
-    bosses.bossCooldownUntilMs.value = 0
+    // A fight carries on only if it's still this generation's next boss
+    bosses.bossAttempt.value =
+      loaded.bossFight && loaded.bossFight.gate === loaded.gatesBeaten + 1 && loaded.bossFight.startedActiveMs <= loaded.activeGenerationMs
+        ? { ...loaded.bossFight }
+        : null
+    bosses.bossCooldownUntilMs.value = loaded.bossCooldownUntilMs
     bulkBuyMode.value = loaded.bulkBuyMode
     buyersPaused.value = loaded.buyersPaused
     compactAutoBuy.value = loaded.compactAutoBuy
@@ -741,6 +747,14 @@ export const useGameStore = defineStore('game', () => {
       hall.value = parseHall(localStorage.getItem(HALL_KEY))
     } catch {
       hall.value = []
+    }
+
+    // A fight carries on after a reload, but not after time away: as in play,
+    // a minute or more away calls it off with no cooldown, before any money
+    // earned meanwhile could count towards it
+    if (bosses.bossAttempt.value && (loaded.lastUpdate === null || ts - loaded.lastUpdate >= 60_000)) {
+      plays.log(ts, 'boss-end', { gate: bosses.bossAttempt.value.gate, result: 'away' })
+      bosses.bossAttempt.value = null
     }
 
     // No catch-up while the succession is undecided: the family is in
@@ -826,7 +840,9 @@ export const useGameStore = defineStore('game', () => {
     id: string,
     modeOverride?: BulkBuyMode,
     save = true,
-    cash?: number
+    cash?: number,
+    // A buyer's purchase, not the player's
+    byBuyer = false
   ): { bought: number; hitMilestone: boolean; promotedClass: boolean; cost: number } {
     const quote = itemQuote(kind, id, modeOverride, cash)
     const gatedDef = kind === 'jobs' ? JOBS_BY_ID[id] : BUSINESSES_BY_ID[id]
@@ -845,6 +861,7 @@ export const useGameStore = defineStore('game', () => {
     if (bosses.bossAttempt.value) {
       // Every purchase is a stroke in the Charity Golf Match
       bosses.bossAttempt.value.purchases += 1
+      if (!byBuyer) bosses.bossAttempt.value.ownPurchases = (bosses.bossAttempt.value.ownPurchases ?? 0) + 1
     }
     map[id] = nextOwned
     lifeMap[id] = (lifeMap[id] ?? 0) + quote.count
@@ -899,7 +916,7 @@ export const useGameStore = defineStore('game', () => {
         }
         const best = bestValue(options)
         if (!best) break
-        const result = buyItem(kind, best.id, undefined, false, left)
+        const result = buyItem(kind, best.id, undefined, false, left, true)
         if (result.bought === 0) break
         done.add(best.id)
         left -= result.cost
@@ -1583,7 +1600,7 @@ export const useGameStore = defineStore('game', () => {
       !abdicated.value &&
       heirChoices.value.length === 0 &&
       disgraceReport.value === null &&
-      bosses.bossAttempt.value === null
+      bosses.fight.value === null
   )
 
   function offerAbdication(): boolean {

@@ -58,9 +58,16 @@ export interface BossModuleDeps {
 const FREE_ABANDON_MS = 10_000
 // A boss the family has outgrown falls within this long of being looked at
 export const OUTGROWN_MS = 1000
+// Bosses won by earning during the fight can't be won in a second, so they
+// count as outgrown when the look's pace would win within this long
+export const OUTGROWN_PACE_MS = 5000
+const EARNED_DURING_FIGHT = new Set(['clickEarningsAtFullHustle', 'earnedAfterTax', 'polish'])
 
 export interface BossModule {
   bossAttempt: Ref<BossTracker | null>
+  // The attempt, unless it's only a quiet look: a look happens out of sight,
+  // with no twist, no clock on screen and nothing to back out of
+  fight: ComputedRef<BossTracker | null>
   bossCooldownUntilMs: Ref<number>
   twist: ComputedRef<TwistEffects>
   nextBoss: ComputedRef<BossView | null>
@@ -74,13 +81,15 @@ export interface BossModule {
 }
 
 export function createBossModule(deps: BossModuleDeps): BossModule {
-  // Neither is persisted: a reload abandons an attempt with no cooldown.
+  // Both are saved with the game (a quiet look isn't), so a reload carries on
+  // with a fight and keeps the wait after backing out of one.
   const bossAttempt = ref<BossTracker | null>(null)
   const bossCooldownUntilMs = ref<number>(0)
 
+  const fight = computed(() => (bossAttempt.value && !bossAttempt.value.probe ? bossAttempt.value : null))
   const attemptDef = computed(() => (bossAttempt.value ? bossForGate(bossAttempt.value.gate) : null))
   const twist = computed<TwistEffects>(() =>
-    attemptDef.value ? combineTwists(attemptDef.value.twists, deps.twistStrength()) : NO_TWIST
+    fight.value && attemptDef.value ? combineTwists(attemptDef.value.twists, deps.twistStrength()) : NO_TWIST
   )
 
   function currentEvaluation(def: BossDef, tracker: BossTracker): BossEvaluation {
@@ -100,7 +109,7 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
     }
     const activeMs = deps.activeMs()
     const base = { def, bestKillMs: deps.bestKillFor(gate), remainingSec: 0, cooldownSec: 0 }
-    const tracker = bossAttempt.value
+    const tracker = fight.value
     if (tracker && tracker.gate === gate) {
       const elapsedMs = activeMs - tracker.startedActiveMs
       return {
@@ -126,26 +135,21 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
   })
 
   const canBackOut = computed(() => {
-    const tracker = bossAttempt.value
-    if (!tracker || tracker.purchases > 0) return false
+    const tracker = fight.value
+    if (!tracker || (tracker.ownPurchases ?? 0) > 0) return false
     return deps.activeMs() - tracker.startedActiveMs < FREE_ABANDON_MS
   })
 
   const backOutSec = computed(() => {
-    const tracker = bossAttempt.value
-    if (!tracker || tracker.purchases > 0) return 0
+    const tracker = fight.value
+    if (!tracker || (tracker.ownPurchases ?? 0) > 0) return 0
     return Math.max(0, Math.ceil((FREE_ABANDON_MS - (deps.activeMs() - tracker.startedActiveMs)) / 1000))
   })
 
   function startBossAttempt(): boolean {
-    // Pressed during a quiet look: the look becomes the fight
-    const looking = bossAttempt.value
-    if (looking?.probe) {
-      const def = bossForGate(looking.gate)!
-      bossAttempt.value = { ...looking, probe: false }
-      deps.announce(def.twistText ? `${def.title}: ${def.twistText}` : def.title)
-      return true
-    }
+    // Pressed during a quiet look: the look is dropped and a fight starts
+    // afresh, with its own clock and the twist on from the first second
+    if (bossAttempt.value?.probe) bossAttempt.value = null
     if (nextBoss.value?.status !== 'available') {
       return false
     }
@@ -180,12 +184,19 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
       return
     }
     const result = currentEvaluation(def, tracker)
-    // A look that didn't settle it at once: called off, no loss, no record
-    if (tracker.probe && !result.won && (result.lost || deps.activeMs() - tracker.startedActiveMs >= OUTGROWN_MS)) {
+    const lookedMs = deps.activeMs() - tracker.startedActiveMs
+    // A look at a boss won by earning: settled on pace once the look is up
+    const outgrownOnPace =
+      tracker.probe === true &&
+      EARNED_DURING_FIGHT.has(def.condition.kind) &&
+      lookedMs >= OUTGROWN_MS &&
+      result.progress * (OUTGROWN_PACE_MS / lookedMs) >= 1
+    // A look that didn't settle it: called off, no loss, no record
+    if (tracker.probe && !result.won && !outgrownOnPace && (result.lost || lookedMs >= OUTGROWN_MS)) {
       bossAttempt.value = null
       return
     }
-    if (result.won) {
+    if (result.won || outgrownOnPace) {
       const prevClass = deps.gatesBeaten.value
       const killMs = deps.activeMs() - tracker.startedActiveMs
       bossAttempt.value = null
@@ -203,5 +214,5 @@ export function createBossModule(deps: BossModuleDeps): BossModule {
     }
   }
 
-  return { bossAttempt, bossCooldownUntilMs, twist, nextBoss, canBackOut, backOutSec, startBossAttempt, probeBoss, abandonBossAttempt, evaluateAttempt }
+  return { bossAttempt, fight, bossCooldownUntilMs, twist, nextBoss, canBackOut, backOutSec, startBossAttempt, probeBoss, abandonBossAttempt, evaluateAttempt }
 }

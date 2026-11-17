@@ -201,17 +201,51 @@ describe('boss attempts', () => {
     expect(store.disgraceReport).toBeNull()
   })
 
-  it('reload mid-attempt abandons it with no cooldown and no lingering twist', () => {
+  it('a reload mid-fight carries on with it: same progress, same clock, twist still on', () => {
+    const store = readyFor(3)
+    const normal = store.itemQuote('jobs', '1', 1).cost
+    store.startBossAttempt()
+    store.tick(T0 + 4000)
+    const before = { ...store.bossAttempt! }
+    const left = store.nextBoss!.remainingSec
+    store.flushSave(T0 + 4000)
+    setActivePinia(createPinia())
+    const again = useGameStore()
+    again.hydrateFromStorage(T0 + 9000)
+    expect(again.bossAttempt).toMatchObject({ gate: 3, startedActiveMs: before.startedActiveMs, earnedAfterTax: before.earnedAfterTax })
+    expect(again.nextBoss!.status).toBe('active')
+    // The page being away doesn't run the clock
+    expect(again.nextBoss!.remainingSec).toBe(left)
+    expect(again.itemQuote('jobs', '1', 1).cost).not.toBeCloseTo(normal)
+  })
+
+  it('a reload after a minute or more away calls the fight off, with no cooldown and no lingering twist', () => {
     const store = readyFor(3)
     const normal = store.itemQuote('jobs', '1', 1).cost
     store.startBossAttempt()
     store.flushSave(T0 + 500)
     setActivePinia(createPinia())
     const again = useGameStore()
-    again.hydrateFromStorage(T0 + 600)
+    again.hydrateFromStorage(T0 + 500 + 60_000)
     expect(again.bossAttempt).toBeNull()
     expect(again.nextBoss!.status).toBe('available')
     expect(again.itemQuote('jobs', '1', 1).cost).toBeCloseTo(normal)
+  })
+
+  it('a quiet look is never saved, and a save from before fights were saved loads with none', () => {
+    const store = readyFor(3)
+    store.bossAttempt = { ...store.bossAttempt, gate: 3, startedActiveMs: store.activeGenerationMs, clickEarningsAtFullHustle: 0, earnedAfterTax: 0, polish: 0, purchases: 0, startNetWorth: 0, countsGain: false, timeMult: 1, probe: true }
+    store.flushSave(T0 + 500)
+    const saved = JSON.parse(localStorage.getItem('state')!)
+    expect(saved.scene.bossFight).toBeNull()
+    delete saved.scene.bossFight
+    delete saved.scene.bossCooldownUntilMs
+    localStorage.setItem('state', JSON.stringify(saved))
+    setActivePinia(createPinia())
+    const again = useGameStore()
+    again.hydrateFromStorage(T0 + 600)
+    expect(again.bossAttempt).toBeNull()
+    expect(again.nextBoss!.status).toBe('available')
   })
 
   it('offline time never advances the active clock', () => {
@@ -254,6 +288,27 @@ describe('boss attempts', () => {
     let t = T0
     for (let i = 0; i < 11; i++) store.tick((t += 1000))
     expect(store.canBackOut).toBe(false)
+  })
+
+  it("the buyers' purchases count as strokes but don't take away the back-out", () => {
+    const store = readyFor(4)
+    store.startBossAttempt()
+    store.buyItem('jobs', '1', 1, false, undefined, true)
+    expect(store.bossAttempt!.purchases).toBe(1)
+    expect(store.canBackOut).toBe(true)
+    store.buyItem('jobs', '1', 1)
+    expect(store.bossAttempt!.purchases).toBe(2)
+    expect(store.canBackOut).toBe(false)
+  })
+
+  it('taking it on during a quiet look starts a fight afresh, with its own clock', () => {
+    const store = readyFor(4)
+    store.tick(T0 + 3000)
+    store.bossAttempt = { gate: 4, startedActiveMs: 0, clickEarningsAtFullHustle: 0, earnedAfterTax: 1e30, polish: 0, purchases: 3, startNetWorth: 0, countsGain: false, timeMult: 1, probe: true }
+    expect(store.startBossAttempt()).toBe(true)
+    expect(store.bossAttempt?.probe).toBeFalsy()
+    expect(store.bossAttempt).toMatchObject({ purchases: 0, earnedAfterTax: 0, startedActiveMs: store.activeGenerationMs })
+    expect(store.canBackOut).toBe(true)
   })
 
   it('a corked bottle leaves with the sommelier when the fight ends', () => {

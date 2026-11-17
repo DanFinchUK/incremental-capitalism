@@ -69,7 +69,10 @@ export interface BossTracker {
   clickEarningsAtFullHustle: number
   earnedAfterTax: number
   polish: number
+  // Every purchase in the fight (strokes, for the Golf boss), and those the
+  // player made themselves: only theirs commit them, ending the free back-out
   purchases: number
+  ownPurchases?: number
   // Net worth when the fight began, and whether this fight counts only what
   // is gained from there (a gate the family has never beaten)
   startNetWorth: number

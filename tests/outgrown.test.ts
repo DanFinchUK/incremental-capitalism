@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { gateThreshold } from '../src/engine/bosses'
+import { bossForGate, conditionTarget, gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
 const T0 = 1_000_000
@@ -48,6 +48,41 @@ describe('outgrown bosses', () => {
     // The player can take it on as usual
     expect(store.startBossAttempt()).toBe(true)
     expect(store.bossAttempt?.probe).toBeFalsy()
+  })
+
+  it('the quiet look happens out of sight: no fight on screen, no twist, nothing to back out of', () => {
+    const store = family(0)
+    store.tick(T0 + 100)
+    // Mid-look: the family hasn't outgrown it, and the look hasn't been called off yet
+    expect(store.bossAttempt?.probe).toBe(true)
+    expect(store.nextBoss?.status).toBe('available')
+    expect(store.canBackOut).toBe(false)
+    expect(store.twist.incomeTaxRate).toBe(0)
+    expect(store.twist.automationPaused).toBe(false)
+  })
+
+  it('a boss won by earning is waved through when the look shows it would fall within a few seconds', () => {
+    // Gate 2: earn the target after rent. A second's earnings can't reach it,
+    // but at this pace it would fall in under five seconds
+    const target = conditionTarget(bossForGate(2)!, false)
+    const quick = family(0)
+    quick.tick(T0 + 100)
+    expect(quick.bossAttempt?.probe).toBe(true)
+    quick.addDebugMoney(target * 0.3, T0 + 500)
+    quick.tick(T0 + 1200)
+    expect(quick.gatesBeaten).toBe(2)
+    expect(quick.bannerMessage ?? '').toContain('waved you through')
+  })
+
+  it('but left to the player when the pace would take longer', () => {
+    const target = conditionTarget(bossForGate(2)!, false)
+    const slow = family(0)
+    slow.tick(T0 + 100)
+    slow.addDebugMoney(target * 0.1, T0 + 500)
+    slow.tick(T0 + 1200)
+    expect(slow.gatesBeaten).toBe(1)
+    expect(slow.bossAttempt).toBeNull()
+    expect(slow.disgraceReport).toBeNull()
   })
 
   it('a gate the family has never beaten is always fought', () => {

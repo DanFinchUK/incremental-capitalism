@@ -89,9 +89,15 @@ pair of Interns is free) and the capped perks alone (22 ranks) are more than
 one bloodline can buy: which perks to take is a real choice. A perk rank lasts
 the whole bloodline, while most advisors leave after a generation, so each
 rank is worth at least a rare advisor (`src/data/perks.ts`). Elevating to the
-Lords gives one title per 9 Legacy, one per completed bloodline, and each
-title starts every new line with 2 Legacy (`sim/elevation.report.sim.ts`
-shows the climb after an elevation).
+Lords gives one title per 9 Legacy, one per completed bloodline. Each title
+multiplies all income by 3, compounding, and nothing else carries Legacy
+into the new line, so each line takes about two-thirds as long as the last
+(`INCOME_PER_TITLE` in `src/engine/peerage.ts`). With Commoner at about 100
+minutes for a fast tapper, that is about 62, 38, 31 and 18 minutes for the
+Baron, Viscount, Earl and Marquess lines (sim medians), about 4 hours to
+Duke. `sim/pacing.lines.sim.ts` checks each line takes 50% to 85% as long as
+the one before (median); `sim/elevation.report.sim.ts` shows the climb after an
+elevation.
 
 ## Other targets
 

@@ -5,10 +5,9 @@ import type { ModifierSource } from './modifiers'
 // Legacy is one point per gate past the family's best, so a bloodline that
 // has climbed all nine gates holds nine: one title
 export const LEGACY_PER_TITLE = 9
-export const INCOME_PER_TITLE = 0.5
-// Each title makes Legacy worth this much more, from the first. Legacy resets
-// each bloodline, so this speeds every climb without compounding forever.
-export const LEGACY_SCALE_PER_TITLE = 0.15
+// Each title multiplies all income by this, and they compound: each new
+// line takes about two-thirds as long as the last (docs/pacing.md)
+export const INCOME_PER_TITLE = 3
 
 export function titlesFor(legacyPoints: number): number {
   return Math.floor(Math.max(0, legacyPoints) / LEGACY_PER_TITLE)
@@ -33,21 +32,8 @@ export function peerageRank(titles: number): string {
 
 // What the family's titles do, for good
 export function titleSource(titles: number): ModifierSource {
-  const t = Math.max(0, titles)
-  const mult = 1 + INCOME_PER_TITLE * t
-  return {
-    clickMult: mult,
-    businessMult: mult,
-    legacyScale: 1 + LEGACY_SCALE_PER_TITLE * t
-  }
-}
-
-// Each title starts every new line with this much Legacy, so elevating is a
-// step up from the first second. It doesn't count towards the next title.
-export const STARTING_LEGACY_PER_TITLE = 2
-
-export function titleStartingLegacy(titles: number): number {
-  return STARTING_LEGACY_PER_TITLE * Math.max(0, Math.floor(titles))
+  const mult = Math.pow(INCOME_PER_TITLE, Math.max(0, Math.floor(titles)))
+  return { clickMult: mult, businessMult: mult }
 }
 
 // One PA chair, and one more per title: more of the office stays through

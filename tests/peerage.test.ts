@@ -23,10 +23,10 @@ describe('peerage rules', () => {
     expect(peerageRank(9)).toBe('Duke')
   })
 
-  it('titles pay 50% more income and make Legacy 15% stronger each, and bring a PA chair', () => {
-    expect(titleSource(2)).toMatchObject({ clickMult: 2, businessMult: 2 })
-    expect(titleSource(1).legacyScale).toBeCloseTo(1.15)
-    expect(titleSource(3).legacyScale).toBeCloseTo(1.45)
+  it('titles triple income each, compounding, and bring a PA chair', () => {
+    expect(titleSource(1)).toMatchObject({ clickMult: 3, businessMult: 3 })
+    expect(titleSource(2)).toMatchObject({ clickMult: 9, businessMult: 9 })
+    expect(titleSource(3)).not.toHaveProperty('legacyScale')
     expect(titleSource(5)).not.toHaveProperty('buyerItemTypes')
     expect(titlePaChairs(0)).toBe(1)
     expect(titlePaChairs(3)).toBe(4)
@@ -71,8 +71,8 @@ describe('elevation in the store', () => {
     expect(store.titlesOnElevation).toBe(4)
     expect(store.elevateToLords(T0)).toBe(true)
     expect(store.titles).toBe(4)
-    // Each title starts the new line with 2 Legacy, which doesn't count towards the next title
-    expect(store.legacyPoints).toBe(8)
+    // The new line starts with no Legacy of its own
+    expect(store.legacyPoints).toBe(0)
     expect(store.titlesOnElevation).toBe(0)
     expect(store.legacySpent).toBe(0)
     expect(store.perks.hustleCap).toBe(0)
@@ -161,11 +161,9 @@ describe('elevation in the store', () => {
     store.heir = { name: 'Test', traitId: null }
     store.gatesBeaten = 9
     store.businessesOwned = { '1': 5 }
-    // Income alone, without the Legacy the titles start the line with
-    store.legacyPoints = 0
     const withTitles = store.moneyPerSecond
     store.titles = 0
-    expect(withTitles / store.moneyPerSecond).toBeCloseTo(3) // 1 + 0.5 x 4
+    expect(withTitles / store.moneyPerSecond).toBeCloseTo(81) // 3 x 3 x 3 x 3
     store.titles = 4
     store.flushSave(T0 + 10)
     setActivePinia(createPinia())

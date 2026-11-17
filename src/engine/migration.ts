@@ -2,7 +2,7 @@ import { SOCIAL_CLASSES } from '../data/classes'
 import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } from '../data/perks'
 import type { BulkBuyMode } from './economy'
 import { emptySplits } from './splits'
-import { DUKE_TITLES, titleStartingLegacy } from './peerage'
+import { DUKE_TITLES } from './peerage'
 import { INHERITED_BY_ID, TRAITS_BY_ID, type Heir } from '../data/heirs'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ACHIEVEMENTS_BY_ID, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
@@ -75,8 +75,6 @@ export interface PersistedSceneState {
   tradingDeskCollapsed: boolean
   // Old School Tie: favours this generation
   favours: FavourState
-  // Lines that elevated before titles brought starting Legacy get it once, on load
-  titleLegacyGranted: boolean
   // Active play time since the dynasty began, every line and generation
   dynastyMs: number
   // The family reached Duke: the dynasty is over and the finale stays up
@@ -136,7 +134,6 @@ export function createInitialSceneState(): PersistedSceneState {
     introSeen: false,
     tradingDeskCollapsed: false,
     favours: emptyFavours(),
-    titleLegacyGranted: true,
     dynastyMs: 0,
     dynastyComplete: false,
     scenario: 'standard',
@@ -341,7 +338,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
   const bloodlineBest = currentBloodlineRecords(familyTree).reduce((max, r) => Math.max(max, r.deepestGate), 0)
   const titles = Math.floor(readNonNegativeNumber(s.titles, 0))
   const savedLegacy = fromSchema7 ? bloodlineBest : Math.floor(readNonNegativeNumber(s.legacyPoints, 0))
-  const legacyPoints = savedLegacy + (s.titleLegacyGranted === true ? 0 : titleStartingLegacy(titles))
+  const legacyPoints = savedLegacy
 
   const lpRaw = s.lifetimePurchases && typeof s.lifetimePurchases === 'object'
     ? (s.lifetimePurchases as Record<string, unknown>)
@@ -457,7 +454,6 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     introSeen: Boolean(s.introSeen),
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),
     favours: readFavours(s.favours),
-    titleLegacyGranted: true,
     // Older saves: every generation recorded, plus the one under way
     dynastyMs: typeof s.dynastyMs === 'number' && Number.isFinite(s.dynastyMs) && s.dynastyMs >= 0
       ? s.dynastyMs

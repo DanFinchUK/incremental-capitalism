@@ -111,9 +111,9 @@ describe('review fixes', () => {
     const store = fresh()
     store.legacyPoints = 20
     expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(20))
-    // Each title makes Legacy worth 15% more
+    // Titles leave what Legacy is worth alone
     store.titles = 3
-    expect(store.legacyMultiplier / legacyMultiplier(20, 1.45)).toBeCloseTo(1)
+    expect(store.legacyMultiplier).toBeCloseTo(legacyMultiplier(20))
   })
 
   it('no heir trait changes what Legacy is worth, so none grows into a trap', () => {

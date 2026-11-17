@@ -30,7 +30,7 @@
         </div>
       </div>
       <div class="scn-ModalCallout scn-ModalCallout-perk">
-        <p>Every title, for good: 50% more income, Legacy 15% stronger, 2 Legacy to start each new line with, and a PA chair, so one more of your staff stays through every retirement. Two titles bring a fourth heir to choose from.</p>
+        <p>Every title, for good: x3 income (titles multiply together), and a PA chair, so one more of your staff stays through every retirement. Two titles bring a fourth heir to choose from.</p>
       </div>
       <p v-if="nextTitles >= DUKE_TITLES" class="scn-ModalCallout scn-ModalCallout-perk" data-testid="elevate-dukedom">
         Duke is the top of the peerage: accepting ends the dynasty. Its time goes in the Hall of Dynasties, and a new family

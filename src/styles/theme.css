@@ -1725,6 +1725,12 @@
   gap: 8px;
 }
 
+/* The family office sits in the narrow side pane: one card a row, so each
+   has room to read */
+.scn-FamilyOffice .scn-AdvisorGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* Stretches the cards across the row instead of leaving empty columns */
 .scn-AdvisorGrid-fill {
   grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));

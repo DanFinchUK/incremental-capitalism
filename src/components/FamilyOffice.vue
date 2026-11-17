@@ -63,7 +63,7 @@
             <button type="button" class="scn-Action scn-Action-outline" @click="store.fireAdvisor(s)">Fire</button>
           </div>
         </template>
-        <p v-else class="scn-AutoLine">Open seat. Beat a boss to recruit.</p>
+        <p v-else class="scn-AutoLine">Open seat. Win an ordeal to take someone on.</p>
       </article>
     </div>
   </section>

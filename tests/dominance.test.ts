@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import ItemCard from '../src/components/ItemCard.vue'
+import HeroHeader from '../src/components/HeroHeader.vue'
 import { BUSINESSES } from '../src/data/items'
 import { DOMINANCE_AT, bulkBuyQuote } from '../src/engine/economy'
 import { useGameStore } from '../src/stores/game'
@@ -54,5 +55,16 @@ describe('market dominance', () => {
     expect(card.find('.scn-Action').exists()).toBe(false)
     expect(card.find('.scn-CostLine').exists()).toBe(false)
     expect(store.buyItem('businesses', item.id, 1).bought).toBe(0)
+  })
+
+  it("shows with the family's lasting effects, totalled", async () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    const header = mount(HeroHeader, { props: { phone: false }, global: { plugins: [pinia] } })
+    expect(header.find('[data-testid="dominance-pill"]').exists()).toBe(false)
+    store.jobsPurchased = { '1': 1000 }
+    store.businessesOwned = { '1': 1000 }
+    await header.vm.$nextTick()
+    expect(header.find('[data-testid="dominance-pill"]').text()).toBe('Market dominance +50%')
   })
 })

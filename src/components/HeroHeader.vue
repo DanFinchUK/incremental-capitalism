@@ -70,7 +70,14 @@
       </p>
 
       <!-- The family's lasting effects; the temporary ones sit with Hustle -->
-      <div v-if="store.bloodlineTraitPills.length > 0 || store.allowancePill" class="scn-TraitPillRow" data-testid="header-bloodline-pills">
+      <div
+        v-if="store.bloodlineTraitPills.length > 0 || store.allowancePill || store.dominanceHeld > 0"
+        class="scn-TraitPillRow"
+        data-testid="header-bloodline-pills"
+      >
+        <span v-if="store.dominanceHeld > 0" class="scn-TraitPill" data-testid="dominance-pill">
+          Market dominance +{{ Math.round((dominanceMultiplier(store.dominanceHeld) - 1) * 100) }}%
+        </span>
         <span
           v-if="store.allowancePill"
           class="scn-TraitPill"
@@ -130,7 +137,7 @@ import { useGameStore } from '../stores/game'
 import { formatClock, formatCurrency, formatMultiplier } from '../utils/format'
 import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { peerageRank } from '../engine/peerage'
-import { legacyMultiplier as calcLegacyMultiplier } from '../engine/economy'
+import { dominanceMultiplier, legacyMultiplier as calcLegacyMultiplier } from '../engine/economy'
 
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void

@@ -57,10 +57,10 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'hustleCap',
     label: 'Grindset Coaching',
-    description: '+1x max Hustle a rank, for your taps and the Interns. Playing without tapping, +0.5x steady Hustle instead.',
+    description: 'Max Hustle +1 a rank, for your taps and the Interns. Playing without tapping, steady Hustle +0.5 instead.',
     maxRank: 5,
     costForRank: () => 1,
-    effectSummary: (r) => `${3 + r}x max Hustle`
+    effectSummary: (r) => `x${3 + r} max Hustle`
   },
   {
     id: 'offshore',
@@ -89,10 +89,10 @@ export const LEGACY_PERKS: ReadonlyArray<LegacyPerkDef> = [
   {
     id: 'deregulation',
     label: 'Light-Touch Regulation',
-    description: '+0.25x on every milestone of every Job and Business, a rank.',
+    description: 'Every milestone of every Job and Business multiplies by 0.25 more, a rank.',
     maxRank: 4,
     costForRank: () => 1,
-    effectSummary: (r) => `${(2 + MILESTONE_STEP_PER_DEREGULATION_RANK * r).toFixed(2)}x per milestone`
+    effectSummary: (r) => `x${(2 + MILESTONE_STEP_PER_DEREGULATION_RANK * r).toFixed(2)} per milestone`
   },
   {
     id: 'insider',

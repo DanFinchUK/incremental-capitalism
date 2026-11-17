@@ -9,8 +9,8 @@ const ALLOWANCE_WORDING: ReadonlyArray<[RegExp, string]> = [
   ],
   [/Taps, Interns and your allowance all polish\./g, 'Your allowance and Interns both polish.'],
   [
-    /\+1x max Hustle a rank, for your taps and the Interns\. Playing without tapping, \+0\.5x steady Hustle instead\./g,
-    '+0.5x steady Hustle a rank, for your allowance and the Interns.'
+    /Max Hustle \+1 a rank, for your taps and the Interns\. Playing without tapping, steady Hustle \+0\.5 instead\./g,
+    'Steady Hustle +0.5 a rank, for your allowance and the Interns.'
   ],
   [/each clicking "Get paid" once a second at your Hustle/g, 'each earning half your base allowance'],
   [/ \(Auto-Clicker\)/g, ''],

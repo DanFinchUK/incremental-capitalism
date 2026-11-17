@@ -894,7 +894,7 @@ export const useGameStore = defineStore('game', () => {
     if (crossedMilestone !== null && save) {
       markTelemetryEvent(telemetry.value, 'Milestone')
       const step = (2 + MILESTONE_STEP_PER_DEREGULATION_RANK * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
-      announce(`${def.label} hit ${crossedMilestone} owned: ${step}x output milestone!`)
+      announce(`${def.label} hit ${crossedMilestone} owned: output x${step}!`)
     }
 
     if (save) {
@@ -1123,10 +1123,10 @@ export const useGameStore = defineStore('game', () => {
       markTelemetryEvent(telemetry.value, 'Opportunity')
       if (current && current.mult > effect.mult) {
         // Never downgrade a stronger buff that is still running
-        announce(`${name}: your ${current.mult}x ${current.label} is stronger, so it keeps running.`)
+        announce(`${name}: your ${current.label} x${current.mult} is stronger, so it keeps running.`)
       } else {
         slot.value = { kind: def.kind, label: def.buffLabel, mult: effect.mult, until: ts + dur * 1000 }
-        announce(wording(`${rarityPrefix}${name}: ${effect.mult}x ${target} income for ${dur}s!`))
+        announce(wording(`${rarityPrefix}${name}: ${target} income x${effect.mult} for ${dur}s!`))
       }
       flushSave(ts)
       return 'golden'

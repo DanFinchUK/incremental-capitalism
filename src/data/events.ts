@@ -80,7 +80,7 @@ const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {
     kind: 'paidOvertime',
     title: 'Paid Overtime',
-    subtitle: '2x Click income for 20s',
+    subtitle: 'Click income x2 for 20s',
     buffLabel: 'Paid Overtime',
     rarity: 'common',
     shady: false,
@@ -89,7 +89,7 @@ const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {
     kind: 'stimulusCheque',
     title: 'Stimulus Cheque',
-    subtitle: '3x Business income for 20s',
+    subtitle: 'Business income x3 for 20s',
     buffLabel: 'Stimulus',
     rarity: 'common',
     shady: false,
@@ -107,7 +107,7 @@ const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {
     kind: 'weekendOvertime',
     title: 'Weekend Overtime!',
-    subtitle: '4x Click income for 15s',
+    subtitle: 'Click income x4 for 15s',
     buffLabel: 'Weekend Overtime',
     rarity: 'rare',
     shady: false,
@@ -116,7 +116,7 @@ const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {
     kind: 'quantitativeEasing',
     title: 'Quantitative Easing!',
-    subtitle: '5x Business income for 20s',
+    subtitle: 'Business income x5 for 20s',
     buffLabel: 'QE',
     rarity: 'rare',
     shady: false,
@@ -134,7 +134,7 @@ const OPPORTUNITIES: ReadonlyArray<MarketEventDef> = [
   {
     kind: 'unpaidOvertime',
     title: 'Mandatory Unpaid Overtime!',
-    subtitle: '7x Click income for 15s',
+    subtitle: 'Click income x7 for 15s',
     buffLabel: 'Unpaid Overtime',
     rarity: 'legendary',
     shady: false,
@@ -169,7 +169,7 @@ export const SCANDALS: ReadonlyArray<MarketEventDef> = [
         { label: 'Pay the hush money', detail: '10% of cash.', outcomes: [{ type: 'cashLoss', share: 0.1 }] },
         {
           label: 'Ride it out',
-          detail: '50/50: 3x business income for 30s, or half income for 60s.',
+          detail: '50/50: business income x3 for 30s, or half income for 60s.',
           outcomes: [
             {
               type: 'gamble',

@@ -4,13 +4,13 @@
       <!-- Hustle always shows (1.0x at rest), so Get paid never moves when pills come and go -->
       <div class="scn-HustleRow">
         <span class="scn-BuffPill scn-BuffPill-streak">
-          {{ store.hustleMultiplier.toFixed(1) }}x Hustle
+          Hustle x{{ store.hustleMultiplier.toFixed(1) }}
         </span>
         <span v-if="store.activeBusinessBuff" class="scn-BuffPill">
-          {{ store.activeBusinessBuff.mult }}x {{ store.activeBusinessBuff.label }} ({{ store.activeBusinessBuff.remainingSec }}s)
+          {{ store.activeBusinessBuff.label }} x{{ store.activeBusinessBuff.mult }} ({{ store.activeBusinessBuff.remainingSec }}s)
         </span>
         <span v-if="store.activeClickBuff" class="scn-BuffPill">
-          {{ store.activeClickBuff.mult }}x {{ store.activeClickBuff.label }} ({{ store.activeClickBuff.remainingSec }}s)
+          {{ store.activeClickBuff.label }} x{{ store.activeClickBuff.mult }} ({{ store.activeClickBuff.remainingSec }}s)
         </span>
         <span v-if="store.incomePenalty" class="scn-BuffPill scn-BuffPill-freeze" data-testid="penalty-pill">
           Scandal x{{ store.incomePenalty.mult }} ({{ store.incomePenalty.remainingSec }}s)

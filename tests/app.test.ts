@@ -33,7 +33,7 @@ describe('App UI integration', () => {
     const btn = wrapper.find('.scn-PrimaryAction')
     await btn.trigger('click')
     expect(store.money).toBeGreaterThan(0)
-    expect(wrapper.text()).toContain('1.1x Hustle')
+    expect(wrapper.text()).toContain('Hustle x1.1')
     expect(wrapper.findAll('.scn-Float').length).toBe(1)
     wrapper.unmount()
   })

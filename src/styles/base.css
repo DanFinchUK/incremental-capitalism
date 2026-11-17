@@ -165,6 +165,13 @@ button {
   scrollbar-width: thin;
 }
 
+/* When the pane runs out of height it scrolls; nothing in it is squashed to
+   fit (a panel that scrolls sideways, like the times, otherwise shrinks to
+   its padding) */
+.lyt-CommandPane > * {
+  flex-shrink: 0;
+}
+
 .lyt-MarketPane {
   display: flex;
   flex-direction: column;

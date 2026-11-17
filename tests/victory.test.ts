@@ -78,7 +78,10 @@ describe('beating a boss', () => {
     store.openClassPyramid()
     const wrapper = mount(ClassModal, { global: { plugins: [pinia] } })
     expect(wrapper.find('[data-testid="victory-unlocks"]').exists()).toBe(false)
-    expect(wrapper.find('details[data-testid="class-pyramid"]').attributes('open')).toBeDefined()
+    // In full, with no fold to collapse it
+    expect(wrapper.find('details[data-testid="class-pyramid"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="class-pyramid"] summary').exists()).toBe(false)
+    expect(wrapper.findAll('.scn-PyramidRung').length).toBeGreaterThan(0)
   })
 
   it('a repeat win in a later generation gets a banner with the time, not the full screen', () => {

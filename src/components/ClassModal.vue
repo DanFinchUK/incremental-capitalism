@@ -54,7 +54,9 @@
         Some people would like to be introduced.
       </p>
 
-      <details class="scn-PyramidFold" data-testid="class-pyramid" :open="!victory">
+      <!-- After a win the pyramid folds away under its own heading; opened on
+           its own, it is the whole point and shows in full, with nothing to fold -->
+      <component :is="victory ? 'details' : 'div'" class="scn-PyramidFold" data-testid="class-pyramid">
         <summary v-if="victory">Class pyramid</summary>
       <div class="scn-PyramidList">
         <div
@@ -106,7 +108,7 @@
           </template>
         </div>
       </div>
-      </details>
+      </component>
 
       <div class="scn-ModalFooter">
         <!-- The final gate: the Lords are next -->

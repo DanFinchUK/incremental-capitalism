@@ -76,10 +76,8 @@
               <path :d="passiveLinePath" fill="none" class="scn-PassiveLine" />
               <path :d="flowLinePath" fill="none" class="scn-FlowLine" />
 
-              <g v-for="pin in markerPins" :key="`pin-${pin.ts}`">
-                <line :x1="pin.x" y1="6" :x2="pin.x" :y2="SVG_H - 4" class="scn-MarkerLine" />
-                <text :x="pin.x + 3" y="16" class="scn-MarkerLabel">{{ pin.marker }}</text>
-              </g>
+              <!-- What happened is named in the breakdown: a run of purchases would pile labels up -->
+              <line v-for="pin in markerPins" :key="`pin-${pin.ts}`" :x1="pin.x" y1="6" :x2="pin.x" :y2="SVG_H - 4" class="scn-MarkerLine" />
 
               <line
                 v-if="hoverFlowX !== null"
@@ -92,6 +90,7 @@
             </svg>
             <div v-if="flowTip" class="scn-FlowTip" :style="flowTip.style" data-testid="flow-tip">
               <b>{{ flowTip.when }} · {{ formatCurrency(flowTip.total) }}/s</b>
+              <span v-if="flowTip.marker" class="scn-FlowTipMark">{{ flowTip.marker }}</span>
               <span v-for="row in flowTip.rows" :key="row.id">
                 <i class="scn-SectorDot" :class="{ 'scn-Hatch': row.id === 'favours' }" :style="{ backgroundColor: row.color }"></i>
                 {{ row.label }} {{ formatCurrency(row.perSec) }}/s
@@ -428,9 +427,14 @@ const flowTip = computed(() => {
     .filter((id) => (values[id] ?? 0) > 0)
     .map((id) => ({ id, label: sourceLabel(id), perSec: values[id], color: sourceColour(id) }))
   const secondsAgo = Math.max(0, Math.round((store.nowMs - p.ts) / 1000))
+  // A marker within half a second either side, so it's easy to land on
+  const pts = flowSamples.value
+  let marker: string | null = null
+  for (let i = Math.max(0, idx - 2); i <= Math.min(pts.length - 1, idx + 2); i++) if (pts[i].marker) marker = pts[i].marker ?? null
   const ratio = idx / Math.max(1, flowSamples.value.length - 1)
   return {
     when: secondsAgo === 0 ? 'Now' : `${secondsAgo}s ago`,
+    marker,
     total: p.realisedPerSec,
     rows,
     style: ratio < 0.5 ? { left: `calc(${(ratio * 100).toFixed(1)}% + 10px)` } : { right: `calc(${((1 - ratio) * 100).toFixed(1)}% + 10px)` }

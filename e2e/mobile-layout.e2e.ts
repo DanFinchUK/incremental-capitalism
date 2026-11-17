@@ -73,12 +73,19 @@ test('a tab marks items revealed since you last looked at it', async ({ page }) 
   await expect(tab.getByTestId('tab-new')).toHaveCount(0)
 })
 
-test('with a hire waiting, the dock sends you to the headhunter instead of the next boss', async ({ page }) => {
+// Hiring happens only in the Introductions dialog, which opens by itself
+// while a shortlist waits; the dock no longer has a hire button of its own
+test('with a hire waiting, the Introductions come first and the next ordeal waits', async ({ page }) => {
   await newGame(page)
   await withStore(page, `(s) => { s.headhunterOffer = ['accountant', 'sommelier', 'lobbyist']; s.addDebugMoney(1e12, Date.now()) }`)
-  await expect(page.getByTestId('dock-boss-start')).toHaveCount(0)
-  await page.getByTestId('dock-hire-first').tap()
-  await expect(page.getByTestId('headhunter')).toBeInViewport()
-  await page.getByTestId('headhunter').getByTestId('hire-advisor').first().tap()
+  const introductions = page.getByTestId('hire-modal')
+  await expect(introductions).toBeVisible()
+  // The ordeal can't be started from under the dialog
+  expect(await withStore<boolean>(page, '(s) => s.startBossAttempt()')).toBe(false)
+  const hire = introductions.getByTestId('hire-advisor').first()
+  await hire.scrollIntoViewIfNeeded()
+  await expect(hire).toBeInViewport()
+  await hire.tap()
+  await expect(introductions).toBeHidden()
   await expect(page.getByTestId('dock-boss-start')).toBeVisible()
 })

@@ -32,8 +32,8 @@ export interface Modifiers {
   windfallMult: number
   // What the Interns earn, on top of the click pay they tap at
   internMult: number
-  // Extra taps' worth a second of allowance (Universal Credit)
-  allowanceTapsAdd: number
+  // Extra Interns, brought by staff (the Work Experience Coordinator and kin)
+  internsAdd: number
   // Added to the share of passive income paid while away
   offlineEfficiencyAdd: number
 }
@@ -60,7 +60,7 @@ export const NEUTRAL_MODIFIERS: Readonly<Modifiers> = Object.freeze({
   buyerItemTypes: 0,
   windfallMult: 1,
   internMult: 1,
-  allowanceTapsAdd: 0,
+  internsAdd: 0,
   offlineEfficiencyAdd: 0
 })
 
@@ -84,7 +84,7 @@ const SUM_KEYS = [
   'trustFundShareAdd',
   'shadyBonus',
   'buyerItemTypes',
-  'allowanceTapsAdd',
+  'internsAdd',
   'offlineEfficiencyAdd'
 ] as const
 

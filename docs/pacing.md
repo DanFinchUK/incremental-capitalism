@@ -46,8 +46,8 @@ about half a fast tapper's pace: the founder beats gate 1 within 15 minutes,
 
 Advisors come in families of three: every effect has a common, a rare and a
 legendary advisor, and the buff (and upkeep) grows with rarity
-(`src/data/advisors.ts`). Some families exist mainly for idle play: a bigger
-allowance and better offline earnings.
+(`src/data/advisors.ts`). Some families help idle play most: staff who bring
+Interns, and better offline earnings.
 
 ## Why it works
 

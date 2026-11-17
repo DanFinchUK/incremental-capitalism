@@ -20,8 +20,8 @@ export interface OfficeModuleDeps {
   paChairCount: () => number
   announce: (msg: string) => void
   flushSave: () => void
-  // Playing without tapping (the headhunter brings allowance advisors then)
-  noTap?: () => boolean
+  // Interns can't work just now, so the staff who bring them aren't introduced
+  internsOff?: () => boolean
   // No family office at all (the Austerity scenario)
   officeClosed?: () => boolean
 }
@@ -92,7 +92,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     offerOptional.value = false
     if (queuedOffers.value > 0) {
       queuedOffers.value -= 1
-      headhunterOffer.value = rollAdvisorOffer(Math.random, deps.noTap?.() ?? false, notWorthOffering)
+      headhunterOffer.value = rollAdvisorOffer(Math.random, deps.internsOff?.() ?? false, notWorthOffering)
       return
     }
     // Going through the waiting introductions: straight on to the next set
@@ -226,13 +226,13 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
       queuedOffers.value += 1
       return
     }
-    headhunterOffer.value = rollAdvisorOffer(rng, deps.noTap?.() ?? false, notWorthOffering)
+    headhunterOffer.value = rollAdvisorOffer(rng, deps.internsOff?.() ?? false, notWorthOffering)
   }
 
   function showWaitingOffer(): boolean {
     if (deps.officeClosed?.() || waitingOffers.value <= 0 || headhunterOffer.value.length > 0) return false
     waitingOffers.value -= 1
-    headhunterOffer.value = parkedOffer.value.length > 0 ? parkedOffer.value : rollAdvisorOffer(Math.random, deps.noTap?.() ?? false, notWorthOffering)
+    headhunterOffer.value = parkedOffer.value.length > 0 ? parkedOffer.value : rollAdvisorOffer(Math.random, deps.internsOff?.() ?? false, notWorthOffering)
     parkedOffer.value = []
     offerOptional.value = true
     return true

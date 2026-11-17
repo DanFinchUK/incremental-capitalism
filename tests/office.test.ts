@@ -337,7 +337,7 @@ describe('the family office on screen', () => {
       store.headhunterOffer = [id]
       store.hireAdvisor(0)
     }
-    // (2 + 10 taps) / 2, and the Guru's 50% on click pay
-    expect(store.allowancePill?.label).toBe('Total allowance x9')
+    // The Guru's 50% on click pay; the Workfare Contractor brings Interns instead
+    expect(store.allowancePill?.label).toBe('Total allowance x1.5')
   })
 })

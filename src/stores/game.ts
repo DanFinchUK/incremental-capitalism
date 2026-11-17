@@ -304,16 +304,16 @@ export const useGameStore = defineStore('game', () => {
     paChairCount: () => titlePaChairs(titles.value),
     announce: (msg) => announce(msg),
     flushSave: () => flushSave(nowMs.value),
-    noTap: () => noTap.value,
+    internsOff: () => modifiers.value.internsDisabled || scenarioDef.value.noAutomation === true,
     officeClosed: () => scenarioDef.value.noOffice === true
   })
   const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value))
   // Playing without tapping: the whole allowance against plain Universal
-  // Credit, from allowance advisors and everything that raises click pay
+  // Credit, from everything that raises click pay
   const allowancePill = computed(() => {
     if (!noTap.value) return null
     const mods = baseModifiers.value
-    const mult = ((ALLOWANCE_TAPS_PER_SEC + mods.allowanceTapsAdd) / ALLOWANCE_TAPS_PER_SEC) * mods.clickMult
+    const mult = mods.clickMult
     return Math.abs(mult - 1) > 0.01 ? { label: `Total allowance x${formatMultiplier(mult)}`, negative: mult < 1 } : null
   })
   // Every rule-bending source in play: stacked bloodline traits, the family office, achievements and titles
@@ -454,8 +454,11 @@ export const useGameStore = defineStore('game', () => {
       heirChoices.value.length === 0 &&
       disgraceReport.value === null
   )
+  // From the perk, and from staff who bring their own
   const autoClickers = computed(() =>
-    modifiers.value.internsDisabled || scenarioDef.value.noAutomation ? 0 : perks.value.autoClicker * INTERNS_PER_RANK
+    modifiers.value.internsDisabled || scenarioDef.value.noAutomation
+      ? 0
+      : perks.value.autoClicker * INTERNS_PER_RANK + modifiers.value.internsAdd
   )
   const maxHustle = computed(() => maxHustleMultiplier(perks.value.hustleCap))
   // Without tapping, Hustle holds steady (Grindset Coaching raises it) and
@@ -565,7 +568,7 @@ export const useGameStore = defineStore('game', () => {
   // Playing without tapping, a Job's click pay reaches you through the
   // allowance: this many taps' worth a second, at the steady Hustle
   const allowanceTapRate = computed(() =>
-    noTap.value ? (ALLOWANCE_TAPS_PER_SEC + modifiers.value.allowanceTapsAdd) * hustleMultiplier.value : 0
+    noTap.value ? ALLOWANCE_TAPS_PER_SEC * hustleMultiplier.value : 0
   )
   // What each steady source earns a second now, for splitting the cashflow
   // chart's realised money by where it came from

@@ -79,14 +79,28 @@ describe('playing without tapping', () => {
     expect(again.noTap).toBe(true)
   })
 
-  it('the headhunter only brings allowance advisors to a family that plays without tapping', () => {
-    const offers = (noTap: boolean) => {
+  it('staff who bring Interns are introduced whatever the play style, unless Interns can\'t work', () => {
+    const offers = (internsOff: boolean) => {
       const ids = new Set<string>()
-      for (let i = 0; i < 400; i++) for (const id of rollAdvisorOffer(Math.random, noTap)) ids.add(id)
+      for (let i = 0; i < 400; i++) for (const id of rollAdvisorOffer(Math.random, internsOff)) ids.add(id)
       return [...ids].map((id) => ADVISORS.find((a) => a.id === id)!.family)
     }
-    expect(offers(false)).not.toContain('allowance')
-    expect(offers(true)).toContain('allowance')
+    expect(offers(false)).toContain('interns')
+    expect(offers(true)).not.toContain('interns')
+  })
+
+  it('they bring real Interns, tapping or not', () => {
+    for (const noTap of [false, true]) {
+      setActivePinia(createPinia())
+      const store = useGameStore()
+      store.hydrateFromStorage(T0)
+      store.closeIntro(T0)
+      if (noTap) store.toggleNoTap()
+      const before = store.autoClickers
+      store.headhunterOffer = ['family-trustee']
+      store.hireAdvisor(0)
+      expect(store.autoClickers).toBe(before + 5)
+    }
   })
 
   it('the founder earns Universal Credit with no taps at all', () => {
@@ -129,9 +143,9 @@ describe('playing without tapping', () => {
     expect(store.bossAttempt!.polish).toBeGreaterThan(0)
   })
 
-  it('allowance advisors add taps, and offline advisors raise the away rate', () => {
-    const m = combineModifiers([{ allowanceTapsAdd: 5 }, { offlineEfficiencyAdd: 0.25 }])
-    expect(m.allowanceTapsAdd).toBe(5)
+  it('intern advisors add Interns, and offline advisors raise the away rate', () => {
+    const m = combineModifiers([{ internsAdd: 5 }, { internsAdd: 2 }, { offlineEfficiencyAdd: 0.25 }])
+    expect(m.internsAdd).toBe(7)
     expect(computeOfflineCatchUp(120_000, 10, 0, m.offlineEfficiencyAdd)?.efficiency).toBeCloseTo(0.75)
     expect(computeOfflineCatchUp(120_000, 10, 5, 0.5)?.efficiency).toBe(1)
   })
@@ -152,7 +166,7 @@ describe('advisor tiers', () => {
     m.buyerItemTypes +
     m.trustFundShareAdd * 10 +
     m.milestoneStepBonus +
-    m.allowanceTapsAdd / 10 +
+    m.internsAdd / 10 +
     m.offlineEfficiencyAdd
 
   it('within each family the buff grows from common to rare to legendary', () => {

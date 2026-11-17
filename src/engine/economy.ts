@@ -329,7 +329,7 @@ export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreak
   const bizIncome =
     rawBusinesses * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.businessBuffMultiplier * mods.businessMult
   const autoClickIncome = input.autoClickers * computeClickIncome(input, true) * mods.internMult
-  const allowance = input.noTap ? (ALLOWANCE_TAPS_PER_SEC + mods.allowanceTapsAdd) * computeClickIncome(input, true) : 0
+  const allowance = input.noTap ? ALLOWANCE_TAPS_PER_SEC * computeClickIncome(input, true) : 0
   return { business: bizIncome, interns: autoClickIncome, allowance }
 }
 

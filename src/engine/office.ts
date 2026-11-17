@@ -120,7 +120,7 @@ const SUM_KEYS = [
   'trustFundShareAdd',
   'shadyBonus',
   'buyerItemTypes',
-  'allowanceTapsAdd',
+  'internsAdd',
   'offlineEfficiencyAdd'
 ] as const
 
@@ -198,12 +198,14 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>):
 // The allowance family only does anything while playing without tapping, so
 // the headhunter only brings them then
 // skip: advisors not worth offering, such as a buyer no better than yours
-export function rollAdvisorOffer(rng: () => number, noTap = false, skip: (a: AdvisorDef) => boolean = () => false): string[] {
+// internsOff: the family's Interns can't work (a Nepo Baby heir, the
+// Hands-On scenario), so the staff who bring them aren't introduced
+export function rollAdvisorOffer(rng: () => number, internsOff = false, skip: (a: AdvisorDef) => boolean = () => false): string[] {
   const offer: string[] = []
   for (let guard = 0; offer.length < 3 && guard < 50; guard++) {
     const rarity = pickEventRarity(rng())
     const pool = ADVISORS.filter(
-      (a) => a.rarity === rarity && !offer.includes(a.id) && (noTap || a.family !== 'allowance') && !skip(a)
+      (a) => a.rarity === rarity && !offer.includes(a.id) && !(internsOff && a.family === 'interns') && !skip(a)
     )
     if (pool.length === 0) continue
     offer.push(pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))].id)

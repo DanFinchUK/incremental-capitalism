@@ -254,6 +254,24 @@ describe('the family office on screen', () => {
     expect(store.officeSeats[0]?.advisorId).toBe('recruitment-consultant')
   })
 
+  it('with a single PA chair, Make PA simply swaps the two', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    store.closeIntro(T0)
+    for (const id of ['head-butler', 'recruitment-consultant']) {
+      store.headhunterOffer = [id]
+      store.hireAdvisor(0)
+    }
+    expect(store.paChairs.map((p) => p?.advisorId)).toEqual(['head-butler'])
+    const wrapper = mount(FamilyOffice, { global: { plugins: [pinia] } })
+    await wrapper.find('[data-testid="promote-pa"]').trigger('click')
+    expect(wrapper.find('[data-testid="pa-swap-picker"]').exists()).toBe(false)
+    expect(store.paChairs.map((p) => p?.advisorId)).toEqual(['recruitment-consultant'])
+    expect(store.officeSeats[0]?.advisorId).toBe('head-butler')
+  })
+
   it('without tapping, the lasting pills show the total allowance', () => {
     setActivePinia(createPinia())
     const store = useGameStore()

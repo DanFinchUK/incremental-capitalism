@@ -97,12 +97,15 @@ const seats = computed(() =>
 )
 const pas = computed(() => paCards(store.paChairs))
 
-// An empty chair takes them straight away; otherwise ask who swaps out
+// An empty chair takes them straight away, and with a single chair they
+// simply swap with its PA; with several full chairs, ask who swaps out
 const swapping = ref<number | null>(null)
 
 function makePA(seat: number): void {
   if (store.paChairs.some((c) => c === null)) {
     store.promoteToPA(seat)
+  } else if (store.paChairs.length === 1) {
+    store.promoteToPA(seat, 0)
   } else {
     swapping.value = seat
   }

@@ -163,7 +163,7 @@ describe('the finale on screen', () => {
     wrapper.unmount()
   })
 
-  it('the finale goes back to the main menu, and Continue returns to it', async () => {
+  it('going back to the main menu from the finale files the dynasty, leaving nothing to continue', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
@@ -171,16 +171,21 @@ describe('the finale on screen', () => {
     store.closeIntro(T0)
     store.familyTree = [person(1)]
     store.dynastyComplete = true
+    const duke = store.familySurname
     await wrapper.vm.$nextTick()
     await wrapper.find('[data-testid="dukedom-main-menu"]').trigger('click')
     expect(wrapper.find('[data-testid="dukedom-modal"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="menu-continue"]').exists()).toBe(true)
-    // Founding from the menu's own front page asks first, as from the finale
-    await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
-    expect(wrapper.find('[data-testid="menu-confirm-new-dynasty"]').text()).toBe('Found the new dynasty')
-    await wrapper.find('[data-testid="menu-back"]').trigger('click')
-    await wrapper.find('[data-testid="menu-continue"]').trigger('click')
-    expect(wrapper.find('[data-testid="dukedom-modal"]').exists()).toBe(true)
+    expect(store.hall.map((d) => d.surname)).toEqual([duke])
+    expect(store.dynastyComplete).toBe(false)
+    // Only a new family to begin, unnamed until it is written in
+    const begin = wrapper.find('[data-testid="menu-continue"]')
+    expect(begin.text()).toContain('A new family')
+    expect(begin.text()).not.toContain('Continue')
+    expect(store.census).toBeNull()
+    // and the Duke's family is above it in the register when it is
+    await begin.trigger('click')
+    expect(store.census).toEqual({ previous: duke, departure: 'duke' })
+    expect(wrapper.find('[data-testid="census-earlier"]').text()).toContain('Duke')
     wrapper.unmount()
   })
 })

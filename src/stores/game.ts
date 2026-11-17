@@ -267,6 +267,9 @@ export const useGameStore = defineStore('game', () => {
   // A new family being written into the register: who came before it, and
   // how they left. Null when the register isn't open.
   const census = ref<CensusEntry | null>(null)
+  // A family that left before the next was written in (a finished dynasty
+  // settled from the finale): the register shows them when it next opens
+  const censusPending = ref<CensusEntry | null>(null)
   const achievements = ref<string[]>(initial.achievements)
   const achievementProgress = ref<AchievementProgress>(initial.achievementProgress)
   const achievementsOpen = ref(false)
@@ -1449,6 +1452,7 @@ export const useGameStore = defineStore('game', () => {
     const previous = familySurname.value
     resetBloodline(ts)
     census.value = { previous, departure: 'folded' }
+    censusPending.value = null
     announce(`New bloodline: the ${familySurname.value} family enters the market.`)
   }
 
@@ -1692,7 +1696,9 @@ export const useGameStore = defineStore('game', () => {
   // After the dukedom: file the dynasty in the Hall and start a new family
   // with nothing. Achievements and settings stay; they aren't power.
   // next: the scenario the new family plays, once any family has made Duke
-  function foundNewDynasty(ts = Date.now(), next: ScenarioId = 'standard'): boolean {
+  // register: false files the dynasty and readies the next family without
+  // writing it in yet, for when the player goes back to the menu instead
+  function foundNewDynasty(ts = Date.now(), next: ScenarioId = 'standard', register = true): boolean {
     if (!dynastyComplete.value) return false
     const record: DynastyRecord = {
       surname: familySurname.value,
@@ -1708,7 +1714,9 @@ export const useGameStore = defineStore('game', () => {
       // A full or blocked store: the Hall lives for this visit only
     }
     beginDynasty(ts, record.surname, next)
-    census.value = { previous: record.surname, departure: 'duke' }
+    const entry: CensusEntry = { previous: record.surname, departure: 'duke' }
+    if (register) census.value = entry
+    else censusPending.value = entry
     return true
   }
 
@@ -1718,8 +1726,10 @@ export const useGameStore = defineStore('game', () => {
     const wasFresh = familyIsFresh.value
     plays.log(ts, 'abandon-dynasty', { surname: previous, activeMs: dynastyMs.value })
     beginDynasty(ts, previous, next)
-    // A family nobody had heard of yet needs no striking off
-    census.value = { previous: wasFresh ? null : previous, departure: wasFresh ? null : 'abandoned' }
+    // A family nobody had heard of yet needs no striking off, though whoever
+    // left before it still shows
+    census.value = wasFresh ? (censusPending.value ?? { previous: null, departure: null }) : { previous, departure: 'abandoned' }
+    censusPending.value = null
   }
 
   function beginDynasty(ts: number, previousSurname: string, next: ScenarioId): void {
@@ -1756,7 +1766,8 @@ export const useGameStore = defineStore('game', () => {
 
   // Write a family that hasn't started into the register, from the menu
   function openCensus(): void {
-    census.value = { previous: null, departure: null }
+    census.value = censusPending.value ?? { previous: null, departure: null }
+    censusPending.value = null
   }
 
   // The ink is dry: into the game
@@ -1773,6 +1784,8 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function hardReset(ts = Date.now()): void {
+    census.value = null
+    censusPending.value = null
     const fresh = createInitialSceneState()
     applyLoadedState(fresh, ts)
     plays.clear(ts)

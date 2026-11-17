@@ -52,7 +52,7 @@
       <DynastyRoll :roll="store.familyTree" />
 
       <div class="scn-ModalFooter">
-        <button type="button" class="scn-Action scn-Action-outline" data-testid="dukedom-main-menu" @click="store.openMenu()">
+        <button type="button" class="scn-Action scn-Action-outline" data-testid="dukedom-main-menu" @click="toMenu">
           Main menu
         </button>
         <button type="button" class="scn-Action scn-Action-accent" data-testid="new-dynasty" @click="store.openMenu('found')">
@@ -83,6 +83,13 @@ const fastest = computed(() => {
   for (const l of lines.value.slice(1)) if (!best || l.activeMs < best.activeMs) best = l
   return best
 })
+// The dynasty is over either way: going back to the menu files it in the
+// Hall and readies the next family, so there is nothing left to continue
+function toMenu(): void {
+  store.foundNewDynasty(Date.now(), store.scenario, false)
+  store.openMenu()
+}
+
 const staffCount = computed(() => new Set(store.familyTree.flatMap((r) => r.advisors)).size)
 const best = computed(() => bestDynasty(store.hall, store.scenario))
 

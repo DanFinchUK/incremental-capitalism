@@ -9,7 +9,8 @@ import {
   JOBS_BY_ID,
   type BusinessDef,
   type ItemKind,
-  type JobDef
+  type JobDef,
+  type Sector
 } from '../data/items'
 import {
   MARKET_EVENTS_BY_KIND,
@@ -75,7 +76,7 @@ import {
 import { formatClock, formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
 import { bossForGate, conditionTarget, conditionTextFor, itemCostCeiling, legacyForRetiring } from '../engine/bosses'
 import { combineModifiers, type ModifierSource } from '../engine/modifiers'
-import { generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
+import { INHERITED_BY_ID, TRAITS_BY_ID, generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { createPlayLogModule } from './modules/playLog'
 import { loadPlayLog, withPlayLog } from '../engine/playLog'
 import { bestValue, familyBuyers, type BuyOption } from '../engine/buyers'
@@ -91,7 +92,8 @@ import {
 } from '../engine/family'
 import { DUKE_TITLES, heirChoiceCount, peerageRank, titlePaChairs, titleSource, titleStartingLegacy, titlesFor } from '../engine/peerage'
 import { ACHIEVEMENTS_BY_ID, ACHIEVEMENT_INCOME_BONUS, EMPTY_PROGRESS, type AchievementProgress } from '../data/achievements'
-import { paStanding, paTitle, type AdvisorInstance } from '../engine/office'
+import { officeModifierSources, paStanding, paTitle, type AdvisorInstance } from '../engine/office'
+import { sectorEffect, type NamedSource, type SectorEffect } from '../engine/sectors'
 import { ADVISORS_BY_ID } from '../data/advisors'
 import { ROOMS, roomForClass, type RoomDef, type RoomId } from '../data/rooms'
 import {
@@ -321,6 +323,32 @@ export const useGameStore = defineStore('game', () => {
     titleSource(titles.value)
   ])
   const baseModifiers = computed(() => combineModifiers(lastingSources.value))
+  // The same sources with names, for saying who is changing a sector
+  const namedSectorSources = computed<NamedSource[]>(() => {
+    const named: NamedSource[] = []
+    const traitName = (id: string | null | undefined, kind: 'inherited' | 'own'): void => {
+      const def = id ? (kind === 'own' ? TRAITS_BY_ID[id] : INHERITED_BY_ID[id]) : undefined
+      if (def) named.push({ name: def.name, source: def.mods })
+    }
+    for (const rec of currentBloodlineRecords(familyTree.value)) traitName(rec.inheritId, 'inherited')
+    traitName(heir.value.inheritId, 'inherited')
+    traitName(heir.value.traitId, 'own')
+    const pas = office.paChairs.value.filter((a): a is AdvisorInstance => a !== null)
+    const paUids = new Set(pas.map((p) => p.uid))
+    for (const inst of [...office.officeSeats.value.filter((a): a is AdvisorInstance => a !== null), ...pas]) {
+      const def = ADVISORS_BY_ID[inst.advisorId]
+      if (!def) continue
+      for (const source of officeModifierSources([inst], paUids)) named.push({ name: def.name, source })
+    }
+    for (const e of favours.value.active) {
+      const def = FAVOUR_EVENTS_BY_ID[e.id]
+      if (def) named.push({ name: def.title, source: favourEventSource(def) })
+    }
+    return named
+  })
+  function sectorEffectFor(sector: Sector): SectorEffect {
+    return sectorEffect(sector, modifiers.value, namedSectorSources.value)
+  }
   const modifiers = computed(() =>
     favourSources.value.length > 0 ? combineModifiers([...lastingSources.value, ...favourSources.value]) : baseModifiers.value
   )
@@ -2031,6 +2059,7 @@ export const useGameStore = defineStore('game', () => {
     realisedPerSecond,
     manualRealisedPerSecond,
     sectorSlices,
+    sectorEffectFor,
     passiveSources,
     allowanceLabel,
     allowancePerSecond,

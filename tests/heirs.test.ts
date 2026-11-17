@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { HEIR_TRAITS, INHERITED_TRAITS, rollHeirChoices } from '../src/data/heirs'
+import { HEIR_TRAITS, INHERITED_TRAITS, TRAITS_BY_ID, TRAIT_FAMILIES, rollHeirChoices } from '../src/data/heirs'
 import { combineModifiers } from '../src/engine/modifiers'
 import { gateThreshold } from '../src/engine/bosses'
 import { mount } from '@vue/test-utils'
@@ -275,5 +275,24 @@ describe('abdication', () => {
     expect(again.retire(T0 + 20)).toBe(true)
     again.pickHeir(0)
     expect(again.canAbdicate).toBe(true)
+  })
+})
+
+describe('the heir draft', () => {
+  it('every trait family comes in a common, a rare and a legendary grade', () => {
+    for (const family of TRAIT_FAMILIES) {
+      const grades = HEIR_TRAITS.filter((t) => t.family === family).map((t) => t.rarity).sort()
+      expect(grades, family).toEqual(['common', 'legendary', 'rare'])
+    }
+  })
+
+  it('offers three different families, so every choice is a real one', () => {
+    let seed = 7
+    const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
+    for (let i = 0; i < 1000; i++) {
+      const families = rollHeirChoices(rng, 'Smythe', []).map((h) => TRAITS_BY_ID[h.traitId!].family)
+      expect(families).toHaveLength(3)
+      expect(new Set(families).size).toBe(3)
+    }
   })
 })

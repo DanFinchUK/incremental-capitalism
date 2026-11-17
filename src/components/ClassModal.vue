@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="store.classModalOpen"
+    v-if="store.classModalOpen && !roomMoving"
     class="scn-ModalBackdrop"
     role="dialog"
     aria-modal="true"
@@ -152,6 +152,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import ElevateModal from './ElevateModal.vue'
 import { useVictoryLock } from './victoryLock'
+import { roomMoving } from '../utils/applyRoom'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { BUSINESSES, JOBS } from '../data/items'
 import { bossForGate, gateThreshold, itemCostCeiling, legacyForRetiring } from '../engine/bosses'

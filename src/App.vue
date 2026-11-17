@@ -120,7 +120,7 @@ import { itemMilestones } from './engine/economy'
 import type { PerkId } from './data/perks'
 import { playSfx, setBossMusicIntensity, startBossMusic, stopBossMusic } from './engine/audio'
 import { installTapGuard } from './utils/tapGuard'
-import { applyRoom } from './utils/applyRoom'
+import { applyRoom, endRoomFade, moveToRoom } from './utils/applyRoom'
 import { useGameStore } from './stores/game'
 import { PHONE_QUERY, useMediaQuery } from './utils/useMediaQuery'
 import ClassModal from './components/ClassModal.vue'
@@ -174,25 +174,33 @@ const darkScheme = useMediaQuery('(prefers-color-scheme: dark)')
 // The family's room sets the page's colours and decoration. A run of
 // classes in quick succession (waved through several ordeals at once) moves
 // the family once, to where it ends up, instead of flashing through each room.
+// A won class moves them at once, so its win screen opens in the new room.
 const ROOM_SETTLE_MS = 600
 let roomTimer: ReturnType<typeof setTimeout> | null = null
 // While the next heir is being chosen the family hasn't moved yet: the room
 // changes when the keys are handed over.
 watch(
-  [() => store.activeRoom, darkScheme, () => store.heirChoices.length > 0],
-  ([room, dark, choosingHeir], before) => {
+  [() => store.activeRoom, darkScheme, () => store.heirChoices.length > 0, () => store.classModalOpen],
+  ([room, dark, choosingHeir, modalOpen], before) => {
     if (roomTimer !== null) clearTimeout(roomTimer)
     roomTimer = null
-    const apply = () => applyRoom(document.documentElement, room, dark ? 'dark' : 'light')
+    const root = document.documentElement
+    const scheme = dark ? 'dark' : 'light'
     if (choosingHeir && before) return
     // The first room, a change of light or dark, and the new heir's home show at once
     if (!before || before[1] !== dark || before[2]) {
-      apply()
+      endRoomFade(root)
+      applyRoom(root, room, scheme)
+      return
+    }
+    if (root.dataset.room === room.id) return
+    if (modalOpen) {
+      moveToRoom(root, room, scheme)
       return
     }
     roomTimer = setTimeout(() => {
       roomTimer = null
-      apply()
+      moveToRoom(root, room, scheme)
     }, ROOM_SETTLE_MS)
   },
   { immediate: true }
@@ -426,6 +434,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (roomTimer !== null) clearTimeout(roomTimer)
+  endRoomFade(document.documentElement)
   stopBossMusic()
   removeTapGuard?.()
   if (rafId !== null) {

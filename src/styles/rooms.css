@@ -9,15 +9,198 @@
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 40 40'%3E%3Cg transform='translate%280 40%29 scale%281 -1%29' fill='none' stroke='%23c9a24a' stroke-width='1.6'%3E%3Cpath d='M3 37 V14 Q3 3 14 3 H37'/%3E%3Cpath d='M9 37 V17 Q9 9 17 9 H37'/%3E%3Cpath d='M3 24 Q9 22 9 30 M24 3 Q22 9 30 9'/%3E%3Ccircle cx='14' cy='14' r='2.6' fill='%23c9a24a' stroke='none'/%3E%3C/g%3E%3C/svg%3E") bottom 3px left 3px no-repeat, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 40 40'%3E%3Cg transform='translate%2840 40%29 scale%28-1 -1%29' fill='none' stroke='%23c9a24a' stroke-width='1.6'%3E%3Cpath d='M3 37 V14 Q3 3 14 3 H37'/%3E%3Cpath d='M9 37 V17 Q9 9 17 9 H37'/%3E%3Cpath d='M3 24 Q9 22 9 30 M24 3 Q22 9 30 9'/%3E%3Ccircle cx='14' cy='14' r='2.6' fill='%23c9a24a' stroke='none'/%3E%3C/g%3E%3C/svg%3E") bottom 3px right 3px no-repeat;
 }
 
-/* Moving rooms: the walls change colour gently */
-body {
-  transition: background-color 0.6s ease, color 0.6s ease;
+/* Moving rooms: every colour fades across to the new room (ROOM_FADE_MS in
+   utils/applyRoom.ts). Registered as colours so they can be faded at all;
+   only while moving, so the first room and a change of light or dark show
+   at once. */
+@property --color-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  body {
-    transition: none;
-  }
+@property --color-surface {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-card {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-card-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-body {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-body-secondary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-muted {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-border-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-strong-line {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-btn-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-btn-fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-btn-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-btn-outline-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-btn-outline-fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-btn-outline-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-accent-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-accent-fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-accent-text {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-perk-pill-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-perk-pill-fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-streak-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-streak-fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-synergy {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-track {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-pip-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-pip-fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-gold {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-gold-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+@property --color-gold-fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: transparent;
+}
+
+:root[data-room-moving] {
+  transition: --color-bg 0.6s ease, --color-surface 0.6s ease, --color-card 0.6s ease, --color-card-subtle 0.6s ease, --color-body 0.6s ease, --color-body-secondary 0.6s ease, --color-muted 0.6s ease, --color-border 0.6s ease, --color-border-subtle 0.6s ease, --color-strong-line 0.6s ease, --color-btn-bg 0.6s ease, --color-btn-fg 0.6s ease, --color-btn-hover 0.6s ease, --color-btn-outline-bg 0.6s ease, --color-btn-outline-fg 0.6s ease, --color-btn-outline-hover 0.6s ease, --color-accent 0.6s ease, --color-accent-hover 0.6s ease, --color-accent-fg 0.6s ease, --color-accent-text 0.6s ease, --color-perk-pill-bg 0.6s ease, --color-perk-pill-fg 0.6s ease, --color-streak-bg 0.6s ease, --color-streak-fg 0.6s ease, --color-synergy 0.6s ease, --color-track 0.6s ease, --color-pip-bg 0.6s ease, --color-pip-fg 0.6s ease, --color-gold 0.6s ease, --color-gold-bg 0.6s ease, --color-gold-fg 0.6s ease;
 }
 
 /* Serif rooms: headings in the display face, a touch larger since it runs small */

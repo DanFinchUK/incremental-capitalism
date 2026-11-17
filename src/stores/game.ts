@@ -159,8 +159,10 @@ export interface DisgraceReport {
 }
 
 const SAVE_THROTTLE_MS = 2000
-// How often a gate that wasn't waved through gets another look
-const PROBE_EVERY_MS = 30_000
+// How often a gate that wasn't waved through gets another look. A look is
+// out of sight and changes nothing, so it can come round often: a new heir
+// is waved through soon after their first purchases.
+const PROBE_EVERY_MS = 5_000
 const AUTO_BUY_COOLDOWN_MS = 1000
 // Income multiplier while a freeze lands on a family with no automation
 const FREEZE_INCOME_MULT = 0.5

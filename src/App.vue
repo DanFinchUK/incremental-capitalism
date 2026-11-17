@@ -171,10 +171,27 @@ const dockRef = ref<InstanceType<typeof MobileDock> | null>(null)
 const phone = useMediaQuery(PHONE_QUERY)
 const darkScheme = useMediaQuery('(prefers-color-scheme: dark)')
 
-// The family's room sets the page's colours and decoration
+// The family's room sets the page's colours and decoration. A run of
+// classes in quick succession (waved through several ordeals at once) moves
+// the family once, to where it ends up, instead of flashing through each room.
+const ROOM_SETTLE_MS = 600
+let roomTimer: ReturnType<typeof setTimeout> | null = null
 watch(
   [() => store.activeRoom, darkScheme],
-  ([room, dark]) => applyRoom(document.documentElement, room, dark ? 'dark' : 'light'),
+  ([room, dark], before) => {
+    if (roomTimer !== null) clearTimeout(roomTimer)
+    roomTimer = null
+    const apply = () => applyRoom(document.documentElement, room, dark ? 'dark' : 'light')
+    // The first room, and a change of light or dark, show at once
+    if (!before || before[1] !== dark) {
+      apply()
+      return
+    }
+    roomTimer = setTimeout(() => {
+      roomTimer = null
+      apply()
+    }, ROOM_SETTLE_MS)
+  },
   { immediate: true }
 )
 const phoneTab = ref<PhoneTab>('jobs')
@@ -405,6 +422,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (roomTimer !== null) clearTimeout(roomTimer)
   stopBossMusic()
   removeTapGuard?.()
   if (rafId !== null) {

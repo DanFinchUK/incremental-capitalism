@@ -176,14 +176,17 @@ const darkScheme = useMediaQuery('(prefers-color-scheme: dark)')
 // the family once, to where it ends up, instead of flashing through each room.
 const ROOM_SETTLE_MS = 600
 let roomTimer: ReturnType<typeof setTimeout> | null = null
+// While the next heir is being chosen the family hasn't moved yet: the room
+// changes when the keys are handed over.
 watch(
-  [() => store.activeRoom, darkScheme],
-  ([room, dark], before) => {
+  [() => store.activeRoom, darkScheme, () => store.heirChoices.length > 0],
+  ([room, dark, choosingHeir], before) => {
     if (roomTimer !== null) clearTimeout(roomTimer)
     roomTimer = null
     const apply = () => applyRoom(document.documentElement, room, dark ? 'dark' : 'light')
-    // The first room, and a change of light or dark, show at once
-    if (!before || before[1] !== dark) {
+    if (choosingHeir && before) return
+    // The first room, a change of light or dark, and the new heir's home show at once
+    if (!before || before[1] !== dark || before[2]) {
       apply()
       return
     }

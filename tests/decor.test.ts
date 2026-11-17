@@ -4,6 +4,8 @@ import { useGameStore } from '../src/stores/game'
 import { createInitialSceneState, parseSavedState, serializeState } from '../src/engine/migration'
 import { applyRoom } from '../src/utils/applyRoom'
 import { ROOMS } from '../src/data/rooms'
+import { mount } from '@vue/test-utils'
+import App from '../src/App.vue'
 
 describe('decor', () => {
   beforeEach(() => {
@@ -73,5 +75,32 @@ describe('decor', () => {
 
     applyRoom(el, lounge, 'light')
     expect(el.style.getPropertyValue('--color-bg')).toBe(lounge.light.bg)
+  })
+})
+
+describe('the room on retiring', () => {
+  it('stays put while the next heir is chosen, and moves when the keys are handed over', async () => {
+    localStorage.clear()
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro(1_000_000)
+    store.gatesBeaten = 3
+    store.highestClassReached = 3
+    // A class change settles before the room moves
+    await new Promise((r) => setTimeout(r, 700))
+    const before = document.documentElement.dataset.room
+    expect(before).toBe(store.activeRoom.id)
+    expect(store.retire(1_000_500)).toBe(true)
+    await wrapper.vm.$nextTick()
+    expect(store.heirChoices.length).toBeGreaterThan(0)
+    // Class has reset, but the family hasn't moved out yet
+    expect(store.activeRoom.id).not.toBe(before)
+    expect(document.documentElement.dataset.room).toBe(before)
+    store.pickHeir(0)
+    await wrapper.vm.$nextTick()
+    expect(document.documentElement.dataset.room).toBe(store.activeRoom.id)
+    wrapper.unmount()
   })
 })

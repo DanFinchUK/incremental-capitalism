@@ -66,6 +66,8 @@ export interface PersistedSceneState {
   compactAutoBuy: boolean
   // The room the family lives in: its current class's ('auto'), or one it has reached before
   decor: RoomId | 'auto'
+  // The highest class any family has reached, in any dynasty: its rooms stay open
+  roomsReached: number
   // Accessibility: play without tapping (no Get paid; an allowance instead)
   noTap: boolean
   muted: boolean
@@ -128,6 +130,7 @@ export function createInitialSceneState(): PersistedSceneState {
     buyersPaused: { jobs: false, businesses: false },
     compactAutoBuy: false,
     decor: 'auto',
+    roomsReached: 0,
     noTap: false,
     muted: false,
     introSeen: false,
@@ -448,6 +451,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     buyersPaused: readBuyersPaused(s.buyersPaused, s.autoBuyPaused),
     compactAutoBuy: Boolean(s.compactAutoBuy),
     decor: ROOMS.some((r) => r.id === s.decor) ? (s.decor as RoomId) : 'auto',
+    roomsReached: Math.max(highestClassReached, Math.min(maxClassIdx, Math.floor(readNonNegativeNumber(s.roomsReached, 0)))),
     noTap: s.noTap === true,
     muted: Boolean(s.muted),
     introSeen: Boolean(s.introSeen),

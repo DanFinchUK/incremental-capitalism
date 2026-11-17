@@ -59,6 +59,7 @@ import {
   serializeState,
   type PersistedSceneState
 } from '../engine/migration'
+import { SOCIAL_CLASSES } from '../data/classes'
 import { HALL_KEY, addToHall, parseHall, scenariosOpen, type DynastyRecord } from '../engine/hall'
 import { SCENARIOS_BY_ID, type ScenarioId } from '../data/scenarios'
 import {
@@ -192,6 +193,7 @@ export const useGameStore = defineStore('game', () => {
   const buyersPaused = ref<{ jobs: boolean; businesses: boolean }>(initial.buyersPaused)
   const compactAutoBuy = ref<boolean>(initial.compactAutoBuy)
   const decor = ref<RoomId | 'auto'>(initial.decor)
+  const roomsReached = ref<number>(initial.roomsReached)
   const noTap = ref<boolean>(initial.noTap)
   // Old School Tie: favours called in this generation
   const favours = ref<FavourState>(initial.favours)
@@ -436,7 +438,12 @@ export const useGameStore = defineStore('game', () => {
   const classStatus = computed(() => classInfoForLevel(gatesBeaten.value, netWorth.value))
   // Rooms: the family lives in its current class's room unless the player
   // has pinned one it has reached before (any bloodline, any generation)
-  const unlockedRooms = computed(() => ROOMS.filter((r) => Math.min(...r.classLevels) <= highestClassReached.value))
+  // Once reached, a room stays open for good: any dynasty, and every room
+  // once a family has made Duke (the Hall)
+  const roomsOpenTo = computed(() =>
+    Math.max(highestClassReached.value, roomsReached.value, hall.value.length > 0 ? SOCIAL_CLASSES.length - 1 : 0)
+  )
+  const unlockedRooms = computed(() => ROOMS.filter((r) => Math.min(...r.classLevels) <= roomsOpenTo.value))
   const activeRoom = computed<RoomDef>(() => {
     const pinned = unlockedRooms.value.find((r) => r.id === decor.value)
     return pinned ?? roomForClass(classStatus.value.current.level)
@@ -655,6 +662,7 @@ export const useGameStore = defineStore('game', () => {
       buyersPaused: buyersPaused.value,
       compactAutoBuy: compactAutoBuy.value,
       decor: decor.value,
+      roomsReached: Math.max(roomsReached.value, highestClassReached.value),
       noTap: noTap.value,
       muted: muted.value,
       introSeen: introSeen.value,
@@ -728,6 +736,7 @@ export const useGameStore = defineStore('game', () => {
     buyersPaused.value = loaded.buyersPaused
     compactAutoBuy.value = loaded.compactAutoBuy
     decor.value = loaded.decor
+    roomsReached.value = loaded.roomsReached
     // A scenario may hold Play without tapping on or off
     noTap.value = SCENARIOS_BY_ID[loaded.scenario].noTap ?? loaded.noTap
     muted.value = loaded.muted
@@ -1768,7 +1777,8 @@ export const useGameStore = defineStore('game', () => {
   function abandonDynasty(ts = Date.now(), next: ScenarioId = 'standard'): void {
     const previous = familySurname.value
     const wasFresh = familyIsFresh.value
-    plays.log(ts, 'abandon-dynasty', { surname: previous, activeMs: dynastyMs.value })
+    // Choosing a scenario for a family yet to start gives nothing up
+    if (!wasFresh) plays.log(ts, 'abandon-dynasty', { surname: previous, activeMs: dynastyMs.value })
     beginDynasty(ts, previous, next)
     // A family nobody had heard of yet needs no striking off, though whoever
     // left before it still shows
@@ -1790,6 +1800,9 @@ export const useGameStore = defineStore('game', () => {
     fresh.muted = muted.value
     fresh.introSeen = true
     fresh.tradingDeskCollapsed = tradingDeskCollapsed.value
+    // Rooms the player has reached stay theirs, and so does the one they chose
+    fresh.roomsReached = Math.max(roomsReached.value, highestClassReached.value)
+    fresh.decor = decor.value
     // A new surname, never the one just filed
     let surname = generateSurname(Math.random)
     for (let guard = 0; surname === record.surname && guard < 10; guard++) surname = generateSurname(Math.random)

@@ -34,7 +34,7 @@
           </button>
 
           <nav class="ttl-Nav" aria-label="Main menu">
-            <button v-if="!fresh || scenariosOpen(store.hall)" type="button" class="ttl-Item" data-testid="menu-new-dynasty" @click="newDynasty">
+            <button v-if="!fresh" type="button" class="ttl-Item" data-testid="menu-new-dynasty" @click="newDynasty">
               <span>{{ newDynastyLabel }}</span>
             </button>
             <button type="button" class="ttl-Item" data-testid="menu-hall" @click="store.hallOpen = true">
@@ -101,7 +101,7 @@
           <div class="ttl-Setting ttl-Setting-stack">
             <div>
               <label for="menu-decor"><strong>Decor</strong></label>
-              <p>Follows your class. Any room the family has reached can be kept instead.</p>
+              <p>Follows your class. Any room one of your families has reached can be kept instead.</p>
             </div>
             <select id="menu-decor" v-model="decor" class="ttl-Select">
               <option value="auto">Follow my class ({{ classRoomName }})</option>
@@ -204,8 +204,11 @@ const arms = computed(() => armsFor(store.familySurname))
 // no name until it is written into the register
 const fresh = computed(() => store.familyIsFresh)
 
+// A new family chooses its scenario first, once there are any, then goes
+// into the register
 function carryOn(): void {
-  if (fresh.value) store.openCensus()
+  if (fresh.value && scenariosOpen(store.hall)) newDynasty()
+  else if (fresh.value) store.openCensus()
   else store.closeMenu()
 }
 
@@ -218,8 +221,7 @@ const continueLine = computed(() => {
 })
 
 const newDynastyLabel = computed(() => {
-  if (store.dynastyComplete) return 'Found a new dynasty'
-  return fresh.value ? 'Choose a scenario' : 'Abandon this dynasty'
+  return store.dynastyComplete ? 'Found a new dynasty' : 'Abandon this dynasty'
 })
 
 // A finished dynasty is founded anew, an unfinished one abandoned, both after

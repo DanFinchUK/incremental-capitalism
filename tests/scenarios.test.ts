@@ -145,7 +145,7 @@ describe('choosing a scenario on screen', () => {
     wrapper.unmount()
   })
 
-  it('a family yet to start can choose its scenario from the menu', async () => {
+  it('a family yet to start chooses its scenario before going into the register', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
@@ -153,12 +153,15 @@ describe('choosing a scenario on screen', () => {
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
     s.openMenu()
     await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="menu-new-dynasty"]').text()).toBe('Choose a scenario')
-    await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
+    // "A new family" leads to the scenarios, not straight to the register
+    expect(wrapper.find('[data-testid="menu-new-dynasty"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="menu-continue"]').trigger('click')
+    expect(s.census).toBeNull()
     await wrapper.find('[data-testid="scenario-austerity"]').trigger('click')
     await wrapper.find('[data-testid="menu-confirm-new-dynasty"]').trigger('click')
     expect(s.scenario).toBe('austerity')
     expect(s.menuOpen).toBe(true)
+    expect(s.census).not.toBeNull()
     wrapper.unmount()
   })
 })

@@ -42,6 +42,27 @@ describe('decor', () => {
     expect(store.activeRoom.id).toBe('bedsit')
   })
 
+  it('keeps every room reached, and the chosen one, into the next dynasty', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    store.dynastyMs = 60_000
+    store.highestClassReached = 6
+    store.setDecor('counties')
+    store.abandonDynasty(2000)
+    expect(store.highestClassReached).toBe(0)
+    expect(store.unlockedRooms.map((r) => r.id)).toEqual(['bedsit', 'saloon', 'counties', 'lounge'])
+    expect(store.activeRoom.id).toBe('counties')
+    // and through a save
+    expect(parseSavedState(serializeState({ ...createInitialSceneState(), roomsReached: 6 })).roomsReached).toBe(6)
+  })
+
+  it('opens every room once a family has made Duke', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    store.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
+    expect(store.unlockedRooms).toHaveLength(ROOMS.length)
+  })
+
   it('refuses a room the family has never reached', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)

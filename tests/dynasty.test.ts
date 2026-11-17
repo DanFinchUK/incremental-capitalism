@@ -182,8 +182,11 @@ describe('the finale on screen', () => {
     expect(begin.text()).toContain('A new family')
     expect(begin.text()).not.toContain('Continue')
     expect(store.census).toBeNull()
-    // and the Duke's family is above it in the register when it is
+    // It chooses its scenario first, and the Duke's family is above it in
+    // the register when it is written in
     await begin.trigger('click')
+    expect(store.census).toBeNull()
+    await wrapper.find('[data-testid="menu-confirm-new-dynasty"]').trigger('click')
     expect(store.census).toEqual({ previous: duke, departure: 'duke' })
     expect(wrapper.find('[data-testid="census-earlier"]').text()).toContain('Duke')
     wrapper.unmount()

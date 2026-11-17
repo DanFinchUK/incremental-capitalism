@@ -161,7 +161,7 @@ const store = useGameStore()
 store.hydrateFromStorage(Date.now())
 
 // The game itself, drawn only once the player is past the menu and the register
-const showGame = computed(() => !store.menuOpen && !store.census)
+const showGame = computed(() => !store.menuOpen && !store.census && !store.dynastyComplete)
 
 const heroRef = ref<InstanceType<typeof HeroHeader> | null>(null)
 const dockRef = ref<InstanceType<typeof MobileDock> | null>(null)

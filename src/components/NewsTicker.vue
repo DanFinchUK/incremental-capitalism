@@ -7,7 +7,7 @@
         :key="currentHeadline"
         ref="textRef"
         class="scn-TickerText"
-        :class="{ 'scn-TickerText-scroll': shiftPx > 0 }"
+        :class="{ 'scn-TickerText-scroll': shiftPx > 0, 'scn-TickerText-fading': fading }"
         :style="shiftPx > 0 ? { '--ticker-shift': `-${shiftPx}px`, '--ticker-travel': `${travelMs}ms`, '--ticker-delay': `${HOLD_START_MS}ms` } : undefined"
         data-testid="ticker-text"
       >{{ currentHeadline }}</span>
@@ -26,11 +26,14 @@ const SCROLL_PX_PER_SEC = 45
 const HOLD_START_MS = 1500
 const HOLD_END_MS = 2500
 const MIN_SHOW_MS = 9000
+// Each headline fades out before the next fades in
+const FADE_MS = 450
 
 const store = useGameStore()
 const viewportRef = ref<HTMLElement | null>(null)
 const textRef = ref<HTMLElement | null>(null)
 const shiftPx = ref(0)
+const fading = ref(false)
 
 const activeBuffKind = computed<string | null>(() => {
   if (store.activeBusinessBuff) return 'businessBuff'
@@ -57,18 +60,23 @@ function schedule(): void {
   timerId = setTimeout(rotateHeadline, Math.max(MIN_SHOW_MS, shiftPx.value > 0 ? scrollMs.value : 0))
 }
 
-async function rotateHeadline(): Promise<void> {
-  currentHeadline.value = pickHeadline(store.classStatus.current.level, activeBuffKind.value)
-  await measure()
-  schedule()
+function rotateHeadline(): void {
+  if (timerId !== null) clearTimeout(timerId)
+  fading.value = true
+  timerId = setTimeout(async () => {
+    currentHeadline.value = pickHeadline(store.classStatus.current.level, activeBuffKind.value)
+    fading.value = false
+    await measure()
+    schedule()
+  }, FADE_MS)
 }
 
 watch([() => store.classStatus.current.level, activeBuffKind], () => {
-  void rotateHeadline()
+  rotateHeadline()
 })
 
 onMounted(() => {
-  void rotateHeadline()
+  rotateHeadline()
 })
 
 onUnmounted(() => {

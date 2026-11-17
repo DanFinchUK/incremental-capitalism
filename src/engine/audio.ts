@@ -34,6 +34,7 @@ export type SfxKind =
   // The register
   | 'quill'
   | 'stamp'
+  | 'bookClose'
 
 export interface SfxOptions {
   // 0 to 1: how hard things are going (Hustle for taps, size for buys)
@@ -397,6 +398,13 @@ const CUES: Readonly<Record<SfxKind, (v: Voice, o: Required<SfxOptions>) => void
       const freq = 3200 + Math.random() * 2600
       noise(v, at, 0.03 + Math.random() * 0.03, 0.05 + Math.random() * 0.03, { type: 'bandpass', freq, q: 6, sweepTo: freq * 0.8 })
     }
+  },
+  // A heavy ledger shut: the air pushed out of the pages, then the boards meet
+  bookClose: (v) => {
+    noise(v, 0, 0.12, 0.12, { type: 'bandpass', freq: 900, q: 0.8, sweepTo: 300 })
+    noise(v, 0.06, 0.22, 0.55, { type: 'lowpass', freq: 320, sweepTo: 60 })
+    tone(v, 70, 0.06, 0.25, 'sine', 0.4, { attack: 0.002 })
+    noise(v, 0.065, 0.04, 0.12, { type: 'highpass', freq: 1800 })
   },
   // A rubber stamp brought down on a desk: a dull thud and the slap of paper
   stamp: (v) => {

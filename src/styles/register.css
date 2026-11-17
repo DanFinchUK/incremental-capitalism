@@ -1,0 +1,299 @@
+/* The General Register Office: a lamp-lit desk, rag paper, a quill and the
+   office stamp. Shared by the register of new families and the finale. */
+
+.reg-Desk {
+  --reg-ink-wet: #120f2e;
+  --reg-ink: #3b2817;
+  --reg-print: #4a3b2a;
+  --reg-heading: #2c2015;
+  --reg-rule: rgba(64, 92, 130, 0.35);
+  --reg-red: #a3242a;
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: max(28px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom));
+  color-scheme: light;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 32%, rgba(255, 196, 110, 0.22), transparent 70%),
+    repeating-linear-gradient(92deg, rgba(0, 0, 0, 0.06) 0 2px, transparent 2px 9px),
+    radial-gradient(ellipse at 50% 40%, #4a301c 0%, #24160c 60%, #0d0805 100%);
+  background-attachment: fixed;
+}
+
+/* A page of the register: rag paper, a little foxed, on the clerk's desk */
+.reg-Page {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  margin: auto 0 0;
+  padding: 26px 24px 30px 58px;
+  color: var(--reg-print);
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(255, 255, 255, 0.45), transparent 55%),
+    radial-gradient(ellipse at 85% 92%, rgba(139, 94, 30, 0.22), transparent 50%),
+    radial-gradient(circle at 70% 30%, rgba(139, 94, 30, 0.08) 0 3px, transparent 4px),
+    radial-gradient(circle at 22% 78%, rgba(139, 94, 30, 0.1) 0 2px, transparent 3px),
+    linear-gradient(180deg, #f3e8cb, #ead9b0);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 0 60px rgba(120, 80, 20, 0.25) inset,
+    0 30px 60px rgba(0, 0, 0, 0.55),
+    0 6px 14px rgba(0, 0, 0, 0.4);
+  transform: rotate(-0.5deg);
+  animation: reg-settle 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* The margin rule, in red, twice */
+.reg-Page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 42px;
+  width: 4px;
+  border-left: 1px solid rgba(163, 36, 42, 0.55);
+  border-right: 1px solid rgba(163, 36, 42, 0.55);
+}
+
+.reg-Head {
+  text-align: center;
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+  border-bottom: 3px double rgba(74, 59, 42, 0.55);
+}
+
+.reg-Office {
+  font-family: 'IM Fell English SC', Georgia, serif;
+  font-size: 14px;
+  letter-spacing: 0.22em;
+}
+
+.reg-Title {
+  margin: 2px 0;
+  font-family: 'IM Fell English', Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(24px, 6vw, 32px);
+  line-height: 1.1;
+  color: var(--reg-heading);
+}
+
+.reg-Sub {
+  margin: 0;
+  font-family: 'IM Fell English', Georgia, serif;
+  font-style: italic;
+  font-size: 15px;
+}
+
+/* Printed: the form's own labels */
+.reg-Label {
+  font-family: 'IM Fell English SC', Georgia, serif;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--reg-print);
+}
+
+/* Written: anything in the clerk's hand */
+.reg-Script {
+  font-family: 'Pinyon Script', 'Snell Roundhand', cursive;
+  font-weight: 400;
+  color: var(--reg-ink);
+}
+
+/* Fresh ink: written left to right as --p runs from 0 to 1, blue-black and
+   glossy while wet, browning as it dries */
+.reg-Ink {
+  display: inline-block;
+  /* Room for the script's tails, which run past the letters' own width */
+  padding-right: 0.45em;
+  margin-right: -0.45em;
+  clip-path: inset(-0.5em calc((1 - var(--p, 0)) * 100%) -0.5em -0.3em);
+  color: var(--reg-ink-wet);
+  text-shadow: 0 0 1px rgba(18, 15, 46, 0.45);
+  transition: color 2.4s ease, text-shadow 2.4s ease;
+}
+
+.reg-Ink.reg-Dry {
+  color: var(--reg-ink);
+  text-shadow: none;
+}
+
+/* The office stamp, brought down once the writing is done */
+.reg-Stamp {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 12px 4px;
+  border: 3px double var(--reg-red);
+  border-radius: 4px;
+  color: var(--reg-red);
+  font-family: 'IM Fell English SC', Georgia, serif;
+  line-height: 1;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transform: rotate(-9deg) scale(1.9);
+  pointer-events: none;
+}
+
+.reg-Stamp span {
+  font-size: 24px;
+  letter-spacing: 0.16em;
+}
+
+.reg-Stamp small {
+  margin-top: 3px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.reg-Stamp-down {
+  animation: reg-stamp 0.32s cubic-bezier(0.3, 0, 0.4, 1.4) forwards;
+}
+
+.reg-Quill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.reg-Quill svg {
+  position: absolute;
+  left: -2px;
+  bottom: -2px;
+  filter: drop-shadow(6px 10px 6px rgba(0, 0, 0, 0.35));
+  transition: transform 0.9s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.9s ease;
+}
+
+.reg-Quill-away svg {
+  transform: translate(60px, -90px) rotate(10deg);
+  opacity: 0;
+}
+
+/* The desk's buttons: a quiet one while the clerk works, gold once done */
+.reg-Button {
+  min-width: 200px;
+  min-height: 48px;
+  padding: 10px 26px;
+  border: 1px solid rgba(214, 169, 60, 0.45);
+  border-radius: 4px;
+  background: rgba(12, 7, 8, 0.45);
+  color: #d8c9a6;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 700;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.reg-Button-gold {
+  color: #240910;
+  border-color: #d6a93c;
+  background: linear-gradient(180deg, #f6dd8f, #d6a93c);
+  box-shadow: 0 0 30px rgba(214, 169, 60, 0.35);
+  animation: reg-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.reg-Button:focus-visible {
+  outline: 2px solid #f6dd8f;
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .reg-Page {
+    padding: 20px 14px 24px 40px;
+    transform: none;
+  }
+
+  .reg-Page::before {
+    left: 28px;
+  }
+
+  .reg-Stamp span {
+    font-size: 20px;
+  }
+}
+
+@keyframes reg-settle {
+  from {
+    opacity: 0;
+    transform: translateY(24px) rotate(-2deg);
+  }
+}
+
+@keyframes reg-stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-9deg) scale(1.9);
+  }
+  70% {
+    opacity: 0.9;
+    transform: rotate(-9deg) scale(0.94);
+  }
+  100% {
+    opacity: 0.85;
+    transform: rotate(-9deg) scale(1);
+  }
+}
+
+@keyframes reg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reg-Page,
+  .reg-Button-gold,
+  .reg-Stamp-down {
+    animation: none;
+  }
+
+  .reg-Stamp-down {
+    opacity: 0.85;
+    transform: rotate(-9deg);
+  }
+
+  .reg-Ink {
+    transition: none;
+  }
+
+  .reg-Quill {
+    display: none;
+  }
+}
+
+/* Moving between the game's screens (menu, register, finale): a fade, not a
+   cut. A screen on its way out still takes taps, so a doubled tap can't land
+   on whatever is underneath. */
+.screen-enter-active {
+  transition: opacity 0.6s ease;
+}
+
+.screen-leave-active {
+  transition: opacity 0.7s ease;
+}
+
+.screen-enter-from,
+.screen-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-enter-active,
+  .screen-leave-active {
+    transition-duration: 0.01s;
+  }
+}

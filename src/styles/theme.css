@@ -133,11 +133,26 @@
 .scn-TickerText {
   display: inline-block;
   white-space: nowrap;
+  /* Each headline fades in, and out again before the next */
+  animation: scn-ticker-in 0.45s ease backwards;
+  transition: opacity 0.45s ease;
+}
+
+.scn-TickerText-fading {
+  opacity: 0;
 }
 
 /* Rest, glide to the end of the headline, then stay there until the next */
 .scn-TickerText-scroll {
-  animation: scn-ticker-scroll var(--ticker-travel, 8s) linear var(--ticker-delay, 1.5s) 1 both;
+  animation:
+    scn-ticker-in 0.45s ease backwards,
+    scn-ticker-scroll var(--ticker-travel, 8s) linear var(--ticker-delay, 1.5s) 1 both;
+}
+
+@keyframes scn-ticker-in {
+  from {
+    opacity: 0;
+  }
 }
 
 @keyframes scn-ticker-scroll {
@@ -156,7 +171,7 @@
   }
 
   .scn-TickerText-scroll {
-    animation: none;
+    animation: scn-ticker-in 0.45s ease backwards;
   }
 }
 

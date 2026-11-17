@@ -1,156 +1,158 @@
 <template>
-  <div
-    v-if="store.menuOpen && !store.census"
-    class="scn-ModalBackdrop scn-MenuBackdrop ttl-Screen"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="menu-title"
-    data-testid="main-menu"
-    ref="screen"
-  >
-    <!-- Money falling from somewhere higher up -->
-    <div class="ttl-Rain" aria-hidden="true">
-      <span v-for="c in COINS" :key="c.id" class="ttl-Coin" :style="c.style">£</span>
-    </div>
+  <Transition name="screen" appear>
+    <div
+      v-if="store.menuOpen && !store.census"
+      class="scn-ModalBackdrop scn-MenuBackdrop ttl-Screen"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="menu-title"
+      data-testid="main-menu"
+      ref="screen"
+    >
+      <!-- Money falling from somewhere higher up -->
+      <div class="ttl-Rain" aria-hidden="true">
+        <span v-for="c in COINS" :key="c.id" class="ttl-Coin" :style="c.style">£</span>
+      </div>
 
-    <div class="ttl-Stage">
-      <header class="ttl-Head" :class="{ 'ttl-Head-compact': view !== 'main' }">
-        <FamilyCrest v-if="view === 'main' && !fresh" class="ttl-Crest" :surname="store.familySurname" :titles="store.titles" />
-        <h1 id="menu-title" class="ttl-Title">
-          <span class="ttl-TitleSmall">Incremental</span>
-          <span class="ttl-TitleBig">Capitalism</span>
-        </h1>
-        <p v-if="view === 'main'" class="ttl-Tagline">From a zero-hours rota to a dukedom</p>
-        <div class="ttl-Rule" aria-hidden="true"><span></span></div>
-      </header>
+      <div class="ttl-Stage">
+        <header class="ttl-Head" :class="{ 'ttl-Head-compact': view !== 'main' }">
+          <FamilyCrest v-if="view === 'main' && !fresh" class="ttl-Crest" :surname="store.familySurname" :titles="store.titles" />
+          <h1 id="menu-title" class="ttl-Title">
+            <span class="ttl-TitleSmall">Incremental</span>
+            <span class="ttl-TitleBig">Capitalism</span>
+          </h1>
+          <p v-if="view === 'main'" class="ttl-Tagline">From a zero-hours rota to a dukedom</p>
+          <div class="ttl-Rule" aria-hidden="true"><span></span></div>
+        </header>
 
-      <template v-if="view === 'main'">
-        <button type="button" class="ttl-Continue" data-testid="menu-continue" @click="carryOn">
-          <span class="ttl-ContinueLabel">{{ fresh ? 'Begin' : 'Continue' }}</span>
-          <span class="ttl-ContinueFamily">{{ fresh ? 'A new family' : `The ${pluralSurname(store.familySurname)}` }}</span>
-          <span class="ttl-ContinueLine">{{ continueLine }}</span>
-          <span v-if="!fresh" class="ttl-ContinueMotto">{{ arms.motto }}: “{{ arms.translation }}”</span>
-        </button>
+        <template v-if="view === 'main'">
+          <button type="button" class="ttl-Continue" data-testid="menu-continue" @click="carryOn">
+            <span class="ttl-ContinueLabel">{{ fresh ? 'Begin' : 'Continue' }}</span>
+            <span class="ttl-ContinueFamily">{{ fresh ? 'A new family' : `The ${pluralSurname(store.familySurname)}` }}</span>
+            <span class="ttl-ContinueLine">{{ continueLine }}</span>
+            <span v-if="!fresh" class="ttl-ContinueMotto">{{ arms.motto }}: “{{ arms.translation }}”</span>
+          </button>
 
-        <nav class="ttl-Nav" aria-label="Main menu">
-          <button v-if="!fresh || scenariosOpen(store.hall)" type="button" class="ttl-Item" data-testid="menu-new-dynasty" @click="newDynasty">
-            <span>{{ newDynastyLabel }}</span>
-          </button>
-          <button type="button" class="ttl-Item" data-testid="menu-hall" @click="store.hallOpen = true">
-            <span>Hall of Dynasties</span>
-            <small v-if="best">Best: the {{ pluralSurname(best.surname) }}, {{ formatDuration(best.activeMs / 1000) }}</small>
-          </button>
-          <button type="button" class="ttl-Item" data-testid="menu-achievements" @click="store.achievementsOpen = true">
-            <span>Achievements</span>
-            <small>{{ store.achievements.length }} of {{ ACHIEVEMENTS.length }}</small>
-          </button>
-          <button type="button" class="ttl-Item" data-testid="menu-how-to-play" @click="view = 'how'">
-            <span>How to play</span>
-          </button>
-          <button type="button" class="ttl-Item" data-testid="menu-settings" @click="view = 'settings'">
-            <span>Settings</span>
-          </button>
-        </nav>
-      </template>
+          <nav class="ttl-Nav" aria-label="Main menu">
+            <button v-if="!fresh || scenariosOpen(store.hall)" type="button" class="ttl-Item" data-testid="menu-new-dynasty" @click="newDynasty">
+              <span>{{ newDynastyLabel }}</span>
+            </button>
+            <button type="button" class="ttl-Item" data-testid="menu-hall" @click="store.hallOpen = true">
+              <span>Hall of Dynasties</span>
+              <small v-if="best">Best: the {{ pluralSurname(best.surname) }}, {{ formatDuration(best.activeMs / 1000) }}</small>
+            </button>
+            <button type="button" class="ttl-Item" data-testid="menu-achievements" @click="store.achievementsOpen = true">
+              <span>Achievements</span>
+              <small>{{ store.achievements.length }} of {{ ACHIEVEMENTS.length }}</small>
+            </button>
+            <button type="button" class="ttl-Item" data-testid="menu-how-to-play" @click="view = 'how'">
+              <span>How to play</span>
+            </button>
+            <button type="button" class="ttl-Item" data-testid="menu-settings" @click="view = 'settings'">
+              <span>Settings</span>
+            </button>
+          </nav>
+        </template>
 
-      <!-- How to play, as a page of the menu -->
-      <section v-else-if="view === 'how'" class="ttl-Page" data-testid="menu-how" aria-labelledby="menu-how-title">
-        <h2 id="menu-how-title" class="ttl-PageTitle">How to play</h2>
-        <article v-for="(page, i) in INTRO_PAGES" :key="i" class="ttl-HowPage">
-          <span class="ttl-PageKicker">{{ page.kicker }}</span>
-          <h3>{{ page.title }}</h3>
-          <p v-for="(para, j) in page.body" :key="j">{{ para }}</p>
-          <p v-if="page.tip" class="ttl-Tip">{{ page.tip }}</p>
-        </article>
-        <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
-      </section>
+        <!-- How to play, as a page of the menu -->
+        <section v-else-if="view === 'how'" class="ttl-Page" data-testid="menu-how" aria-labelledby="menu-how-title">
+          <h2 id="menu-how-title" class="ttl-PageTitle">How to play</h2>
+          <article v-for="(page, i) in INTRO_PAGES" :key="i" class="ttl-HowPage">
+            <span class="ttl-PageKicker">{{ page.kicker }}</span>
+            <h3>{{ page.title }}</h3>
+            <p v-for="(para, j) in page.body" :key="j">{{ para }}</p>
+            <p v-if="page.tip" class="ttl-Tip">{{ page.tip }}</p>
+          </article>
+          <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
+        </section>
 
-      <!-- Settings, as a page of the menu -->
-      <section v-else-if="view === 'settings'" class="ttl-Page" data-testid="menu-settings-page" aria-labelledby="menu-settings-title">
-        <h2 id="menu-settings-title" class="ttl-PageTitle">Settings</h2>
-        <div class="ttl-Setting">
-          <div>
-            <strong>Play without tapping</strong>
-            <p>
-              "Get paid" goes. Instead the family draws Universal Credit (an allowance, for heirs) worth two taps a second,
-              Hustle holds steady and Grindset Coaching raises it. Switch either way, any time.
+        <!-- Settings, as a page of the menu -->
+        <section v-else-if="view === 'settings'" class="ttl-Page" data-testid="menu-settings-page" aria-labelledby="menu-settings-title">
+          <h2 id="menu-settings-title" class="ttl-PageTitle">Settings</h2>
+          <div class="ttl-Setting">
+            <div>
+              <strong>Play without tapping</strong>
+              <p>
+                "Get paid" goes. Instead the family draws Universal Credit (an allowance, for heirs) worth two taps a second,
+                Hustle holds steady and Grindset Coaching raises it. Switch either way, any time.
+              </p>
+              <p v-if="store.scenarioDef.noTap !== undefined">Set by the {{ store.scenarioDef.name }} scenario for this dynasty.</p>
+            </div>
+            <button
+              type="button"
+              class="ttl-Toggle"
+              :aria-pressed="store.noTap"
+              data-testid="menu-toggle-no-tap"
+              :disabled="store.scenarioDef.noTap !== undefined"
+              @click="store.toggleNoTap()"
+            >
+              {{ store.noTap ? 'On' : 'Off' }}
+            </button>
+          </div>
+          <div v-if="store.hasBuyers" class="ttl-Setting">
+            <div>
+              <strong>Compact auto</strong>
+              <p>Cards set to "Automate" fold down to a single line.</p>
+            </div>
+            <button type="button" class="ttl-Toggle" :aria-pressed="store.compactAutoBuy" @click="store.toggleCompactAutoBuy()">
+              {{ store.compactAutoBuy ? 'On' : 'Off' }}
+            </button>
+          </div>
+          <div class="ttl-Setting ttl-Setting-stack">
+            <div>
+              <label for="menu-decor"><strong>Decor</strong></label>
+              <p>Follows your class. Any room the family has reached can be kept instead.</p>
+            </div>
+            <select id="menu-decor" v-model="decor" class="ttl-Select">
+              <option value="auto">Follow my class ({{ classRoomName }})</option>
+              <option v-for="r in store.unlockedRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
+            </select>
+          </div>
+          <div class="ttl-Setting">
+            <div><strong>Sound</strong></div>
+            <button type="button" class="ttl-Toggle" :aria-pressed="!store.muted" data-testid="menu-toggle-sound" @click="store.toggleMute()">
+              {{ store.muted ? 'Off' : 'On' }}
+            </button>
+          </div>
+          <nav class="ttl-Nav" aria-label="Settings">
+            <button type="button" class="ttl-Item" data-testid="menu-download-save" @click="downloadSave(store)">Download save</button>
+            <button type="button" class="ttl-Item ttl-Item-danger" data-testid="menu-reset" @click="emit('reset')">Reset game</button>
+          </nav>
+          <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
+        </section>
+
+        <section v-else class="ttl-Page" data-testid="menu-confirm-abandon" aria-labelledby="menu-confirm-title">
+          <h2 id="menu-confirm-title" class="ttl-PageTitle">{{ confirmTitle }}</h2>
+          <div class="ttl-Confirm">
+            <p v-if="store.dynastyComplete">
+              The new family starts with nothing: no money, no titles, no staff. The {{ store.familySurname }} record goes in the
+              Hall of Dynasties. Achievements and settings stay.
             </p>
-            <p v-if="store.scenarioDef.noTap !== undefined">Set by the {{ store.scenarioDef.name }} scenario for this dynasty.</p>
+            <p v-else-if="fresh">Every family plays by somebody's rules. Choose this one's.</p>
+            <p v-else>
+              The {{ pluralSurname(store.familySurname) }} are {{ formatDuration(store.dynastyMs / 1000) }} into their climb.
+              Abandoned, they go back to whatever they were doing before, and an unfinished dynasty doesn't go in the Hall.
+            </p>
           </div>
-          <button
-            type="button"
-            class="ttl-Toggle"
-            :aria-pressed="store.noTap"
-            data-testid="menu-toggle-no-tap"
-            :disabled="store.scenarioDef.noTap !== undefined"
-            @click="store.toggleNoTap()"
-          >
-            {{ store.noTap ? 'On' : 'Off' }}
-          </button>
-        </div>
-        <div v-if="store.hasBuyers" class="ttl-Setting">
-          <div>
-            <strong>Compact auto</strong>
-            <p>Cards set to "Automate" fold down to a single line.</p>
+          <ScenarioPicker v-if="store.dynastyComplete || scenariosOpen(store.hall)" v-model="next" />
+          <div class="ttl-ConfirmActions">
+            <button type="button" class="ttl-Item ttl-Item-quiet" data-testid="menu-back" @click="view = 'main'">Back</button>
+            <button
+              type="button"
+              class="ttl-Item"
+              :class="{ 'ttl-Item-danger': !fresh && !store.dynastyComplete, 'ttl-Item-gilt': store.dynastyComplete }"
+              data-testid="menu-confirm-new-dynasty"
+              @click="confirmNew"
+            >
+              {{ confirmLabel }}
+            </button>
           </div>
-          <button type="button" class="ttl-Toggle" :aria-pressed="store.compactAutoBuy" @click="store.toggleCompactAutoBuy()">
-            {{ store.compactAutoBuy ? 'On' : 'Off' }}
-          </button>
-        </div>
-        <div class="ttl-Setting ttl-Setting-stack">
-          <div>
-            <label for="menu-decor"><strong>Decor</strong></label>
-            <p>Follows your class. Any room the family has reached can be kept instead.</p>
-          </div>
-          <select id="menu-decor" v-model="decor" class="ttl-Select">
-            <option value="auto">Follow my class ({{ classRoomName }})</option>
-            <option v-for="r in store.unlockedRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
-          </select>
-        </div>
-        <div class="ttl-Setting">
-          <div><strong>Sound</strong></div>
-          <button type="button" class="ttl-Toggle" :aria-pressed="!store.muted" data-testid="menu-toggle-sound" @click="store.toggleMute()">
-            {{ store.muted ? 'Off' : 'On' }}
-          </button>
-        </div>
-        <nav class="ttl-Nav" aria-label="Settings">
-          <button type="button" class="ttl-Item" data-testid="menu-download-save" @click="downloadSave(store)">Download save</button>
-          <button type="button" class="ttl-Item ttl-Item-danger" data-testid="menu-reset" @click="emit('reset')">Reset game</button>
-        </nav>
-        <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
-      </section>
+        </section>
 
-      <section v-else class="ttl-Page" data-testid="menu-confirm-abandon" aria-labelledby="menu-confirm-title">
-        <h2 id="menu-confirm-title" class="ttl-PageTitle">{{ confirmTitle }}</h2>
-        <div class="ttl-Confirm">
-          <p v-if="store.dynastyComplete">
-            The new family starts with nothing: no money, no titles, no staff. The {{ store.familySurname }} record goes in the
-            Hall of Dynasties. Achievements and settings stay.
-          </p>
-          <p v-else-if="fresh">Every family plays by somebody's rules. Choose this one's.</p>
-          <p v-else>
-            The {{ pluralSurname(store.familySurname) }} are {{ formatDuration(store.dynastyMs / 1000) }} into their climb.
-            Abandoned, they go back to whatever they were doing before, and an unfinished dynasty doesn't go in the Hall.
-          </p>
-        </div>
-        <ScenarioPicker v-if="store.dynastyComplete || scenariosOpen(store.hall)" v-model="next" />
-        <div class="ttl-ConfirmActions">
-          <button type="button" class="ttl-Item ttl-Item-quiet" data-testid="menu-back" @click="view = 'main'">Back</button>
-          <button
-            type="button"
-            class="ttl-Item"
-            :class="{ 'ttl-Item-danger': !fresh && !store.dynastyComplete, 'ttl-Item-gilt': store.dynastyComplete }"
-            data-testid="menu-confirm-new-dynasty"
-            @click="confirmNew"
-          >
-            {{ confirmLabel }}
-          </button>
-        </div>
-      </section>
-
-      <footer class="ttl-Foot">Empire &amp; Privilege Edition</footer>
+        <footer class="ttl-Foot">Empire &amp; Privilege Edition</footer>
+      </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <script setup lang="ts">

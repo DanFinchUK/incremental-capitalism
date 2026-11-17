@@ -4,6 +4,7 @@ import './styles/base.css'
 import './styles/theme.css'
 import './styles/mobile.css'
 import './styles/rooms.css'
+import './styles/register.css'
 import App from './App.vue'
 import { useGameStore } from './stores/game'
 

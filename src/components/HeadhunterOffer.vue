@@ -19,10 +19,7 @@
 
     <!-- Step one: the shortlist -->
     <div v-if="!chosen" class="scn-AdvisorGrid scn-AdvisorGrid-fill">
-      <article v-for="(a, i) in offer" :key="a.id" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${a.rarity}`">
-        <span class="scn-MarketEventTag">{{ STAFF_LABELS[a.rarity] }} · {{ a.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
-        <strong>{{ a.name }}</strong>
-        <p class="scn-AutoLine">{{ store.wording(a.effectText) }}</p>
+      <AdvisorCard v-for="(a, i) in offer" :key="a.id" :advisor="a">
         <p class="scn-StatHint">{{ a.costText }} Fee: {{ Math.round(a.hireFeeShare * 100) }}% cash.</p>
         <p v-if="replaces(a.id)" class="scn-StatHint" data-testid="replaces-buyer">Replaces your {{ replaces(a.id) }}</p>
         <button
@@ -34,14 +31,14 @@
         >
           {{ replaces(a.id) ? 'Upgrade' : 'Hire' }}
         </button>
-      </article>
+      </AdvisorCard>
     </div>
 
     <!-- Step two, with the office full: who makes way -->
     <template v-else>
       <div class="scn-HireChosen" :class="`scn-HireChosen-${chosen.rarity}`" data-testid="hire-chosen">
         <div>
-          <span class="scn-MarketEventTag">{{ STAFF_LABELS[chosen.rarity] }}</span>
+          <span class="scn-MarketEventTag">{{ STAFF_LABELS[chosen.rarity] }} · {{ chosen.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
           <strong>{{ chosen.name }}</strong>
           <p class="scn-AutoLine">{{ store.wording(chosen.effectText) }}</p>
         </div>
@@ -54,16 +51,7 @@
         <template v-if="pas.length > 0">
           <h3 class="scn-PickerGroupTitle">Personal Assistants</h3>
           <div class="scn-AdvisorGrid scn-AdvisorGrid-compact">
-            <article
-              v-for="pa in pas"
-              :key="`pa-${pa.chair}`"
-              class="scn-AdvisorCard"
-              :class="`scn-AdvisorCard-${pa.standing.def.rarity}`"
-              data-testid="replace-pa-card"
-            >
-              <span class="scn-MarketEventTag">{{ pa.rank }}</span>
-              <strong>{{ pa.title }}</strong>
-              <p class="scn-AutoLine">{{ store.wording(pa.standing.def.effectText) }}</p>
+            <AdvisorCard v-for="pa in pas" :key="`pa-${pa.chair}`" :inst="pa.inst" pa data-testid="replace-pa-card">
               <p v-if="pa.inst.servedGenerations > 0" class="scn-StatHint">{{ pa.served }}</p>
               <button
                 type="button"
@@ -74,15 +62,12 @@
               >
                 Let go
               </button>
-            </article>
+            </AdvisorCard>
           </div>
         </template>
         <h3 v-if="seated.length > 0" class="scn-PickerGroupTitle">The office</h3>
         <div class="scn-AdvisorGrid scn-AdvisorGrid-compact">
-          <article v-for="(seat, s) in seated" :key="s" class="scn-AdvisorCard" :class="`scn-AdvisorCard-${seat.rarity}`">
-            <span class="scn-MarketEventTag">{{ STAFF_LABELS[seat.rarity] }}</span>
-            <strong>{{ seat.name }}</strong>
-            <p class="scn-AutoLine">{{ store.wording(seat.effectText) }}</p>
+          <AdvisorCard v-for="(seat, s) in seated" :key="s" :inst="seat">
             <button
               type="button"
               class="scn-Action scn-Action-outline"
@@ -92,7 +77,7 @@
             >
               Let go
             </button>
-          </article>
+          </AdvisorCard>
         </div>
       </div>
     </template>
@@ -108,6 +93,8 @@ import { STAFF_LABELS } from '../data/events'
 import { useGameStore } from '../stores/game'
 import type { HireTarget } from '../stores/modules/office'
 import { paCards } from './paCard'
+import AdvisorCard from './AdvisorCard.vue'
+import type { AdvisorInstance } from '../engine/office'
 
 // locked: the buttons show but ignore taps (just after a boss win)
 const props = defineProps<{ locked?: boolean; lockSeconds?: number }>()
@@ -117,7 +104,8 @@ const offer = computed(() => store.headhunterOffer.map((id) => ADVISORS_BY_ID[id
 // An empty PA chair takes the next hire, so the office isn't full yet
 const seatsFull = computed(() => store.paChairs.every((c) => c !== null) && store.officeSeats.every((s) => s !== null))
 const pas = computed(() => paCards(store.paChairs).filter((p) => p !== null))
-const seated = computed(() => store.officeSeats.map((s) => (s ? ADVISORS_BY_ID[s.advisorId] : null)).filter((a) => a !== null))
+// The office's advisors as they stand (the picker shows only when it's full)
+const seated = computed(() => store.officeSeats.filter((s): s is AdvisorInstance => s !== null))
 
 // With the office full, Hire moves to a second step: who makes way, showing
 // what each current advisor gives, so a swap is never a blind one

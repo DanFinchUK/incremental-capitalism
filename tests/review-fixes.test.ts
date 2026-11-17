@@ -29,7 +29,7 @@ describe('review fixes', () => {
   it('PA seniority never pushes a "lower is better" multiplier to zero or below', () => {
     for (const id of ['lobbyist', 'spin-doctor', 'personal-shopper']) {
       const pa = inst(id, 40)
-      const m = combineModifiers(officeModifierSources([pa], new Set([pa.uid])))
+      const m = combineModifiers(officeModifierSources([pa]))
       expect(m.twistStrength).toBeGreaterThan(0)
       expect(m.eventIntervalMult).toBeGreaterThan(0)
       expect(m.purchaseCostMult).toBeGreaterThan(0)
@@ -121,10 +121,10 @@ describe('review fixes', () => {
   })
 
   it('duplicate campaigners reach the cap sooner but share it', () => {
-    const m = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 600 * 60_000, 'a'), inst('flour-campaigner', 0, 600 * 60_000, 'b')], new Set()))
+    const m = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 600 * 60_000, 'a'), inst('flour-campaigner', 0, 600 * 60_000, 'b')]))
     expect(m.sectorCostMult.food).toBeCloseTo(0.5)
     expect(m.sectorBusinessMult.food).toBeCloseTo(2.5)
-    const early = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 10 * 60_000, 'a'), inst('flour-campaigner', 0, 10 * 60_000, 'b')], new Set()))
+    const early = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 10 * 60_000, 'a'), inst('flour-campaigner', 0, 10 * 60_000, 'b')]))
     expect(early.sectorCostMult.food).toBeCloseTo(0.8)
   })
 

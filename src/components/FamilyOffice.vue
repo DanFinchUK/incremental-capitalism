@@ -20,43 +20,20 @@
     </div>
 
     <div class="scn-AdvisorGrid">
-      <article
-        v-for="(pa, c) in pas"
-        :key="`pa-${c}`"
-        class="scn-AdvisorCard scn-AdvisorCard-pa"
-        :class="pa ? `scn-AdvisorCard-${pa.standing.def.rarity}` : 'scn-AdvisorCard-empty'"
-        data-testid="pa-chair"
-      >
-        <template v-if="pa">
-          <div class="scn-AdvisorTags">
-            <span class="scn-PaBadge">PA</span>
-            <span class="scn-MarketEventTag">{{ pa.rank }} · {{ pa.standing.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
-          </div>
-          <strong>{{ pa.title }}</strong>
-          <p v-if="pa.standing.hiredAs" class="scn-StatHint">Hired as {{ pa.standing.hiredAs.name }}</p>
-          <p class="scn-AutoLine">{{ store.wording(pa.standing.def.effectText) }}</p>
-          <p v-if="pa.standing.scale > 1" class="scn-StatHint">Honours: x{{ pa.standing.scale }} effect and pay</p>
-          <p v-if="pa.standing.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(pa.inst.campaignMs / 60000) }} min</p>
+      <template v-for="(pa, c) in pas" :key="`pa-${c}`">
+        <AdvisorCard v-if="pa" :inst="pa.inst" pa data-testid="pa-chair">
           <p class="scn-StatHint" data-testid="pa-service">{{ pa.service }}</p>
           <button type="button" class="scn-Action scn-Action-outline" @click="store.firePA(c)">Let go</button>
-        </template>
-        <template v-else>
+        </AdvisorCard>
+        <article v-else class="scn-AdvisorCard scn-AdvisorCard-pa scn-AdvisorCard-empty" data-testid="pa-chair">
           <span class="scn-PaBadge">Personal Assistant</span>
           <p class="scn-AutoLine">Empty. Stays with the family on retirement.</p>
-        </template>
-      </article>
+        </article>
+      </template>
 
-      <article
-        v-for="(seat, s) in seats"
-        :key="s"
-        class="scn-AdvisorCard"
-        :class="seat ? `scn-AdvisorCard-${seat.def.rarity}` : 'scn-AdvisorCard-empty'"
-      >
-        <template v-if="seat">
-          <span class="scn-MarketEventTag">{{ STAFF_LABELS[seat.def.rarity] }} · {{ seat.def.roles.map((r) => ROLE_LABELS[r]).join(', ') }}</span>
-          <strong>{{ seat.def.name }}</strong>
-          <p class="scn-AutoLine">{{ store.wording(seat.def.effectText) }}</p>
-          <p v-if="seat.def.campaign" class="scn-StatHint">Campaigning for {{ Math.floor(seat.inst.campaignMs / 60000) }} min</p>
+      <template v-for="(seat, s) in seats" :key="s">
+        <!-- Promotions and honours earned as PA stay with them here -->
+        <AdvisorCard v-if="seat" :inst="seat.inst" data-testid="office-seat">
           <!-- Every PA chair taken: choose who steps down to the open office -->
           <div v-if="swapping === s" class="scn-SeatPicker scn-SwapPicker" data-testid="pa-swap-picker">
             <span class="scn-StatHint">Swap with:</span>
@@ -76,25 +53,24 @@
             <button type="button" class="scn-Action scn-Action-outline" data-testid="promote-pa" @click="makePA(s)">Make PA</button>
             <button type="button" class="scn-Action scn-Action-outline" @click="store.fireAdvisor(s)">Fire</button>
           </div>
-        </template>
-        <p v-else class="scn-AutoLine">Open seat. Win an ordeal to take someone on.</p>
-      </article>
+        </AdvisorCard>
+        <article v-else class="scn-AdvisorCard scn-AdvisorCard-empty" data-testid="office-seat">
+          <p class="scn-AutoLine">Open seat. Win an ordeal to take someone on.</p>
+        </article>
+      </template>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ADVISORS_BY_ID, ROLE_LABELS } from '../data/advisors'
-import { STAFF_LABELS } from '../data/events'
+import AdvisorCard from './AdvisorCard.vue'
 import { useGameStore } from '../stores/game'
 import { paCards } from './paCard'
 
 const store = useGameStore()
 
-const seats = computed(() =>
-  store.officeSeats.map((inst) => (inst ? { inst, def: ADVISORS_BY_ID[inst.advisorId] } : null))
-)
+const seats = computed(() => paCards(store.officeSeats))
 const pas = computed(() => paCards(store.paChairs))
 
 // An empty chair takes them straight away, and with a single chair they

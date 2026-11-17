@@ -42,7 +42,7 @@ function familyAdvisorAt(family: string, tier: number): AdvisorDef | undefined {
 // A buyer is worth offering only if they'd beat the one you have for that list
 export function buyerTierOf(kind: 'jobs' | 'businesses', seats: ReadonlyArray<AdvisorInstance | null>, chairs: ReadonlyArray<AdvisorInstance | null>): number {
   let best = -1
-  for (const s of seats) if (s && ADVISORS_BY_ID[s.advisorId]?.buyer === kind) best = Math.max(best, RARITY_TIER[ADVISORS_BY_ID[s.advisorId].rarity])
+  for (const s of seats) if (s && ADVISORS_BY_ID[s.advisorId]?.buyer === kind) best = Math.max(best, paTier(s))
   for (const p of chairs) if (p && ADVISORS_BY_ID[p.advisorId]?.buyer === kind) best = Math.max(best, paTier(p))
   return best
 }
@@ -160,14 +160,16 @@ export function campaignSource(campaign: Campaign, campaignMs: number): Modifier
 }
 
 // A PA works as their promoted advisor, scaled by any honours; pay follows
-function sourcesFor(def: AdvisorDef, inst: AdvisorInstance, isPA: boolean): ModifierSource[] {
-  const standing = isPA ? paStanding(inst) : null
+// Promotions and honours are earned in a PA chair, but kept wherever the
+// advisor sits afterwards: they've earned them
+function sourcesFor(def: AdvisorDef, inst: AdvisorInstance): ModifierSource[] {
+  const standing = paStanding(inst)
   if (!standing) return [def.mods, def.upkeep]
   return [scaleSource(standing.def.mods, standing.scale), scaleSource(standing.def.upkeep, standing.scale)]
 }
 
-// Every modifier source the office contributes. paUids marks the PAs.
-export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>, paUids: ReadonlySet<string>): ModifierSource[] {
+// Every modifier source the office contributes, PAs and open seats alike
+export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>): ModifierSource[] {
   const sources: ModifierSource[] = []
   // Campaigners for the same cause pool their time: the cap is shared, so
   // duplicates reach it sooner rather than doubling it.
@@ -175,7 +177,7 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>, 
   for (const inst of advisors) {
     const def = ADVISORS_BY_ID[inst.advisorId]
     if (!def) continue
-    sources.push(...sourcesFor(def, inst, paUids.has(inst.uid)))
+    sources.push(...sourcesFor(def, inst))
     if (def.campaign) {
       const pooled = campaignTime.get(def.id) ?? { campaign: def.campaign, ms: 0 }
       pooled.ms += inst.campaignMs

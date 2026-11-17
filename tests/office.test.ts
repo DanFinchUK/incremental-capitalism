@@ -7,6 +7,7 @@ import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 import { mount } from '@vue/test-utils'
 import FamilyOffice from '../src/components/FamilyOffice.vue'
+import HeadhunterOffer from '../src/components/HeadhunterOffer.vue'
 
 const T0 = 1_000_000
 const inst = (advisorId: string, servedGenerations = 0, campaignMs = 0): AdvisorInstance => ({
@@ -42,7 +43,7 @@ describe('advisor data', () => {
 
 describe('office modifiers', () => {
   it('stacks duplicates: effects and upkeep both multiply up', () => {
-    const m = combineModifiers(officeModifierSources([inst('property-guy'), inst('property-guy')], new Set()))
+    const m = combineModifiers(officeModifierSources([inst('property-guy'), inst('property-guy')]))
     expect(m.sectorBusinessMult.property).toBeCloseTo(4)
     expect(m.incomeDrain).toBeCloseTo(0.02)
   })
@@ -50,7 +51,7 @@ describe('office modifiers', () => {
   it('a long-serving PA is promoted up the family, then through the honours', () => {
     const asPA = (served: number) => {
       const pa = inst('life-coach', served)
-      return combineModifiers(officeModifierSources([pa], new Set([pa.uid])))
+      return combineModifiers(officeModifierSources([pa]))
     }
     const rare = ADVISORS_BY_ID['productivity-guru'].mods.clickMult!
     const legendary = ADVISORS_BY_ID['hustle-billionaire'].mods.clickMult!
@@ -61,8 +62,11 @@ describe('office modifiers', () => {
     expect(asPA(3).clickMult).toBeCloseTo(legendary ** 1.5)
     expect(asPA(6).clickMult).toBeCloseTo(legendary ** 3)
     expect(asPA(40).clickMult).toBeCloseTo(legendary ** 3)
-    // Not a PA: no promotion even if they had served
-    const plain = combineModifiers(officeModifierSources([inst('life-coach', 9)], new Set()))
+    // Moved out of the chair to an open seat, they keep what they earned
+    const seated = combineModifiers(officeModifierSources([inst('life-coach', 9)]))
+    expect(seated.clickMult).toBeCloseTo(asPA(9).clickMult)
+    // Never a PA, never promoted
+    const plain = combineModifiers(officeModifierSources([inst('life-coach', 0)]))
     expect(plain.clickMult).toBeCloseTo(ADVISORS_BY_ID['life-coach'].mods.clickMult!)
   })
 
@@ -81,16 +85,16 @@ describe('office modifiers', () => {
   })
 
   it('Head of Finance pays out per Finance advisor', () => {
-    const m = combineModifiers(officeModifierSources([inst('head-of-finance'), inst('accountant'), inst('stockbroker')], new Set()))
+    const m = combineModifiers(officeModifierSources([inst('head-of-finance'), inst('accountant'), inst('stockbroker')]))
     expect(m.businessMult).toBeCloseTo(1.3)
     expect(m.clickMult).toBeCloseTo(1.3)
   })
 
   it('campaigns build with minutes in office and stop at their cap', () => {
-    const early = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 10 * 60_000)], new Set()))
+    const early = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 10 * 60_000)]))
     expect(early.sectorCostMult.food).toBeCloseTo(0.9)
     expect(early.sectorBusinessMult.food).toBeCloseTo(1.3)
-    const capped = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 600 * 60_000)], new Set()))
+    const capped = combineModifiers(officeModifierSources([inst('flour-campaigner', 0, 600 * 60_000)]))
     expect(capped.sectorCostMult.food).toBeCloseTo(0.5)
     expect(capped.sectorBusinessMult.food).toBeCloseTo(2.5)
   })
@@ -270,6 +274,55 @@ describe('the family office on screen', () => {
     expect(wrapper.find('[data-testid="pa-swap-picker"]').exists()).toBe(false)
     expect(store.paChairs.map((p) => p?.advisorId)).toEqual(['recruitment-consultant'])
     expect(store.officeSeats[0]?.advisorId).toBe('head-butler')
+  })
+
+  it('a PA swapped back to an open seat keeps the honours they earned', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    store.closeIntro(T0)
+    for (const id of ['head-butler', 'recruitment-consultant']) {
+      store.headhunterOffer = [id]
+      store.hireAdvisor(0)
+    }
+    // Three generations' service in the chair
+    store.paChairs[0]!.servedGenerations = 3
+    const honoured = paTitle(paStanding(store.paChairs[0]!)!)
+    const before = store.modifiers
+    const wrapper = mount(FamilyOffice, { global: { plugins: [pinia] } })
+    await wrapper.find('[data-testid="promote-pa"]').trigger('click')
+    expect(store.officeSeats[0]?.advisorId).toBe('head-butler')
+    // Their title and their effect go with them
+    expect(wrapper.find('[data-testid="office-seat"]').text()).toContain(honoured)
+    expect(store.modifiers.clickMult).toBeCloseTo(before.clickMult)
+    expect(store.modifiers.businessMult).toBeCloseTo(before.businessMult)
+  })
+
+  it('the advisor cards read the same in the office and in the hiring picker', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const store = useGameStore()
+    store.hydrateFromStorage(T0)
+    store.closeIntro(T0)
+    // A PA and a full office, one of them knighted in an earlier chair
+    for (const id of ['estate-manager', 'privatisation-campaigner', 'fund-manager', 'pfi-consultant']) {
+      store.headhunterOffer = [id]
+      store.hireAdvisor(0)
+    }
+    store.officeSeats[0]!.servedGenerations = 3
+    const office = mount(FamilyOffice, { global: { plugins: [pinia] } })
+    const officeCard = office.findAll('[data-testid="office-seat"]')[0].text()
+    store.headhunterOffer = ['head-of-finance']
+    const offer = mount(HeadhunterOffer, { global: { plugins: [pinia] } })
+    await offer.find('[data-testid="hire-advisor"]').trigger('click')
+    const pickerCard = offer.findAll('[data-testid="replace-seat"]')[0].element.closest('article')!.textContent!
+    // Categories and honours, in both
+    expect(officeCard).toContain('Infrastructure')
+    expect(pickerCard).toContain('Infrastructure')
+    const honoured = paTitle(paStanding(store.officeSeats[0]!)!)
+    expect(officeCard).toContain(honoured)
+    expect(pickerCard).toContain(honoured)
   })
 
   it('without tapping, the lasting pills show the total allowance', () => {

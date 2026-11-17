@@ -97,7 +97,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   const officeSources = computed(() => {
     const pas = paChairs.value.filter((s): s is AdvisorInstance => s !== null)
     const everyone = [...officeSeats.value.filter((s): s is AdvisorInstance => s !== null), ...pas]
-    return officeModifierSources(everyone, new Set(pas.map((p) => p.uid)))
+    return officeModifierSources(everyone)
   })
 
   function setChair(index: number, inst: AdvisorInstance | null): void {

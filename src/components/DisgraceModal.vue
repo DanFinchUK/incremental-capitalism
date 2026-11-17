@@ -25,6 +25,7 @@
       </p>
 
       <div class="scn-ModalFooter">
+        <button type="button" class="scn-Action scn-Action-outline" data-testid="disgrace-main-menu" @click="toMenu">Main menu</button>
         <button
           type="button"
           class="scn-Action scn-Action-accent"
@@ -46,4 +47,10 @@ import { useEscapeKey } from '../utils/useEscapeKey'
 const store = useGameStore()
 const report = computed(() => store.disgraceReport)
 useEscapeKey(() => report.value !== null, () => store.dismissDisgrace())
+
+// The ruined line is over either way; the next founder waits behind the menu
+function toMenu(): void {
+  store.dismissDisgrace()
+  store.openMenu()
+}
 </script>

@@ -5,6 +5,20 @@
       <span class="scn-StatHint">Drain: {{ drainPct }}%</span>
     </div>
 
+    <!-- Shortlists from ordeals the family was waved through wait here, to be seen when convenient -->
+    <div v-if="store.waitingOffers > 0" class="scn-WaitingIntros" data-testid="waiting-introductions">
+      <span>{{ store.waitingOffers === 1 ? 'An introduction is waiting' : `${store.waitingOffers} introductions are waiting` }}</span>
+      <button
+        type="button"
+        class="scn-Action scn-Action-outline"
+        data-testid="show-introductions"
+        :disabled="store.headhunterOffer.length > 0"
+        @click="store.showWaitingOffer()"
+      >
+        Show them in
+      </button>
+    </div>
+
     <div class="scn-AdvisorGrid">
       <article
         v-for="(pa, c) in pas"

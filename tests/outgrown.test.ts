@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { mount } from '@vue/test-utils'
+import App from '../src/App.vue'
 import { bossForGate, conditionTarget, gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 
@@ -27,14 +29,38 @@ describe('outgrown bosses', () => {
     setActivePinia(createPinia())
   })
 
-  it('a boss the family has outgrown falls by itself, with no shortlist', () => {
+  it('a boss the family has outgrown falls by itself, its shortlist waiting to be asked for', () => {
     const store = family(500)
     let t = T0
     for (let i = 0; i < 3; i++) store.tick((t += 100))
     expect(store.gatesBeaten).toBeGreaterThanOrEqual(2)
     expect(store.bannerMessage ?? '').toContain('waved you through')
+    // Nothing opens, and nothing stands in the way of the next ordeal
     expect(store.headhunterOffer).toHaveLength(0)
+    expect(store.mustHireFirst).toBe(false)
+    expect(store.waitingOffers).toBe(store.gatesBeaten - 1)
     expect(store.disgraceReport).toBeNull()
+  })
+
+  it('waiting shortlists queue up, open one at a time when asked, and survive a reload', () => {
+    const store = family(0)
+    store.rollOffer(Math.random, true)
+    store.rollOffer(Math.random, true)
+    expect(store.waitingOffers).toBe(2)
+    expect(store.showWaitingOffer()).toBe(true)
+    expect(store.headhunterOffer).toHaveLength(3)
+    expect(store.waitingOffers).toBe(1)
+    // Only one at a time
+    expect(store.showWaitingOffer()).toBe(false)
+    store.skipAdvisorOffer()
+    // Sending them packing doesn't bring the next one in uninvited
+    expect(store.headhunterOffer).toHaveLength(0)
+    expect(store.waitingOffers).toBe(1)
+    store.flushSave(T0 + 500)
+    setActivePinia(createPinia())
+    const again = useGameStore()
+    again.hydrateFromStorage(T0 + 600)
+    expect(again.waitingOffers).toBe(1)
   })
 
   it('a boss still worth fighting is left alone, with no loss and no record', () => {
@@ -91,5 +117,22 @@ describe('outgrown bosses', () => {
     for (let i = 0; i < 5; i++) store.tick((t += 100))
     expect(store.gatesBeaten).toBe(1)
     expect(store.bossAttempt).toBeNull()
+  })
+
+  it('the family office says when introductions are waiting, and shows them in on request', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro(T0)
+    store.rollOffer(Math.random, true)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(false)
+    const waiting = wrapper.find('[data-testid="waiting-introductions"]')
+    expect(waiting.text()).toContain('An introduction is waiting')
+    await waiting.find('[data-testid="show-introductions"]').trigger('click')
+    expect(wrapper.find('[data-testid="hire-modal"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="waiting-introductions"]').exists()).toBe(false)
+    wrapper.unmount()
   })
 })

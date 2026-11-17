@@ -240,7 +240,8 @@ function readOffice(raw: unknown): OfficeState {
     seats,
     paChairs,
     offer: Array.isArray(o.offer) ? o.offer.filter((id): id is string => typeof id === 'string' && !!ADVISORS_BY_ID[id]).slice(0, 3) : [],
-    queued: typeof o.queued === 'number' && Number.isFinite(o.queued) ? Math.min(9, Math.max(0, Math.floor(o.queued))) : 0
+    queued: typeof o.queued === 'number' && Number.isFinite(o.queued) ? Math.min(9, Math.max(0, Math.floor(o.queued))) : 0,
+    waiting: typeof o.waiting === 'number' && Number.isFinite(o.waiting) ? Math.min(9, Math.max(0, Math.floor(o.waiting))) : 0
   }
 }
 

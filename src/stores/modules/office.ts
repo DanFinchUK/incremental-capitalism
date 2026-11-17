@@ -35,6 +35,9 @@ export interface OfficeState {
   offer: string[]
   // Offers earned by boss wins while another offer was still open
   queued: number
+  // Offers from ordeals the family was waved through: kept until the
+  // player asks to see them, never opened at them
+  waiting?: number
 }
 
 export interface OfficeModule {
@@ -42,6 +45,7 @@ export interface OfficeModule {
   paChairs: ComputedRef<(AdvisorInstance | null)[]>
   headhunterOffer: Ref<string[]>
   queuedOffers: Ref<number>
+  waitingOffers: Ref<number>
   officeSources: ComputedRef<ModifierSource[]>
   hireAdvisor: (offerIndex: number, replaceSeat?: HireTarget) => boolean
   // The advisor a hire would replace because they buy the same list, if any
@@ -50,7 +54,10 @@ export interface OfficeModule {
   fireAdvisor: (seat: number) => void
   firePA: (chair?: number) => void
   promoteToPA: (seat: number, chair?: number) => void
-  rollOffer: (rng?: () => number) => void
+  // waiting: from an ordeal waved through, so it waits for the player
+  rollOffer: (rng?: () => number, waiting?: boolean) => void
+  // Brings the next waiting offer in, if nothing else is open
+  showWaitingOffer: () => boolean
   // Returns the promotions long service earned, as sentences for the retirement news
   onRetire: () => string[]
   onElevate: () => void
@@ -64,6 +71,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   const paStore = ref<(AdvisorInstance | null)[]>([])
   const headhunterOffer = ref<string[]>([])
   const queuedOffers = ref(0)
+  const waitingOffers = ref(0)
   let nextUid = 1
 
   // The current offer is settled: bring forward the next one owed, if any
@@ -190,14 +198,26 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   }
 
   // Each boss win earns one offer. If one is already open, the new one waits.
-  function rollOffer(rng: () => number = Math.random): void {
+  // One from an ordeal waved through always waits, for the player to ask.
+  function rollOffer(rng: () => number = Math.random, waiting = false): void {
     // Austerity: the headhunter doesn't call
     if (deps.officeClosed?.()) return
+    if (waiting) {
+      waitingOffers.value = Math.min(9, waitingOffers.value + 1)
+      return
+    }
     if (headhunterOffer.value.length > 0) {
       queuedOffers.value += 1
       return
     }
     headhunterOffer.value = rollAdvisorOffer(rng, deps.noTap?.() ?? false, notWorthOffering)
+  }
+
+  function showWaitingOffer(): boolean {
+    if (deps.officeClosed?.() || waitingOffers.value <= 0 || headhunterOffer.value.length > 0) return false
+    waitingOffers.value -= 1
+    headhunterOffer.value = rollAdvisorOffer(Math.random, deps.noTap?.() ?? false, notWorthOffering)
+    return true
   }
 
   // Open-seat advisors leave with the outgoing generation; PAs stay on, and
@@ -206,6 +226,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     seatStore.value = []
     headhunterOffer.value = []
     queuedOffers.value = 0
+    waitingOffers.value = 0
     const news: string[] = []
     paStore.value = paChairs.value.map((pa) => {
       if (!pa) return null
@@ -245,10 +266,11 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     paStore.value = state.paChairs
     headhunterOffer.value = state.offer
     queuedOffers.value = state.queued
+    waitingOffers.value = state.waiting ?? 0
   }
 
   function snapshot(): OfficeState {
-    return { seats: seatStore.value, paChairs: paStore.value, offer: headhunterOffer.value, queued: queuedOffers.value }
+    return { seats: seatStore.value, paChairs: paStore.value, offer: headhunterOffer.value, queued: queuedOffers.value, waiting: waitingOffers.value }
   }
 
   return {
@@ -256,6 +278,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     paChairs,
     headhunterOffer,
     queuedOffers,
+    waitingOffers,
     officeSources,
     hireAdvisor,
     replacedBuyer,
@@ -264,6 +287,7 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     firePA,
     promoteToPA,
     rollOffer,
+    showWaitingOffer,
     onRetire,
     onElevate,
     addCampaignTime,

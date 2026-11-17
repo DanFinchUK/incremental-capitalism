@@ -364,9 +364,9 @@ export const useGameStore = defineStore('game', () => {
       lastKillMs.value = withSplit(lastKillMs.value, gate, killMs)
       bestSplits.value = mergeBests(bestSplits.value, splits.value)
       bestKillMs.value = mergeBests(bestKillMs.value, lastKillMs.value)
-      // After the final gate the Lords are next, not a new hire; and nobody
-      // queues to be introduced over a formality
-      if (bossForGate(gate + 1) && !outgrown) office.rollOffer()
+      // After the final gate the Lords are next, not a new hire. Waved
+      // through, the shortlist waits for the player to ask for it.
+      if (bossForGate(gate + 1)) office.rollOffer(Math.random, outgrown)
     },
     onBossLost: (gate) => {
       const def = bossForGate(gate)
@@ -1966,6 +1966,8 @@ export const useGameStore = defineStore('game', () => {
     flushAll,
     exportSave,
     rollOffer: office.rollOffer,
+    waitingOffers: office.waitingOffers,
+    showWaitingOffer: office.showWaitingOffer,
     mustHireFirst,
     fireAdvisor,
     achievements,

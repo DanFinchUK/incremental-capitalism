@@ -201,6 +201,9 @@ function bestBuy(store: Store, cfg: BotConfig): { kind: ItemKind; id: string } |
 // Hire the rarest candidate while there is a free seat; the first hire
 // becomes the PA so the office has continuity.
 function manageOffice(store: Store): void {
+  // Introductions from ordeals waved through wait to be asked for: a player
+  // who wants staff asks
+  if (store.headhunterOffer.length === 0 && store.waitingOffers > 0) store.showWaitingOffer()
   if (store.headhunterOffer.length > 0) {
     let best = 0
     store.headhunterOffer.forEach((id, i) => {

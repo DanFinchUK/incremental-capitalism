@@ -1723,6 +1723,20 @@
   gap: 8px;
 }
 
+.scn-WaitingIntros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--color-gold);
+  border-radius: var(--radius);
+  background: var(--color-gold-bg);
+  color: var(--color-gold-fg);
+  font-size: 13px;
+}
+
 .scn-Headhunter {
   display: flex;
   flex-direction: column;

@@ -21,6 +21,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
     body: [
       'Businesses pay out every second, and at a reduced rate while you are away.',
       'Ownership milestones multiply an item\'s output. Use "x1", "x10", "Next" and "Max" to buy in bulk.',
+      'Own 1,000 of any Job or Business for market dominance: there\'s none left to buy, and each one held adds 25% to all income.',
       'Opportunities on the Market Wire last a few seconds. A freeze stops automation, or halves income if nothing is automated.'
     ]
   },

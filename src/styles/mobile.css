@@ -289,6 +289,7 @@ html {
     align-items: center;
   }
 
+  .ic-Shell-phone .scn-Card:not(.scn-Card-compact) .scn-Actions .scn-Dominance,
   .ic-Shell-phone .scn-Card:not(.scn-Card-compact) .scn-Actions .scn-Action {
     flex: 1;
     min-height: 44px;

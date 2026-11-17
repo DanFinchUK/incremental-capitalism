@@ -38,6 +38,8 @@ import {
   computeOfflineCatchUp,
   steadyHustle,
   computePassivePerSecond,
+  DOMINANCE_AT,
+  dominanceMultiplier,
   computeIncomeSources,
   computeSectorSlices,
   itemMilestones,
@@ -314,12 +316,24 @@ export const useGameStore = defineStore('game', () => {
   })
   // Every rule-bending source in play: stacked bloodline traits, the family office, achievements and titles
   // Everything lasting: traits, the office, achievements and titles
-  const lastingSources = computed(() => [
-    ...bloodlineTraitSources(familyTree.value, heir.value),
-    ...office.officeSources.value,
-    achievementSource(achievements.value.length),
-    titleSource(titles.value)
-  ])
+  // Jobs and Businesses held at 1,000 (market dominance): each adds a quarter
+  // to all income
+  const dominanceHeld = computed(
+    () =>
+      Object.values(jobsPurchased.value).filter((n) => n >= DOMINANCE_AT).length +
+      Object.values(businessesOwned.value).filter((n) => n >= DOMINANCE_AT).length
+  )
+  const lastingSources = computed(() => {
+    const held = dominanceHeld.value
+    const dominance = held > 0 ? [{ businessMult: dominanceMultiplier(held), clickMult: dominanceMultiplier(held) }] : []
+    return [
+      ...bloodlineTraitSources(familyTree.value, heir.value),
+      ...office.officeSources.value,
+      achievementSource(achievements.value.length),
+      titleSource(titles.value),
+      ...dominance
+    ]
+  })
   const baseModifiers = computed(() => combineModifiers(lastingSources.value))
   const modifiers = computed(() =>
     favourSources.value.length > 0 ? combineModifiers([...lastingSources.value, ...favourSources.value]) : baseModifiers.value
@@ -2033,6 +2047,7 @@ export const useGameStore = defineStore('game', () => {
     realisedPerSecond,
     manualRealisedPerSecond,
     sectorSlices,
+    dominanceHeld,
     passiveSources,
     allowanceLabel,
     allowancePerSecond,

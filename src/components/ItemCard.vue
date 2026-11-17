@@ -40,7 +40,8 @@
         </span>
         <span class="scn-CompactIncome">{{ compactIncomeText }}</span>
       </div>
-      <span @click.stop>
+      <span v-if="dominant" class="scn-Dominance scn-Dominance-compact" data-testid="dominance">Market dominance</span>
+      <span v-else @click.stop>
         <button
           type="button"
           class="scn-Action scn-Action-compact"
@@ -51,7 +52,7 @@
         </button>
       </span>
       <label
-        v-if="showAutoBuyCheckbox"
+        v-if="showAutoBuyCheckbox && !dominant"
         class="scn-AutoBuy"
         @click.stop
       >
@@ -88,7 +89,7 @@
           </button>
         </div>
 
-        <p class="scn-CardMeta scn-CostLine">
+        <p v-if="!dominant" class="scn-CardMeta scn-CostLine">
           Cost<span v-if="quote.count > 1"> (x{{ quote.count }})</span>:
           {{ formatCurrency(quote.cost) }}
         </p>
@@ -111,7 +112,10 @@
       </div>
 
       <div class="scn-Actions" @click.stop>
+        <!-- Held at 1,000: nothing more to buy -->
+        <span v-if="dominant" class="scn-Dominance" data-testid="dominance">Market dominance</span>
         <button
+          v-else
           type="button"
           class="scn-Action"
           :disabled="!quote.canAfford"
@@ -121,7 +125,7 @@
         </button>
 
         <label
-          v-if="showAutoBuyCheckbox"
+          v-if="showAutoBuyCheckbox && !dominant"
           class="scn-AutoBuy"
         >
           <input
@@ -149,6 +153,7 @@ import {
   type JobDef
 } from '../data/items'
 import {
+  DOMINANCE_AT,
   businessUnitPerSecond,
   itemMilestones,
   jobUnitClickIncome,
@@ -278,6 +283,8 @@ const synergyText = computed(() => {
 
 // Nothing automates until an advisor, heir, perk or title brings it
 // Only once this list has a buyer: unticking keeps them off an item
+// Held at 1,000: the market is the family's, and there's nothing left to buy
+const dominant = computed(() => owned.value >= DOMINANCE_AT)
 const showAutoBuyCheckbox = computed(() => props.row.mode === 'revealed' && store.buyers[props.kind] !== null)
 
 // Buys on finger lift, so it works while another finger is on Get paid

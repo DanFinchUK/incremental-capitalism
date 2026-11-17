@@ -146,7 +146,36 @@ export interface BulkBuyQuote {
   canAfford: boolean
 }
 
+// Market dominance: no Job or Business goes past 1,000 owned, its last
+// milestone, and each one held there adds a quarter to all income. Late in a
+// generation it makes the old rungs worth buying up (in the sim, from around
+// generation 5); pacing barely moves (npm run sim).
+export const DOMINANCE_AT = 1000
+export const DOMINANCE_BONUS = 0.25
+
+export function dominanceMultiplier(held: number): number {
+  return 1 + DOMINANCE_BONUS * held
+}
+
 export function bulkBuyQuote(
+  baseCost: number,
+  scaleFactor: number,
+  owned: number,
+  costDiscount: number,
+  mode: BulkBuyMode,
+  availableMoney: number
+): BulkBuyQuote {
+  const room = DOMINANCE_AT - owned
+  if (room <= 0) {
+    return { count: 0, cost: Infinity, canAfford: false }
+  }
+  const quote = uncappedQuote(baseCost, scaleFactor, owned, costDiscount, mode, availableMoney)
+  if (quote.count <= room) return quote
+  const cost = seriesCost(baseCost, scaleFactor, owned, room, costDiscount)
+  return { count: room, cost, canAfford: availableMoney >= cost }
+}
+
+function uncappedQuote(
   baseCost: number,
   scaleFactor: number,
   owned: number,

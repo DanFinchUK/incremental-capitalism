@@ -97,7 +97,7 @@ describe('choosing a scenario on screen', () => {
     localStorage.clear()
   })
 
-  it('the finale offers every scenario, and the new family plays the one chosen', async () => {
+  it('the finale sends the player to the menu to choose a scenario, and the new family plays the one chosen', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
@@ -106,11 +106,21 @@ describe('choosing a scenario on screen', () => {
     s.dynastyComplete = true
     await wrapper.vm.$nextTick()
     await wrapper.find('[data-testid="new-dynasty"]').trigger('click')
-    const picker = wrapper.find('[data-testid="scenario-picker"]')
+    expect(wrapper.find('[data-testid="dukedom-modal"]').exists()).toBe(false)
+    const menu = wrapper.find('[data-testid="main-menu"]')
+    expect(menu.find('[data-testid="menu-confirm-abandon"]').exists()).toBe(true)
+    const picker = menu.find('[data-testid="scenario-picker"]')
     for (const sc of SCENARIOS) expect(picker.text()).toContain(sc.name)
     await picker.find('[data-testid="scenario-austerity"] input').setValue(true)
-    await wrapper.find('[data-testid="confirm-new-dynasty"]').trigger('click')
+    const confirm = menu.find('[data-testid="menu-confirm-new-dynasty"]')
+    expect(confirm.text()).toBe('Found the new dynasty')
+    await confirm.trigger('click')
     expect(s.scenario).toBe('austerity')
+    expect(s.dynastyComplete).toBe(false)
+    expect(s.hall).toHaveLength(1)
+    // The menu stays, on its front page, for the new family to begin
+    expect(s.menuOpen).toBe(true)
+    expect(wrapper.find('[data-testid="menu-continue"]').text()).toContain('Begin')
     wrapper.unmount()
   })
 

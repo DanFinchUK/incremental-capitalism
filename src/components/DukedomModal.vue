@@ -51,21 +51,11 @@
 
       <DynastyRoll :roll="store.familyTree" />
 
-      <div v-if="confirming" class="scn-ModalCallout" data-testid="dukedom-confirm">
-        <p>
-          The new family starts with nothing: no money, no titles, no staff. The {{ store.familySurname }} record goes in the
-          Hall of Dynasties. Achievements and settings stay.
-        </p>
-        <ScenarioPicker v-model="next" />
-        <div class="scn-ModalFooter">
-          <button type="button" class="scn-Action scn-Action-outline" @click="confirming = false">Back</button>
-          <button type="button" class="scn-Action scn-Action-accent" data-testid="confirm-new-dynasty" @click="found">
-            Found the new dynasty
-          </button>
-        </div>
-      </div>
-      <div v-else class="scn-ModalFooter">
-        <button type="button" class="scn-Action scn-Action-accent" data-testid="new-dynasty" @click="confirming = true">
+      <div class="scn-ModalFooter">
+        <button type="button" class="scn-Action scn-Action-outline" data-testid="dukedom-main-menu" @click="store.openMenu()">
+          Main menu
+        </button>
+        <button type="button" class="scn-Action scn-Action-accent" data-testid="new-dynasty" @click="store.openMenu('found')">
           Found a new dynasty
         </button>
       </div>
@@ -75,17 +65,14 @@
 
 <script setup lang="ts">
 // The end of a dynasty: the family reached Duke. Everyone in it, the time it
-// took, and the only way on, a new family
-import { computed, ref } from 'vue'
+// took, and the way on: the menu, where the next family is founded
+import { computed } from 'vue'
 import DynastyRoll from './DynastyRoll.vue'
-import ScenarioPicker from './ScenarioPicker.vue'
-import type { ScenarioId } from '../data/scenarios'
 import { bestDynasty, rollLines } from '../engine/hall'
 import { useGameStore } from '../stores/game'
 import { formatDuration, pluralSurname } from '../utils/format'
 
 const store = useGameStore()
-const confirming = ref(false)
 
 const lines = computed(() => rollLines(store.familyTree))
 const generations = computed(() => store.familyTree.length)
@@ -98,7 +85,6 @@ const fastest = computed(() => {
 })
 const staffCount = computed(() => new Set(store.familyTree.flatMap((r) => r.advisors)).size)
 const best = computed(() => bestDynasty(store.hall, store.scenario))
-const next = ref<ScenarioId>('standard')
 
 // Where the family is Duke of: a seat picked by the surname, so it never changes
 const SEATS = [
@@ -115,9 +101,4 @@ const seat = computed(() => {
   for (const c of store.familySurname) h = (h * 31 + c.charCodeAt(0)) >>> 0
   return SEATS[h % SEATS.length]
 })
-
-function found(): void {
-  confirming.value = false
-  store.foundNewDynasty(Date.now(), next.value)
-}
 </script>

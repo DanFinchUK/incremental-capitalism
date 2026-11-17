@@ -14,13 +14,13 @@
     </div>
 
     <div class="ttl-Stage">
-      <header class="ttl-Head" :class="{ 'ttl-Head-compact': view === 'how' || view === 'settings' }">
-        <FamilyCrest v-if="view !== 'how' && view !== 'settings'" class="ttl-Crest" :surname="store.familySurname" :titles="store.titles" />
+      <header class="ttl-Head" :class="{ 'ttl-Head-compact': view !== 'main' }">
+        <FamilyCrest v-if="view === 'main'" class="ttl-Crest" :surname="store.familySurname" :titles="store.titles" />
         <h1 id="menu-title" class="ttl-Title">
           <span class="ttl-TitleSmall">Incremental</span>
           <span class="ttl-TitleBig">Capitalism</span>
         </h1>
-        <p v-if="view !== 'how' && view !== 'settings'" class="ttl-Tagline">From a zero-hours rota to a dukedom</p>
+        <p v-if="view === 'main'" class="ttl-Tagline">From a zero-hours rota to a dukedom</p>
         <div class="ttl-Rule" aria-hidden="true"><span></span></div>
       </header>
 
@@ -120,20 +120,33 @@
         <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
       </section>
 
-      <div v-else class="ttl-Confirm" data-testid="menu-confirm-abandon">
-        <p v-if="fresh">Every family plays by somebody's rules. Choose this one's.</p>
-        <p v-else>
-          The {{ pluralSurname(store.familySurname) }} are {{ formatDuration(store.dynastyMs / 1000) }} into their climb.
-          Abandoned, they go back to whatever they were doing before, and an unfinished dynasty doesn't go in the Hall.
-        </p>
-        <ScenarioPicker v-if="scenariosOpen(store.hall)" v-model="next" />
+      <section v-else class="ttl-Page" data-testid="menu-confirm-abandon" aria-labelledby="menu-confirm-title">
+        <h2 id="menu-confirm-title" class="ttl-PageTitle">{{ confirmTitle }}</h2>
+        <div class="ttl-Confirm">
+          <p v-if="store.dynastyComplete">
+            The new family starts with nothing: no money, no titles, no staff. The {{ store.familySurname }} record goes in the
+            Hall of Dynasties. Achievements and settings stay.
+          </p>
+          <p v-else-if="fresh">Every family plays by somebody's rules. Choose this one's.</p>
+          <p v-else>
+            The {{ pluralSurname(store.familySurname) }} are {{ formatDuration(store.dynastyMs / 1000) }} into their climb.
+            Abandoned, they go back to whatever they were doing before, and an unfinished dynasty doesn't go in the Hall.
+          </p>
+        </div>
+        <ScenarioPicker v-if="store.dynastyComplete || scenariosOpen(store.hall)" v-model="next" />
         <div class="ttl-ConfirmActions">
-          <button type="button" class="ttl-Item ttl-Item-quiet" @click="view = 'main'">Back</button>
-          <button type="button" class="ttl-Item" :class="{ 'ttl-Item-danger': !fresh }" data-testid="menu-confirm-new-dynasty" @click="abandon">
-            {{ fresh ? 'Choose' : 'Abandon them' }}
+          <button type="button" class="ttl-Item ttl-Item-quiet" data-testid="menu-back" @click="view = 'main'">Back</button>
+          <button
+            type="button"
+            class="ttl-Item"
+            :class="{ 'ttl-Item-danger': !fresh && !store.dynastyComplete, 'ttl-Item-gilt': store.dynastyComplete }"
+            data-testid="menu-confirm-new-dynasty"
+            @click="confirmNew"
+          >
+            {{ confirmLabel }}
           </button>
         </div>
-      </div>
+      </section>
 
       <footer class="ttl-Foot">Empire &amp; Privilege Edition</footer>
     </div>
@@ -164,10 +177,18 @@ const store = useGameStore()
 // before a family is abandoned
 const view = ref<'main' | 'how' | 'settings' | 'confirm'>('main')
 const screen = ref<HTMLElement | null>(null)
-// Each visit starts from the menu itself
+// Each visit starts from the menu itself, unless a finished dynasty sent the
+// player straight to founding the next one
 watch(
   () => store.menuOpen,
-  () => (view.value = 'main')
+  (open) => {
+    if (open && store.menuPage === 'found' && store.dynastyComplete) {
+      next.value = store.scenario
+      view.value = 'confirm'
+    } else {
+      view.value = 'main'
+    }
+  }
 )
 // and each page from its top
 watch(view, () => {
@@ -195,20 +216,27 @@ const newDynastyLabel = computed(() => {
   return fresh.value ? 'Choose a scenario' : 'Abandon this dynasty'
 })
 
-// A finished dynasty has its own way on, in the finale; an unfinished one
-// is abandoned, after asking, and the menu stays for the next family
+// A finished dynasty is founded anew, an unfinished one abandoned, both after
+// asking; either way the menu stays for the next family
 function newDynasty(): void {
   next.value = store.scenario
-  if (store.dynastyComplete) {
-    store.closeMenu()
-  } else {
-    view.value = 'confirm'
-  }
+  view.value = 'confirm'
 }
 
-function abandon(): void {
+const confirmTitle = computed(() => {
+  if (store.dynastyComplete) return 'A new dynasty'
+  return fresh.value ? 'Choose a scenario' : 'Abandon this dynasty'
+})
+
+const confirmLabel = computed(() => {
+  if (store.dynastyComplete) return 'Found the new dynasty'
+  return fresh.value ? 'Choose' : 'Abandon them'
+})
+
+function confirmNew(): void {
   view.value = 'main'
-  store.abandonDynasty(Date.now(), next.value)
+  if (store.dynastyComplete) store.foundNewDynasty(Date.now(), next.value)
+  else store.abandonDynasty(Date.now(), next.value)
 }
 
 const decor = computed<RoomId | 'auto'>({
@@ -457,27 +485,85 @@ const COINS = Array.from({ length: 16 }, (_, i) => ({
 }
 
 .ttl-Confirm {
-  width: 100%;
-  text-align: left;
-  padding: 18px;
-  border: 1px solid rgba(214, 169, 60, 0.5);
+  padding: 14px 16px;
+  border: 1px solid rgba(214, 169, 60, 0.3);
   border-radius: 4px;
-  background: rgba(12, 7, 8, 0.6);
+  background: rgba(12, 7, 8, 0.55);
   font-size: 14px;
   line-height: 1.5;
 }
 
 .ttl-Confirm p {
-  margin: 0 0 14px;
+  margin: 0;
 }
 
-/* The scenario cards keep the game's own colours, set on a light card */
-.ttl-Confirm :deep(.scn-ScenarioPicker) {
-  color: var(--color-text);
-  background: var(--color-surface, #fff);
+/* The scenarios as the menu's own gilt-edged cards */
+.ttl-Page :deep(.scn-ScenarioPicker) {
+  gap: 10px;
+}
+
+.ttl-Page :deep(.scn-PickerGroupTitle) {
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ttl-gold);
+}
+
+.ttl-Page :deep(.scn-ScenarioOption) {
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(214, 169, 60, 0.3);
   border-radius: 4px;
-  padding: 8px;
-  margin-bottom: 14px;
+  background: rgba(12, 7, 8, 0.55);
+  color: var(--ttl-ink);
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ttl-Page :deep(.scn-ScenarioOption:hover) {
+  border-color: rgba(214, 169, 60, 0.6);
+}
+
+.ttl-Page :deep(.scn-ScenarioOption-chosen) {
+  border-color: var(--ttl-gold);
+  outline: 1px solid rgba(214, 169, 60, 0.35);
+  outline-offset: 3px;
+  background: linear-gradient(180deg, rgba(214, 169, 60, 0.16), rgba(214, 169, 60, 0.05)), rgba(12, 7, 8, 0.6);
+  box-shadow: 0 0 24px rgba(214, 169, 60, 0.18);
+}
+
+.ttl-Page :deep(.scn-ScenarioOption input) {
+  accent-color: var(--ttl-gold);
+  margin-top: 6px;
+}
+
+.ttl-Page :deep(.scn-ScenarioOption strong) {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--ttl-gold-hi);
+}
+
+.ttl-Page :deep(.scn-ScenarioOption .scn-AutoLine) {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ttl-ink);
+}
+
+.ttl-Page :deep(.scn-ScenarioOption .scn-StatHint) {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ttl-dim);
+}
+
+.ttl-Page :deep(.scn-ScenarioOption input:focus-visible) {
+  outline: 2px solid var(--ttl-gold-hi);
+  outline-offset: 3px;
 }
 
 .ttl-ConfirmActions {
@@ -491,6 +577,17 @@ const COINS = Array.from({ length: 16 }, (_, i) => ({
   border: 1px solid rgba(214, 169, 60, 0.35);
   border-radius: 4px;
   font-size: 18px;
+}
+
+.ttl-Item-gilt {
+  color: #240910;
+  background: linear-gradient(180deg, var(--ttl-gold-hi), var(--ttl-gold));
+  border-color: var(--ttl-gold) !important;
+}
+
+.ttl-Item-gilt:hover {
+  color: #240910;
+  background: linear-gradient(180deg, #fff3c4, var(--ttl-gold-hi));
 }
 
 .ttl-Item-danger {

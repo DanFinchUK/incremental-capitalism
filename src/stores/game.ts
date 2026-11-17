@@ -253,6 +253,9 @@ export const useGameStore = defineStore('game', () => {
   const hallOpen = ref(false)
   // The main menu, shown on arrival; the game waits behind it
   const menuOpen = ref(false)
+  // The page the menu opens on: its front, or straight to founding the next
+  // family when a finished dynasty asks for it
+  const menuPage = ref<'main' | 'found'>('main')
   const achievements = ref<string[]>(initial.achievements)
   const achievementProgress = ref<AchievementProgress>(initial.achievementProgress)
   const achievementsOpen = ref(false)
@@ -1725,7 +1728,8 @@ export const useGameStore = defineStore('game', () => {
     flushSave(ts)
   }
 
-  function openMenu(): void {
+  function openMenu(page: 'main' | 'found' = 'main'): void {
+    menuPage.value = page
     menuOpen.value = true
   }
 
@@ -1873,6 +1877,7 @@ export const useGameStore = defineStore('game', () => {
     familyTreeOpen,
     hallOpen,
     menuOpen,
+    menuPage,
     openMenu,
     closeMenu,
     abandonDynasty,

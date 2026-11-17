@@ -156,9 +156,31 @@ describe('the finale on screen', () => {
     expect(modal.text()).toContain('Sommelier')
     expect(modal.text()).not.toContain('Not yet')
     await modal.find('[data-testid="new-dynasty"]').trigger('click')
-    await wrapper.find('[data-testid="confirm-new-dynasty"]').trigger('click')
+    expect(store.hall).toHaveLength(0)
+    await wrapper.find('[data-testid="menu-confirm-new-dynasty"]').trigger('click')
     expect(wrapper.find('[data-testid="dukedom-modal"]').exists()).toBe(false)
     expect(store.hall).toHaveLength(1)
+    wrapper.unmount()
+  })
+
+  it('the finale goes back to the main menu, and Continue returns to it', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
+    const store = useGameStore()
+    store.closeIntro(T0)
+    store.familyTree = [person(1)]
+    store.dynastyComplete = true
+    await wrapper.vm.$nextTick()
+    await wrapper.find('[data-testid="dukedom-main-menu"]').trigger('click')
+    expect(wrapper.find('[data-testid="dukedom-modal"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="menu-continue"]').exists()).toBe(true)
+    // Founding from the menu's own front page asks first, as from the finale
+    await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
+    expect(wrapper.find('[data-testid="menu-confirm-new-dynasty"]').text()).toBe('Found the new dynasty')
+    await wrapper.find('[data-testid="menu-back"]').trigger('click')
+    await wrapper.find('[data-testid="menu-continue"]').trigger('click')
+    expect(wrapper.find('[data-testid="dukedom-modal"]').exists()).toBe(true)
     wrapper.unmount()
   })
 })

@@ -98,6 +98,25 @@ describe('play log in the store', () => {
     expect(exported.scene.playLog.events.some((e: { e: string }) => e.e === 'buy')).toBe(true)
   })
 
+  it('logs who was on offer when hiring, passing and choosing an heir', () => {
+    const store = fresh()
+    store.addDebugMoney(gateThreshold(1) * 1.1, T0)
+    store.tick(T0 + 1000)
+    const offerEvent = (e: string) => store.playLog.events.find((x) => x.e === e)
+    store.money = 1e30
+    store.headhunterOffer = ['temp-agency', 'sommelier']
+    store.hireAdvisor(1)
+    expect(offerEvent('hire')).toMatchObject({ advisor: 'sommelier', offered: 'temp-agency,sommelier' })
+    store.headhunterOffer = ['day-trader', 'stockbroker']
+    store.skipAdvisorOffer()
+    expect(offerEvent('skip-hire')).toMatchObject({ offered: 'day-trader,stockbroker' })
+    store.gatesBeaten = 1
+    store.retire(T0 + 2000)
+    const heirs = store.heirChoices.map((h) => `${h.traitId}/${h.inheritId}`).join(',')
+    store.pickHeir(0)
+    expect(offerEvent('heir')).toMatchObject({ offered: heirs })
+  })
+
   it('logs a gate opening, a boss attempt with samples, and how it ended', () => {
     const store = fresh()
     store.addDebugMoney(gateThreshold(1) * 1.1, T0)

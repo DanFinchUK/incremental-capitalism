@@ -922,6 +922,17 @@ export const useGameStore = defineStore('game', () => {
   // from the same snapshot), and buys the best return per pound that fits at
   // the bulk setting, then the next best with what's left, up to its item
   // types, never the same item twice. Unspent budget stays put.
+  // What the buyers bought, logged a minute at a time rather than a line a
+  // purchase, so they don't crowd everything else out of the log
+  const buyerTally = { minute: -1, jobs: 0, jobsCost: 0, businesses: 0, businessesCost: 0 }
+  function flushBuyerTally(ts: number): void {
+    if (buyerTally.jobs + buyerTally.businesses > 0) {
+      const { jobs, jobsCost, businesses, businessesCost } = buyerTally
+      plays.log(ts, 'buyers', { jobs, jobsCost, businesses, businessesCost })
+    }
+    Object.assign(buyerTally, { minute: Math.floor(activeGenerationMs.value / 60_000), jobs: 0, jobsCost: 0, businesses: 0, businessesCost: 0 })
+  }
+
   function runBuyers(ts: number): void {
     if (lastAutoBuyAt.value > 0 && ts - lastAutoBuyAt.value < AUTO_BUY_COOLDOWN_MS) return
     const cash = money.value
@@ -949,6 +960,9 @@ export const useGameStore = defineStore('game', () => {
         done.add(best.id)
         left -= result.cost
         bought = true
+        if (buyerTally.minute !== Math.floor(activeGenerationMs.value / 60_000)) flushBuyerTally(ts)
+        buyerTally[kind] += result.bought
+        buyerTally[kind === 'jobs' ? 'jobsCost' : 'businessesCost'] += result.cost
         const def = kind === 'jobs' ? JOBS_BY_ID[best.id] : BUSINESSES_BY_ID[best.id]
         noteCandlePurchase(telemetry.value, `${buyer.name} bought ${result.bought} × ${def.label}`)
       }
@@ -1286,24 +1300,27 @@ export const useGameStore = defineStore('game', () => {
 
   // The save JSON with the play log included, for the Copy save button
   function exportSave(ts = Date.now()): string {
+    flushBuyerTally(ts)
     flushAll(ts)
     return withPlayLog(localStorage.getItem(STORAGE_KEY) ?? '', plays.playLog.value)
   }
 
   function hireAdvisor(offerIndex: number, replaceSeat?: HireTarget): boolean {
     const advisorId = office.headhunterOffer.value[offerIndex]
+    const offered = office.headhunterOffer.value.join(',')
     const hired = office.hireAdvisor(offerIndex, replaceSeat)
     if (hired) {
-      plays.log(nowMs.value, 'hire', { advisor: advisorId, replaced: replaceSeat !== undefined })
+      plays.log(nowMs.value, 'hire', { advisor: advisorId, replaced: replaceSeat !== undefined, offered })
       cue('hire')
     }
     return hired
   }
 
   function skipAdvisorOffer(): boolean {
+    const offered = office.headhunterOffer.value.join(',')
     const skipped = office.skipOffer()
     if (skipped) {
-      plays.log(nowMs.value, 'skip-hire', {})
+      plays.log(nowMs.value, 'skip-hire', { offered })
       cue('pass')
     }
     return skipped
@@ -1516,6 +1533,7 @@ export const useGameStore = defineStore('game', () => {
 
   // titlesBefore: on elevation, the titles held before it
   function endGeneration(ts: number, gain: number, elevated = false, titlesBefore = titles.value): number {
+    flushBuyerTally(ts)
     achievementProgress.value = { ...EMPTY_PROGRESS }
     const pas = office.paChairs.value.filter((a): a is AdvisorInstance => a !== null)
     const payroll = [...pas, ...office.officeSeats.value.filter((a): a is AdvisorInstance => a !== null)]
@@ -1670,7 +1688,13 @@ export const useGameStore = defineStore('game', () => {
     }
     heir.value = chosen
     cue('heir')
-    plays.log(nowMs.value, 'heir', { trait: chosen.traitId ?? 'none', inherit: chosen.inheritId ?? 'none', options: heirChoices.value.length })
+    plays.log(nowMs.value, 'heir', {
+      trait: chosen.traitId ?? 'none',
+      inherit: chosen.inheritId ?? 'none',
+      options: heirChoices.value.length,
+      // Every heir on offer, as trait/inherited trait
+      offered: heirChoices.value.map((h) => `${h.traitId ?? 'none'}/${h.inheritId ?? 'none'}`).join(',')
+    })
     heirChoices.value = []
     generation.value += 1
     money.value *= modifiers.value.trustFundMult

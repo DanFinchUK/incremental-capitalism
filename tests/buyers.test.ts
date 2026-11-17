@@ -95,6 +95,20 @@ describe('buyers in the store', () => {
     expect(units(store.businessesOwned)).toBe(0)
   })
 
+  it('logs what the buyers bought, a minute at a time', () => {
+    const store = fresh(1e9)
+    hireFree(store, 'temp-agency')
+    const cash = store.money
+    store.tick(1000)
+    store.tick(2100)
+    expect(store.playLog.events.some((e) => e.e === 'buyers')).toBe(false)
+    const exported = JSON.parse(store.exportSave(2200))
+    const tally = exported.scene.playLog.events.find((e: { e: string }) => e.e === 'buyers')
+    expect(tally.jobs).toBeGreaterThan(0)
+    expect(tally.jobsCost).toBeCloseTo(cash - store.money)
+    expect(tally.businesses).toBe(0)
+  })
+
   it('buys the best value, not an old rung past its last milestone', () => {
     const store = fresh(JOBS_BY_ID['2'].baseCost * 100)
     store.jobsPurchased = { '1': 1000, '19': 40, '2': 20 }

@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { TAP_GUARD_MS } from '../src/utils/tapGuard'
 
 // Pixel 10 Pro, portrait
 export const PIXEL_10_PRO = {
@@ -19,6 +20,9 @@ export async function newGame(page: Page): Promise<void> {
   await page.getByTestId('census-begin').tap()
   await page.getByTestId('census-begin').tap()
   await page.getByTestId('intro-skip').tap()
+  // Skip sits where Get paid ends up, and the tap guard swallows a repeat on
+  // that spot for a moment after a dialog closes (a doubled tap): wait it out
+  await page.waitForTimeout(TAP_GUARD_MS + 100)
 }
 
 // Runs a function against the game store inside the page, for test setup only

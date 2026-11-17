@@ -138,7 +138,7 @@ describe('App UI integration', () => {
     const json = JSON.parse(text)
     expect(json.scene.money).toBe(4242)
     delete urls.createObjectURL
-    delete urls.revokeObjectURL
+    // revokeObjectURL stays: the download tidies up a second later, after the test
     click.mockRestore()
     wrapper.unmount()
   })

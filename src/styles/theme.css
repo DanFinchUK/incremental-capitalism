@@ -1931,9 +1931,18 @@
 
 .scn-SeatPicker {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 6px;
   margin-top: auto;
+}
+
+/* Side by side, sharing the row; a label above them takes its own line */
+.scn-SeatPicker > .scn-Action {
+  flex: 1 1 0;
+}
+
+.scn-SeatPicker > .scn-StatHint {
+  flex-basis: 100%;
 }
 
 /* Family tree */

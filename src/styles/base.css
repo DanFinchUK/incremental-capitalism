@@ -156,20 +156,10 @@ button {
 .lyt-CommandPane {
   position: sticky;
   top: 68px;
-  max-height: calc(100vh - 80px);
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  scrollbar-width: thin;
-}
-
-/* When the pane runs out of height it scrolls; nothing in it is squashed to
-   fit (a panel that scrolls sideways, like the times, otherwise shrinks to
-   its padding) */
-.lyt-CommandPane > * {
-  flex-shrink: 0;
 }
 
 .lyt-MarketPane {
@@ -199,8 +189,6 @@ button {
 
   .lyt-CommandPane {
     position: static;
-    max-height: none;
-    overflow-y: visible;
   }
 
   .lyt-Columns {

@@ -664,8 +664,7 @@
   color: var(--color-milestone-badge-fg);
 }
 
-/* The item's sector: quiet until something changes it, then gold like the
-   help that's doing it (or red, when it's costing the family) */
+/* What kind of business or job it is */
 .scn-SectorPill {
   font-size: 12px;
   padding: 0 6px;
@@ -673,25 +672,6 @@
   border-radius: 2px;
   color: var(--color-body-secondary);
   white-space: nowrap;
-}
-
-.scn-SectorPill-changed {
-  font-weight: 700;
-  border-color: var(--color-gold);
-  background: var(--color-gold-bg);
-  color: var(--color-gold-fg);
-}
-
-.scn-SectorPill-worse {
-  border-color: var(--color-danger);
-  background: transparent;
-  color: var(--color-danger);
-}
-
-.scn-SectorFrom {
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-body-secondary);
 }
 
 .scn-CardMeta {

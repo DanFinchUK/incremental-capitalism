@@ -77,14 +77,7 @@
           <span v-if="mMultiplier > 1" class="scn-MilestoneBadge">
             x{{ formatMult(mMultiplier) }}
           </span>
-          <!-- Its sector, and anything changing it just now -->
-          <span
-            class="scn-SectorPill"
-            :class="{ 'scn-SectorPill-changed': sectorBadge.changed, 'scn-SectorPill-worse': sectorBadge.worse }"
-            data-testid="sector-pill"
-          >
-            {{ sectorBadge.text }}
-          </span>
+          <span class="scn-SectorPill" data-testid="sector-pill">{{ SECTOR_LABELS[row.item.sector] }}</span>
           <button
             v-if="canRefold"
             type="button"
@@ -101,10 +94,6 @@
         </p>
 
         <p class="scn-CardMeta scn-IncomeLine">{{ incomeLineText }}</p>
-
-        <p v-if="sectorBadge.changed && sectorFx.from.length > 0" class="scn-SectorFrom" data-testid="sector-from">
-          From: {{ sectorFx.from.join(', ') }}
-        </p>
 
         <p class="scn-SynergyLine">{{ synergyText }}</p>
 
@@ -149,7 +138,7 @@
 
 <script setup lang="ts">
 import { press } from '../utils/press'
-import { sectorPill } from '../engine/sectors'
+import { SECTOR_LABELS } from '../engine/sectors'
 import { computed, ref, watch } from 'vue'
 import {
   BUSINESSES_BY_ID,
@@ -178,12 +167,6 @@ const emit = defineEmits<{
 }>()
 
 const store = useGameStore()
-
-// The item's sector, and whatever is changing it, with who is behind it
-const sectorFx = computed(() => (props.row.mode === 'revealed' ? store.sectorEffectFor(props.row.item.sector) : { income: 1, cost: 1, from: [] }))
-const sectorBadge = computed(() =>
-  props.row.mode === 'revealed' ? sectorPill(props.row.item.sector, sectorFx.value, props.kind) : { text: '', changed: false, worse: false }
-)
 const manualExpand = ref(false)
 
 watch(

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { GATE_NET_WORTH, SOCIAL_CLASSES } from '../src/data/classes'
-import { BUSINESSES_BY_ID, JOBS_BY_ID } from '../src/data/items'
+import { BUSINESSES, BUSINESSES_BY_ID, JOBS, JOBS_BY_ID } from '../src/data/items'
+import { NEUTRAL_MODIFIERS } from '../src/engine/modifiers'
 import {
   ALLOWANCE_TAPS_PER_SEC,
   BASE_CLICK_VALUE,
@@ -141,6 +142,59 @@ describe('economy engine', () => {
     const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)
     expect(deltaJob.deltaPerClick).toBeGreaterThan(0)
     expect(deltaJob.deltaPerSec).toBeGreaterThan(0)
+  })
+
+  it('quotes what a purchase adds exactly as total income after minus before', () => {
+    // A seeded spread of ordinary estates, small enough for the subtraction to be exact
+    let seed = 3
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+    for (let trial = 0; trial < 40; trial++) {
+      const jobsPurchased: Record<string, number> = {}
+      const businessesOwned: Record<string, number> = {}
+      for (const j of JOBS.slice(0, 6)) if (rnd() < 0.7) jobsPurchased[j.id] = Math.floor(rnd() * 60)
+      for (const b of BUSINESSES.slice(0, 6)) if (rnd() < 0.7) businessesOwned[b.id] = Math.floor(rnd() * 60)
+      const input = {
+        jobsPurchased,
+        businessesOwned,
+        legacyPoints: Math.floor(rnd() * 3),
+        classLevel: Math.floor(rnd() * 4),
+        deregulationRank: Math.floor(rnd() * 3),
+        autoClickers: Math.floor(rnd() * 6),
+        businessBuffMultiplier: 1 + rnd(),
+        clickBuffMultiplier: 1 + rnd(),
+        hustleMultiplier: 1 + rnd() * 2,
+        noTap: rnd() < 0.5,
+        mods: { ...NEUTRAL_MODIFIERS, clickMult: 1.5, businessMult: 2, internMult: 1.2, milestoneStepBonus: 0.5, sectorBusinessMult: { food: 1.3 } }
+      }
+      const count = 1 + Math.floor(rnd() * 15)
+      for (const [kind, items] of [['jobs', JOBS.slice(0, 6)], ['businesses', BUSINESSES.slice(0, 6)]] as const) {
+        for (const item of items) {
+          const field = kind === 'jobs' ? 'jobsPurchased' : 'businessesOwned'
+          const after = { ...input, [field]: { ...input[field], [item.id]: (input[field][item.id] ?? 0) + count } }
+          const q = quoteIncomeDelta(kind, item.id, count, input)
+          const perSec = computePassivePerSecond(after) - computePassivePerSecond(input)
+          const perClick = computeClickIncome(after, true) - computeClickIncome(input, true)
+          // The subtraction is only as precise as the totals it starts from
+          expect(Math.abs(q.deltaPerSec - perSec)).toBeLessThanOrEqual(1e-12 * computePassivePerSecond(after) + 1e-9)
+          expect(Math.abs(q.deltaPerClick - perClick)).toBeLessThanOrEqual(1e-12 * computeClickIncome(after, true) + 1e-9)
+        }
+      }
+    }
+  })
+
+  it('still sees an old rung\'s gain when income is vast', () => {
+    const input = {
+      jobsPurchased: { '1': 0, [JOBS[18].id]: 300 },
+      businessesOwned: {},
+      legacyPoints: 0,
+      classLevel: 0,
+      deregulationRank: 0,
+      autoClickers: 0,
+      businessBuffMultiplier: 1,
+      clickBuffMultiplier: 1,
+      hustleMultiplier: 1
+    }
+    expect(quoteIncomeDelta('jobs', '1', 1, input).deltaPerClick).toBeCloseTo(JOBS_BY_ID['1'].moneyPerClick, 9)
   })
 
   it('pays the heir 5% of the estate, capped one gate short of the deepest gate beaten, rising as the parent pushes on', () => {

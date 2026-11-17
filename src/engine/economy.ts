@@ -1,4 +1,4 @@
-import { BUSINESSES, JOBS, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
+import { BUSINESSES, BUSINESSES_BY_ID, JOBS, JOBS_BY_ID, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
 import { GATE_NET_WORTH, SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
 import { NEUTRAL_MODIFIERS, type Modifiers } from './modifiers'
 import {
@@ -338,6 +338,10 @@ export interface IncomeDeltaQuote {
   deltaPerClick: number
 }
 
+// What buying count more of one item adds to income. Worked out from that
+// item alone (and, for a Job, the Business it boosts) rather than as total
+// income after minus before, which is slow, and which loses an old rung's
+// share entirely once the totals are large enough to round it away.
 export function quoteIncomeDelta(
   kind: ItemKind,
   id: string,
@@ -347,26 +351,35 @@ export function quoteIncomeDelta(
   if (count <= 0) {
     return { deltaPerSec: 0, deltaPerClick: 0 }
   }
+  const mods = modsOf(input)
+  const common = (1 + 0.15 * input.classLevel) * legacyMultiplier(input.legacyPoints, mods.legacyScale)
+  const stepped = (scaleFactor: number, n: number) =>
+    n > 0 ? milestoneMultiplier(n, scaleFactor, input.deregulationRank, mods.milestoneStepBonus) * n : 0
+  const bizFactor = common * input.businessBuffMultiplier * mods.businessMult
   if (kind === 'businesses') {
-    const nextOwned = (input.businessesOwned[id] ?? 0) + count
-    const nextInput: EconomySnapshotInput = {
-      ...input,
-      businessesOwned: { ...input.businessesOwned, [id]: nextOwned }
-    }
-    return {
-      deltaPerSec: Math.max(0, computePassivePerSecond(nextInput) - computePassivePerSecond(input)),
-      deltaPerClick: 0
-    }
+    const biz = BUSINESSES_BY_ID[id]
+    if (!biz) return { deltaPerSec: 0, deltaPerClick: 0 }
+    const owned = input.businessesOwned[id] ?? 0
+    const synJob = SYNERGY_JOB_FOR_BUSINESS[id]
+    const synMult = 1 + 0.01 * (synJob ? (input.jobsPurchased[synJob.id] ?? 0) : 0)
+    const raw = biz.moneyPerSecond * synMult * (mods.sectorBusinessMult[biz.sector] ?? 1) * (stepped(biz.scaleFactor, owned + count) - stepped(biz.scaleFactor, owned))
+    return { deltaPerSec: Math.max(0, raw * bizFactor), deltaPerClick: 0 }
   }
-  const nextOwned = (input.jobsPurchased[id] ?? 0) + count
-  const nextInput: EconomySnapshotInput = {
-    ...input,
-    jobsPurchased: { ...input.jobsPurchased, [id]: nextOwned }
-  }
-  return {
-    deltaPerSec: Math.max(0, computePassivePerSecond(nextInput) - computePassivePerSecond(input)),
-    deltaPerClick: Math.max(0, computeClickIncome(nextInput, true) - computeClickIncome(input, true))
-  }
+  const job = JOBS_BY_ID[id]
+  if (!job) return { deltaPerSec: 0, deltaPerClick: 0 }
+  const owned = input.jobsPurchased[id] ?? 0
+  const perClick =
+    job.moneyPerClick * (stepped(job.scaleFactor, owned + count) - stepped(job.scaleFactor, owned)) *
+    common * input.clickBuffMultiplier * mods.clickMult * input.hustleMultiplier
+  // Clicks made for you: the Interns, and the allowance when not tapping
+  const clicksPerSec = input.autoClickers * mods.internMult + (input.noTap ? ALLOWANCE_TAPS_PER_SEC : 0)
+  // Each Job adds 1% to the Business it pairs with
+  const biz = BUSINESSES_BY_ID[job.synergyBusinessId]
+  const bizOwned = biz ? (input.businessesOwned[biz.id] ?? 0) : 0
+  const synergy = biz
+    ? biz.moneyPerSecond * 0.01 * count * (mods.sectorBusinessMult[biz.sector] ?? 1) * stepped(biz.scaleFactor, bizOwned) * bizFactor
+    : 0
+  return { deltaPerSec: Math.max(0, perClick * clicksPerSec + synergy), deltaPerClick: Math.max(0, perClick) }
 }
 
 export interface OfflineCatchUpResult {

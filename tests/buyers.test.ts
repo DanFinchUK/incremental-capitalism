@@ -50,6 +50,8 @@ describe('who buys, and with how much', () => {
   it('picks the best return per pound', () => {
     expect(bestValue([{ id: 'a', cost: 10, valuePerPound: 1 }, { id: 'b', cost: 50, valuePerPound: 3 }, { id: 'c', cost: 5, valuePerPound: 0 }])?.id).toBe('b')
     expect(bestValue([])).toBeNull()
+    // Nothing worth measuring: the cheapest affordable thing, not nothing
+    expect(bestValue([{ id: 'a', cost: 120, valuePerPound: 0 }, { id: 'b', cost: 40, valuePerPound: 0 }])?.id).toBe('b')
   })
 })
 

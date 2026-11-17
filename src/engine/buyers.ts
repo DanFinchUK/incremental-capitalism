@@ -98,11 +98,16 @@ export interface BuyOption {
 
 // The best return per pound among what's affordable, or null. The store asks
 // again after each purchase, with what's left of the budget, so on Max the
-// first pick spends as much as fits and later ones get the rest.
+// first pick spends as much as fits and later ones get the rest. When nothing
+// affordable adds income worth measuring (old rungs, late on), the cheapest
+// is bought anyway: a buyer with money to spend spends it.
 export function bestValue(options: ReadonlyArray<BuyOption>): BuyOption | null {
   let best: BuyOption | null = null
+  let cheapest: BuyOption | null = null
   for (const o of options) {
-    if (o.valuePerPound > 0 && o.cost > 0 && (!best || o.valuePerPound > best.valuePerPound)) best = o
+    if (!(o.cost > 0)) continue
+    if (o.valuePerPound > 0 && (!best || o.valuePerPound > best.valuePerPound)) best = o
+    if (!cheapest || o.cost < cheapest.cost) cheapest = o
   }
-  return best
+  return best ?? cheapest
 }

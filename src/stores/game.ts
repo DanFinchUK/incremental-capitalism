@@ -38,6 +38,7 @@ import {
   computeOfflineCatchUp,
   steadyHustle,
   computePassivePerSecond,
+  computeIncomeSources,
   computeSectorSlices,
   itemMilestones,
   legacyMultiplier as calcLegacyMultiplier,
@@ -549,6 +550,13 @@ export const useGameStore = defineStore('game', () => {
   // allowance: this many taps' worth a second, at the steady Hustle
   const allowanceTapRate = computed(() =>
     noTap.value ? (ALLOWANCE_TAPS_PER_SEC + modifiers.value.allowanceTapsAdd) * hustleMultiplier.value : 0
+  )
+  // What each steady source earns a second now, for splitting the cashflow
+  // chart's realised money by where it came from
+  const passiveSources = computed<Record<string, number>>(() =>
+    Object.fromEntries(
+      computeIncomeSources(economyInput.value, 0, allowanceLabel.value, favourPerSecond.value).map((e) => [e.id, e.perSec])
+    )
   )
   const sectorSlices = computed(() =>
     computeSectorSlices(economyInput.value, manualRealisedPerSecond.value, allowanceLabel.value, favourPerSecond.value)
@@ -1169,7 +1177,7 @@ export const useGameStore = defineStore('game', () => {
     runBuyers(ts)
     observeBalance(telemetry.value, ts, money.value)
     if (ts - telemetry.value.lastSampleTs >= 250) {
-      sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value, undefined, favourPerSecond.value)
+      sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value, undefined, favourPerSecond.value, passiveSources.value)
     }
     maybeSpawnRandomEvent(ts)
     bosses.evaluateAttempt()
@@ -2006,6 +2014,7 @@ export const useGameStore = defineStore('game', () => {
     realisedPerSecond,
     manualRealisedPerSecond,
     sectorSlices,
+    passiveSources,
     allowanceLabel,
     allowancePerSecond,
     allowanceTapRate,

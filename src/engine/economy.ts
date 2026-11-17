@@ -370,14 +370,80 @@ export interface SectorSlice {
   color: string
 }
 
-const SECTOR_PALETTE: ReadonlyArray<string> = [
-  '#a5c956',
-  '#b366ff',
-  '#38bdf8',
-  '#f59e0b',
-  '#fb7185',
-  '#94a3b8'
-]
+// Each source of income keeps one colour wherever it is drawn (the cashflow
+// chart and the revenue mix strip), so a source that overtakes another
+// doesn't swap colours with it. Businesses take turns down the ladder, so
+// neighbouring rungs, which tend to earn together, never share a colour.
+const BUSINESS_COLOURS: ReadonlyArray<string> = ['#a5c956', '#b366ff', '#fb7185', '#14b8a6', '#6366f1']
+const SOURCE_COLOURS: Readonly<Record<string, string>> = {
+  interns: '#f59e0b',
+  // The allowance stands in for tapping, so it takes tapping's colour
+  allowance: '#38bdf8',
+  manual: '#38bdf8',
+  // Favours are gold, like the help on their cards (and hatched where drawn)
+  favours: 'var(--color-gold)',
+  windfall: '#facc15',
+  other: '#94a3b8'
+}
+const BUSINESS_INDEX: Readonly<Record<string, number>> = Object.fromEntries(BUSINESSES.map((b, i) => [`biz-${b.id}`, i]))
+
+export function sourceColour(id: string): string {
+  const fixed = SOURCE_COLOURS[id]
+  if (fixed) return fixed
+  const i = BUSINESS_INDEX[id]
+  return i === undefined ? SOURCE_COLOURS.other : BUSINESS_COLOURS[i % BUSINESS_COLOURS.length]
+}
+
+// Where it sits in a stack, bottom first: businesses up the ladder, then the
+// staff, the help, one-off windfalls, and taps on top, where their spikes
+// don't shake the bands beneath
+export function sourceOrder(id: string): number {
+  const i = BUSINESS_INDEX[id]
+  if (i !== undefined) return i
+  return 1000 + ['other', 'interns', 'allowance', 'favours', 'windfall', 'manual'].indexOf(id)
+}
+
+export interface IncomeSourceEntry {
+  id: string
+  label: string
+  perSec: number
+}
+
+// Every source of income a second, as the economy has it now. Favours get
+// their own entry, taken out of the rest in proportion.
+export function computeIncomeSources(
+  input: EconomySnapshotInput,
+  manualClickPerSec = 0,
+  allowanceLabel = 'Allowance',
+  favourPerSec = 0
+): IncomeSourceEntry[] {
+  const entries: IncomeSourceEntry[] = []
+  const breakdown = computeIncomeBreakdown(input)
+
+  for (const biz of BUSINESSES) {
+    const owned = input.businessesOwned[biz.id] ?? 0
+    if (owned > 0) {
+      const perSec = businessUnitPerSecond(biz, owned, input) * owned
+      if (perSec > 0) entries.push({ id: `biz-${biz.id}`, label: biz.label, perSec })
+    }
+  }
+  if (input.autoClickers > 0 && breakdown.interns > 0) {
+    entries.push({ id: 'interns', label: 'Unpaid Interns', perSec: breakdown.interns })
+  }
+  if (breakdown.allowance > 0) {
+    entries.push({ id: 'allowance', label: allowanceLabel, perSec: breakdown.allowance })
+  }
+  if (manualClickPerSec > 0) {
+    entries.push({ id: 'manual', label: 'Manual Hustle', perSec: manualClickPerSec })
+  }
+  const before = entries.reduce((acc, e) => acc + e.perSec, 0)
+  if (favourPerSec > 0 && before > favourPerSec) {
+    const ownShare = 1 - favourPerSec / before
+    for (const e of entries) e.perSec *= ownShare
+    entries.push({ id: 'favours', label: 'Favours', perSec: favourPerSec })
+  }
+  return entries
+}
 
 export function computeSectorSlices(
   input: EconomySnapshotInput,
@@ -386,42 +452,7 @@ export function computeSectorSlices(
   // What favours add a second: their own slice, taken out of the rest in proportion
   favourPerSec = 0
 ): SectorSlice[] {
-  const rawEntries: Array<{ id: string; label: string; perSec: number }> = []
-  const breakdown = computeIncomeBreakdown(input)
-
-  for (const biz of BUSINESSES) {
-    const owned = input.businessesOwned[biz.id] ?? 0
-    if (owned > 0) {
-      const perSec = businessUnitPerSecond(biz, owned, input) * owned
-      if (perSec > 0) {
-        rawEntries.push({ id: `biz-${biz.id}`, label: biz.label, perSec })
-      }
-    }
-  }
-
-  if (input.autoClickers > 0) {
-    const internPerSec = breakdown.interns
-    if (internPerSec > 0) {
-      rawEntries.push({ id: 'interns', label: 'Unpaid Interns', perSec: internPerSec })
-    }
-  }
-
-  const allowancePerSec = breakdown.allowance
-  if (allowancePerSec > 0) {
-    rawEntries.push({ id: 'allowance', label: allowanceLabel, perSec: allowancePerSec })
-  }
-
-  if (manualClickPerSec > 0) {
-    rawEntries.push({ id: 'manual', label: 'Manual Hustle', perSec: manualClickPerSec })
-  }
-
-  const before = rawEntries.reduce((acc, e) => acc + e.perSec, 0)
-  if (favourPerSec > 0 && before > favourPerSec) {
-    const ownShare = 1 - favourPerSec / before
-    for (const e of rawEntries) e.perSec *= ownShare
-    rawEntries.push({ id: 'favours', label: 'Favours', perSec: favourPerSec })
-  }
-
+  const rawEntries = computeIncomeSources(input, manualClickPerSec, allowanceLabel, favourPerSec)
   const total = rawEntries.reduce((acc, e) => acc + e.perSec, 0)
   if (total <= 0) {
     return []
@@ -435,12 +466,11 @@ export function computeSectorSlices(
     top.push({ id: 'other', label: 'Other Ventures', perSec: otherPerSec })
   }
 
-  return top.map((entry, index) => ({
+  return top.map((entry) => ({
     id: entry.id,
     label: entry.label,
     perSec: entry.perSec,
     pct: (entry.perSec / total) * 100,
-    // Favours are gold, like the help on their cards
-    color: entry.id === 'favours' ? 'var(--color-gold)' : SECTOR_PALETTE[index % SECTOR_PALETTE.length]
+    color: sourceColour(entry.id)
   }))
 }

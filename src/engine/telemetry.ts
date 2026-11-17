@@ -12,8 +12,11 @@ export interface CashflowSample {
   ts: number
   realisedPerSec: number
   passivePerSec: number
-  // What favours bring in a second, drawn as a band under the line
+  // What favours bring in a second
   favourPerSec?: number
+  // Where the second's realised money came from, by income source id
+  // (economy.ts computeIncomeSources, plus 'manual' and 'windfall')
+  mix?: Record<string, number>
   marker?: TelemetryMarker
 }
 
@@ -103,6 +106,28 @@ export function currentManualPerSec(state: TelemetryState, nowMs: number): numbe
   return sum
 }
 
+// The last second's realised money, split by where it came from: taps and
+// windfalls as the ledger has them, and steady income shared out among its
+// sources in proportion to what each earns a second now
+export function realisedMix(state: TelemetryState, nowMs: number, passiveSources: Readonly<Record<string, number>>): Record<string, number> {
+  pruneLedger(state, nowMs)
+  const sums: Record<IncomeSource, number> = { passive: 0, manual: 0, windfall: 0 }
+  for (const entry of state.ledger) sums[entry.source] += entry.amount
+  const mix: Record<string, number> = {}
+  const theoretical = Object.values(passiveSources).reduce((a, v) => a + v, 0)
+  if (sums.passive > 0) {
+    if (theoretical > 0) {
+      const scale = sums.passive / theoretical
+      for (const [id, v] of Object.entries(passiveSources)) if (v > 0) mix[id] = v * scale
+    } else {
+      mix.other = sums.passive
+    }
+  }
+  if (sums.manual > 0) mix.manual = sums.manual
+  if (sums.windfall > 0) mix.windfall = sums.windfall
+  return mix
+}
+
 export function observeBalance(state: TelemetryState, ts: number, cash: number): void {
   const safeCash = Number.isFinite(cash) ? Math.max(0, cash) : 0
   const b = bucketFor(ts)
@@ -148,7 +173,8 @@ export function sampleTelemetry(
   passivePerSec: number,
   cash: number,
   explicitMarker?: TelemetryMarker,
-  favourPerSec = 0
+  favourPerSec = 0,
+  passiveSources?: Readonly<Record<string, number>>
 ): CashflowSample {
   observeBalance(state, ts, cash)
   const realisedPerSec = currentRealisedPerSec(state, ts)
@@ -159,6 +185,7 @@ export function sampleTelemetry(
   const sample: CashflowSample = { ts, realisedPerSec, passivePerSec }
   if (marker) sample.marker = marker
   if (favourPerSec > 0) sample.favourPerSec = favourPerSec
+  if (passiveSources) sample.mix = realisedMix(state, ts, passiveSources)
 
   state.samples.push(sample)
   if (state.samples.length > MAX_SAMPLES) {

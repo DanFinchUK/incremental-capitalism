@@ -183,7 +183,7 @@ describe('favours on screen', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[data-testid="favour-running"]').text()).toMatch(new RegExp(`^${title} · 2:5\\d$`))
     expect(wrapper.find('[data-testid="call-in-favour"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="favour-band"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="flow-band-favours"]').exists()).toBe(true)
     expect(wrapper.find('.scn-SectorStrip').text()).toContain('Favours')
     wrapper.unmount()
   })

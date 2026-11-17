@@ -38,56 +38,72 @@
             </div>
           </div>
 
-          <svg
-            class="scn-ChartSvg"
-            :viewBox="`0 0 ${SVG_W} ${SVG_H}`"
-            preserveAspectRatio="none"
-            @mousemove="onFlowHover"
-            @mouseleave="hoverFlowIdx = null"
+          <!-- Realised money stacked by where it came from, the line along the top.
+               Hover, or press on a phone, for a moment's breakdown. -->
+          <div
+            ref="flowChart"
+            class="scn-ChartWrap"
+            @pointermove="onFlowPointer"
+            @pointerdown="onFlowPress"
+            @pointerleave="onFlowLeave"
           >
-            <defs>
-              <linearGradient id="ic-flow-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" class="scn-FlowStop" stop-opacity="0.42" />
-                <stop offset="100%" class="scn-FlowStop" stop-opacity="0.02" />
-              </linearGradient>
-            </defs>
+            <svg class="scn-ChartSvg" :viewBox="`0 0 ${SVG_W} ${SVG_H}`" preserveAspectRatio="none" data-testid="flow-chart">
+              <defs>
+                <pattern id="ic-favour-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                  <rect width="6" height="6" style="fill: var(--color-gold)" />
+                  <rect width="2.2" height="6" style="fill: rgba(255, 255, 255, 0.55)" />
+                </pattern>
+              </defs>
 
-            <line
-              v-for="gy in gridYLines"
-              :key="`fg-${gy}`"
-              x1="0"
-              :y1="gy"
-              :x2="SVG_W"
-              :y2="gy"
-              class="scn-GridLine"
-            />
+              <line
+                v-for="gy in gridYLines"
+                :key="`fg-${gy}`"
+                x1="0"
+                :y1="gy"
+                :x2="SVG_W"
+                :y2="gy"
+                class="scn-GridLine"
+              />
 
-            <path :d="flowAreaPath" fill="url(#ic-flow-grad)" />
-            <path v-if="hasFavourBand" :d="favourBandPath" class="scn-FavourBand" data-testid="favour-band" />
-            <path :d="passiveLinePath" fill="none" class="scn-PassiveLine" />
-            <path :d="flowLinePath" fill="none" class="scn-FlowLine" />
+              <path
+                v-for="band in flowBands"
+                :key="band.id"
+                :d="band.d"
+                class="scn-FlowBand"
+                :style="{ fill: band.fill }"
+                :data-testid="`flow-band-${band.id}`"
+              />
+              <path :d="passiveLinePath" fill="none" class="scn-PassiveLine" />
+              <path :d="flowLinePath" fill="none" class="scn-FlowLine" />
 
-            <g v-for="pin in markerPins" :key="`pin-${pin.ts}`">
-              <line :x1="pin.x" y1="6" :x2="pin.x" :y2="SVG_H - 4" class="scn-MarkerLine" />
-              <text :x="pin.x + 3" y="16" class="scn-MarkerLabel">{{ pin.marker }}</text>
-            </g>
+              <g v-for="pin in markerPins" :key="`pin-${pin.ts}`">
+                <line :x1="pin.x" y1="6" :x2="pin.x" :y2="SVG_H - 4" class="scn-MarkerLine" />
+                <text :x="pin.x + 3" y="16" class="scn-MarkerLabel">{{ pin.marker }}</text>
+              </g>
 
-            <line
-              v-if="hoverFlowX !== null"
-              :x1="hoverFlowX"
-              y1="0"
-              :x2="hoverFlowX"
-              :y2="SVG_H"
-              class="scn-Crosshair"
-            />
-          </svg>
+              <line
+                v-if="hoverFlowX !== null"
+                :x1="hoverFlowX"
+                y1="0"
+                :x2="hoverFlowX"
+                :y2="SVG_H"
+                class="scn-Crosshair"
+              />
+            </svg>
+            <div v-if="flowTip" class="scn-FlowTip" :style="flowTip.style" data-testid="flow-tip">
+              <b>{{ flowTip.when }} · {{ formatCurrency(flowTip.total) }}/s</b>
+              <span v-for="row in flowTip.rows" :key="row.id">
+                <i class="scn-SectorDot" :class="{ 'scn-Hatch': row.id === 'favours' }" :style="{ backgroundColor: row.color }"></i>
+                {{ row.label }} {{ formatCurrency(row.perSec) }}/s
+              </span>
+            </div>
+          </div>
 
           <div class="scn-AxisFooter">
             <span>Low {{ formatCurrency(flowRange.min) }}/s</span>
             <span class="scn-LegendInline">
-              <i class="scn-Swatch scn-Swatch-solid"></i> Realised 1s
+              <i class="scn-Swatch scn-Swatch-solid"></i> Realised 1s, by source
               <i class="scn-Swatch scn-Swatch-dashed"></i> Passive floor
-              <template v-if="hasFavourBand"><i class="scn-Swatch scn-Swatch-favour"></i> From favours</template>
             </span>
             <span>High {{ formatCurrency(flowRange.max) }}/s</span>
           </div>
@@ -178,13 +194,14 @@
             v-for="slice in store.sectorSlices"
             :key="slice.id"
             class="scn-SectorSeg"
+            :class="{ 'scn-Hatch': slice.id === 'favours' }"
             :style="{ width: `${slice.pct.toFixed(2)}%`, backgroundColor: slice.color }"
             :title="`${slice.label}: ${formatCurrency(slice.perSec)}/s (${slice.pct.toFixed(1)}%)`"
           ></div>
         </div>
         <div class="scn-SectorLegend">
           <span v-for="slice in store.sectorSlices" :key="`leg-${slice.id}`" class="scn-SectorItem">
-            <i class="scn-SectorDot" :style="{ backgroundColor: slice.color }"></i>
+            <i class="scn-SectorDot" :class="{ 'scn-Hatch': slice.id === 'favours' }" :style="{ backgroundColor: slice.color }"></i>
             {{ slice.label }} <strong>{{ slice.pct.toFixed(1) }}%</strong>
           </span>
         </div>
@@ -194,8 +211,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { MAX_CANDLES, type CashflowSample, type OhlcCandle } from '../engine/telemetry'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { BUSINESSES_BY_ID } from '../data/items'
+import { sourceColour, sourceOrder } from '../engine/economy'
+import { MAX_CANDLES, realisedMix, type CashflowSample, type OhlcCandle } from '../engine/telemetry'
 import { useGameStore } from '../stores/game'
 import { formatCurrency } from '../utils/format'
 
@@ -218,7 +237,8 @@ const flowSamples = computed<CashflowSample[]>(() => {
     ts: store.nowMs,
     realisedPerSec: store.realisedPerSecond,
     passivePerSec: store.moneyPerSecond,
-    favourPerSec: list.at(-1)?.favourPerSec
+    favourPerSec: list.at(-1)?.favourPerSec,
+    mix: realisedMix(store.telemetry, store.nowMs, store.passiveSources)
   }
   return list.length > 0 ? [...list, livePoint] : [livePoint]
 })
@@ -245,23 +265,20 @@ const flowDeltaPct = computed(() => {
   return ((nowVal - baseline) / baseline) * 100
 })
 
+// From zero, so the stacked bands keep their true sizes
 const flowRange = computed(() => {
   let min = Infinity
   let max = 0
   for (const s of flowSamples.value) {
-    min = Math.min(min, s.realisedPerSec, s.passivePerSec)
+    min = Math.min(min, s.realisedPerSec)
     max = Math.max(max, s.realisedPerSec, s.passivePerSec)
   }
   if (!Number.isFinite(min)) min = 0
-  const floor = min * 0.9
-  const ceil = max <= floor ? floor + 100 : max * 1.08
-  return { min: Math.max(0, floor), max: ceil }
+  return { min: Math.max(0, min), max: max <= 0 ? 100 : max * 1.08 }
 })
 
 function yForFlow(val: number): number {
-  const { min, max } = flowRange.value
-  const span = Math.max(1e-6, max - min)
-  const norm = Math.min(1, Math.max(0, (val - min) / span))
+  const norm = Math.min(1, Math.max(0, val / Math.max(1e-6, flowRange.value.max)))
   return Number((PAD_TOP + PLOT_H * (1 - norm)).toFixed(2))
 }
 
@@ -281,22 +298,61 @@ const flowLinePath = computed(() => {
     .join(' ')
 })
 
-const flowAreaPath = computed(() => {
-  const base = PAD_TOP + PLOT_H
-  return `${flowLinePath.value} L ${SVG_W} ${base} L 0 ${base} Z`
+// Where the money came from, as bands stacked under the line. The five
+// biggest sources over the window get bands of their own; the rest share
+// one. Each keeps its colour (economy.ts sourceColour).
+const MAX_BANDS = 5
+
+function sourceLabel(id: string): string {
+  if (id.startsWith('biz-')) return BUSINESSES_BY_ID[id.slice(4)]?.label ?? 'A business'
+  const fixed: Record<string, string> = {
+    interns: 'Unpaid Interns',
+    allowance: store.allowanceLabel,
+    manual: 'Manual Hustle',
+    favours: 'Favours',
+    windfall: 'Windfalls',
+    other: 'Other Ventures'
+  }
+  return fixed[id] ?? 'Other Ventures'
+}
+
+const bandIds = computed<string[]>(() => {
+  const totals = new Map<string, number>()
+  for (const p of flowSamples.value) {
+    for (const [id, v] of Object.entries(p.mix ?? {})) totals.set(id, (totals.get(id) ?? 0) + v)
+  }
+  const ranked = [...totals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([id]) => id)
+  const kept = ranked.slice(0, MAX_BANDS)
+  if (ranked.length > MAX_BANDS && !kept.includes('other')) kept.push('other')
+  return kept.sort((a, b) => sourceOrder(a) - sourceOrder(b))
 })
 
-// What favours bring in: a gold band hanging from the line, as deep as their share
-const hasFavourBand = computed(() => flowSamples.value.some((p) => (p.favourPerSec ?? 0) > 0))
+// A sample's money by band: anything without a band of its own goes to Other
+function bandValues(p: CashflowSample): Record<string, number> {
+  const out: Record<string, number> = {}
+  const ids = bandIds.value
+  for (const [id, v] of Object.entries(p.mix ?? {})) {
+    const key = ids.includes(id) ? id : 'other'
+    out[key] = (out[key] ?? 0) + v
+  }
+  return out
+}
 
-const favourBandPath = computed(() => {
+const flowBands = computed(() => {
   const pts = flowSamples.value
-  if (pts.length < 2) return ''
-  const top = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xForFlow(i, pts.length)} ${yForFlow(p.realisedPerSec)}`)
-  const bottom = pts
-    .map((p, i) => `L ${xForFlow(i, pts.length)} ${yForFlow(Math.max(0, p.realisedPerSec - (p.favourPerSec ?? 0)))}`)
-    .reverse()
-  return `${top.join(' ')} ${bottom.join(' ')} Z`
+  if (pts.length < 2) return []
+  const values = pts.map(bandValues)
+  const base = new Array<number>(pts.length).fill(0)
+  const bands: Array<{ id: string; d: string; fill: string }> = []
+  for (const id of bandIds.value) {
+    const lo = base.slice()
+    for (let i = 0; i < pts.length; i++) base[i] += values[i][id] ?? 0
+    if (base.every((v, i) => v - lo[i] <= 0)) continue
+    const top = base.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xForFlow(i, pts.length)} ${yForFlow(v)}`)
+    const bottom = lo.map((v, i) => `L ${xForFlow(i, pts.length)} ${yForFlow(v)}`).reverse()
+    bands.push({ id, d: `${top.join(' ')} ${bottom.join(' ')} Z`, fill: id === 'favours' ? 'url(#ic-favour-hatch)' : sourceColour(id) })
+  }
+  return bands
 })
 
 const passiveLinePath = computed(() => {
@@ -326,14 +382,60 @@ const hoverFlowX = computed(() => {
   return xForFlow(hoverFlowIdx.value, flowSamples.value.length)
 })
 
-function onFlowHover(ev: MouseEvent): void {
-  const target = ev.currentTarget as SVGSVGElement | null
-  if (!target) return
-  const rect = target.getBoundingClientRect()
-  if (rect.width <= 0) return
-  const ratio = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width))
-  hoverFlowIdx.value = Math.round(ratio * (flowSamples.value.length - 1))
+// Hover with a mouse; on a touch screen a press holds the breakdown until a
+// tap elsewhere
+const flowChart = ref<HTMLElement | null>(null)
+const flowPinned = ref(false)
+
+function flowIndexAt(clientX: number): number | null {
+  const box = flowChart.value?.getBoundingClientRect()
+  if (!box || box.width <= 0) return null
+  const ratio = Math.min(1, Math.max(0, (clientX - box.left) / box.width))
+  return Math.round(ratio * (flowSamples.value.length - 1))
 }
+
+function onFlowPointer(ev: PointerEvent): void {
+  if (ev.pointerType === 'mouse' || flowPinned.value) hoverFlowIdx.value = flowIndexAt(ev.clientX)
+}
+
+function onFlowPress(ev: PointerEvent): void {
+  if (ev.pointerType === 'mouse') return
+  flowPinned.value = true
+  hoverFlowIdx.value = flowIndexAt(ev.clientX)
+}
+
+function onFlowLeave(ev: PointerEvent): void {
+  if (ev.pointerType === 'mouse') hoverFlowIdx.value = null
+}
+
+function unpinFlow(ev: PointerEvent): void {
+  if (flowPinned.value && !flowChart.value?.contains(ev.target as Node)) {
+    flowPinned.value = false
+    hoverFlowIdx.value = null
+  }
+}
+onMounted(() => document.addEventListener('pointerdown', unpinFlow))
+onUnmounted(() => document.removeEventListener('pointerdown', unpinFlow))
+
+// The breakdown for the moment under the pointer, top band first, beside it
+const flowTip = computed(() => {
+  const idx = hoverFlowIdx.value
+  const p = idx !== null ? flowSamples.value[idx] : null
+  if (idx === null || !p) return null
+  const values = bandValues(p)
+  const rows = [...bandIds.value]
+    .reverse()
+    .filter((id) => (values[id] ?? 0) > 0)
+    .map((id) => ({ id, label: sourceLabel(id), perSec: values[id], color: sourceColour(id) }))
+  const secondsAgo = Math.max(0, Math.round((store.nowMs - p.ts) / 1000))
+  const ratio = idx / Math.max(1, flowSamples.value.length - 1)
+  return {
+    when: secondsAgo === 0 ? 'Now' : `${secondsAgo}s ago`,
+    total: p.realisedPerSec,
+    rows,
+    style: ratio < 0.5 ? { left: `calc(${(ratio * 100).toFixed(1)}% + 10px)` } : { right: `calc(${((1 - ratio) * 100).toFixed(1)}% + 10px)` }
+  }
+})
 
 // OHLC Candlestick computations
 const candles = computed<OhlcCandle[]>(() => store.telemetry.candles)

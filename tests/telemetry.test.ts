@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { BASE_CLICK_VALUE, computeSectorSlices } from '../src/engine/economy'
-import { createTelemetryState, observeBalance, recordIncome, resetTelemetry, sampleTelemetry } from '../src/engine/telemetry'
+import { BASE_CLICK_VALUE, computeSectorSlices, sourceColour, sourceOrder } from '../src/engine/economy'
+import { createTelemetryState, observeBalance, realisedMix, recordIncome, resetTelemetry, sampleTelemetry } from '../src/engine/telemetry'
 import { useGameStore } from '../src/stores/game'
 
 describe('telemetry engine & sector breakdown', () => {
@@ -57,6 +57,49 @@ describe('telemetry engine & sector breakdown', () => {
     expect(tel.samples).toHaveLength(1)
     expect(tel.candles).toHaveLength(1)
     expect(tel.candles[0].open).toBe(25_000)
+  })
+
+  it('splits each second of the cashflow chart by where the money came from', () => {
+    const tel = createTelemetryState(1000, 0)
+    recordIncome(tel, 1100, 300, 'passive')
+    recordIncome(tel, 1200, 40, 'manual')
+    recordIncome(tel, 1300, 500, 'windfall')
+    // Steady income is shared out in proportion to what each source earns now
+    const mix = realisedMix(tel, 1500, { 'biz-1': 20, interns: 10 })
+    expect(mix['biz-1']).toBeCloseTo(200)
+    expect(mix.interns).toBeCloseTo(100)
+    expect(mix.manual).toBe(40)
+    expect(mix.windfall).toBe(500)
+    // And each sample carries it, adding up to the second's realised money
+    const sample = sampleTelemetry(tel, 1500, 30, 0, undefined, 0, { 'biz-1': 20, interns: 10 })
+    const sum = Object.values(sample.mix!).reduce((a, v) => a + v, 0)
+    expect(sum).toBeCloseTo(sample.realisedPerSec)
+  })
+
+  it('gives each source one colour wherever it is drawn, whatever its rank', () => {
+    const base = {
+      jobsPurchased: {},
+      legacyPoints: 0,
+      classLevel: 0,
+      deregulationRank: 0,
+      autoClickers: 0,
+      businessBuffMultiplier: 1,
+      clickBuffMultiplier: 1,
+      hustleMultiplier: 1
+    }
+    // Two businesses swap places in the mix; each keeps its colour
+    const a = computeSectorSlices({ ...base, businessesOwned: { '1': 5000, '2': 1 } }, 0)
+    const b = computeSectorSlices({ ...base, businessesOwned: { '1': 1, '2': 100 } }, 0)
+    const colourOf = (slices: typeof a, id: string) => slices.find((s) => s.id === id)!.color
+    expect(a[0].id).not.toBe(b[0].id)
+    expect(colourOf(a, 'biz-1')).toBe(colourOf(b, 'biz-1'))
+    expect(colourOf(a, 'biz-2')).toBe(colourOf(b, 'biz-2'))
+    // Neighbouring rungs never share one, and the staff and the help never look like a business
+    expect(sourceColour('biz-1')).not.toBe(sourceColour('biz-2'))
+    expect(sourceColour('interns')).not.toBe(sourceColour('biz-1'))
+    // Taps sit on top of every stack, businesses at the bottom
+    expect(sourceOrder('manual')).toBeGreaterThan(sourceOrder('favours'))
+    expect(sourceOrder('biz-9')).toBeLessThan(sourceOrder('interns'))
   })
 
   it('computes sorted sector revenue mix across businesses, interns, and manual hustle', () => {

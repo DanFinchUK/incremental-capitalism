@@ -176,6 +176,13 @@ function sourcesFor(def: AdvisorDef, inst: AdvisorInstance): ModifierSource[] {
 }
 
 // Every modifier source the office contributes, PAs and open seats alike
+// Who an advisor is now: a PA promoted up their family holds the role above
+// (a PFI Consultant becomes the Privatisation Campaigner), and runs its
+// campaign and its role bonus
+export function advisorRole(inst: AdvisorInstance): AdvisorDef | undefined {
+  return paStanding(inst)?.def ?? ADVISORS_BY_ID[inst.advisorId]
+}
+
 export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>): ModifierSource[] {
   const sources: ModifierSource[] = []
   // Campaigners for the same cause pool their time: the cap is shared, so
@@ -185,14 +192,15 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>):
     const def = ADVISORS_BY_ID[inst.advisorId]
     if (!def) continue
     sources.push(...sourcesFor(def, inst))
-    if (def.campaign) {
-      const pooled = campaignTime.get(def.id) ?? { campaign: def.campaign, ms: 0 }
+    const role = advisorRole(inst) ?? def
+    if (role.campaign) {
+      const pooled = campaignTime.get(role.id) ?? { campaign: role.campaign, ms: 0 }
       pooled.ms += inst.campaignMs
-      campaignTime.set(def.id, pooled)
+      campaignTime.set(role.id, pooled)
     }
-    if (def.roleBonus) {
-      const count = advisors.filter((a) => ADVISORS_BY_ID[a.advisorId]?.roles.includes(def.roleBonus!.role)).length
-      const mult = 1 + def.roleBonus.incomePerAdvisor * count
+    if (role.roleBonus) {
+      const count = advisors.filter((a) => advisorRole(a)?.roles.includes(role.roleBonus!.role)).length
+      const mult = 1 + role.roleBonus.incomePerAdvisor * count
       sources.push({ businessMult: mult, clickMult: mult })
     }
   }

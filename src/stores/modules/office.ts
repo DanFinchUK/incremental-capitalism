@@ -7,6 +7,7 @@ import {
   buyerTierOf,
   paStanding,
   paTitle,
+  advisorRole,
   advisorSector,
   rarityTier,
   rollAdvisorOffer,
@@ -288,12 +289,13 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   }
 
   function addCampaignTime(ms: number): void {
-    const grow = (a: AdvisorInstance | null) =>
-      a && ADVISORS_BY_ID[a.advisorId]?.campaign ? { ...a, campaignMs: a.campaignMs + ms } : a
-    if (officeSeats.value.some((a) => a && ADVISORS_BY_ID[a.advisorId]?.campaign)) {
+    // A PA promoted into a campaigner's role campaigns too
+    const campaigning = (a: AdvisorInstance | null) => !!a && !!advisorRole(a)?.campaign
+    const grow = (a: AdvisorInstance | null) => (a && campaigning(a) ? { ...a, campaignMs: a.campaignMs + ms } : a)
+    if (officeSeats.value.some(campaigning)) {
       seatStore.value = officeSeats.value.map(grow)
     }
-    if (paChairs.value.some((a) => a && ADVISORS_BY_ID[a.advisorId]?.campaign)) {
+    if (paChairs.value.some(campaigning)) {
       paStore.value = paChairs.value.map(grow)
     }
   }

@@ -13,13 +13,20 @@ export default mergeConfig(
       // `npm run sim:strength` plays sim/strength*.strength.ts and ranks
       // the results in sim/strength.teardown.ts
       include:
-        process.env.npm_lifecycle_event === 'sim:strength'
+        process.env.npm_lifecycle_event === 'sim:solo'
+          ? ['sim/**/*.solo.ts']
+          : process.env.npm_lifecycle_event === 'sim:strength'
           ? ['sim/**/*.strength.ts']
           : process.env.npm_lifecycle_event === 'sim:reports'
             ? ['sim/**/*.report.sim.ts']
             : ['sim/**/*.sim.ts'],
-      exclude: process.env.npm_lifecycle_event === 'sim:reports' || process.env.npm_lifecycle_event === 'sim:strength' ? [] : ['sim/**/*.report.sim.ts'],
-      globalSetup: process.env.npm_lifecycle_event === 'sim:strength' ? ['sim/strength.teardown.ts'] : [],
+      exclude: ['sim:reports', 'sim:strength', 'sim:solo'].includes(process.env.npm_lifecycle_event ?? '') ? [] : ['sim/**/*.report.sim.ts'],
+      globalSetup:
+        process.env.npm_lifecycle_event === 'sim:strength'
+          ? ['sim/strength.teardown.ts']
+          : process.env.npm_lifecycle_event === 'sim:solo'
+            ? ['sim/solo.teardown.ts']
+            : [],
       // Every file is a long, single-threaded campaign: run one per core
       // (Vitest's default leaves half of them idle)
       maxWorkers: availableParallelism(),

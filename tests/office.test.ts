@@ -368,3 +368,26 @@ describe('sector specialists', () => {
     expect([...seen].some((id) => advisorSector(ADVISORS_BY_ID[id]) === null)).toBe(true)
   })
 })
+
+describe('a PA promoted into a campaigner', () => {
+  it('runs the campaign of the role they now hold', () => {
+    // A PFI Consultant after a generation's service holds the family's top
+    // role, the Privatisation Campaigner, and campaigns as one
+    const pa = { uid: 'p', advisorId: 'pfi-consultant', servedGenerations: 1, campaignMs: 10 * 60_000 }
+    expect(paStanding(pa)!.def.id).toBe('privatisation-campaigner')
+    const m = combineModifiers(officeModifierSources([pa]))
+    expect(m.sectorBusinessMult.infrastructure).toBeCloseTo(1.3)
+    expect(m.sectorCostMult.infrastructure).toBeCloseTo(0.9)
+  })
+
+  it('builds up campaign time', async () => {
+    const { ref } = await import('vue')
+    const { createOfficeModule } = await import('../src/stores/modules/office')
+    const office = createOfficeModule({ money: ref(0), extraSeats: () => 0, paChairCount: () => 1, announce: () => {}, flushSave: () => {} })
+    const pa = { uid: 'p', advisorId: 'pfi-consultant', servedGenerations: 1, campaignMs: 0 }
+    office.loadState({ seats: [], paChairs: [pa], offer: [], queued: 0, waiting: 0, optional: false, parked: [] })
+    office.addCampaignTime(5000)
+    expect(office.paChairs.value[0]!.campaignMs).toBe(5000)
+  })
+
+})

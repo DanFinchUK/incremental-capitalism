@@ -3,7 +3,10 @@
 // (docs/pacing.md). Plays a fast tapper's dynasty from Commoner to Duke.
 import { describe, expect, it } from 'vitest'
 import { FAST_TAPPER, runCampaign } from './bot'
-import { SEEDS, median } from './pacing.shared'
+import { median } from './pacing.shared'
+
+// Five seeds, not three: one line's length swings a lot with the heirs drawn
+const SEEDS = [1, 2, 3, 4, 5]
 
 // Active minutes each line took, Commoner first
 function lineMinutes(seed: number): number[] {

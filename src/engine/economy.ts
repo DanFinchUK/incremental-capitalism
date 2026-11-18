@@ -1,7 +1,9 @@
 import { BUSINESSES, BUSINESSES_BY_ID, JOBS, JOBS_BY_ID, SYNERGY_JOB_FOR_BUSINESS, type BusinessDef, type ItemKind, type JobDef } from '../data/items'
 import { GATE_NET_WORTH, SOCIAL_CLASSES, type SocialClassDef } from '../data/classes'
 import { NEUTRAL_MODIFIERS, type Modifiers } from './modifiers'
+import { LADDER_TRIAL } from '../data/trial'
 import {
+  MILESTONE_BASE_STEP,
   MILESTONE_STEP_PER_DEREGULATION_RANK,
   OFFLINE_HOURS_PER_OFFSHORE_RANK,
   OFFLINE_RATE_PER_OFFSHORE_RANK
@@ -20,7 +22,9 @@ const MILESTONES_ELITE: ReadonlyArray<number> = [3, 5, 10, 20, 35, 100, 200]
 // engine/bosses.ts), so each new gate makes the family about as much stronger
 // as the next gate is harder. That keeps the gate past the family's best easy
 // for the next heir (see docs/pacing.md).
-export const LEGACY_INCOME_PER_POINT = 4.5
+// On the ladder trial (data/trial.ts) a class is a rung apart and each point
+// is worth x3.4, fitted with the pacing sim
+export const LEGACY_INCOME_PER_POINT = LADDER_TRIAL ? 3.4 : 4.5
 // Share of the retiring run's net worth the heir starts with as cash.
 export const HEIR_INHERITANCE_SHARE = 0.05
 // Each rung of the item ladder is worth about a hundred times the one before,
@@ -119,7 +123,7 @@ export function milestoneMultiplier(owned: number, scaleFactor: number, deregula
   if (reachedCount === 0) {
     return 1
   }
-  const step = 2 + MILESTONE_STEP_PER_DEREGULATION_RANK * deregulationRank + stepBonus
+  const step = MILESTONE_BASE_STEP + MILESTONE_STEP_PER_DEREGULATION_RANK * deregulationRank + stepBonus
   return Math.pow(step, reachedCount)
 }
 

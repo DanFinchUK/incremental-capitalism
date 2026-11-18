@@ -1,10 +1,11 @@
+import { storageKey } from '../data/trial'
 // The Hall of Dynasties: every family that reached Duke, kept apart from the
 // save so founding a new dynasty never loses it
 import { readGenerationRecord, titlesHeld, type GenerationRecord } from './family'
 import { rankLine } from './peerage'
 import { readScenarioId, type ScenarioId } from '../data/scenarios'
 
-export const HALL_KEY = 'hall'
+export const HALL_KEY = storageKey('hall')
 export const MAX_HALL_ENTRIES = 50
 
 export interface DynastyRecord {

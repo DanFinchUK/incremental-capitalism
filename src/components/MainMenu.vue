@@ -109,6 +109,19 @@
             </select>
           </div>
           <div class="ttl-Setting">
+            <div>
+              <strong>Ladder trial</strong>
+              <p>
+                A reworked set of Jobs and Businesses: each rung harder to reach and to keep buying, the classes closer
+                together, and King's Awards for whole blocks of rungs. It plays in a save of its own, so your family here
+                is untouched. Switching reloads the game.
+              </p>
+            </div>
+            <button type="button" class="ttl-Toggle" :aria-pressed="LADDER_TRIAL" data-testid="menu-toggle-trial" @click="setLadderTrial(!LADDER_TRIAL)">
+              {{ LADDER_TRIAL ? 'On' : 'Off' }}
+            </button>
+          </div>
+          <div class="ttl-Setting">
             <div><strong>Sound</strong></div>
             <button type="button" class="ttl-Toggle" :aria-pressed="!store.muted" data-testid="menu-toggle-sound" @click="store.toggleMute()">
               {{ store.muted ? 'Off' : 'On' }}
@@ -165,6 +178,7 @@ import { ACHIEVEMENTS } from '../data/achievements'
 import { INTRO_PAGES } from '../data/intro'
 import { roomForClass, type RoomId } from '../data/rooms'
 import type { ScenarioId } from '../data/scenarios'
+import { LADDER_TRIAL, setLadderTrial } from '../data/trial'
 import { armsFor } from '../engine/crest'
 import { bestDynasty, scenariosOpen } from '../engine/hall'
 import { peerageRank } from '../engine/peerage'
@@ -213,7 +227,7 @@ function carryOn(): void {
 }
 
 const continueLine = computed(() => {
-  const scenario = store.scenario !== 'standard' ? `${store.scenarioDef.name} · ` : ''
+  const scenario = (LADDER_TRIAL ? 'Ladder trial · ' : '') + (store.scenario !== 'standard' ? `${store.scenarioDef.name} · ` : '')
   if (fresh.value) return `${scenario}Not yet in the register`
   if (store.dynastyComplete) return `${scenario}Made Duke in ${formatDuration(store.dynastyMs / 1000)}`
   const rank = store.titles > 0 ? ` · ${peerageRank(store.titles)}` : ''

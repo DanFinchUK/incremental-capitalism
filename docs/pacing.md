@@ -96,8 +96,38 @@ into the new line, so each line takes about two-thirds as long as the last
 minutes for a fast tapper, that is about 62, 38, 31 and 18 minutes for the
 Baron, Viscount, Earl and Marquess lines (sim medians), about 4 hours to
 Duke. `sim/pacing.lines.sim.ts` checks each line takes 50% to 85% as long as
-the one before (median); `sim/elevation.report.sim.ts` shows the climb after an
+the one before (median of five seeds); `sim/elevation.report.sim.ts` shows the climb after an
 elevation.
+
+## The ladder trial
+
+Settings has a "Ladder trial" switch: a playtest of reworked Jobs and
+Businesses, in a save of its own (`src/data/trial.ts`; the sim plays it with
+`LADDER=trial npm run sim`). It aims for this shape:
+
+- Rung 2 is first bought around 50 of Rung 1, and every rung's first unit,
+  and its second, takes longer than the last rung's did.
+- By the 10th rung, the earlier ones sit at middling milestones (100 to 250).
+- By the 20th, the first eight or so are at 1,000, the next few most of the
+  way, and the rungs just below the 20th fall away (around 250 down to 175).
+- A family without titles gets to about the 10th rung (the Garden Party), and
+  each title is worth about two rungs further.
+
+How: the ladder is built by a rule (`TRIAL_LADDER` in `src/data/items.ts`)
+fitted with a quick model of a player climbing it. Units get dearer by a step
+that falls up the ladder (9.5% to 3.2%), so deep rungs are bought in
+hundreds; the gap to the next rung grows from about 58 to about 279 units;
+each rung pays back 7.5x more slowly than the one below at the bottom,
+easing to 3.6x by halfway. Milestones are worth x4. King's Awards
+(`src/engine/awards.ts`) reward every Job, or every Business, in a block of
+five rungs reaching 25, 100, 250, 500 and 1,000, each x1.25 to all income,
+so the oldest rungs stay worth buying. The classes sit a rung apart from rung
+2.4, Legacy is x3.4 a point and a title x2.5.
+
+On the trial the sim passes all but two checks, both near misses that swing
+from run to run: the fast tapper's first gate 9 lands around 75 to 85
+minutes (the floor is 75), and one later line can come out a little longer
+than the one before it.
 
 ## Other targets
 

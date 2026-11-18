@@ -1,5 +1,6 @@
 // The Peerage: once the family has survived the Royal Garden Party, it can
 // be elevated to the Lords, trading Legacy for permanent Titles.
+import { LADDER_TRIAL } from '../data/trial'
 import type { ModifierSource } from './modifiers'
 
 // Legacy is one point per gate past the family's best, so a bloodline that
@@ -7,7 +8,8 @@ import type { ModifierSource } from './modifiers'
 export const LEGACY_PER_TITLE = 9
 // Each title multiplies all income by this, and they compound: each new
 // line takes about two-thirds as long as the last (docs/pacing.md)
-export const INCOME_PER_TITLE = 3
+// (x2.5 on the ladder trial, data/trial.ts, whose classes sit closer)
+export const INCOME_PER_TITLE = LADDER_TRIAL ? 2.5 : 3
 
 export function titlesFor(legacyPoints: number): number {
   return Math.floor(Math.max(0, legacyPoints) / LEGACY_PER_TITLE)

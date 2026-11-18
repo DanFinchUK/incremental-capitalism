@@ -5,6 +5,7 @@
 // minutes and +4 not before 2 hours, and "never reached" passes the second.
 import { describe, expect, it } from 'vitest'
 import { JOBS } from '../src/data/items'
+import { LADDER_TRIAL } from '../src/data/trial'
 import { FAST_TAPPER, runCampaign, type BotConfig } from './bot'
 import { SEEDS, median, plusMinutes } from './pacing.shared'
 
@@ -33,18 +34,22 @@ describe('the prestige rule for a player who never gives up', () => {
 
 // A tuning guide rather than a hard rule: on a fresh climb, a rung should
 // carry you until you own about 50 of it before the next one is in reach.
+// The ladder trial's rungs are harder to reach, so a few hours' climb sees
+// only its first few.
+const RUNGS = LADDER_TRIAL ? 4 : 8
+const ENOUGH = LADDER_TRIAL ? 10 : 15
 describe('the job and business ladders', () => {
   const handovers = (kind: 'jobs' | 'businesses', rungs: number) =>
     firstGenProbes.flatMap((g) => g.rungHandover![kind].slice(1, rungs + 1)).filter((n): n is number => n !== null)
 
-  it('the next Job is first bought with around 50 of the one below (median of the first 8 rungs at least 35)', () => {
-    expect(handovers('jobs', 8).length).toBeGreaterThanOrEqual(15)
-    expect(median(handovers('jobs', 8))).toBeGreaterThanOrEqual(35)
+  it('the next Job is first bought with around 50 of the one below (median of the first rungs at least 35)', () => {
+    expect(handovers('jobs', RUNGS).length).toBeGreaterThanOrEqual(ENOUGH)
+    expect(median(handovers('jobs', RUNGS))).toBeGreaterThanOrEqual(35)
   })
 
-  it('the next Business is first bought with around 50 of the one below (median of the first 8 rungs at least 35)', () => {
-    expect(handovers('businesses', 8).length).toBeGreaterThanOrEqual(15)
-    expect(median(handovers('businesses', 8))).toBeGreaterThanOrEqual(35)
+  it('the next Business is first bought with around 50 of the one below (median of the first rungs at least 35)', () => {
+    expect(handovers('businesses', RUNGS).length).toBeGreaterThanOrEqual(ENOUGH)
+    expect(median(handovers('businesses', RUNGS))).toBeGreaterThanOrEqual(35)
   })
 
   it('the first Job takes a few dozen taps, not one', () => {

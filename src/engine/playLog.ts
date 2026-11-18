@@ -1,9 +1,10 @@
+import { storageKey } from '../data/trial'
 // A record of how the game is actually played, for balancing. It lives in
 // localStorage under its own key (so the frequent game saves stay small)
 // and is merged into the save JSON when the save is copied. It never leaves
 // the browser. Every list is capped.
 
-export const PLAY_LOG_KEY = 'playLog'
+export const PLAY_LOG_KEY = storageKey('playLog')
 export const MAX_LOG_EVENTS = 2500
 export const MAX_LOG_MINUTES = 3000
 export const MAX_LOG_SESSIONS = 500

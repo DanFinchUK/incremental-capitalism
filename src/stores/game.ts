@@ -24,6 +24,7 @@ import {
   EMPTY_PERKS,
   EVENT_INTERVAL_PER_INSIDER_RANK,
   INTERNS_PER_RANK,
+  MILESTONE_BASE_STEP,
   MILESTONE_STEP_PER_DEREGULATION_RANK,
   perkNextCost,
   type PerkId,
@@ -60,6 +61,8 @@ import {
   type PersistedSceneState
 } from '../engine/migration'
 import { SOCIAL_CLASSES } from '../data/classes'
+import { LADDER_TRIAL } from '../data/trial'
+import { awardMultiplier, awardsHeld, awardText, type Award } from '../engine/awards'
 import { HALL_KEY, addToHall, parseHall, scenariosOpen, type DynastyRecord } from '../engine/hall'
 import { SCENARIOS_BY_ID, type ScenarioId } from '../data/scenarios'
 import {
@@ -326,10 +329,25 @@ export const useGameStore = defineStore('game', () => {
       Object.values(jobsPurchased.value).filter((n) => n >= DOMINANCE_AT).length +
       Object.values(businessesOwned.value).filter((n) => n >= DOMINANCE_AT).length
   )
+  // King's Awards, on the ladder trial only
+  const awards = computed(() => (LADDER_TRIAL ? awardsHeld(jobsPurchased.value, businessesOwned.value) : []))
+  let awardKeys = new Set<string>()
+  // Announces an award newly earned (quiet: just take note, as on loading)
+  function noteAwards(quiet = false): void {
+    const now = awards.value
+    if (now.length === 0 && awardKeys.size === 0) return
+    const key = (a: Award) => `${a.kind}:${a.from}:${a.level}`
+    const fresh = now.filter((a) => !awardKeys.has(key(a)))
+    awardKeys = new Set(now.map(key))
+    if (!quiet && fresh.length > 0) announce(awardText(fresh[fresh.length - 1]))
+  }
   const lastingSources = computed(() => {
     const held = dominanceHeld.value
     const dominance = held > 0 ? [{ businessMult: dominanceMultiplier(held), clickMult: dominanceMultiplier(held) }] : []
+    const won = awards.value.length
+    const awarded = won > 0 ? [{ businessMult: awardMultiplier(won), clickMult: awardMultiplier(won) }] : []
     return [
+      ...awarded,
       ...bloodlineTraitSources(familyTree.value, heir.value),
       ...office.officeSources.value,
       achievementSource(achievements.value.length),
@@ -758,6 +776,8 @@ export const useGameStore = defineStore('game', () => {
     resetTelemetry(telemetry.value, ts, loaded.money)
     refreshSeenItems()
     scheduleNextEvent(ts)
+    // Awards already held on loading aren't news
+    noteAwards(true)
   }
 
   function hydrateFromStorage(ts = Date.now()): void {
@@ -900,7 +920,7 @@ export const useGameStore = defineStore('game', () => {
     // Automation crosses milestones quietly; only your own purchases get a banner
     if (crossedMilestone !== null && save) {
       markTelemetryEvent(telemetry.value, 'Milestone')
-      const step = (2 + MILESTONE_STEP_PER_DEREGULATION_RANK * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
+      const step = (MILESTONE_BASE_STEP + MILESTONE_STEP_PER_DEREGULATION_RANK * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned: output x${step}!`)
     }
 
@@ -1197,6 +1217,7 @@ export const useGameStore = defineStore('game', () => {
       // is on screen, and stops once the dynasty is over
       return
     }
+    noteAwards()
 
     if (elapsedMs >= 60_000) {
       // Time away abandons a boss fight (no cooldown), so offline income
@@ -2089,6 +2110,7 @@ export const useGameStore = defineStore('game', () => {
     manualRealisedPerSecond,
     sectorSlices,
     dominanceHeld,
+    awards,
     passiveSources,
     allowanceLabel,
     allowancePerSecond,

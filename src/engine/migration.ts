@@ -1,3 +1,4 @@
+import { storageKey } from '../data/trial'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { EMPTY_PERKS, LEGACY_PERKS, perkSpend, type PerkId, type PerkRanks } from '../data/perks'
 import type { BulkBuyMode } from './economy'
@@ -14,7 +15,7 @@ import { readScenarioId, type ScenarioId } from '../data/scenarios'
 import { FAVOUR_EVENTS_BY_ID, emptyFavours, type FavourState } from '../data/favours'
 import type { BossTracker } from './bosses'
 
-export const STORAGE_KEY = 'state'
+export const STORAGE_KEY = storageKey('state')
 // Saves from any earlier schema reset to a new game.
 // 8: Legacy became one point per gate past the bloodline's best, at 1 Legacy a
 // perk rank. A schema 7 save is converted: Legacy becomes the bloodline's

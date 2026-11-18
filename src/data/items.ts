@@ -1,3 +1,5 @@
+import { LADDER_TRIAL } from './trial'
+
 export type ItemKind = 'jobs' | 'businesses'
 
 export type Sector = 'food' | 'property' | 'finance' | 'infrastructure' | 'media' | 'services'
@@ -90,6 +92,79 @@ export const BUSINESSES: ReadonlyArray<BusinessDef> = [
   { id: '23', label: 'PFI outsourcing giant', baseCost: 1.4e56, moneyPerSecond: 4.6e48, scaleFactor: 1.15, sector: 'infrastructure' },
   { id: '19', label: 'Multi-national conglomerate', baseCost: 6.5e58, moneyPerSecond: 9.3e50, scaleFactor: 1.152, sector: 'finance' }
 ]
+
+// The ladder trial (data/trial.ts) swaps in a ladder built by a different
+// rule, fitted with a model of a player climbing it:
+// - Rung k's units get dearer by a step falling from 9.5% at the bottom to
+//   3.2% at the top, so deep rungs are bought in hundreds, not tens.
+// - The gap to the next rung is worth a growing number of this rung's units:
+//   about 58 at the bottom (Rung 2 arrives around 50 of Rung 1) up to 279 at
+//   the top, so by the deepest rungs the first ten are long since full.
+// - Each rung pays back more slowly than the one below: 7.5x at the bottom,
+//   easing to 3.6x by halfway up, where it stays. A class a rung up to the
+//   Garden Party (around rung 10), then gentler: a title is about two rungs.
+//   Each first purchase and each second one takes longer than the last.
+// - Milestones are worth x4 rather than x2 (MILESTONE_BASE_STEP), so a rung
+//   with many units still matters next to the newest.
+// Businesses keep their place half a rung above the matching Job, as above.
+export const TRIAL_LADDER = { stepLow: 1.0945, stepHigh: 1.0315, gapLow: 57.68, gapHigh: 279.48, paybackLow: 7.5, paybackHigh: 3.556, paybackBend: 0.5 }
+
+interface TrialRung { cost: number; pay: number; step: number }
+
+// The ladder's 22 rungs, and one beyond the top to price the last Business
+function trialRungs(): TrialRung[] {
+  const t = TRIAL_LADDER
+  const n = JOBS.length
+  const rungs: TrialRung[] = []
+  let cost = 130
+  let pay = 1
+  for (let k = 0; k <= n; k++) {
+    const f = Math.min(1, k / (n - 1))
+    const step = t.stepLow + (t.stepHigh - t.stepLow) * f
+    rungs.push({ cost, pay, step })
+    const gap = t.gapLow + (t.gapHigh - t.gapLow) * f
+    const payback = t.paybackLow * Math.pow(t.paybackHigh / t.paybackLow, Math.min(1, f / t.paybackBend))
+    const costRatio = Math.pow(step, gap)
+    cost *= costRatio
+    pay *= costRatio / payback
+  }
+  return rungs
+}
+
+// A rung part of the way to the next one, priced and paid between the two
+function trialAt(rungs: TrialRung[], position: number): TrialRung {
+  const k = Math.min(rungs.length - 2, Math.floor(position))
+  const f = position - k
+  const a = rungs[k]
+  const b = rungs[k + 1]
+  return {
+    cost: a.cost * Math.pow(b.cost / a.cost, f),
+    pay: a.pay * Math.pow(b.pay / a.pay, f),
+    step: a.step + (b.step - a.step) * f
+  }
+}
+
+// Net worth at a point on the trial's Job ladder, for placing the classes
+export function trialJobCostAt(position: number): number {
+  return trialAt(trialRungs(), position).cost
+}
+
+if (LADDER_TRIAL) {
+  const rungs = trialRungs()
+  JOBS.forEach((job, k) => {
+    const j = job as { baseCost: number; moneyPerClick: number; scaleFactor: number }
+    j.baseCost = rungs[k].cost
+    j.moneyPerClick = rungs[k].pay
+    j.scaleFactor = rungs[k].step
+  })
+  BUSINESSES.forEach((biz, k) => {
+    const b = biz as { baseCost: number; moneyPerSecond: number; scaleFactor: number }
+    const at = trialAt(rungs, k + 0.15)
+    b.baseCost = 10 * at.cost
+    b.moneyPerSecond = 200 * at.pay
+    b.scaleFactor = at.step
+  })
+}
 
 export const JOBS_BY_ID: Readonly<Record<string, JobDef>> = Object.fromEntries(JOBS.map((j) => [j.id, j]))
 export const BUSINESSES_BY_ID: Readonly<Record<string, BusinessDef>> = Object.fromEntries(BUSINESSES.map((b) => [b.id, b]))

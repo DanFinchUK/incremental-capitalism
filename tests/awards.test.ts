@@ -39,7 +39,7 @@ describe("King's Awards (the ladder trial)", () => {
 })
 
 describe('the ladder trial', () => {
-  it('swaps in its own ladder, classes, milestones and save when switched on', async () => {
+  it('swaps in its own ladder, classes and milestones when a family plays it', async () => {
     const { vi } = await import('vitest')
     vi.resetModules()
     vi.stubEnv('LADDER', 'trial')
@@ -49,7 +49,6 @@ describe('the ladder trial', () => {
       const perks = await import('../src/data/perks')
       const trial = await import('../src/data/trial')
       expect(trial.LADDER_TRIAL).toBe(true)
-      expect(trial.storageKey('state')).toBe('trial:state')
       expect(perks.MILESTONE_BASE_STEP).toBe(4)
       // Dearer each rung, each unit's step falling up the ladder
       for (let k = 1; k < items.JOBS.length; k++) {

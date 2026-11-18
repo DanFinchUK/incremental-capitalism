@@ -62,8 +62,11 @@ import {
 } from '../engine/migration'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { LADDER_TRIAL } from '../data/trial'
+import { ACTIVE_SLOT, MAX_SAVES, addSlot, noteActiveSummary, readIndex, removeSlot, setActiveSlot, slotPrefix, type SaveIndex, type Tuning } from '../data/saveSlots'
+import { readProfile, writeProfile } from '../engine/profile'
+import { reloadPage } from '../utils/reloadPage'
 import { awardMultiplier, awardsHeld, awardText, type Award } from '../engine/awards'
-import { HALL_KEY, addToHall, parseHall, scenariosOpen, type DynastyRecord } from '../engine/hall'
+import { HALL_KEY, MAX_HALL_ENTRIES, addToHall, parseHall, scenariosOpen, type DynastyRecord } from '../engine/hall'
 import { SCENARIOS_BY_ID, type ScenarioId } from '../data/scenarios'
 import {
   createTelemetryState,
@@ -702,6 +705,120 @@ export const useGameStore = defineStore('game', () => {
     } catch {
       // Ignore storage quota or private-browsing write errors
     }
+    saveProfile()
+    noteActiveSummary(
+      {
+        surname: familySurname.value,
+        fresh: familyIsFresh.value,
+        generation: generation.value,
+        titles: titles.value,
+        scenario: scenario.value,
+        dynastyMs: dynastyMs.value,
+        dynastyComplete: dynastyComplete.value
+      },
+      ts
+    )
+  }
+
+  // Shared with every save slot: achievements earned anywhere, and the
+  // settings (engine/profile.ts)
+  function applyProfile(): void {
+    const profile = readProfile()
+    achievements.value = [...new Set([...achievements.value, ...profile.achievements])]
+    const s = profile.settings
+    if (!s) return
+    bulkBuyMode.value = s.bulkBuyMode
+    compactAutoBuy.value = s.compactAutoBuy
+    decor.value = s.decor
+    roomsReached.value = Math.max(roomsReached.value, s.roomsReached)
+    muted.value = s.muted
+    introSeen.value = introSeen.value || s.introSeen
+    tradingDeskCollapsed.value = s.tradingDeskCollapsed
+    // A scenario that settles tapping for the dynasty keeps its rule
+    if (scenarioDef.value.noTap === undefined) noTap.value = s.noTap
+  }
+
+  function saveProfile(): void {
+    const before = readProfile()
+    writeProfile({
+      achievements: [...new Set([...before.achievements, ...achievements.value])],
+      settings: {
+        bulkBuyMode: bulkBuyMode.value,
+        compactAutoBuy: compactAutoBuy.value,
+        decor: decor.value,
+        roomsReached: Math.max(roomsReached.value, highestClassReached.value, before.settings?.roomsReached ?? 0),
+        noTap: scenarioDef.value.noTap === undefined ? noTap.value : (before.settings?.noTap ?? false),
+        muted: muted.value,
+        introSeen: introSeen.value,
+        tradingDeskCollapsed: tradingDeskCollapsed.value
+      }
+    })
+  }
+
+  // Save slots (data/saveSlots.ts): the menu's list of families. Playing
+  // another, or starting one, saves this one and reloads into it.
+  const saveIndex = ref<SaveIndex>(readIndex())
+  const activeSlotId = ACTIVE_SLOT.id
+  const canAddSave = computed(() => saveIndex.value.slots.length < MAX_SAVES)
+
+  function refreshSaves(): void {
+    saveIndex.value = readIndex()
+  }
+
+  function playSave(id: string, ts = Date.now()): void {
+    if (id === activeSlotId) return
+    flushAll(ts)
+    if (setActiveSlot(id)) reloadPage()
+  }
+
+  function newSave(tuning: Tuning, ts = Date.now()): boolean {
+    flushAll(ts)
+    const slot = addSlot(tuning, ts)
+    refreshSaves()
+    if (!slot) return false
+    setActiveSlot(slot.id)
+    reloadPage()
+    return true
+  }
+
+  function removeSave(id: string): boolean {
+    const removed = removeSlot(id)
+    refreshSaves()
+    return removed
+  }
+
+  // A downloaded save, into a slot of its own. Its tuning comes with it.
+  function importSave(text: string, ts = Date.now()): boolean {
+    let tuning: Tuning = 'classic'
+    let state = text
+    let log: unknown = null
+    try {
+      const parsed = JSON.parse(text) as { scene?: Record<string, unknown>; tuning?: unknown }
+      if (!parsed || typeof parsed !== 'object' || !parsed.scene || typeof parsed.scene !== 'object') return false
+      if (parsed.tuning === 'trial') tuning = 'trial'
+      // The play log rides along in a downloaded save; it lives apart in play
+      log = parsed.scene.playLog ?? null
+      delete parsed.scene.playLog
+      delete parsed.tuning
+      state = JSON.stringify(parsed)
+    } catch {
+      return false
+    }
+    flushAll(ts)
+    const slot = addSlot(tuning, ts)
+    refreshSaves()
+    if (!slot) return false
+    try {
+      localStorage.setItem(slotPrefix(slot.id) + 'state', state)
+      if (log) localStorage.setItem(slotPrefix(slot.id) + 'playLog', JSON.stringify(log))
+    } catch {
+      removeSlot(slot.id)
+      refreshSaves()
+      return false
+    }
+    setActiveSlot(slot.id)
+    reloadPage()
+    return true
   }
 
   function scheduleNextEvent(fromMs: number, rng: () => number = Math.random): void {
@@ -789,8 +906,16 @@ export const useGameStore = defineStore('game', () => {
     }
     const loaded = parseSavedState(raw)
     applyLoadedState(loaded, ts)
+    applyProfile()
     try {
       hall.value = parseHall(localStorage.getItem(HALL_KEY))
+      // The ladder trial kept a Hall of its own before the Hall was shared
+      const trialHall = localStorage.getItem('trial:hall')
+      if (trialHall) {
+        hall.value = [...hall.value, ...parseHall(trialHall)].sort((a, b) => b.finishedAt - a.finishedAt).slice(0, MAX_HALL_ENTRIES)
+        localStorage.setItem(HALL_KEY, JSON.stringify(hall.value))
+        localStorage.removeItem('trial:hall')
+      }
     } catch {
       hall.value = []
     }
@@ -1321,7 +1446,7 @@ export const useGameStore = defineStore('game', () => {
   function exportSave(ts = Date.now()): string {
     flushBuyerTally(ts)
     flushAll(ts)
-    return withPlayLog(localStorage.getItem(STORAGE_KEY) ?? '', plays.playLog.value)
+    return withPlayLog(localStorage.getItem(STORAGE_KEY) ?? '', plays.playLog.value, ACTIVE_SLOT.tuning)
   }
 
   function hireAdvisor(offerIndex: number, replaceSeat?: HireTarget): boolean {
@@ -1887,6 +2012,8 @@ export const useGameStore = defineStore('game', () => {
     censusPending.value = null
     const fresh = createInitialSceneState()
     applyLoadedState(fresh, ts)
+    // Achievements and settings are the player's, not this family's
+    applyProfile()
     plays.clear(ts)
     offlineReport.value = null
     bannerMessage.value = null
@@ -2111,6 +2238,14 @@ export const useGameStore = defineStore('game', () => {
     sectorSlices,
     dominanceHeld,
     awards,
+    saveIndex,
+    activeSlotId,
+    canAddSave,
+    refreshSaves,
+    playSave,
+    newSave,
+    removeSave,
+    importSave,
     passiveSources,
     allowanceLabel,
     allowancePerSecond,

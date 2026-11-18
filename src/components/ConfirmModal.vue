@@ -154,7 +154,7 @@
           type="checkbox"
           data-testid="confirm-reset-checkbox"
         >
-        <span>Wipe Legacy points, perks, and all lifetime progress</span>
+        <span>Wipe this family's Legacy points, perks and lifetime progress. Achievements, the Hall and your other families stay.</span>
       </label>
 
       <div class="scn-ModalFooter">

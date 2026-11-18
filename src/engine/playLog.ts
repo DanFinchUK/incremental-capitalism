@@ -137,11 +137,14 @@ export function savePlayLog(log: PlayLog): void {
 }
 
 // The save JSON with the play log folded into its scene, for export
-export function withPlayLog(saveJson: string, log: PlayLog): string {
+// tuning: how the family's game is tuned (data/saveSlots.ts), so an imported
+// save plays as it did
+export function withPlayLog(saveJson: string, log: PlayLog, tuning?: string): string {
   try {
     const save = JSON.parse(saveJson)
     if (save && typeof save === 'object' && save.scene && typeof save.scene === 'object') {
       save.scene.playLog = log
+      if (tuning) save.tuning = tuning
       return JSON.stringify(save)
     }
   } catch {

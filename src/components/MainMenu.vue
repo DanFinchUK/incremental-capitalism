@@ -37,6 +37,10 @@
             <button v-if="!fresh" type="button" class="ttl-Item" data-testid="menu-new-dynasty" @click="newDynasty">
               <span>{{ newDynastyLabel }}</span>
             </button>
+            <button type="button" class="ttl-Item" data-testid="menu-families" @click="openFamilies">
+              <span>Families</span>
+              <small>{{ store.saveIndex.slots.length }} of {{ MAX_SAVES }}</small>
+            </button>
             <button type="button" class="ttl-Item" data-testid="menu-hall" @click="store.hallOpen = true">
               <span>Hall of Dynasties</span>
               <small v-if="best">Best: the {{ pluralSurname(best.surname) }}, {{ formatDuration(best.activeMs / 1000) }}</small>
@@ -63,6 +67,61 @@
             <p v-for="(para, j) in page.body" :key="j">{{ para }}</p>
             <p v-if="page.tip" class="ttl-Tip">{{ page.tip }}</p>
           </article>
+          <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
+        </section>
+
+        <!-- Every family on the go, one in play: switch, start another, remove one -->
+        <section v-else-if="view === 'families'" class="ttl-Page" data-testid="menu-families-page" aria-labelledby="menu-families-title">
+          <h2 id="menu-families-title" class="ttl-PageTitle">Families</h2>
+          <ul class="ttl-Saves">
+            <li
+              v-for="slot in store.saveIndex.slots"
+              :key="slot.id"
+              class="ttl-Save"
+              :class="{ 'ttl-Save-active': slot.id === store.activeSlotId }"
+              :data-testid="`save-${slot.id}`"
+            >
+              <div class="ttl-SaveText">
+                <strong>{{ saveName(slot) }}</strong>
+                <span>{{ saveLine(slot) }}</span>
+              </div>
+              <div class="ttl-SaveActions">
+                <span v-if="slot.id === store.activeSlotId" class="ttl-SaveBadge">In play</span>
+                <template v-else-if="removing === slot.id">
+                  <button type="button" class="ttl-Toggle ttl-Toggle-danger" :data-testid="`remove-confirm-${slot.id}`" @click="confirmRemove(slot.id)">
+                    Remove for good
+                  </button>
+                  <button type="button" class="ttl-Toggle" @click="removing = null">Keep</button>
+                </template>
+                <template v-else>
+                  <button type="button" class="ttl-Toggle ttl-Toggle-on" :data-testid="`play-${slot.id}`" @click="store.playSave(slot.id)">Play</button>
+                  <button type="button" class="ttl-Toggle" :data-testid="`remove-${slot.id}`" @click="removing = slot.id">Remove</button>
+                </template>
+              </div>
+            </li>
+          </ul>
+          <div v-if="store.canAddSave" class="ttl-Setting ttl-Setting-stack">
+            <div>
+              <strong>Start another family</strong>
+              <p>A new family in a place of its own; the others wait where they are. Choose its ladder: the usual one, or the ladder trial, where each rung is harder to reach and to keep buying.</p>
+            </div>
+            <div class="ttl-SaveActions">
+              <button type="button" class="ttl-Toggle" data-testid="new-save-classic" @click="store.newSave('classic')">The usual ladder</button>
+              <button type="button" class="ttl-Toggle" data-testid="new-save-trial" @click="store.newSave('trial')">The ladder trial</button>
+            </div>
+          </div>
+          <p v-else class="ttl-SaveNote">All {{ MAX_SAVES }} places are taken. Remove a family to start another.</p>
+          <div class="ttl-Setting">
+            <div>
+              <strong>Import a save</strong>
+              <p>A save downloaded from Settings, into a place of its own.</p>
+              <p v-if="importFailed" class="ttl-SaveError" data-testid="import-failed">That file isn't a save, or every place is taken.</p>
+            </div>
+            <label class="ttl-Toggle ttl-Upload" :class="{ 'ttl-Toggle-disabled': !store.canAddSave }">
+              Choose file
+              <input type="file" accept=".json,application/json" data-testid="import-save" :disabled="!store.canAddSave" @change="importFile" />
+            </label>
+          </div>
           <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
         </section>
 
@@ -107,19 +166,6 @@
               <option value="auto">Follow my class ({{ classRoomName }})</option>
               <option v-for="r in store.unlockedRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
             </select>
-          </div>
-          <div class="ttl-Setting">
-            <div>
-              <strong>Ladder trial</strong>
-              <p>
-                A reworked set of Jobs and Businesses: each rung harder to reach and to keep buying, the classes closer
-                together, and King's Awards for whole blocks of rungs. It plays in a save of its own, so your family here
-                is untouched. Switching reloads the game.
-              </p>
-            </div>
-            <button type="button" class="ttl-Toggle" :aria-pressed="LADDER_TRIAL" data-testid="menu-toggle-trial" @click="setLadderTrial(!LADDER_TRIAL)">
-              {{ LADDER_TRIAL ? 'On' : 'Off' }}
-            </button>
           </div>
           <div class="ttl-Setting">
             <div><strong>Sound</strong></div>
@@ -178,7 +224,9 @@ import { ACHIEVEMENTS } from '../data/achievements'
 import { INTRO_PAGES } from '../data/intro'
 import { roomForClass, type RoomId } from '../data/rooms'
 import type { ScenarioId } from '../data/scenarios'
-import { LADDER_TRIAL, setLadderTrial } from '../data/trial'
+import { LADDER_TRIAL } from '../data/trial'
+import { MAX_SAVES, type SaveSlot } from '../data/saveSlots'
+import { SCENARIOS_BY_ID, readScenarioId } from '../data/scenarios'
 import { armsFor } from '../engine/crest'
 import { bestDynasty, scenariosOpen } from '../engine/hall'
 import { peerageRank } from '../engine/peerage'
@@ -191,7 +239,7 @@ const emit = defineEmits<{ (e: 'reset'): void }>()
 const store = useGameStore()
 // The menu's pages: the menu itself, the rules, the settings, and asking
 // before a family is abandoned
-const view = ref<'main' | 'how' | 'settings' | 'confirm'>('main')
+const view = ref<'main' | 'how' | 'settings' | 'confirm' | 'families'>('main')
 const screen = ref<HTMLElement | null>(null)
 // Each visit starts from the menu itself, unless a finished dynasty sent the
 // player straight to founding the next one
@@ -259,6 +307,50 @@ function confirmNew(): void {
   view.value = 'main'
   if (store.dynastyComplete) store.foundNewDynasty(Date.now(), next.value)
   else store.abandonDynasty(Date.now(), next.value)
+}
+
+function openFamilies(): void {
+  store.flushSave()
+  store.refreshSaves()
+  removing.value = null
+  importFailed.value = false
+  view.value = 'families'
+}
+
+const removing = ref<string | null>(null)
+const importFailed = ref(false)
+
+function confirmRemove(id: string): void {
+  store.removeSave(id)
+  removing.value = null
+}
+
+async function importFile(ev: Event): Promise<void> {
+  const input = ev.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  importFailed.value = !store.importSave(await file.text())
+}
+
+function saveName(slot: SaveSlot): string {
+  const sum = slot.summary
+  return !sum || sum.fresh ? 'A new family' : `The ${pluralSurname(sum.surname)}`
+}
+
+function saveLine(slot: SaveSlot): string {
+  const sum = slot.summary
+  const parts: string[] = []
+  if (slot.tuning === 'trial') parts.push('Ladder trial')
+  if (sum && sum.scenario !== 'standard') parts.push(SCENARIOS_BY_ID[readScenarioId(sum.scenario)].name)
+  if (!sum || sum.fresh) parts.push('Not yet in the register')
+  else if (sum.dynastyComplete) parts.push(`Made Duke in ${formatDuration(sum.dynastyMs / 1000)}`)
+  else {
+    parts.push(`Generation ${sum.generation}`)
+    if (sum.titles > 0) parts.push(peerageRank(sum.titles))
+    parts.push(formatDuration(sum.dynastyMs / 1000))
+  }
+  return parts.join(' · ')
 }
 
 const decor = computed<RoomId | 'auto'>({
@@ -753,6 +845,107 @@ const COINS = Array.from({ length: 16 }, (_, i) => ({
   background: var(--ttl-gold);
   border-color: var(--ttl-gold);
   color: #240910;
+}
+
+.ttl-Saves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ttl-Save {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(214, 169, 60, 0.3);
+  border-radius: 4px;
+  background: rgba(12, 7, 8, 0.55);
+  text-align: left;
+}
+
+.ttl-Save-active {
+  border-color: var(--ttl-gold);
+  box-shadow: 0 0 0 1px rgba(214, 169, 60, 0.35) inset;
+}
+
+.ttl-SaveText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ttl-SaveText strong {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 21px;
+  color: var(--ttl-gold-hi);
+}
+
+.ttl-SaveText span,
+.ttl-SaveNote {
+  font-size: 13px;
+  color: var(--ttl-dim);
+}
+
+.ttl-SaveActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ttl-SaveActions .ttl-Toggle {
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+.ttl-SaveBadge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ttl-gold);
+}
+
+.ttl-Toggle-on {
+  background: var(--ttl-gold);
+  border-color: var(--ttl-gold);
+  color: #240910;
+}
+
+.ttl-Toggle-danger {
+  border-color: #c0504d;
+  color: #f2b8b5;
+}
+
+.ttl-Upload {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+.ttl-Upload input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.ttl-Toggle-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ttl-SaveError {
+  color: #f2b8b5 !important;
 }
 
 .ttl-Toggle:disabled {

@@ -295,7 +295,7 @@ function readNonNegativeNumber(val: unknown, fallback = 0): number {
   return typeof val === 'number' && Number.isFinite(val) && val >= 0 ? val : fallback
 }
 
-function parseBulkMode(raw: unknown): BulkBuyMode {
+export function parseBulkMode(raw: unknown): BulkBuyMode {
   if (raw === 1 || raw === 10 || raw === 'next' || raw === 'max') {
     return raw
   }

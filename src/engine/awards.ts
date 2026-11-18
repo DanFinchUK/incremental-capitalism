@@ -47,3 +47,36 @@ export function awardText(award: Award): string {
   const noun = award.kind === 'jobs' ? 'Job' : 'Business'
   return `King's Award for Enterprise: every ${noun} from ${list[award.from].label} to ${list[award.to].label} at ${award.level.toLocaleString('en-GB')}. All income x${AWARD_MULT}.`
 }
+
+export interface AwardBlock {
+  kind: ItemKind
+  from: number
+  to: number
+  // Awards this block holds, of AWARD_LEVELS.length
+  held: number
+  // The next count to reach, and the item furthest from it (null: all held)
+  next: number | null
+  laggard: { label: string; owned: number } | null
+}
+
+// Each block the family has bought into, with its awards and what the next
+// one waits on
+export function awardProgress(jobs: Readonly<Record<string, number>>, businesses: Readonly<Record<string, number>>): AwardBlock[] {
+  const out: AwardBlock[] = []
+  for (const [kind, list, owned] of [
+    ['jobs', JOBS, jobs],
+    ['businesses', BUSINESSES, businesses]
+  ] as const) {
+    for (const [from, to] of blocks(list.length)) {
+      const items = list.slice(from, to + 1)
+      const counts = items.map((item) => owned[item.id] ?? 0)
+      if (counts.every((n) => n === 0)) continue
+      const weakest = Math.min(...counts)
+      const held = AWARD_LEVELS.filter((level) => weakest >= level).length
+      const next = AWARD_LEVELS[held] ?? null
+      const at = counts.indexOf(weakest)
+      out.push({ kind, from, to, held, next, laggard: next === null ? null : { label: items[at].label, owned: weakest } })
+    }
+  }
+  return out
+}

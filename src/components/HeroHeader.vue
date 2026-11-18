@@ -71,13 +71,20 @@
 
       <!-- The family's lasting effects; the temporary ones sit with Hustle -->
       <div
-        v-if="store.bloodlineTraitPills.length > 0 || store.allowancePill || store.dominanceHeld > 0 || store.awards.length > 0"
+        v-if="store.bloodlineTraitPills.length > 0 || store.allowancePill || store.dominanceHeld > 0 || awardsShown"
         class="scn-TraitPillRow"
         data-testid="header-bloodline-pills"
       >
-        <span v-if="store.awards.length > 0" class="scn-TraitPill" data-testid="awards-pill">
-          King's Awards x{{ formatMultiplier(awardMultiplier(store.awards.length)) }}
-        </span>
+        <button
+          v-if="awardsShown"
+          type="button"
+          class="scn-TraitPill scn-TraitPill-button"
+          :aria-expanded="awardsOpen"
+          data-testid="awards-pill"
+          @click="awardsOpen = !awardsOpen"
+        >
+          {{ store.awards.length > 0 ? `King's Awards x${formatMultiplier(awardMultiplier(store.awards.length))}` : "King's Awards: none yet" }}
+        </button>
         <span v-if="store.dominanceHeld > 0" class="scn-TraitPill" data-testid="dominance-pill">
           Market dominance +{{ Math.round((dominanceMultiplier(store.dominanceHeld) - 1) * 100) }}%
         </span>
@@ -97,6 +104,19 @@
         >
           {{ store.wording(pill.label) }}
         </span>
+      </div>
+      <div v-if="awardsShown && awardsOpen" class="scn-AwardsPanel" data-testid="awards-panel">
+        <p class="scn-AwardsRule">
+          When every Job in a group of five reaches 25 owned, the family wins a King's Award, and again at 100, 250, 500 and
+          1,000. Businesses are grouped the same way. Each award multiplies all income by 1.25.
+        </p>
+        <ul v-if="awardRows.length > 0">
+          <li v-for="row in awardRows" :key="`${row.kind}-${row.from}`">
+            <strong>{{ row.title }}</strong>
+            <span>{{ row.line }}</span>
+          </li>
+        </ul>
+        <p v-else class="scn-AwardsRule">Nothing bought yet.</p>
       </div>
 
       <div v-if="!phone" class="scn-CompactStats">
@@ -141,7 +161,8 @@ import { formatClock, formatCurrency, formatMultiplier } from '../utils/format'
 import { INHERITED_BY_ID, TRAITS_BY_ID } from '../data/heirs'
 import { peerageRank } from '../engine/peerage'
 import { dominanceMultiplier, legacyMultiplier as calcLegacyMultiplier } from '../engine/economy'
-import { awardMultiplier } from '../engine/awards'
+import { AWARD_LEVELS, awardMultiplier, awardProgress } from '../engine/awards'
+import { BUSINESSES, JOBS } from '../data/items'
 
 const emit = defineEmits<{
   (e: 'paid', ev: MouseEvent): void
@@ -167,4 +188,20 @@ const retireBlockedTitle = computed(() =>
 )
 
 defineExpose({ payButtonRef })
+
+// King's Awards (the trial ladder): the pill opens how each group stands
+const awardsShown = computed(() => store.familyTuning === 'trial')
+const awardsOpen = ref(false)
+const awardRows = computed(() =>
+  awardProgress(store.jobsPurchased, store.businessesOwned).map((block) => {
+    const list = block.kind === 'jobs' ? JOBS : BUSINESSES
+    const title = `${block.kind === 'jobs' ? 'Jobs' : 'Businesses'}: ${list[block.from].label} to ${list[block.to].label}`
+    const won = `${block.held} of ${AWARD_LEVELS.length} won`
+    const line =
+      block.next === null || !block.laggard
+        ? `All ${AWARD_LEVELS.length} won.`
+        : `${won}. Next at ${block.next.toLocaleString('en-GB')}: ${block.laggard.label} has ${block.laggard.owned.toLocaleString('en-GB')}.`
+    return { kind: block.kind, from: block.from, title, line }
+  })
+)
 </script>

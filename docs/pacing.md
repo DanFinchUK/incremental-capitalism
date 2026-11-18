@@ -92,11 +92,11 @@ rank is worth at least a rare advisor (`src/data/perks.ts`). Elevating to the
 Lords gives one title per 9 Legacy, one per completed bloodline. Each title
 multiplies all income by 3, compounding, and nothing else carries Legacy
 into the new line, so each line takes about two-thirds as long as the last
-(`INCOME_PER_TITLE` in `src/engine/peerage.ts`). With Commoner at about 95
-minutes for a fast tapper, that is about 60, 36, 31 and 22 minutes for the
+(`INCOME_PER_TITLE` in `src/engine/peerage.ts`). With Commoner at about 90
+minutes for a fast tapper, that is about 61, 36, 32 and 25 minutes for the
 Baron, Viscount, Earl and Marquess lines (sim medians), about 4 hours to
 Duke. `sim/pacing.lines.sim.ts` checks each line takes 50% to 90% as long as
-the one before (median of five seeds; the top allows for noise); `sim/elevation.report.sim.ts` shows the climb after an
+the one before (median of ten seeds; the top allows for noise); `sim/elevation.report.sim.ts` shows the climb after an
 elevation.
 
 ## The ladder trial

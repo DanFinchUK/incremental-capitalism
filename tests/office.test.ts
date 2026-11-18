@@ -341,3 +341,30 @@ describe('the family office on screen', () => {
     expect(store.allowancePill?.label).toBe('Total allowance x1.5')
   })
 })
+
+describe('sector specialists', () => {
+  it('are introduced only once the family owns a business in their sector', async () => {
+    const { ref } = await import('vue')
+    const { createOfficeModule } = await import('../src/stores/modules/office')
+    const { advisorSector } = await import('../src/engine/office')
+    const office = createOfficeModule({
+      money: ref(0),
+      extraSeats: () => 0,
+      paChairCount: () => 1,
+      announce: () => {},
+      flushSave: () => {},
+      ownsSector: (s) => s === 'services'
+    })
+    const seen = new Set<string>()
+    for (let i = 0; i < 300; i++) {
+      office.headhunterOffer.value = []
+      office.rollOffer()
+      for (const id of office.headhunterOffer.value) seen.add(id)
+      office.headhunterOffer.value = []
+    }
+    const sectors = new Set([...seen].map((id) => advisorSector(ADVISORS_BY_ID[id])).filter((s) => s !== null))
+    expect([...sectors]).toEqual(['services'])
+    // Advisors who work in no sector still turn up
+    expect([...seen].some((id) => advisorSector(ADVISORS_BY_ID[id]) === null)).toBe(true)
+  })
+})

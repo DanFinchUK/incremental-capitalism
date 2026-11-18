@@ -4,10 +4,13 @@
 //
 // "+k" is the k-th gate past the deepest gate the bloodline had beaten before
 // the generation began. Heirs and advisors are rolled at random, so each goal
-// is checked on a median across three seeded campaigns.
+// is checked across twelve seeded campaigns: with three, one unlucky run of
+// heirs and advisors could flip a check either way.
 import { describe, expect, it } from 'vitest'
 import { FAST_TAPPER, runCampaign, type GenerationResult } from './bot'
-import { MINUTE, SEEDS, firstKillHours, median, plusMinutes } from './pacing.shared'
+import { MINUTE, firstKillHours, median, plusMinutes } from './pacing.shared'
+
+const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
 // Normal play: retire after 12 minutes without a new gate
 const campaigns: GenerationResult[][] = SEEDS.map((seed) => runCampaign(4, FAST_TAPPER, seed))
@@ -37,7 +40,7 @@ describe('the prestige rule: +1 easy, +2 more effort, +3 quite hard, +4 about a 
   })
 })
 
-describe('pacing for a fast tapper (median of three campaigns)', () => {
+describe('pacing for a fast tapper (median of twelve campaigns)', () => {
   it('generation 1 beats gate 1 within 2.5 to 8 minutes', () => {
     const minutes = median(campaigns.map((gens) => (gens[0].splitsMs[1] ?? Infinity) / MINUTE))
     expect(minutes).toBeGreaterThanOrEqual(2.5)

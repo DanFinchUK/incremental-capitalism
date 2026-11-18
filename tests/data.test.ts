@@ -23,8 +23,8 @@ describe('catalogue & static data', () => {
 
     const bizLabels = BUSINESSES.map((b) => b.label)
     expect(bizLabels).toContain('Phone case & repair kiosk')
-    expect(bizLabels).toContain('Neon vape shop')
-    expect(bizLabels).toContain('Skin-fade barbershop')
+    expect(bizLabels).toContain('HMO bedsits')
+    expect(bizLabels).toContain('Hospital car park')
     expect(bizLabels).toContain('High-street bookies')
     expect(bizLabels).toContain('Buy-to-let portfolio')
     expect(bizLabels).toContain('Fish and chip shop')
@@ -33,7 +33,7 @@ describe('catalogue & static data', () => {
     expect(bizLabels).toContain('Artisanal sourdough bakery')
     expect(bizLabels).toContain('PFI outsourcing giant')
 
-    const oilIdx = BUSINESSES.findIndex((b) => b.label === 'Oil driller')
+    const oilIdx = BUSINESSES.findIndex((b) => b.label === 'Luxury riverside towers')
     const bakeryIdx = BUSINESSES.findIndex((b) => b.label === 'Artisanal sourdough bakery')
     expect(bakeryIdx).toBeGreaterThan(oilIdx)
   })

@@ -5,8 +5,9 @@ import { describe, expect, it } from 'vitest'
 import { FAST_TAPPER, runCampaign } from './bot'
 import { median } from './pacing.shared'
 
-// Five seeds, not three: one line's length swings a lot with the heirs drawn
-const SEEDS = [1, 2, 3, 4, 5]
+// Ten seeds: one line's length swings a lot with the heirs drawn, and the
+// median of five could still be pulled across the limit by one run
+const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 // Active minutes each line took, Commoner first
 function lineMinutes(seed: number): number[] {

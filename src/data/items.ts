@@ -45,7 +45,7 @@ export interface BusinessDef {
 // The class gates in data/classes.ts sit at set positions on this ladder.
 export const JOBS: ReadonlyArray<JobDef> = [
   { id: '1', label: 'Gig delivery rider', moneyPerClick: 1, baseCost: 130, scaleFactor: 1.11, synergyBusinessId: '5', synergyNote: 'Insulated e-bike fleet', sector: 'services' },
-  { id: '19', label: 'Hairdresser', moneyPerClick: 200, baseCost: 53_000, scaleFactor: 1.112, synergyBusinessId: '21', synergyNote: 'Clipper mastery', sector: 'services' },
+  { id: '19', label: 'Hairdresser', moneyPerClick: 200, baseCost: 53_000, scaleFactor: 1.112, synergyBusinessId: '21', synergyNote: 'Highlights that overrun the ticket', sector: 'services' },
   { id: '2', label: 'Cleaner', moneyPerClick: 40_000, baseCost: 22_000_000, scaleFactor: 1.114, synergyBusinessId: '3', synergyNote: 'Gleaming espresso chrome', sector: 'services' },
   { id: '3', label: 'Shelf filler', moneyPerClick: 8_000_000, baseCost: 9_100_000_000, scaleFactor: 1.116, synergyBusinessId: '20', synergyNote: 'Rapid screen-protector restocks', sector: 'food' },
   { id: '4', label: 'Barista', moneyPerClick: 1_600_000_000, baseCost: 3_800_000_000_000, scaleFactor: 1.118, synergyBusinessId: '22', synergyNote: '£5.80 oat flat-whites', sector: 'food' },
@@ -54,7 +54,7 @@ export const JOBS: ReadonlyArray<JobDef> = [
   { id: '7', label: 'Receptionist', moneyPerClick: 1.3e16, baseCost: 2.8e20, scaleFactor: 1.124, synergyBusinessId: '2', synergyNote: 'Scope-creep gatekeeping', sector: 'services' },
   { id: '20', label: 'Estate agent', moneyPerClick: 2.6e18, baseCost: 1.2e23, scaleFactor: 1.126, synergyBusinessId: '7', synergyNote: '0.5x wide-angle lenses', sector: 'property' },
   { id: '8', label: 'Electrical engineer', moneyPerClick: 5.1e20, baseCost: 5.1e25, scaleFactor: 1.128, synergyBusinessId: '11', synergyNote: 'Grid load-shedding', sector: 'infrastructure' },
-  { id: '9', label: 'Tax expert', moneyPerClick: 1e23, baseCost: 2.2e28, scaleFactor: 1.13, synergyBusinessId: '4', synergyNote: 'Retail REIT business-rates relief', sector: 'finance' },
+  { id: '9', label: 'Tax expert', moneyPerClick: 1e23, baseCost: 2.2e28, scaleFactor: 1.13, synergyBusinessId: '4', synergyNote: 'Rent-a-room relief claims', sector: 'finance' },
   { id: '12', label: 'Train driver', moneyPerClick: 2e25, baseCost: 9.3e30, scaleFactor: 1.132, synergyBusinessId: '12', synergyNote: 'Rest-day overtime', sector: 'infrastructure' },
   { id: '10', label: 'Private GP', moneyPerClick: 4.1e27, baseCost: 4e33, scaleFactor: 1.134, synergyBusinessId: '10', synergyNote: '£350 ten-minute consults', sector: 'services' },
   { id: '11', label: 'Management consultant', moneyPerClick: 8.2e29, baseCost: 1.7e36, scaleFactor: 1.136, synergyBusinessId: '6', synergyNote: 'Behavioural nudge slide-decks', sector: 'finance' },
@@ -62,7 +62,7 @@ export const JOBS: ReadonlyArray<JobDef> = [
   { id: '14', label: 'Financial manager', moneyPerClick: 3.3e34, baseCost: 3.3e41, scaleFactor: 1.14, synergyBusinessId: '17', synergyNote: 'Structured derivatives', sector: 'finance' },
   { id: '15', label: 'IT director', moneyPerClick: 6.6e36, baseCost: 1.5e44, scaleFactor: 1.142, synergyBusinessId: '13', synergyNote: 'Mid-contract CPI+3.9% scripts', sector: 'media' },
   { id: '16', label: 'Corporate lawyer', moneyPerClick: 1.3e39, baseCost: 6.5e46, scaleFactor: 1.144, synergyBusinessId: '16', synergyNote: '70-year IP lock-in', sector: 'finance' },
-  { id: '17', label: 'Air traffic controller', moneyPerClick: 2.6e41, baseCost: 2.9e49, scaleFactor: 1.146, synergyBusinessId: '18', synergyNote: 'North Sea rig chopper slots', sector: 'infrastructure' },
+  { id: '17', label: 'Air traffic controller', moneyPerClick: 2.6e41, baseCost: 2.9e49, scaleFactor: 1.146, synergyBusinessId: '18', synergyNote: 'Penthouse helipad slots', sector: 'infrastructure' },
   { id: '18', label: 'Pilot', moneyPerClick: 5.2e43, baseCost: 1.3e52, scaleFactor: 1.148, synergyBusinessId: '8', synergyNote: 'Aerial land-banking surveys', sector: 'infrastructure' },
   { id: '21', label: 'FTSE 100 CEO', moneyPerClick: 1e46, baseCost: 5.8e54, scaleFactor: 1.15, synergyBusinessId: '19', synergyNote: 'Share-buyback bonuses', sector: 'finance' },
   { id: '22', label: 'Non-dom peer', moneyPerClick: 2.1e48, baseCost: 2.6e57, scaleFactor: 1.152, synergyBusinessId: '23', synergyNote: 'House of Lords committee lunches', sector: 'finance' }
@@ -70,15 +70,15 @@ export const JOBS: ReadonlyArray<JobDef> = [
 
 export const BUSINESSES: ReadonlyArray<BusinessDef> = [
   { id: '1', label: 'Etsy store', baseCost: 3_200, moneyPerSecond: 440, scaleFactor: 1.11, sector: 'services' },
-  { id: '20', label: 'Phone case & repair kiosk', baseCost: 1_300_000, moneyPerSecond: 89_000, scaleFactor: 1.112, sector: 'services' },
+  { id: '20', label: 'Phone case & repair kiosk', baseCost: 1_300_000, moneyPerSecond: 89_000, scaleFactor: 1.112, sector: 'media' },
   { id: '2', label: 'Freelance website design', baseCost: 540_000_000, moneyPerSecond: 18_000_000, scaleFactor: 1.114, sector: 'media' },
   { id: '3', label: 'Coffee shop', baseCost: 220_000_000_000, moneyPerSecond: 3_500_000_000, scaleFactor: 1.116, sector: 'food' },
-  { id: '4', label: 'Neon vape shop', baseCost: 94_000_000_000_000, moneyPerSecond: 710_000_000_000, scaleFactor: 1.118, sector: 'services' },
-  { id: '21', label: 'Skin-fade barbershop', baseCost: 3.9e16, moneyPerSecond: 140_000_000_000_000, scaleFactor: 1.12, sector: 'services' },
+  { id: '4', label: 'HMO bedsits', baseCost: 94_000_000_000_000, moneyPerSecond: 710_000_000_000, scaleFactor: 1.118, sector: 'property' },
+  { id: '21', label: 'Hospital car park', baseCost: 3.9e16, moneyPerSecond: 140_000_000_000_000, scaleFactor: 1.12, sector: 'infrastructure' },
   { id: '5', label: 'Burger franchise', baseCost: 1.6e19, moneyPerSecond: 2.8e16, scaleFactor: 1.122, sector: 'food' },
-  { id: '6', label: 'High-street bookies', baseCost: 6.9e21, moneyPerSecond: 5.7e18, scaleFactor: 1.124, sector: 'services' },
+  { id: '6', label: 'High-street bookies', baseCost: 6.9e21, moneyPerSecond: 5.7e18, scaleFactor: 1.124, sector: 'finance' },
   { id: '7', label: 'Buy-to-let portfolio', baseCost: 2.9e24, moneyPerSecond: 1.1e21, scaleFactor: 1.126, sector: 'property' },
-  { id: '8', label: 'Construction firm', baseCost: 1.3e27, moneyPerSecond: 2.3e23, scaleFactor: 1.128, sector: 'property' },
+  { id: '8', label: 'Construction firm', baseCost: 1.3e27, moneyPerSecond: 2.3e23, scaleFactor: 1.128, sector: 'infrastructure' },
   { id: '9', label: 'Fish and chip shop', baseCost: 5.4e29, moneyPerSecond: 4.5e25, scaleFactor: 1.13, sector: 'food' },
   { id: '10', label: 'Private health clinic', baseCost: 2.3e32, moneyPerSecond: 9.1e27, scaleFactor: 1.132, sector: 'services' },
   { id: '11', label: 'Utilities provider', baseCost: 1e35, moneyPerSecond: 1.8e30, scaleFactor: 1.134, sector: 'infrastructure' },
@@ -87,9 +87,9 @@ export const BUSINESSES: ReadonlyArray<BusinessDef> = [
   { id: '14', label: 'Mayfair hedge fund', baseCost: 8.3e42, moneyPerSecond: 1.5e37, scaleFactor: 1.14, sector: 'finance' },
   { id: '16', label: 'Film studio', baseCost: 3.7e45, moneyPerSecond: 2.9e39, scaleFactor: 1.142, sector: 'media' },
   { id: '17', label: 'International bank', baseCost: 1.6e48, moneyPerSecond: 5.8e41, scaleFactor: 1.144, sector: 'finance' },
-  { id: '18', label: 'Oil driller', baseCost: 7.2e50, moneyPerSecond: 1.2e44, scaleFactor: 1.146, sector: 'infrastructure' },
+  { id: '18', label: 'Luxury riverside towers', baseCost: 7.2e50, moneyPerSecond: 1.2e44, scaleFactor: 1.146, sector: 'property' },
   { id: '22', label: 'Artisanal sourdough bakery', baseCost: 3.2e53, moneyPerSecond: 2.3e46, scaleFactor: 1.148, sector: 'food' },
-  { id: '23', label: 'PFI outsourcing giant', baseCost: 1.4e56, moneyPerSecond: 4.6e48, scaleFactor: 1.15, sector: 'infrastructure' },
+  { id: '23', label: 'PFI outsourcing giant', baseCost: 1.4e56, moneyPerSecond: 4.6e48, scaleFactor: 1.15, sector: 'services' },
   { id: '19', label: 'Multi-national conglomerate', baseCost: 6.5e58, moneyPerSecond: 9.3e50, scaleFactor: 1.152, sector: 'finance' }
 ]
 

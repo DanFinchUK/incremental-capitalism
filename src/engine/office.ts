@@ -47,6 +47,13 @@ export function buyerTierOf(kind: 'jobs' | 'businesses', seats: ReadonlyArray<Ad
   return best
 }
 
+// The sector a specialist works in (a sector multiplier or campaign), or null
+export function advisorSector(a: AdvisorDef): Sector | null {
+  if (a.campaign) return a.campaign.sector
+  const sectors = Object.keys(a.mods.sectorBusinessMult ?? {}) as Sector[]
+  return sectors[0] ?? null
+}
+
 export function rarityTier(a: AdvisorDef): number {
   return RARITY_TIER[a.rarity]
 }

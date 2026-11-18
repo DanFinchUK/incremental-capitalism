@@ -3,7 +3,7 @@ const GENERAL_HEADLINES: ReadonlyArray<string> = [
   'Rail replacement bus service floated on FTSE 100 at £14B valuation.',
   'Landlord heroically raises rent by 18% to "help tenants stay motivated".',
   'Think-tank funded by billionaires recommends abolishing weekends.',
-  'Artisanal sourdough bakery overtakes North Sea oil giant after introducing £9.80 loaf.',
+  'Artisanal sourdough bakery now worth more than a riverside tower block after introducing £9.80 loaf.',
   'Offshore retail REIT subdivides former department store into 47 phone-case kiosks.',
   'Buy-now-pay-later firm offers 3-instalment plan on cod and chips, calls it "financial empowerment".',
   'HMRC helpline hold music nominated for Mercury Prize after 9-hour set.'

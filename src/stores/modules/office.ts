@@ -7,11 +7,13 @@ import {
   buyerTierOf,
   paStanding,
   paTitle,
+  advisorSector,
   rarityTier,
   rollAdvisorOffer,
   type AdvisorInstance
 } from '../../engine/office'
 import type { ModifierSource } from '../../engine/modifiers'
+import type { Sector } from '../../data/items'
 
 export interface OfficeModuleDeps {
   money: Ref<number>
@@ -24,6 +26,9 @@ export interface OfficeModuleDeps {
   internsOff?: () => boolean
   // No family office at all (the Austerity scenario)
   officeClosed?: () => boolean
+  // Whether the family owns any business in a sector: a sector specialist
+  // isn't introduced until it does
+  ownsSector?: (sector: Sector) => boolean
 }
 
 // Where a hire goes when the office is full: an office seat, or a PA chair
@@ -208,9 +213,12 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     deps.flushSave()
   }
 
-  // No point introducing a buyer who's no better than the one you have
+  // No point introducing a buyer who's no better than the one you have, or
+  // a sector specialist before the family owns anything in their sector
   function notWorthOffering(a: AdvisorDef): boolean {
-    return !!a.buyer && rarityTier(a) <= buyerTierOf(a.buyer, officeSeats.value, paChairs.value)
+    if (a.buyer && rarityTier(a) <= buyerTierOf(a.buyer, officeSeats.value, paChairs.value)) return true
+    const sector = advisorSector(a)
+    return sector !== null && deps.ownsSector !== undefined && !deps.ownsSector(sector)
   }
 
   // Each boss win earns one offer. If one is already open, the new one waits.

@@ -314,7 +314,8 @@ export const useGameStore = defineStore('game', () => {
     announce: (msg) => announce(msg),
     flushSave: () => flushSave(nowMs.value),
     internsOff: () => modifiers.value.internsDisabled || scenarioDef.value.noAutomation === true,
-    officeClosed: () => scenarioDef.value.noOffice === true
+    officeClosed: () => scenarioDef.value.noOffice === true,
+    ownsSector: (sector) => BUSINESSES.some((b) => b.sector === sector && (businessesOwned.value[b.id] ?? 0) > 0)
   })
   const bloodlineTraitPills = computed(() => describeBloodlineTraits(familyTree.value, heir.value))
   // Playing without tapping: the whole allowance against plain Universal

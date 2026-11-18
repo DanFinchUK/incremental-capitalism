@@ -93,6 +93,23 @@ describe('save slots in the store', () => {
     expect(reloadPage).toHaveBeenCalledTimes(3)
   })
 
+  it('downloads any family, not only the one in play, with its play log and tuning', () => {
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    const slot = addSlot('trial', 2000)!
+    localStorage.setItem(slotPrefix(slot.id) + 'state', serializeState({ ...createInitialSceneState(), familySurname: 'Elsewhere', generation: 4 }))
+    localStorage.setItem(slotPrefix(slot.id) + 'playLog', JSON.stringify({ sessions: [[1, 2]], minutes: [], events: [] }))
+    const saved = store.exportSlot(slot.id)!
+    const parsed = JSON.parse(saved.json)
+    expect(parsed.tuning).toBe('trial')
+    expect(parsed.scene.familySurname).toBe('Elsewhere')
+    expect(parsed.scene.playLog.sessions).toEqual([[1, 2]])
+    // and back in, as a family of its own
+    expect(store.importSave(saved.json, 3000)).toBe(true)
+    expect(readIndex().slots.at(-1)?.tuning).toBe('trial')
+    expect(store.exportSlot('nope')).toBeNull()
+  })
+
   it('folds the ladder trial\'s own Hall into the shared one', () => {
     const record = { surname: 'Trialled', finishedAt: 5, activeMs: 1, roll: [], scenario: 'standard' }
     localStorage.setItem('trial:hall', JSON.stringify([record]))

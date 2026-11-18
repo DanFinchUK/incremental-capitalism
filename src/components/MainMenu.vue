@@ -86,7 +86,10 @@
                 <span>{{ saveLine(slot) }}</span>
               </div>
               <div class="ttl-SaveActions">
-                <span v-if="slot.id === store.activeSlotId" class="ttl-SaveBadge">In play</span>
+                <template v-if="slot.id === store.activeSlotId">
+                  <span class="ttl-SaveBadge">In play</span>
+                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Download</button>
+                </template>
                 <template v-else-if="removing === slot.id">
                   <button type="button" class="ttl-Toggle ttl-Toggle-danger" :data-testid="`remove-confirm-${slot.id}`" @click="confirmRemove(slot.id)">
                     Remove for good
@@ -95,6 +98,7 @@
                 </template>
                 <template v-else>
                   <button type="button" class="ttl-Toggle ttl-Toggle-on" :data-testid="`play-${slot.id}`" @click="store.playSave(slot.id)">Play</button>
+                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Download</button>
                   <button type="button" class="ttl-Toggle" :data-testid="`remove-${slot.id}`" @click="removing = slot.id">Remove</button>
                 </template>
               </div>
@@ -114,7 +118,7 @@
           <div class="ttl-Setting">
             <div>
               <strong>Import a save</strong>
-              <p>A save downloaded from Settings, into a place of its own.</p>
+              <p>A family downloaded from here, into a place of its own.</p>
               <p v-if="importFailed" class="ttl-SaveError" data-testid="import-failed">That file isn't a save, or every place is taken.</p>
             </div>
             <label class="ttl-Toggle ttl-Upload" :class="{ 'ttl-Toggle-disabled': !store.canAddSave }">
@@ -174,7 +178,6 @@
             </button>
           </div>
           <nav class="ttl-Nav" aria-label="Settings">
-            <button type="button" class="ttl-Item" data-testid="menu-download-save" @click="downloadSave(store)">Download save</button>
             <button type="button" class="ttl-Item ttl-Item-danger" data-testid="menu-reset" @click="emit('reset')">Reset game</button>
           </nav>
           <button type="button" class="ttl-Item ttl-Back" data-testid="menu-back" @click="view = 'main'">Back</button>
@@ -905,6 +908,7 @@ const COINS = Array.from({ length: 16 }, (_, i) => ({
 }
 
 .ttl-SaveBadge {
+  align-self: center;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.2em;

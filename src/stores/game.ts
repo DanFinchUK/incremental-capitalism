@@ -86,7 +86,7 @@ import { bossForGate, conditionTarget, conditionTextFor, itemCostCeiling, legacy
 import { combineModifiers, type ModifierSource } from '../engine/modifiers'
 import { generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { createPlayLogModule } from './modules/playLog'
-import { loadPlayLog, withPlayLog } from '../engine/playLog'
+import { loadPlayLog, readPlayLog, withPlayLog } from '../engine/playLog'
 import { bestValue, familyBuyers, type BuyOption } from '../engine/buyers'
 import { emptySplits, mergeBests, withSplit } from '../engine/splits'
 import { createBossModule } from './modules/bosses'
@@ -785,6 +785,23 @@ export const useGameStore = defineStore('game', () => {
     const removed = removeSlot(id)
     refreshSaves()
     return removed
+  }
+
+  // A family's save for downloading, play log and tuning included: the one
+  // in play as it stands, another as it was last saved
+  function exportSlot(id: string, ts = Date.now()): { json: string; surname: string; generation: number } | null {
+    if (id === activeSlotId) return { json: exportSave(ts), surname: familySurname.value, generation: generation.value }
+    const slot = readIndex().slots.find((s) => s.id === id)
+    if (!slot) return null
+    try {
+      const state = localStorage.getItem(slotPrefix(id) + 'state')
+      if (!state) return null
+      const rawLog = localStorage.getItem(slotPrefix(id) + 'playLog')
+      const log = readPlayLog(rawLog ? JSON.parse(rawLog) : null)
+      return { json: withPlayLog(state, log, slot.tuning), surname: slot.summary?.surname ?? '', generation: slot.summary?.generation ?? 1 }
+    } catch {
+      return null
+    }
   }
 
   // A downloaded save, into a slot of its own. Its tuning comes with it.
@@ -2246,6 +2263,7 @@ export const useGameStore = defineStore('game', () => {
     newSave,
     removeSave,
     importSave,
+    exportSlot,
     passiveSources,
     allowanceLabel,
     allowancePerSecond,

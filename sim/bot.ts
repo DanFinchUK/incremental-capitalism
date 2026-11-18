@@ -79,6 +79,10 @@ export interface BotConfig {
   // (1 if unset). Counted by family, since a PA promoted with service, or a
   // PA's child, holds another role in it
   solo?: { trait: string | null; inherit: string | null; advisor: string | null; copies?: number }
+  // Plays as usual, with the game's own introductions, but always takes an
+  // advisor of this family when one is on offer, and never lets one go for
+  // someone else (the strength report's favoured-family runs)
+  favour?: string
   // All income multiplied by this, for the strength report's yardstick
   incomeMult?: number
 }
@@ -337,20 +341,22 @@ function manageOffice(store: Store, cfg: BotConfig): void {
   // who wants staff asks
   if (store.headhunterOffer.length === 0 && store.waitingOffers > 0) store.showWaitingOffer()
   if (store.headhunterOffer.length > 0) {
+    // Rarer is better; a favoured family (the strength report) beats any other
+    const worth = (id: string) => RARITY_RANK[ADVISORS_BY_ID[id].rarity] + (cfg.favour && ADVISORS_BY_ID[id].family === cfg.favour ? 10 : 0)
     let best = 0
     store.headhunterOffer.forEach((id, i) => {
-      if (RARITY_RANK[ADVISORS_BY_ID[id].rarity] > RARITY_RANK[ADVISORS_BY_ID[store.headhunterOffer[best]].rarity]) best = i
+      if (worth(id) > worth(store.headhunterOffer[best])) best = i
     })
     if (store.officeSeats.some((s) => s === null)) {
       store.hireAdvisor(best)
     } else {
       let seat = 0
       store.officeSeats.forEach((inst, i) => {
-        const rank = (x: typeof inst) => (x ? RARITY_RANK[ADVISORS_BY_ID[x.advisorId].rarity] : -1)
+        const rank = (x: typeof inst) => (x ? worth(x.advisorId) : -1)
         if (rank(inst) < rank(store.officeSeats[seat])) seat = i
       })
-      const existingRank = store.officeSeats[seat] ? RARITY_RANK[ADVISORS_BY_ID[store.officeSeats[seat]!.advisorId].rarity] : -1
-      const candidateRank = RARITY_RANK[ADVISORS_BY_ID[store.headhunterOffer[best]].rarity]
+      const existingRank = store.officeSeats[seat] ? worth(store.officeSeats[seat]!.advisorId) : -1
+      const candidateRank = worth(store.headhunterOffer[best])
       if (candidateRank > existingRank) {
         store.hireAdvisor(best, seat)
       } else {

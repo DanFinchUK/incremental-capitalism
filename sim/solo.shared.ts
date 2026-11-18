@@ -18,6 +18,9 @@
 // class 9, 10 to Duke: a full office in the last line). Introductions come
 // when the game sends them and seats empty at retirement, so a run may
 // never hold that many: each records how many it held on average.
+// SOLO_SET=favour plays the game as it is, real introductions and heirs,
+// with the bot favouring one advisor family whenever one is on offer,
+// against the same bot favouring nothing: what chasing a family really gets.
 declare const process: { env: Record<string, string | undefined> }
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -32,28 +35,32 @@ const TO_DUKE = process.env.SOLO_TO === 'duke'
 export const INCOME_LADDER = [1.1, 1.25, 1.5, 2, 3]
 
 export interface SoloVariant {
-  kind: 'none' | 'income' | 'trait' | 'inherited' | 'advisor' | 'copies'
+  kind: 'none' | 'income' | 'trait' | 'inherited' | 'advisor' | 'copies' | 'favour'
   id: string
   name: string
   // Copies runs: the advisor, their family and how many
   of?: string
   family?: string
   copies?: number
-  // What the bot plays with
+  // What the bot plays with (favoured-family runs play without solo)
   solo: NonNullable<BotConfig['solo']>
+  favour?: string
   incomeMult?: number
 }
 
 const NOBODY = { trait: null, inherit: null, advisor: null }
 const ONLY = process.env.SOLO_ONLY ? new RegExp(process.env.SOLO_ONLY) : null
 
-const SET = process.env.SOLO_SET === 'copies' ? 'copies' : 'singles'
+const SET = process.env.SOLO_SET === 'copies' || process.env.SOLO_SET === 'favour' ? process.env.SOLO_SET : 'singles'
+const FAMILIES = [...new Set(ADVISORS.map((a) => a.family))]
 const MAX_COPIES = Number(process.env.SOLO_MAX_COPIES ?? (TO_DUKE ? 10 : 6))
 
 export const SOLO_VARIANTS: ReadonlyArray<SoloVariant> = [
   { kind: 'none' as const, id: 'baseline', name: 'Nothing', solo: NOBODY },
   ...INCOME_LADDER.map((k) => ({ kind: 'income' as const, id: `income-${k}`, name: `All income x${k}`, solo: NOBODY, incomeMult: k })),
-  ...(SET === 'copies'
+  ...(SET === 'favour'
+    ? FAMILIES.map((f) => ({ kind: 'favour' as const, id: `favour-${f}`, name: f, family: f, favour: f, solo: NOBODY }))
+    : SET === 'copies'
     ? ADVISORS.flatMap((a) =>
         Array.from({ length: MAX_COPIES }, (_, i) => ({
           kind: 'copies' as const,
@@ -82,10 +89,15 @@ export interface SoloResult {
 }
 
 function playOne(v: SoloVariant, seed: number): SoloResult {
-  const cfg: BotConfig = { ...FAST_TAPPER, solo: v.solo, incomeMult: v.incomeMult, ...(TO_DUKE ? { elevations: 4 } : {}) }
+  const cfg: BotConfig = {
+    ...FAST_TAPPER,
+    ...(SET === 'favour' ? { favour: v.favour } : { solo: v.solo }),
+    incomeMult: v.incomeMult,
+    ...(TO_DUKE ? { elevations: 4 } : {})
+  }
   let staffMinutes = 0
   let minutes = 0
-  const family = v.solo.advisor ? ADVISORS_BY_ID[v.solo.advisor].family : null
+  const family = v.favour ?? (v.solo.advisor ? ADVISORS_BY_ID[v.solo.advisor].family : null)
   const gens = runCampaign(TO_DUKE ? 16 : 8, cfg, seed, (store) => {
     minutes += 1
     if (family) staffMinutes += [...store.officeSeats, ...store.paChairs].filter((a) => a && ADVISORS_BY_ID[a.advisorId]?.family === family).length

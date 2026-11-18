@@ -77,7 +77,7 @@ export function teardown(): void {
     })
     .sort((a, b) => b.income - a.income)
   const baseHours = mean([...base.values()])
-  const KIND: Record<string, string> = { income: 'Yardstick', trait: 'Heir trait', inherited: 'Inherited', advisor: 'Advisor', copies: 'Copies' }
+  const KIND: Record<string, string> = { income: 'Yardstick', trait: 'Heir trait', inherited: 'Inherited', advisor: 'Advisor', copies: 'Copies', favour: 'Favoured' }
   const pct = (x: number) => `${x >= 0 ? '+' : ''}${(100 * x).toFixed(1)}%`
   const lines = [
     `Solo runs: one thing on offer for the whole run, against nothing (${baseHours.toFixed(2)} h on average)`,
@@ -106,7 +106,7 @@ export function teardown(): void {
       to: process.env.SOLO_TO === 'duke' ? 'duke' : 'class9',
       // Where the ledger files it: singles under the run's length, the rest
       // under their set's name as well
-      key: `${process.env.SOLO_SET === 'copies' ? 'copies-' : ''}${process.env.SOLO_TO === 'duke' ? 'duke' : 'class9'}`,
+      key: `${process.env.SOLO_SET === 'copies' || process.env.SOLO_SET === 'favour' ? `${process.env.SOLO_SET}-` : ''}${process.env.SOLO_TO === 'duke' ? 'duke' : 'class9'}`,
       seeds: Math.max(...rows.map((r) => r.seed)),
       baselineHours: baseHours,
       rows: table.map((t) => ({
@@ -114,7 +114,8 @@ export function teardown(): void {
         kind: t.kind,
         name: t.name,
         ...(t.of ? { of: t.of, family: t.family, copies: t.copies } : {}),
-        ...(t.kind === 'advisor' || t.kind === 'copies' ? { held: Number(t.held.toFixed(2)) } : {}),
+        ...(t.kind === 'favour' ? { family: t.family } : {}),
+        ...(t.kind === 'advisor' || t.kind === 'copies' || t.kind === 'favour' ? { held: Number(t.held.toFixed(2)) } : {}),
         worth: t.income,
         saved: t.saved,
         err: t.err,

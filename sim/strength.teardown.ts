@@ -10,7 +10,7 @@ import { join } from 'node:path'
 const DIR = join(tmpdir(), 'ic-strength')
 
 interface Row {
-  variant: { kind: string; id: string; name: string; ids?: [string, string] }
+  variant: { kind: string; id: string; name: string; ids?: string[] }
   style: string
   seed: number
   generation: number
@@ -76,7 +76,7 @@ export function teardown(): void {
   // A pair against its two advisors' own gains added together
   const pairRows = table
     .filter((t) => t.kind === 'pair')
-    .map((t) => ({ ...t, stacking: t.overall - (overallOf.get(t.ids![0]) ?? 0) - (overallOf.get(t.ids![1]) ?? 0) }))
+    .map((t) => ({ ...t, stacking: t.overall - t.ids!.reduce((a, id) => a + (overallOf.get(id) ?? 0), 0) }))
     .sort((a, b) => b.stacking - a.stacking)
   const minutes = baselines.size > 0 ? [...baselines.values()][0].path.length / 6 : 0
   const fmt = (x: number) => (x >= 0 ? '+' : '') + x.toFixed(1)
@@ -99,10 +99,10 @@ export function teardown(): void {
     )
   }
   if (pairRows.length > 0) {
-    lines.push('', 'Pairs: the two together, against their own gains added up (Stacking above 0: more than the sum)', '')
-    lines.push(['Pair'.padEnd(46), 'Together'.padStart(9), 'Stacking'.padStart(9), ...styles.map((s) => s.padStart(11))].join(' '))
+    lines.push('', 'Groups: together, against their own gains added up (Stacking above 0: more than the sum)', '')
+    lines.push(['Group'.padEnd(58), 'Together'.padStart(9), 'Stacking'.padStart(9), ...styles.map((s) => s.padStart(11))].join(' '))
     for (const t of pairRows) {
-      lines.push([t.name.padEnd(46), fmt(t.overall).padStart(9), fmt(t.stacking).padStart(9), ...styles.map((s) => fmt(t.perStyle[s]).padStart(11))].join(' '))
+      lines.push([t.name.padEnd(58), fmt(t.overall).padStart(9), fmt(t.stacking).padStart(9), ...styles.map((s) => fmt(t.perStyle[s]).padStart(11))].join(' '))
     }
   }
   const text = lines.join('\n')

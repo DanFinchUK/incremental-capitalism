@@ -35,29 +35,35 @@ export type Variant =
   | { kind: 'trait'; id: string; name: string }
   | { kind: 'inherited'; id: string; name: string }
   | { kind: 'advisor'; id: string; name: string }
-  | { kind: 'pair'; id: string; name: string; ids: [string, string] }
+  | { kind: 'pair'; id: string; name: string; ids: string[] }
 
-// Two advisors together, to see how they stack: every pair within a family
-// (Day Trader with Stockbroker), and any named in STRENGTH_PAIRS
-// ("day-trader+stockbroker,proxy+head-butler")
+// Advisors together, to see how they stack: every pair within a family
+// (Day Trader with Stockbroker), and any group named in STRENGTH_PAIRS
+// ("day-trader+stockbroker+hedge-fund-founder,proxy+head-butler")
 function pairs(): Variant[] {
-  const out = new Map<string, [string, string]>()
+  const out = new Map<string, string[]>()
   for (let i = 0; i < ADVISORS.length; i++) {
     for (let j = i + 1; j < ADVISORS.length; j++) {
       if (ADVISORS[i].family === ADVISORS[j].family) out.set(`${ADVISORS[i].id}+${ADVISORS[j].id}`, [ADVISORS[i].id, ADVISORS[j].id])
     }
   }
   for (const p of (process.env.STRENGTH_PAIRS ?? '').split(',').filter(Boolean)) {
-    const [a, b] = p.split('+')
-    if (ADVISORS_BY_ID[a] && ADVISORS_BY_ID[b]) out.set(`${a}+${b}`, [a, b])
+    const ids = p.split('+')
+    if (ids.length > 1 && ids.every((a) => ADVISORS_BY_ID[a])) out.set(p, ids)
   }
   return [...out.entries()].map(([id, ids]) => ({
     kind: 'pair' as const,
     id,
-    name: `${ADVISORS_BY_ID[ids[0]].name} + ${ADVISORS_BY_ID[ids[1]].name}`,
+    name: ids.map((a) => ADVISORS_BY_ID[a].name).join(' + '),
     ids
   }))
 }
+
+// STRENGTH_ONLY: a pattern; only variants whose id matches are played
+// (the baseline always is). STRENGTH_DEREG: every replay, baseline
+// included, starts with this many ranks of Light-Touch Regulation.
+const ONLY = process.env.STRENGTH_ONLY ? new RegExp(process.env.STRENGTH_ONLY) : null
+const DEREG = process.env.STRENGTH_DEREG === undefined ? null : Number(process.env.STRENGTH_DEREG)
 
 export const VARIANTS: ReadonlyArray<Variant> = [
   { kind: 'none', id: 'baseline', name: 'Nobody' },
@@ -128,6 +134,7 @@ export function playStretch(cp: Checkpoint, cfg: BotConfig, v: Variant): Stretch
     store.pickHeir(0)
     const playCfg: BotConfig = { ...cfg, noHiring: true }
     buyPerks(store, playCfg)
+    if (DEREG !== null) store.perks.deregulation = DEREG
     // Into the empty PA chair first, then an office seat
     for (const id of v.kind === 'advisor' ? [v.id] : v.kind === 'pair' ? v.ids : []) {
       store.headhunterOffer = [id]
@@ -160,7 +167,9 @@ export function playStretch(cp: Checkpoint, cfg: BotConfig, v: Variant): Stretch
 // One shard of the variants, every style, seed and succession; the results
 // go to a file for the teardown to rank
 export function runShard(shard: number, shards: number): void {
-  const variants = VARIANTS.filter((v, i) => v.kind === 'none' || i % shards === shard)
+  const variants = VARIANTS.filter((v) => v.kind === 'none' || !ONLY || ONLY.test(v.id)).filter(
+    (v, i) => v.kind === 'none' || i % shards === shard
+  )
   const rows: Array<{ variant: Variant; style: string; seed: number; generation: number } & StretchResult> = []
   for (const { name, cfg } of STRENGTH_STYLES) {
     for (const seed of STRENGTH_SEEDS) {

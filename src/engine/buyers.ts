@@ -68,7 +68,8 @@ export function familyBuyers(inputs: BuyerInputs): Record<ItemKind, Buyer | null
     if (!who) continue
     const honours = Math.max(0, who.tier - 2)
     const base = Math.min(2, who.tier)
-    const own = SHARE_BY_TIER[base] + HONOUR_BUYER_SHARE * honours + BUYER_SHARE_PER_SIGNING_RANK * inputs.signingRanks
+    // Never more than all the cash: past that, honours and Signing Authority add nothing to it
+    const own = Math.min(1, SHARE_BY_TIER[base] + HONOUR_BUYER_SHARE * honours + BUYER_SHARE_PER_SIGNING_RANK * inputs.signingRanks)
     raw[kind] = {
       kind,
       name: who.name,

@@ -35,6 +35,13 @@ describe('who buys, and with how much', () => {
     expect(b.jobs!.share).toBeCloseTo(0.5)
   })
 
+  it('a buyer never has more than all the cash to spend', () => {
+    // Ten ranks of Signing Authority would take a buyer far past all the cash
+    const capped = familyBuyers(inputs({ seats: [inst('temp-agency')], signingRanks: 10 }))
+    expect(capped.jobs!.ownShare).toBe(1)
+    expect(capped.jobs!.share).toBe(1)
+  })
+
   it('a buyer stood down leaves the whole of the cash to the other', () => {
     const b = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')], signingRanks: 2, paused: { jobs: true } }))
     expect(b.businesses!.share).toBeCloseTo(1)

@@ -1,3 +1,4 @@
+import { availableParallelism } from 'node:os'
 import { defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config'
 
@@ -19,6 +20,10 @@ export default mergeConfig(
             : ['sim/**/*.sim.ts'],
       exclude: process.env.npm_lifecycle_event === 'sim:reports' || process.env.npm_lifecycle_event === 'sim:strength' ? [] : ['sim/**/*.report.sim.ts'],
       globalSetup: process.env.npm_lifecycle_event === 'sim:strength' ? ['sim/strength.teardown.ts'] : [],
+      // Every file is a long, single-threaded campaign: run one per core
+      // (Vitest's default leaves half of them idle)
+      maxWorkers: availableParallelism(),
+      minWorkers: availableParallelism(),
       testTimeout: 3_600_000,
       hookTimeout: 3_600_000
     }

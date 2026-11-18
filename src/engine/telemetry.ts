@@ -1,3 +1,4 @@
+import { markRaw, toRaw } from 'vue'
 export type IncomeSource = 'passive' | 'manual' | 'windfall'
 // Pins on the cashflow chart, in words
 export type TelemetryMarker = 'Milestone' | 'Class' | 'Opportunity'
@@ -50,7 +51,9 @@ function bucketFor(ts: number): number {
 export function createTelemetryState(nowMs: number, initialCash: number): TelemetryState {
   const b = bucketFor(nowMs)
   return {
-    ledger: [],
+    // Not reactive: entries come and go on every tap and tick, and whatever
+    // reads them (income a second, the chart's mix) also reads the clock
+    ledger: markRaw([]),
     samples: [{ ts: nowMs, realisedPerSec: 0, passivePerSec: 0 }],
     candles: [{ bucketStart: b, open: initialCash, high: initialCash, low: initialCash, close: initialCash }],
     lastSampleTs: nowMs,
@@ -60,7 +63,7 @@ export function createTelemetryState(nowMs: number, initialCash: number): Teleme
 
 export function resetTelemetry(state: TelemetryState, nowMs: number, initialCash: number): void {
   const b = bucketFor(nowMs)
-  state.ledger = []
+  state.ledger = markRaw([])
   state.samples = [{ ts: nowMs, realisedPerSec: 0, passivePerSec: 0 }]
   state.candles = [{ bucketStart: b, open: initialCash, high: initialCash, low: initialCash, close: initialCash }]
   state.lastSampleTs = nowMs
@@ -187,9 +190,9 @@ export function sampleTelemetry(
   if (favourPerSec > 0) sample.favourPerSec = favourPerSec
   if (passiveSources) sample.mix = realisedMix(state, ts, passiveSources)
 
-  state.samples.push(sample)
-  if (state.samples.length > MAX_SAMPLES) {
-    state.samples.splice(0, state.samples.length - MAX_SAMPLES)
-  }
+  // A new list, assigned once: trimming the old one in place would shift
+  // every sample through the reactive proxy, on every tick
+  const samples = toRaw(state.samples)
+  state.samples = samples.length >= MAX_SAMPLES ? [...samples.slice(samples.length - MAX_SAMPLES + 1), sample] : [...samples, sample]
   return sample
 }

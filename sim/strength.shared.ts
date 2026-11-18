@@ -16,6 +16,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { ADVISORS, ADVISORS_BY_ID } from '../src/data/advisors'
 import { HEIR_TRAITS, INHERITED_TRAITS } from '../src/data/heirs'
 import { useGameStore } from '../src/stores/game'
+import { pauseStateWrites } from '../src/utils/stateWrites'
 import { FAST_TAPPER, ZERO_TAP, buyPerks, decide, runCampaign, seededRandom, type BotConfig, type Store } from './bot'
 
 export const STRENGTH_DIR = join(tmpdir(), 'ic-strength')
@@ -95,6 +96,7 @@ export function makeCheckpoint(style: string, cfg: BotConfig, seed: number, gene
   let found: Checkpoint | null = null
   runCampaign(6, cfg, seed, undefined, (store, next, ts) => {
     if (next < generation) return false
+    pauseStateWrites(false)
     store.flushSave(ts)
     found = { style, seed, generation, ts, storage: copyStorage() }
     return true
@@ -121,6 +123,7 @@ export function playStretch(cp: Checkpoint, cfg: BotConfig, v: Variant): Stretch
     const store: Store = useGameStore()
     let ts = cp.ts
     store.hydrateFromStorage(ts)
+    pauseStateWrites(true)
     // An empty office: the family's PAs go, so only the variant is on staff
     for (let i = store.paChairs.length - 1; i >= 0; i--) if (store.paChairs[i]) store.firePA(i)
     const name = store.heirChoices[0]?.name ?? 'Heir'
@@ -161,6 +164,7 @@ export function playStretch(cp: Checkpoint, cfg: BotConfig, v: Variant): Stretch
     return { path, gates: store.gatesBeaten, catchUpMinutes: catchUp, disgraced: false }
   } finally {
     Math.random = realRandom
+    pauseStateWrites(false)
   }
 }
 

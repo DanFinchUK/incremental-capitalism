@@ -1,3 +1,4 @@
+import { stateWritesPaused } from '../utils/stateWrites'
 import { activeKey } from '../data/saveSlots'
 // A record of how the game is actually played, for balancing. It lives in
 // localStorage under its own key (so the frequent game saves stay small)
@@ -134,7 +135,7 @@ export function savePlayLog(log: PlayLog): void {
   try {
     // No family in residence, nothing of theirs to keep
     const key = activeKey('playLog')
-    if (key) localStorage.setItem(key, JSON.stringify(log))
+    if (key && !stateWritesPaused()) localStorage.setItem(key, JSON.stringify(log))
   } catch {
     // Ignore storage quota or private-browsing write errors
   }

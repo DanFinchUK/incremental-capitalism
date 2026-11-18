@@ -11,6 +11,7 @@ import { TRAITS_BY_ID } from '../src/data/heirs'
 import { ADVISORS_BY_ID } from '../src/data/advisors'
 import { SCENARIOS_BY_ID, type ScenarioId } from '../src/data/scenarios'
 import { useGameStore } from '../src/stores/game'
+import { pauseStateWrites } from '../src/utils/stateWrites'
 
 // The sim plays hours in one synchronous loop. jsdom's localStorage queues a
 // storage event (holding the old and new values) for every write, and those
@@ -185,52 +186,67 @@ function revealedItems(store: Store): Array<{ kind: ItemKind; id: string }> {
   return items
 }
 
+// Every revealed item priced once: its next unit's cost, whether it's
+// affordable, and what it adds. The bot's buying choices all read from this.
+interface Priced {
+  item: { kind: ItemKind; id: string }
+  cost: number
+  canAfford: boolean
+  perSec: number
+  perClick: number
+}
+
+function priceItems(store: Store): Priced[] {
+  const { itemQuote, itemIncomeDelta } = store.pricing
+  return revealedItems(store).map((item) => {
+    const quote = itemQuote(item.kind, item.id, 1)
+    const delta = itemIncomeDelta(item.kind, item.id, 1)
+    return { item, cost: quote.cost, canAfford: quote.canAfford, perSec: delta.deltaPerSec, perClick: delta.deltaPerClick }
+  })
+}
+
 // The best affordable single purchase by income gained per pound, counting
 // clicks at the bot's click rate.
 function bestBuy(store: Store, cfg: BotConfig): { kind: ItemKind; id: string } | null {
-  return bestBuyScored(store, cfg).pick
+  return bestBuyScored(store, cfg, priceItems(store)).pick
 }
 
-function bestBuyScored(store: Store, cfg: BotConfig): { pick: { kind: ItemKind; id: string } | null; score: number } {
+function bestBuyScored(store: Store, cfg: BotConfig, priced: Priced[]): { pick: { kind: ItemKind; id: string } | null; score: number } {
   let best: { kind: ItemKind; id: string } | null = null
   let bestScore = 0
   const boss = store.nextBoss
   const clickBossOpen =
     boss && boss.status !== 'locked' && (boss.def.condition.kind === 'clickEarningsAtFullHustle' || boss.def.condition.kind === 'polish')
   const clickWeight = clickBossOpen ? cfg.clicksPerSec * store.maxHustle : cfg.casualClicksPerSec
-  for (const item of revealedItems(store)) {
-    const quote = store.itemQuote(item.kind, item.id, 1)
-    if (!quote.canAfford) continue
-    const delta = store.itemIncomeDelta(item.kind, item.id, 1)
-    const score = (delta.deltaPerSec + delta.deltaPerClick * clickWeight) / quote.cost
+  for (const p of priced) {
+    if (!p.canAfford) continue
+    const score = (p.perSec + p.perClick * clickWeight) / p.cost
     if (score > bestScore) {
       bestScore = score
-      best = item
+      best = p.item
     }
   }
   return { pick: best, score: bestScore }
 }
 
+
 // Market dominance worth finishing: what one more adds to income, against
 // the cost of every unit still needed to reach 1,000
-function dominanceToChase(store: Store, cfg: BotConfig, beat: number): { kind: ItemKind; id: string } | null {
+function dominanceToChase(store: Store, cfg: BotConfig, beat: number, priced: Priced[]): { kind: ItemKind; id: string } | null {
   if (cfg.chaseDominance === false) return null
   const income = store.moneyPerSecond + store.moneyPerClick * cfg.casualClicksPerSec
   const gain = (income * DOMINANCE_BONUS) / dominanceMultiplier(store.dominanceHeld)
   // Beat the best ordinary buy, affordable yet or not: saving up for the
   // next rung is a choice too
-  for (const item of revealedItems(store)) {
-    const delta = store.itemIncomeDelta(item.kind, item.id, 1)
-    const cost = store.itemQuote(item.kind, item.id, 1).cost
-    if (Number.isFinite(cost) && cost > 0) beat = Math.max(beat, (delta.deltaPerSec + delta.deltaPerClick * cfg.casualClicksPerSec) / cost)
+  for (const p of priced) {
+    if (Number.isFinite(p.cost) && p.cost > 0) beat = Math.max(beat, (p.perSec + p.perClick * cfg.casualClicksPerSec) / p.cost)
   }
   let best: { kind: ItemKind; id: string } | null = null
   let bestScore = beat
-  for (const item of revealedItems(store)) {
+  for (const { item, cost: next } of priced) {
     const owned = (item.kind === 'jobs' ? store.jobsPurchased[item.id] : store.businessesOwned[item.id]) ?? 0
     if (owned < 1 || owned >= DOMINANCE_AT) continue
     const def = item.kind === 'jobs' ? JOBS_BY_ID[item.id] : BUSINESSES_BY_ID[item.id]
-    const next = store.itemQuote(item.kind, item.id, 1).cost
     const left = DOMINANCE_AT - owned
     const cost = (next * (Math.pow(def.scaleFactor, left) - 1)) / (def.scaleFactor - 1)
     const score = gain / cost
@@ -242,7 +258,7 @@ function dominanceToChase(store: Store, cfg: BotConfig, beat: number): { kind: I
   return best
 }
 
-// Hire the rarest candidate while there is a free seat; the first hire
+// Hire the rarest candidate// Hire the rarest candidate while there is a free seat; the first hire
 // becomes the PA so the office has continuity.
 function manageOffice(store: Store, cfg: BotConfig): void {
   if (cfg.noHiring) {
@@ -388,8 +404,9 @@ export function decide(store: Store, cfg: BotConfig): void {
   // Spend in a few chunky steps: Max on the best buy while it costs little
   // of the cash, otherwise one at a time.
   for (let i = 0; i < 12; i++) {
-    const scored = bestBuyScored(store, cfg)
-    const dominance = dominanceToChase(store, cfg, scored.score)
+    const priced = priceItems(store)
+    const scored = bestBuyScored(store, cfg, priced)
+    const dominance = dominanceToChase(store, cfg, scored.score, priced)
     if (dominance) {
       // Buy as many towards 1,000 as the cash allows
       if (store.buyItem(dominance.kind, dominance.id, 'max').bought === 0) break
@@ -463,10 +480,13 @@ export function runCampaign(
 ): GenerationResult[] {
   const realRandom = Math.random
   Math.random = seededRandom(seed)
+  // Nothing reads the save back mid-campaign, so don't spend time writing it
+  pauseStateWrites(true)
   try {
     return playCampaign(hours, cfg, probe, atSuccession)
   } finally {
     Math.random = realRandom
+    pauseStateWrites(false)
   }
 }
 

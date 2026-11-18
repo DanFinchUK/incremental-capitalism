@@ -1,6 +1,6 @@
 import { forPlaystyle } from '../utils/playstyle'
 import type { SfxKind, SfxOptions } from '../engine/audio'
-import { computed, ref } from 'vue'
+import { computed, markRaw, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
   BUSINESSES,
@@ -64,6 +64,7 @@ import { SOCIAL_CLASSES } from '../data/classes'
 import { LADDER_TRIAL } from '../data/trial'
 import { ACTIVE_TUNING, MAX_SAVES, NEXT_SCENARIO_AT_LOAD, activeKey, addSlot, adoptOrphans, claimSeat, noteActiveSummary, readIndex, removeSlot, residentSlot, residentSlotId, setActiveSlot, syncResident, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
 import { readProfile, writeProfile } from '../engine/profile'
+import { stateWritesPaused } from '../utils/stateWrites'
 import { reloadPage } from '../utils/reloadPage'
 import { awardMultiplier, awardsHeld, awardText, type Award } from '../engine/awards'
 import { HALL_KEY, MAX_HALL_ENTRIES, addToHall, parseHall, scenariosOpen, type DynastyRecord } from '../engine/hall'
@@ -613,14 +614,19 @@ export const useGameStore = defineStore('game', () => {
   )
 
   // Keeps the saved record of what has been seen in step with what is shown
+  // The lists last marked as seen: they only change on a purchase or a new
+  // class, and this runs on every tap and tick
+  let seenFrom: { jobs: unknown; businesses: unknown; store: unknown } = { jobs: null, businesses: null, store: null }
   function refreshSeenItems(): void {
-    for (const row of visibleJobs.value) if (row.mode === 'revealed') seenItems.value.jobs[row.item.id] = true
-    for (const row of visibleBusinesses.value) if (row.mode === 'revealed') seenItems.value.businesses[row.item.id] = true
+    const jobs = visibleJobs.value
+    const businesses = visibleBusinesses.value
+    const seen = seenItems.value
+    if (seenFrom.jobs === jobs && seenFrom.businesses === businesses && seenFrom.store === seen) return
+    seenFrom = { jobs, businesses, store: seen }
+    for (const row of jobs) if (row.mode === 'revealed' && !seen.jobs[row.item.id]) seen.jobs[row.item.id] = true
+    for (const row of businesses) if (row.mode === 'revealed' && !seen.businesses[row.item.id]) seen.businesses[row.item.id] = true
   }
 
-  // On a fresh climb, each item unlocks once you own one of the item before
-  // it. On prestige generations, items already seen in this bloodline appear
-  // straight away up to the current gate's cost ceiling.
   function buildVisibleList<T extends { id: string; baseCost: number }>(
     items: ReadonlyArray<T>,
     owned: Readonly<Record<string, number>>,
@@ -709,7 +715,7 @@ export const useGameStore = defineStore('game', () => {
     if (activeSlotId.value === null && !census.value && familyHasBegun()) claimFamilySeat(ts)
     const key = activeKey('state')
     try {
-      if (key) localStorage.setItem(key, serializeState(snapshotPersisted(ts)))
+      if (key && !stateWritesPaused()) localStorage.setItem(key, serializeState(snapshotPersisted(ts)))
     } catch {
       // Ignore storage quota or private-browsing write errors
     }
@@ -2402,6 +2408,9 @@ export const useGameStore = defineStore('game', () => {
     addDebugMoney,
     itemQuote,
     itemIncomeDelta,
+    // The same two, without Pinia's action wrapper: for loops that price
+    // every item many times a second (the pacing bot)
+    pricing: markRaw({ itemQuote, itemIncomeDelta }),
     buyItem,
     manualClick,
     spawnSpecificEvent,

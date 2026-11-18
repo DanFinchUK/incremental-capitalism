@@ -68,13 +68,17 @@ describe('the ladder trial', () => {
 })
 
 describe("King's Awards progress", () => {
-  it('shows each group bought into, with what the next award waits on', async () => {
+  it('shows each group once all its items are on offer, with what the next award waits on', async () => {
     const { awardProgress } = await import('../src/engine/awards')
     const jobs = Object.fromEntries(JOBS.slice(0, 5).map((j, i) => [j.id, [120, 300, 100, 212, 500][i]]))
-    const rows = awardProgress(jobs, {})
+    const seenFive = { jobs: Object.fromEntries(JOBS.slice(0, 5).map((j) => [j.id, true])), businesses: {} }
+    const rows = awardProgress(jobs, {}, seenFive)
     expect(rows).toEqual([{ kind: 'jobs', from: 0, to: 4, held: 2, next: 250, laggard: { label: JOBS[2].label, owned: 100 } }])
+    // Not shown until every item in the group is on offer
+    const seenFour = { jobs: Object.fromEntries(JOBS.slice(0, 4).map((j) => [j.id, true])), businesses: {} }
+    expect(awardProgress(jobs, {}, seenFour)).toEqual([])
     // A group with all five awards waits on nothing
-    const full = awardProgress(Object.fromEntries(JOBS.slice(0, 5).map((j) => [j.id, 1000])), {})
+    const full = awardProgress(Object.fromEntries(JOBS.slice(0, 5).map((j) => [j.id, 1000])), {}, seenFive)
     expect(full[0]).toMatchObject({ held: 5, next: null, laggard: null })
   })
 })

@@ -59,9 +59,13 @@ export interface AwardBlock {
   laggard: { label: string; owned: number } | null
 }
 
-// Each block the family has bought into, with its awards and what the next
-// one waits on
-export function awardProgress(jobs: Readonly<Record<string, number>>, businesses: Readonly<Record<string, number>>): AwardBlock[] {
+// Each block whose items are all on offer (seen: revealed so far, by kind),
+// with its awards and what the next one waits on
+export function awardProgress(
+  jobs: Readonly<Record<string, number>>,
+  businesses: Readonly<Record<string, number>>,
+  seen: Readonly<Record<ItemKind, Readonly<Record<string, boolean>>>>
+): AwardBlock[] {
   const out: AwardBlock[] = []
   for (const [kind, list, owned] of [
     ['jobs', JOBS, jobs],
@@ -69,8 +73,8 @@ export function awardProgress(jobs: Readonly<Record<string, number>>, businesses
   ] as const) {
     for (const [from, to] of blocks(list.length)) {
       const items = list.slice(from, to + 1)
+      if (!items.every((item) => seen[kind][item.id])) continue
       const counts = items.map((item) => owned[item.id] ?? 0)
-      if (counts.every((n) => n === 0)) continue
       const weakest = Math.min(...counts)
       const held = AWARD_LEVELS.filter((level) => weakest >= level).length
       const next = AWARD_LEVELS[held] ?? null

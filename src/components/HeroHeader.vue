@@ -116,7 +116,7 @@
             <span>{{ row.line }}</span>
           </li>
         </ul>
-        <p v-else class="scn-AwardsRule">Nothing bought yet.</p>
+        <p v-else class="scn-AwardsRule">A group shows here once every item in it is on offer.</p>
       </div>
 
       <div v-if="!phone" class="scn-CompactStats">
@@ -193,7 +193,7 @@ defineExpose({ payButtonRef })
 const awardsShown = computed(() => store.familyTuning === 'trial')
 const awardsOpen = ref(false)
 const awardRows = computed(() =>
-  awardProgress(store.jobsPurchased, store.businessesOwned).map((block) => {
+  awardProgress(store.jobsPurchased, store.businessesOwned, store.seenItems).map((block) => {
     const list = block.kind === 'jobs' ? JOBS : BUSINESSES
     const title = `${block.kind === 'jobs' ? 'Jobs' : 'Businesses'}: ${list[block.from].label} to ${list[block.to].label}`
     const won = `${block.held} of ${AWARD_LEVELS.length} won`

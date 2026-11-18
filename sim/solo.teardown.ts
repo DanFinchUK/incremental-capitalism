@@ -6,6 +6,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+declare const process: { env: Record<string, string | undefined> }
+
 const DIR = join(tmpdir(), 'ic-solo')
 
 interface Row {
@@ -56,6 +58,7 @@ export function teardown(): void {
       const lr = logRatios(rs)
       const m = mean(lr)
       return {
+        id: rs[0].id,
         kind: rs[0].kind,
         name: rs[0].name,
         saved: 1 - Math.exp(m),
@@ -88,5 +91,15 @@ export function teardown(): void {
   }
   const text = lines.join('\n')
   writeFileSync(join(DIR, 'report.txt'), text)
+  // The same, as data, for the balance ledger (scripts/ledger.mjs)
+  writeFileSync(
+    join(DIR, 'results.json'),
+    JSON.stringify({
+      to: process.env.SOLO_TO === 'duke' ? 'duke' : 'class9',
+      seeds: Math.max(...rows.map((r) => r.seed)),
+      baselineHours: baseHours,
+      rows: table.map((t) => ({ id: t.id, kind: t.kind, name: t.name, worth: t.income, saved: t.saved, err: t.err, unfinished: t.missed }))
+    })
+  )
   console.log('\n' + text + `\n\n(also in ${join(DIR, 'report.txt')})`)
 }

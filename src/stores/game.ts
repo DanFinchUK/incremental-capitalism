@@ -476,11 +476,14 @@ export const useGameStore = defineStore('game', () => {
   const legacyOnRetire = computed(() => legacyForRetiring(gatesBeaten.value, bloodlineDeepestGate.value))
   // Retiring without a new record pays nothing, but stays open so a family
   // stuck behind a bad heir can draft another
+  // Not mid-ordeal: once the back-out moment has passed, it is seen through
+  // (retiring is no way out of it, as abdicating isn't)
   const canRetire = computed(
     () =>
       gatesBeaten.value >= minRetireGate.value &&
       heirChoices.value.length === 0 &&
-      disgraceReport.value === null
+      disgraceReport.value === null &&
+      bosses.fight.value === null
   )
   // From the perk, and from staff who bring their own
   const autoClickers = computed(() =>
@@ -1016,21 +1019,23 @@ export const useGameStore = defineStore('game', () => {
     // No family in residence: the next one as chosen before the reload
     if (key === null && NEXT_SCENARIO_AT_LOAD) beginDynasty(ts, familySurname.value, readScenarioId(NEXT_SCENARIO_AT_LOAD))
 
+    // Time away is the family's own: play in other families meanwhile
+    // doesn't count (data/saveSlots.ts, playedAt)
+    const seat = residentSlot()
+    const playedElsewhere = seat?.playedAt !== undefined ? Math.max(0, readProfile().playedMs - seat.playedAt) : 0
+    const away = loaded.lastUpdate !== null ? ts - loaded.lastUpdate - playedElsewhere : 0
+
     // A fight carries on after a reload, but not after time away: as in play,
     // a minute or more away calls it off with no cooldown, before any money
-    // earned meanwhile could count towards it
-    if (bosses.bossAttempt.value && (loaded.lastUpdate === null || ts - loaded.lastUpdate >= 60_000)) {
+    // earned meanwhile could count towards it. Time in another family isn't
+    // time away, so leaving for one is no way out of an ordeal.
+    if (bosses.bossAttempt.value && (loaded.lastUpdate === null || away >= 60_000)) {
       plays.log(ts, 'boss-end', { gate: bosses.bossAttempt.value.gate, result: 'away' })
       bosses.bossAttempt.value = null
     }
 
     // No catch-up while the succession is undecided: the family is in
     // mourning; nor once the dynasty is over
-    // Time away is the family's own: play in other families meanwhile
-    // doesn't count (data/saveSlots.ts, playedAt)
-    const seat = residentSlot()
-    const playedElsewhere = seat?.playedAt !== undefined ? Math.max(0, readProfile().playedMs - seat.playedAt) : 0
-    const away = loaded.lastUpdate !== null ? ts - loaded.lastUpdate - playedElsewhere : 0
     if (loaded.lastUpdate !== null && away > 0 && heirChoices.value.length === 0 && !dynastyComplete.value) {
       const catchUp = computeOfflineCatchUp(away, offlinePerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
       if (catchUp) {

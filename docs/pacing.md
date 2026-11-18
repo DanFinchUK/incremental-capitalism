@@ -98,7 +98,7 @@ into the new line, so each line takes about two-thirds as long as the last
 minutes for a fast tapper, that is about 63, 41, 33 and 19 minutes for the
 Baron, Viscount, Earl and Marquess lines (sim medians), about 4 hours to
 Duke. `sim/pacing.lines.sim.ts` checks each line takes 50% to 90% as long as
-the one before (median of ten seeds; the top allows for noise); `sim/elevation.report.sim.ts` shows the climb after an
+the one before (each run's own ratio, averaged over fifteen seeds: two lines in one run share its luck, so this is far steadier than comparing medians); `sim/elevation.report.sim.ts` shows the climb after an
 elevation.
 
 ## The ladder trial

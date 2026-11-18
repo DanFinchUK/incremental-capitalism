@@ -89,6 +89,15 @@
                 <template v-if="slot.id === store.activeSlotId">
                   <span class="ttl-SaveBadge">In residence</span>
                   <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Download</button>
+                  <button
+                    v-if="!fresh && !store.dynastyComplete"
+                    type="button"
+                    class="ttl-Toggle ttl-Toggle-danger"
+                    data-testid="families-abandon"
+                    @click="newDynasty"
+                  >
+                    Abandon
+                  </button>
                 </template>
                 <template v-else-if="removing === slot.id">
                   <button type="button" class="ttl-Toggle ttl-Toggle-danger" :data-testid="`remove-confirm-${slot.id}`" @click="confirmRemove(slot.id)">
@@ -207,7 +216,7 @@
           </div>
           <ScenarioPicker v-if="store.dynastyComplete || scenariosOpen(store.hall)" v-model="next" />
           <div class="ttl-ConfirmActions">
-            <button type="button" class="ttl-Item ttl-Item-quiet" data-testid="menu-back" @click="view = 'main'">Back</button>
+            <button type="button" class="ttl-Item ttl-Item-quiet" data-testid="menu-back" @click="view = confirmBack">Back</button>
             <button
               type="button"
               class="ttl-Item"
@@ -302,7 +311,11 @@ const newDynastyLabel = computed(() => {
 
 // A finished dynasty is founded anew, an unfinished one abandoned, both after
 // asking; either way the next family goes into the register
+// Back from asking returns to wherever the question was asked
+const confirmBack = ref<'main' | 'families'>('main')
+
 function newDynasty(): void {
+  confirmBack.value = view.value === 'families' ? 'families' : 'main'
   next.value = store.scenario
   view.value = 'confirm'
 }

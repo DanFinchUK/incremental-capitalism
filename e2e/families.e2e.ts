@@ -13,6 +13,11 @@ test('a second family plays apart from the first, and switching back finds the f
   await withStore(page, `(s) => s.openMenu()`)
   await page.getByTestId('menu-families').click()
   await expect(page.getByTestId('save-main')).toContainText('In residence')
+  // Abandon asks first, and Back returns here
+  await page.getByTestId('families-abandon').click()
+  await expect(page.getByTestId('menu-confirm-abandon')).toBeVisible()
+  await page.getByTestId('menu-back').click()
+  await expect(page.getByTestId('save-main')).toContainText('In residence')
   await Promise.all([page.waitForEvent('load'), page.getByTestId('new-save-trial').click()])
 
   // Straight to the register: a fresh family, on the trial, with the first one's achievement and settings

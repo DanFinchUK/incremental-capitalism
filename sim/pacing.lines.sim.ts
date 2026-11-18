@@ -32,7 +32,7 @@ describe('lines after elevation', () => {
     for (let i = 1; i < 5; i++) {
       const ratio = medians[i] / medians[i - 1]
       expect(ratio, `line ${i + 1}`).toBeGreaterThanOrEqual(0.5)
-      expect(ratio, `line ${i + 1}`).toBeLessThanOrEqual(0.85)
+      expect(ratio, `line ${i + 1}`).toBeLessThanOrEqual(0.9)
     }
   })
 })

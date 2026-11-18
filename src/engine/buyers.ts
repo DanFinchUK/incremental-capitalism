@@ -78,14 +78,12 @@ export function familyBuyers(inputs: BuyerInputs): Record<ItemKind, Buyer | null
       itemTypes: TYPES_BY_TIER[base] + honours + inputs.extraItemTypes
     }
   }
+  // One household purse: the larger budget among those at work. A buyer
+  // stood down shows the purse they'd share on going back.
   const working = [raw.jobs, raw.businesses].filter((b): b is Buyer => b !== null && !inputs.paused?.[b.kind])
-  const total = working.reduce((a, b) => a + b.share, 0)
-  // A buyer stood down shows what they'd get back at work, sharing with
-  // whoever is working now; those at work share between themselves
+  const purse = working.reduce((a, b) => Math.max(a, b.ownShare), 0)
   for (const b of [raw.jobs, raw.businesses]) {
-    if (!b) continue
-    const pool = working.includes(b) ? total : total + b.ownShare
-    if (pool > 1) b.share = b.ownShare / pool
+    if (b) b.share = Math.max(purse, b.ownShare)
   }
   return raw
 }

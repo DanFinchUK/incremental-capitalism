@@ -1182,39 +1182,54 @@ export const useGameStore = defineStore('game', () => {
     Object.assign(buyerTally, { minute: Math.floor(activeGenerationMs.value / 60_000), jobs: 0, jobsCost: 0, businesses: 0, businessesCost: 0 })
   }
 
+  // One household purse: the buyers at work spend it together on whatever
+  // returns most per pound across both lists, each taking up to its own
+  // number of item types from its own list. A Job's click pay counts at the
+  // rate you are tapping now, on top of what Interns and the allowance make.
   function runBuyers(ts: number): void {
     if (lastAutoBuyAt.value > 0 && ts - lastAutoBuyAt.value < AUTO_BUY_COOLDOWN_MS) return
-    const cash = money.value
+    const working = (['jobs', 'businesses'] as const).filter((k) => buyers.value[k] !== null && buyerWorking(k))
+    if (working.length === 0) return
+    const typesLeft: Record<ItemKind, number> = { jobs: 0, businesses: 0 }
+    let share = 0
+    for (const k of working) {
+      const b = buyers.value[k]!
+      typesLeft[k] = b.itemTypes
+      share = Math.max(share, b.share)
+    }
+    let left = money.value * share
+    const tapsPerSec = moneyPerClick.value > 0 ? manualRealisedPerSecond.value / moneyPerClick.value : 0
+    const done = new Set<string>()
     let bought = false
-    for (const kind of ['jobs', 'businesses'] as const) {
-      const buyer = buyers.value[kind]
-      if (!buyer || !buyerWorking(kind)) continue
-      let left = cash * buyer.share
-      const rows = kind === 'jobs' ? visibleJobs.value : visibleBusinesses.value
-      const done = new Set<string>()
-      for (let pick = 0; pick < buyer.itemTypes; pick++) {
-        const options: BuyOption[] = []
+    for (;;) {
+      const options: (BuyOption & { kind: ItemKind; itemId: string })[] = []
+      for (const kind of working) {
+        if (typesLeft[kind] <= 0) continue
+        const rows = kind === 'jobs' ? visibleJobs.value : visibleBusinesses.value
         for (const r of rows) {
-          if (r.mode !== 'revealed' || done.has(r.item.id) || !isAutoBuyEnabled(kind, r.item.id)) continue
+          const key = `${kind}:${r.item.id}`
+          if (r.mode !== 'revealed' || done.has(key) || !isAutoBuyEnabled(kind, r.item.id)) continue
           const q = itemQuote(kind, r.item.id, undefined, left)
           if (!q.canAfford || q.count < 1) continue
           const delta = itemIncomeDelta(kind, r.item.id, q.count)
-          const gain = kind === 'jobs' ? delta.deltaPerClick : delta.deltaPerSec
-          options.push({ id: r.item.id, cost: q.cost, valuePerPound: gain / q.cost })
+          const gain = delta.deltaPerSec + (kind === 'jobs' ? delta.deltaPerClick * tapsPerSec : 0)
+          options.push({ id: key, kind, itemId: r.item.id, cost: q.cost, valuePerPound: gain / q.cost })
         }
-        const best = bestValue(options)
-        if (!best) break
-        const result = buyItem(kind, best.id, undefined, false, left, true)
-        if (result.bought === 0) break
-        done.add(best.id)
-        left -= result.cost
-        bought = true
-        if (buyerTally.minute !== Math.floor(activeGenerationMs.value / 60_000)) flushBuyerTally(ts)
-        buyerTally[kind] += result.bought
-        buyerTally[kind === 'jobs' ? 'jobsCost' : 'businessesCost'] += result.cost
-        const def = kind === 'jobs' ? JOBS_BY_ID[best.id] : BUSINESSES_BY_ID[best.id]
-        noteCandlePurchase(telemetry.value, `${buyer.name} bought ${result.bought} × ${def.label}`)
       }
+      const best = bestValue(options) as (typeof options)[number] | null
+      if (!best) break
+      const { kind, itemId } = best
+      const result = buyItem(kind, itemId, undefined, false, left, true)
+      if (result.bought === 0) break
+      done.add(best.id)
+      typesLeft[kind]--
+      left -= result.cost
+      bought = true
+      if (buyerTally.minute !== Math.floor(activeGenerationMs.value / 60_000)) flushBuyerTally(ts)
+      buyerTally[kind] += result.bought
+      buyerTally[kind === 'jobs' ? 'jobsCost' : 'businessesCost'] += result.cost
+      const def = kind === 'jobs' ? JOBS_BY_ID[itemId] : BUSINESSES_BY_ID[itemId]
+      noteCandlePurchase(telemetry.value, `${buyers.value[kind]!.name} bought ${result.bought} × ${def.label}`)
     }
     if (bought) lastAutoBuyAt.value = ts
   }

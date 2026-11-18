@@ -22,14 +22,12 @@ const props = defineProps<{ kind: ItemKind }>()
 const store = useGameStore()
 const buyer = computed(() => store.buyers[props.kind])
 
-// What they spend now, and what they'd spend otherwise: stood down, it's
-// nothing; sharing with the other buyer, it's less than their own budget
+// The household purse they spend from, or nothing while stood down
 const budgetText = computed(() => {
   const b = buyer.value
   if (!b) return ''
   const pct = (x: number) => `${Math.round(x * 100)}%`
   if (store.buyersPaused[props.kind]) return `Budget 0% (${pct(b.share)} when on)`
-  if (b.share < b.ownShare - 0.005) return `Budget ${pct(b.share)} (${pct(b.ownShare)} alone)`
   return `Budget ${pct(b.share)}`
 })
 </script>

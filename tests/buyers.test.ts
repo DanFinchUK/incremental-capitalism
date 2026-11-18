@@ -21,18 +21,19 @@ describe('who buys, and with how much', () => {
 
   it('rarity sets the budget and the item types; honours and Signing Authority add more', () => {
     const b = familyBuyers(inputs({ seats: [inst('estate-manager'), inst('recruitment-consultant')] }))
-    expect(b.businesses).toMatchObject({ name: 'Estate Manager', share: 0.2, itemTypes: 1 })
-    expect(b.jobs).toMatchObject({ name: 'Recruitment Consultant', share: 0.4, itemTypes: 2 })
+    expect(b.businesses).toMatchObject({ name: 'Estate Manager', ownShare: 0.2, itemTypes: 1 })
+    expect(b.jobs).toMatchObject({ name: 'Recruitment Consultant', ownShare: 0.4, itemTypes: 2 })
     // A Proxy who has served 2 generations as PA holds an OBE: two honours
     const veteran = familyBuyers(inputs({ paChairs: [inst('proxy', 2)], signingRanks: 1 }))
     expect(veteran.businesses!.share).toBeCloseTo(0.6 + 0.2 + 0.2)
     expect(veteran.businesses!.itemTypes).toBe(5)
   })
 
-  it('two buyers never spend more than you hold between them', () => {
-    const b = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')], signingRanks: 2 }))
-    expect(b.jobs!.share + b.businesses!.share).toBeCloseTo(1)
-    expect(b.jobs!.share).toBeCloseTo(0.5)
+  it('two buyers share one purse: the larger of their budgets', () => {
+    const b = familyBuyers(inputs({ seats: [inst('estate-manager'), inst('recruitment-consultant')] }))
+    expect(b.jobs!.share).toBeCloseTo(0.4)
+    expect(b.businesses!.share).toBeCloseTo(0.4)
+    expect(b.businesses!.ownShare).toBeCloseTo(0.2)
   })
 
   it('a buyer never has more than all the cash to spend', () => {
@@ -42,16 +43,11 @@ describe('who buys, and with how much', () => {
     expect(capped.jobs!.share).toBe(1)
   })
 
-  it('a buyer stood down leaves the whole of the cash to the other', () => {
-    const b = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')], signingRanks: 2, paused: { jobs: true } }))
-    expect(b.businesses!.share).toBeCloseTo(1)
-    // Both at 60%: together over 100%, so scaled; with one stood down, the other keeps its own 60%
-    const two = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')] }))
-    expect(two.businesses!.share).toBeCloseTo(0.5)
-    const one = familyBuyers(inputs({ seats: [inst('proxy'), inst('executive-search')], paused: { jobs: true } }))
-    expect(one.businesses!.share).toBeCloseTo(0.6)
-    // The one stood down shows what they'd get back at work: the shared share, not more
-    expect(one.jobs!.share).toBeCloseTo(0.5)
+  it('a buyer stood down takes their budget out of the purse', () => {
+    const one = familyBuyers(inputs({ seats: [inst('estate-manager'), inst('recruitment-consultant')], paused: { jobs: true } }))
+    expect(one.businesses!.share).toBeCloseTo(0.2)
+    // The one stood down shows the purse they'd bring back
+    expect(one.jobs!.share).toBeCloseTo(0.4)
   })
 
   it('picks the best return per pound', () => {
@@ -201,12 +197,12 @@ describe('the buyer beside each list', () => {
     hireFree(store, 'recruitment-consultant')
     const jobs = mount(BuyerControl, { props: { kind: 'jobs' }, global: { plugins: [pinia] } })
     const biz = mount(BuyerControl, { props: { kind: 'businesses' }, global: { plugins: [pinia] } })
-    // 40% + 2 x 20% each: 160% together, so they share
-    expect(jobs.text()).toContain('Budget 50% (80% alone) · 2 items')
-    expect(biz.text()).toContain('Budget 50% (80% alone)')
+    // 40% + 2 x 20% each, from one purse
+    expect(jobs.text()).toContain('Budget 80% · 2 items')
+    expect(biz.text()).toContain('Budget 80%')
     store.toggleBuyersPaused('businesses')
     await jobs.vm.$nextTick()
-    expect(biz.text()).toContain('Budget 0% (50% when on)')
+    expect(biz.text()).toContain('Budget 0% (80% when on)')
     expect(jobs.text()).toContain('Budget 80% · 2 items')
   })
 })

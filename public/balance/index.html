@@ -225,14 +225,21 @@ details p, details li { color: var(--ink-soft); }
     </div>
   </section>
 
-  <details>
-    <summary>How the numbers are made</summary>
-    <p>Each row is a solo run in the pacing sim (<code>npm run sim:solo</code>): a fast-tapping bot plays from the first Commoner to the first class 9, or to Duke, with only one thing on offer. Every heir has the trait being measured, every heir passes on the inherited trait, or the headhunter only ever brings that advisor (one of their family at a time, kept as a PA, so they rise through the family with service). The baseline has nothing at all.</p>
-    <p><strong>Time saved</strong> is the active time saved against the baseline, seed by seed, with one standard error beside it. <strong>Worth</strong> reads that time against runs with all income multiplied by 1.1, 1.25, 1.5, 2 and 3: worth x2 saves as much time as doubling all income would.</p>
-    <p>Some things score about x1 because the bot can't use them, not because they're weak:</p>
+  <details open>
+    <summary>What these runs assume</summary>
+    <p>Every figure comes from the pacing sim (<code>npm run sim:solo</code>) playing the real game. Only the game's random draws are fixed, so one thing can be measured at a time; the bot never does anything a player couldn't.</p>
     <ul>
-      <li>Buyers, and the gentry traits that bring the family's own staff: the bot buys perfectly every two seconds anyway.</li>
-      <li>Longer ordeals, offline earnings and scandal protection: the bot never runs short in an ordeal, never leaves and pays off every scandal.</li>
+      <li><strong>Heir and inherited traits:</strong> every heir the game drafts carries the trait being measured. The draft still happens and the bot still picks an heir.</li>
+      <li><strong>Advisors:</strong> every introduction offers only the advisor being measured. Introductions still come when ordeals are won, the bot takes the advisor or turns them down, and the office empties at retirement as usual. In <strong>Rankings</strong> it holds one of the family at a time; in <strong>Copies</strong> it takes them until it holds that many, and <em>held</em> shows how many it really had.</li>
+      <li><strong>Baseline:</strong> heirs with no traits, and every introduction turned down.</li>
+      <li><strong>Worth</strong> reads the time saved against runs with all income multiplied by 1.1, 1.25, 1.5, 2 and 3. That multiplier isn't in the game: it is the ruler, so worth x2 saves as much time as doubling all income would. <strong>Time saved</strong> is against the baseline, seed by seed, with one standard error beside it.</li>
+    </ul>
+    <p>The bot plays better than most people, and that shapes what it can value:</p>
+    <ul>
+      <li>It taps five times a second throughout and buys the best return per pound every two seconds, so buyers and the gentry traits that bring the family's own staff save it nothing.</li>
+      <li>It starts an ordeal only when its sums say it will comfortably win, so it is never disgraced and longer ordeals or softer twists don't help it.</li>
+      <li>It never leaves, so offline earnings never count, and it pays the first answer to every scandal.</li>
+      <li>It retires after 12 minutes without a new class, buys perks in a set order and picks the rarest heir and advisor on offer.</li>
     </ul>
     <p>Versions are filed with <code>node scripts/ledger.mjs add</code>, which keeps each patch's runs in <code>public/balance/ledger.json</code>.</p>
   </details>

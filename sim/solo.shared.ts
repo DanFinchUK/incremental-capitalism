@@ -1,15 +1,17 @@
 // Solo runs: how much each heir trait, inherited trait and advisor is worth
 // over a whole bloodline (or a whole dynasty to Duke), with nothing else on
-// offer. Every heir has the trait being measured (none in the baseline), and
-// the headhunter only ever brings the advisor being measured, one copy at
-// most. Each is scored against the same runs with all income multiplied by
+// offer. Each is scored against the same runs with all income multiplied by
 // 1.1, 1.25, 1.5, 2 and 3, so every result reads as "worth about xN income",
 // whatever the effect is.
 //
-// Unlike the 15-minute replays (sim/strength.shared.ts), these see slow and
-// late effects: campaigns, ordeals, Legacy, PA chairs and, run to Duke,
-// titles. They are noisier, so each variant plays several seeds; the
-// teardown (sim/solo.teardown.ts) prints the standard error beside each.
+// Only the game's random draws are fixed; the bot does nothing a player
+// couldn't. Every heir the game drafts carries the trait being measured
+// (src/utils/simHeirs.ts), every introduction offers only the advisor being
+// measured (src/utils/simOffer.ts), and the baseline turns every
+// introduction down. Played over whole runs, these see slow and late
+// effects: campaigns, ordeals, Legacy, PA chairs and, run to Duke, titles.
+// They are noisy, so each variant plays several seeds; the teardown
+// (sim/solo.teardown.ts) prints the standard error beside each.
 //
 // `npm run sim:solo`. SOLO_SEEDS (default 4) sets the seeds; SOLO_TO=duke
 // plays every run to the dukedom; SOLO_ONLY is a pattern on variant ids.

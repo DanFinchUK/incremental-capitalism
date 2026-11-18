@@ -1,3 +1,4 @@
+import { simHeirs } from '../utils/simHeirs'
 import type { EventRarity } from './events'
 import { pickEventRarity } from './events'
 import type { ModifierSource } from '../engine/modifiers'
@@ -371,5 +372,8 @@ export function rollHeirChoices(
     usedInherits.add(inherit.id)
     choices.push({ name, traitId: trait.id, inheritId: inherit.id })
   }
+  // The sim's strength report: every heir carries the trait it is measuring
+  const forced = simHeirs()
+  if (forced) return choices.map((c) => ({ ...c, traitId: forced.trait, inheritId: forced.inherit }))
   return choices
 }

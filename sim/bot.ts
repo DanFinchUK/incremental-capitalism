@@ -14,6 +14,7 @@ import { useGameStore } from '../src/stores/game'
 import { pauseStateWrites } from '../src/utils/stateWrites'
 import { setSimIncomeMult } from '../src/utils/simIncome'
 import { setSimOffer } from '../src/utils/simOffer'
+import { setSimHeirs } from '../src/utils/simHeirs'
 
 // The sim plays hours in one synchronous loop. jsdom's localStorage queues a
 // storage event (holding the old and new values) for every write, and those
@@ -69,9 +70,6 @@ export interface BotConfig {
   // Buy an item up to 1,000 for market dominance when finishing it pays back
   // better than the best ordinary purchase (on unless set false)
   chaseDominance?: boolean
-  // Turns down every introduction and leaves the PA chairs alone (for
-  // measuring one advisor at a time)
-  noHiring?: boolean
   // A whole run with one thing available (the strength report): every heir
   // has this trait and inherited trait (none if null), and every
   // introduction offers only this advisor (src/utils/simOffer.ts), whom the
@@ -320,10 +318,6 @@ function promoteToChairs(store: Store): void {
 // Hire the rarest candidate while there is a free seat; the first hire
 // becomes the PA so the office has continuity.
 function manageOffice(store: Store, cfg: BotConfig): void {
-  if (cfg.noHiring) {
-    if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
-    return
-  }
   if (cfg.solo) {
     if (store.headhunterOffer.length === 0 && store.waitingOffers > 0) store.showWaitingOffer()
     if (store.headhunterOffer.length > 0) {
@@ -507,8 +501,8 @@ const RARITY_RANK: Readonly<Record<string, number>> = { legendary: 3, rare: 2, c
 // The bot avoids stacking mutually ruinous downsides (e.g. Nepo Baby + click
 // penalties before Silver is cleared), picking the strongest heir otherwise.
 function pickHeir(store: Store, cfg: BotConfig): void {
+  // Every heir on offer carries the measured trait (src/utils/simHeirs.ts)
   if (cfg.solo) {
-    store.heirChoices = [{ name: store.heirChoices[0]?.name ?? 'Heir', traitId: cfg.solo.trait, inheritId: cfg.solo.inherit }]
     store.pickHeir(0)
     return
   }
@@ -572,6 +566,7 @@ export function runCampaign(
   pauseStateWrites(true)
   setSimIncomeMult(cfg.incomeMult ?? 1)
   setSimOffer(cfg.solo?.advisor ?? null)
+  setSimHeirs(cfg.solo ? { trait: cfg.solo.trait, inherit: cfg.solo.inherit } : null)
   try {
     return playCampaign(hours, cfg, probe, atSuccession)
   } finally {
@@ -579,6 +574,7 @@ export function runCampaign(
     pauseStateWrites(false)
     setSimIncomeMult(1)
     setSimOffer(null)
+    setSimHeirs(null)
   }
 }
 
@@ -620,7 +616,7 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
     store.noTap = SCENARIOS_BY_ID[cfg.scenario].noTap ?? store.noTap
   }
   // Buyers follow the bulk setting; a player with staff buys to the next milestone
-  store.bulkBuyMode = 'next'
+  store.setBulkBuyMode('next')
   store.tick(ts)
 
   const results: GenerationResult[] = []
@@ -726,7 +722,6 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
     // Stuck short of the gate retiring needs: hand over to a sibling, as a
     // player would, and give them a fresh stretch to get going
     if (stalled && !store.canRetire && store.canAbdicate && store.offerAbdication()) {
-      if (cfg.solo) store.siblingChoices = [{ name: store.siblingChoices[0]?.name ?? 'Sibling', traitId: cfg.solo.trait, inheritId: cfg.solo.inherit }]
       store.pickSibling(0)
       lastGateAtMs = genMs
     }

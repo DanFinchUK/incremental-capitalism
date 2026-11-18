@@ -140,6 +140,19 @@ than the one before it.
 - Bosses a bloodline has beaten become trivial a few generations later.
 - A player tapping once a second never gets anything for free (`sim/stages.sim.ts`).
 
+## Who the sim plays
+
+The sim's bot (`sim/bot.ts`) plays the real game store and does only what a
+player could. The targets above describe an expert, not an average player:
+it taps at a steady rate throughout, buys the best return per pound every
+two seconds, starts an ordeal only when its sums say it will comfortably
+win (so it is never disgraced), never leaves (so offline earnings never
+count), pays the first answer to every scandal, retires after 12 minutes
+without a new class, buys perks in a set order and takes the rarest heir and
+advisor on offer. The strength report (`npm run sim:solo`) fixes only the
+game's random draws, through `src/utils/simHeirs.ts` and
+`src/utils/simOffer.ts`, never what the bot may do.
+
 ## Tools
 
 - `npm run sim`: every pacing check. The checks are split across files

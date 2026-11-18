@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Balance Ledger</title>
+<meta name="description" content="What each heir trait, inherited trait and advisor in Incremental Capitalism is worth, per balance patch.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Libre+Caslon+Text:wght@400;700&display=swap">
+<style>
+/* An accountant's ledger: ruled rows, a ledger-green accent, figures in a
+   fixed-width face, the name set in the game's own Caslon */
+:root {
+  --paper: #f6f5ef;
+  --sheet: #fffffb;
+  --ink: #1f2a24;
+  --ink-soft: #5d6a62;
+  --rule: #d9dccf;
+  --accent: #2f6b4f;
+  --accent-soft: #d8e6dc;
+  --yard: #a9822f;
+  --good: #2f6b4f;
+  --bad: #a3402e;
+  --display: 'Libre Caslon Text', Georgia, serif;
+  --body: 'IBM Plex Sans', system-ui, sans-serif;
+  --figures: 'IBM Plex Mono', ui-monospace, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131915; --sheet: #19211c; --ink: #e5eadf; --ink-soft: #9aa69d; --rule: #2c3830;
+    --accent: #7cc39b; --accent-soft: #24392d; --yard: #d4ad5c; --good: #7cc39b; --bad: #e58b75;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131915; --sheet: #19211c; --ink: #e5eadf; --ink-soft: #9aa69d; --rule: #2c3830;
+  --accent: #7cc39b; --accent-soft: #24392d; --yard: #d4ad5c; --good: #7cc39b; --bad: #e58b75;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.5 var(--body);
+}
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 20px;
+}
+header { display: grid; gap: 6px; }
+.eyebrow { font: 500 12px/1 var(--figures); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 0; font: 700 clamp(28px, 5vw, 40px)/1.1 var(--display); text-wrap: balance; }
+.lede { margin: 0; max-width: 68ch; color: var(--ink-soft); }
+.lede strong { color: var(--ink); font-weight: 600; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: end; }
+.control { display: grid; gap: 4px; min-width: 0; }
+.control span { font: 500 11px/1 var(--figures); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+select, input[type="search"] {
+  font: 14px var(--body);
+  color: var(--ink);
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 7px 10px;
+  max-width: 100%;
+}
+input[type="search"] { width: 200px; }
+select:focus-visible, input:focus-visible, button:focus-visible, th button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.version-note { margin: 0; font-size: 13px; color: var(--ink-soft); }
+.version-note code { font-family: var(--figures); font-size: 12px; }
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font: 500 11px/1.2 var(--figures); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); position: sticky; top: 0; background: var(--sheet); }
+th button { all: unset; cursor: pointer; }
+th button[aria-sort="descending"]::after { content: ' ↓'; }
+th button[aria-sort="ascending"]::after { content: ' ↑'; }
+td.num, th.num { text-align: right; font-family: var(--figures); font-size: 13px; }
+td.name { font-weight: 500; }
+td.kind { color: var(--ink-soft); font-size: 13px; }
+tr.yard td { background: var(--accent-soft); color: var(--ink-soft); font-style: italic; }
+tr.yard td.name { font-weight: 400; }
+tbody tr:hover td { background: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+td.bar { width: 34%; min-width: 160px; }
+.track { position: relative; height: 12px; }
+.track .one { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--ink-soft); }
+.track .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--yard); opacity: 0.55; }
+.track .fill { position: absolute; top: 2px; height: 8px; border-radius: 2px; background: var(--accent); }
+.track .fill.below { background: var(--bad); }
+.track .was { position: absolute; top: -2px; width: 2px; height: 16px; background: var(--ink); opacity: 0.6; }
+.up { color: var(--good); }
+.down { color: var(--bad); }
+.flat { color: var(--ink-soft); }
+.empty { padding: 24px; color: var(--ink-soft); }
+details { max-width: 72ch; }
+details summary { cursor: pointer; font-weight: 600; }
+details p, details li { color: var(--ink-soft); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-soft); }
+.legend i { display: inline-block; width: 12px; height: 8px; border-radius: 2px; vertical-align: middle; margin-right: 6px; background: var(--accent); }
+.legend i.y { width: 1px; height: 12px; background: var(--yard); border-radius: 0; }
+.legend i.w { width: 2px; height: 12px; background: var(--ink); opacity: 0.6; border-radius: 0; }
+@media (max-width: 640px) {
+  td.name { white-space: normal; min-width: 140px; }
+  td.bar { display: none; }
+  th.bar { display: none; }
+  input[type="search"] { width: 100%; }
+  .control.search { flex: 1 1 100%; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <span class="eyebrow">Incremental Capitalism</span>
+    <h1>Balance Ledger</h1>
+    <p class="lede" id="lede">Loading the ledger…</p>
+  </header>
+
+  <div class="controls">
+    <label class="control"><span>Version</span><select id="version"></select></label>
+    <label class="control"><span>Compare with</span><select id="compare"></select></label>
+    <label class="control"><span>Played to</span>
+      <select id="to">
+        <option value="duke">Duke</option>
+        <option value="class9">First class 9</option>
+      </select>
+    </label>
+    <label class="control"><span>Show</span>
+      <select id="kind">
+        <option value="">Everything</option>
+        <option value="advisor">Advisors</option>
+        <option value="trait">Heir traits</option>
+        <option value="inherited">Inherited traits</option>
+      </select>
+    </label>
+    <label class="control search"><span>Find</span><input type="search" id="find" placeholder="Name"></label>
+  </div>
+  <p class="version-note" id="version-note"></p>
+
+  <div class="legend">
+    <span><i></i>Worth, as the plain income boost that saves as much time (log scale)</span>
+    <span><i class="y"></i>Income yardsticks x1.1 to x3</span>
+    <span><i class="w"></i>Worth in the version compared with</span>
+  </div>
+
+  <div class="sheet">
+    <table>
+      <thead>
+        <tr>
+          <th class="num"><button type="button" data-sort="rank">#</button></th>
+          <th><button type="button" data-sort="name">Name</button></th>
+          <th><button type="button" data-sort="kind">Kind</button></th>
+          <th class="num"><button type="button" data-sort="worth" aria-sort="descending">Worth</button></th>
+          <th class="bar" aria-hidden="true"></th>
+          <th class="num"><button type="button" data-sort="saved">Time saved</button></th>
+          <th class="num"><button type="button" data-sort="err">±</button></th>
+          <th class="num"><button type="button" data-sort="change">Change</button></th>
+          <th class="num"><button type="button" data-sort="move">Rank move</button></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="empty" id="empty" hidden>Nothing matches.</p>
+  </div>
+
+  <details>
+    <summary>How the numbers are made</summary>
+    <p>Each row is a solo run in the pacing sim (<code>npm run sim:solo</code>): a fast-tapping bot plays from the first Commoner to the first class 9, or to Duke, with only one thing on offer. Every heir has the trait being measured, every heir passes on the inherited trait, or the headhunter only ever brings that advisor (one of their family at a time, kept as a PA, so they rise through the family with service). The baseline has nothing at all.</p>
+    <p><strong>Time saved</strong> is the active time saved against the baseline, seed by seed, with one standard error beside it. <strong>Worth</strong> reads that time against runs with all income multiplied by 1.1, 1.25, 1.5, 2 and 3: worth x2 saves as much time as doubling all income would.</p>
+    <p>Some things score about x1 because the bot can't use them, not because they're weak:</p>
+    <ul>
+      <li>Buyers, and the gentry traits that bring the family's own staff: the bot buys perfectly every two seconds anyway.</li>
+      <li>Longer ordeals, offline earnings and scandal protection: the bot never runs short in an ordeal, never leaves and pays off every scandal.</li>
+    </ul>
+    <p>Versions are filed with <code>node scripts/ledger.mjs add</code>, which keeps each patch's runs in <code>public/balance/ledger.json</code>.</p>
+  </details>
+</main>
+
+<script>
+(() => {
+  const KIND = { advisor: 'Advisor', trait: 'Heir trait', inherited: 'Inherited', income: 'Yardstick' }
+  const $ = (id) => document.getElementById(id)
+  const els = { version: $('version'), compare: $('compare'), to: $('to'), kind: $('kind'), find: $('find') }
+  let ledger = null
+  let sort = { key: 'worth', dir: -1 }
+
+  const pct = (x) => `${x >= 0 ? '+' : ''}${(100 * x).toFixed(1)}%`
+  const times = (x) => `x${x.toFixed(2)}`
+
+  // Worth on a log scale from x0.5 to x4, so x1 sits a third of the way in
+  const LO = Math.log(0.5)
+  const HI = Math.log(4)
+  const at = (w) => Math.min(100, Math.max(0, ((Math.log(Math.max(w, 0.01)) - LO) / (HI - LO)) * 100))
+
+  function remember() {
+    try {
+      localStorage.setItem('balance-ledger', JSON.stringify({ to: els.to.value, kind: els.kind.value }))
+    } catch {}
+  }
+  function recall() {
+    try {
+      const v = JSON.parse(localStorage.getItem('balance-ledger') || '{}')
+      if (v.to) els.to.value = v.to
+      if (v.kind !== undefined) els.kind.value = v.kind
+    } catch {}
+  }
+
+  function runOf(versionId, to) {
+    const v = ledger.versions.find((x) => x.version === versionId)
+    return v && v.runs[to] ? v.runs[to] : null
+  }
+
+  function ranked(run) {
+    const rows = run ? run.rows.filter((r) => r.kind !== 'income') : []
+    const order = [...rows].sort((a, b) => b.worth - a.worth)
+    return new Map(order.map((r, i) => [r.id, { ...r, rank: i + 1 }]))
+  }
+
+  function render() {
+    const to = els.to.value
+    const run = runOf(els.version.value, to)
+    const before = els.compare.value ? runOf(els.compare.value, to) : null
+    const now = ranked(run)
+    const then = ranked(before)
+    const v = ledger.versions.find((x) => x.version === els.version.value)
+
+    $('version-note').textContent = v
+      ? `${v.version}: ${v.label}. Filed ${v.date}, commit ${v.commit}${run ? `, ${run.seeds} seeds, baseline ${run.baselineHours.toFixed(2)} h` : ''}.`
+      : ''
+
+    const find = els.find.value.trim().toLowerCase()
+    const kind = els.kind.value
+    let rows = []
+    for (const r of now.values()) {
+      if (kind && r.kind !== kind) continue
+      if (find && !r.name.toLowerCase().includes(find)) continue
+      const old = then.get(r.id)
+      rows.push({
+        ...r,
+        was: old ? old.worth : null,
+        change: old ? r.worth / old.worth - 1 : null,
+        move: old ? old.rank - r.rank : null
+      })
+    }
+    const yard = run && !find ? run.rows.filter((r) => r.kind === 'income') : []
+
+    const dir = sort.dir
+    const val = (r) => r[sort.key]
+    rows.sort((a, b) => {
+      const x = val(a)
+      const y = val(b)
+      if (x === null && y === null) return 0
+      if (x === null) return 1
+      if (y === null) return -1
+      return typeof x === 'string' ? dir * x.localeCompare(y) : dir * (x - y)
+    })
+    // Yardsticks sit among the rows when they're in worth order
+    const merged = sort.key === 'worth' ? [...rows, ...yard].sort((a, b) => dir * (a.worth - b.worth)) : rows
+
+    const body = $('rows')
+    body.replaceChildren()
+    for (const r of merged) {
+      const tr = document.createElement('tr')
+      const isYard = r.kind === 'income'
+      if (isYard) tr.className = 'yard'
+      const cell = (text, cls) => {
+        const td = document.createElement('td')
+        if (cls) td.className = cls
+        td.textContent = text
+        tr.append(td)
+        return td
+      }
+      cell(isYard ? '' : String(r.rank), 'num')
+      cell(r.name, 'name')
+      cell(KIND[r.kind] || r.kind, 'kind')
+      cell(times(r.worth), 'num')
+      const bar = cell('', 'bar')
+      const track = document.createElement('div')
+      track.className = 'track'
+      const one = document.createElement('span')
+      one.className = 'one'
+      one.style.left = `${at(1)}%`
+      track.append(one)
+      for (const y of [1.1, 1.25, 1.5, 2, 3]) {
+        const t = document.createElement('span')
+        t.className = 'tick'
+        t.style.left = `${at(y)}%`
+        track.append(t)
+      }
+      const fill = document.createElement('span')
+      fill.className = `fill${r.worth < 1 ? ' below' : ''}`
+      const a = at(Math.min(1, r.worth))
+      const b = at(Math.max(1, r.worth))
+      fill.style.left = `${a}%`
+      fill.style.width = `${Math.max(0.6, b - a)}%`
+      track.append(fill)
+      if (r.was !== null && r.was !== undefined) {
+        const was = document.createElement('span')
+        was.className = 'was'
+        was.style.left = `${at(r.was)}%`
+        track.append(was)
+      }
+      bar.append(track)
+      cell(pct(r.saved), 'num')
+      cell(`${(100 * r.err).toFixed(1)}%`, 'num')
+      const ch = cell(r.change === null || r.change === undefined ? '' : pct(r.change), 'num')
+      if (r.change) ch.classList.add(Math.abs(r.change) < 0.03 ? 'flat' : r.change > 0 ? 'up' : 'down')
+      const mv = cell(r.move === null || r.move === undefined ? '' : r.move === 0 ? '0' : `${r.move > 0 ? '+' : ''}${r.move}`, 'num')
+      if (r.move) mv.classList.add(r.move > 0 ? 'up' : 'down')
+      body.append(tr)
+    }
+    $('empty').hidden = merged.length > 0
+
+    // The sentence under the title says what this version's table says
+    const all = [...now.values()]
+    if (all.length > 0) {
+      const top = all.reduce((a, b) => (b.worth > a.worth ? b : a))
+      const bottom = all.reduce((a, b) => (b.worth < a.worth ? b : a))
+      const useless = all.filter((r) => r.worth < 1.05).length
+      const lede = $('lede')
+      lede.replaceChildren(
+        'Played to ',
+        to === 'duke' ? 'Duke' : 'the first class 9',
+        ', ',
+        Object.assign(document.createElement('strong'), { textContent: top.name }),
+        ` is worth the most (${times(top.worth)} income) and `,
+        Object.assign(document.createElement('strong'), { textContent: bottom.name }),
+        ` the least (${times(bottom.worth)}). ${useless} of ${all.length} are worth under x1.05.`
+      )
+    } else {
+      $('lede').textContent = 'This version has no run of that length yet.'
+    }
+    for (const btn of document.querySelectorAll('th button')) {
+      btn.setAttribute('aria-sort', btn.dataset.sort === sort.key ? (sort.dir < 0 ? 'descending' : 'ascending') : 'none')
+    }
+  }
+
+  function fillVersions() {
+    const vs = [...ledger.versions].reverse()
+    els.version.replaceChildren(...vs.map((v) => new Option(`${v.version} (${v.date})`, v.version)))
+    els.compare.replaceChildren(new Option('Nothing', ''), ...vs.map((v) => new Option(`${v.version} (${v.date})`, v.version)))
+    // Compare with the version before, when there is one
+    els.compare.value = vs[1] ? vs[1].version : ''
+  }
+
+  for (const btn of document.querySelectorAll('th button')) {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.sort
+      sort = sort.key === key ? { key, dir: -sort.dir } : { key, dir: key === 'name' || key === 'kind' || key === 'rank' ? 1 : -1 }
+      render()
+    })
+  }
+  for (const el of Object.values(els)) {
+    el.addEventListener(el === els.find ? 'input' : 'change', () => {
+      remember()
+      render()
+    })
+  }
+
+  fetch('ledger.json', { cache: 'no-cache' })
+    .then((r) => {
+      if (!r.ok) throw new Error(`ledger.json: ${r.status}`)
+      return r.json()
+    })
+    .then((data) => {
+      ledger = data
+      recall()
+      fillVersions()
+      render()
+    })
+    .catch((e) => {
+      $('lede').textContent = `The ledger didn't load (${e.message}).`
+    })
+})()
+</script>
+</body>
+</html>

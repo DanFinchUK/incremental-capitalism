@@ -115,6 +115,7 @@ td.bar { width: 34%; min-width: 160px; }
 }
 .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 td.heat { text-align: right; font-family: var(--figures); font-size: 13px; }
+td.heat small { display: block; font-size: 10px; color: var(--ink-soft); }
 td.fam { color: var(--ink-soft); font-size: 13px; }
 tr.family-start td { border-top: 2px solid var(--rule); }
 td.spark svg { display: block; }
@@ -203,7 +204,7 @@ details p, details li { color: var(--ink-soft); }
   </section>
 
   <section id="copies" class="view" role="tabpanel" aria-labelledby="tab-copies" hidden>
-    <p class="lede">The office kept at 1, 2, 3 and more of one advisor from the start of every generation. <strong>Stacking</strong> is what the average copy adds against the first: 100% means each copy is worth as much as the first, multiplied in; under it, copies give less each; over it, they feed each other. It's left blank where one copy is worth under x1.05, as there's too little to compare.</p>
+    <p class="lede">Every introduction offers only this advisor, and the bot takes them until the office holds that many of the family. Introductions come when ordeals are won and seats empty at retirement, as in the game, so <strong>held</strong> under each figure is how many the run actually had on average. <strong>Stacking</strong> is what the average copy adds against the first: 100% means each copy is worth as much as the first, multiplied in; under it, copies give less each; over it, they feed each other. It's left blank where one copy is worth under x1.05, as there's too little to compare.</p>
     <div class="controls">
       <label class="control"><span>Family</span><select id="family"><option value="">Every family</option></select></label>
       <label class="control"><span>Order by</span>
@@ -436,9 +437,10 @@ details p, details li { color: var(--ink-soft); }
     const groups = new Map()
     for (const r of run.rows) {
       if (!r.of) continue
-      const g = groups.get(r.of) || { of: r.of, name: r.name.replace(/ x\d+$/, ''), family: r.family || '', worth: [], err: [] }
+      const g = groups.get(r.of) || { of: r.of, name: r.name.replace(/ x\d+$/, ''), family: r.family || '', worth: [], err: [], held: [] }
       g.worth[r.copies] = r.worth
       g.err[r.copies] = r.err
+      g.held[r.copies] = r.held
       groups.set(r.of, g)
     }
     const max = Math.max(...[...groups.values()].map((g) => g.worth.length - 1))
@@ -495,6 +497,11 @@ details p, details li { color: var(--ink-soft); }
       for (let k = 1; k <= max; k++) {
         const w = g.worth[k]
         const cell = td(w ? times(w) : '', 'heat')
+        if (w && g.held[k] !== undefined) {
+          const held = document.createElement('small')
+          held.textContent = `held ${g.held[k].toFixed(1)}`
+          cell.append(held)
+        }
         if (w) {
           const share = Math.max(-1, Math.min(1, Math.log(w) / Math.log(top)))
           cell.style.background = share >= 0

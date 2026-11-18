@@ -100,6 +100,26 @@ td.bar { width: 34%; min-width: 160px; }
 .down { color: var(--bad); }
 .flat { color: var(--ink-soft); }
 .empty { padding: 24px; color: var(--ink-soft); }
+.view { display: grid; gap: 16px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--rule); }
+.tabs button {
+  font: 500 14px var(--body);
+  color: var(--ink-soft);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 8px 14px;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+td.heat { text-align: right; font-family: var(--figures); font-size: 13px; }
+td.fam { color: var(--ink-soft); font-size: 13px; }
+tr.family-start td { border-top: 2px solid var(--rule); }
+td.spark svg { display: block; }
+td.spark polyline { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+td.spark line { stroke: var(--rule); }
+td.spark circle { fill: var(--accent); }
 details { max-width: 72ch; }
 details summary { cursor: pointer; font-weight: 600; }
 details p, details li { color: var(--ink-soft); }
@@ -124,52 +144,84 @@ details p, details li { color: var(--ink-soft); }
     <p class="lede" id="lede">Loading the ledger…</p>
   </header>
 
+  <nav class="tabs" role="tablist" aria-label="View">
+    <button type="button" role="tab" id="tab-rankings" aria-controls="rankings" aria-selected="true">Rankings</button>
+    <button type="button" role="tab" id="tab-copies" aria-controls="copies" aria-selected="false">Copies</button>
+  </nav>
+
   <div class="controls">
     <label class="control"><span>Version</span><select id="version"></select></label>
-    <label class="control"><span>Compare with</span><select id="compare"></select></label>
     <label class="control"><span>Played to</span>
       <select id="to">
         <option value="duke">Duke</option>
         <option value="class9">First class 9</option>
       </select>
     </label>
-    <label class="control"><span>Show</span>
-      <select id="kind">
-        <option value="">Everything</option>
-        <option value="advisor">Advisors</option>
-        <option value="trait">Heir traits</option>
-        <option value="inherited">Inherited traits</option>
-      </select>
-    </label>
-    <label class="control search"><span>Find</span><input type="search" id="find" placeholder="Name"></label>
   </div>
   <p class="version-note" id="version-note"></p>
 
-  <div class="legend">
-    <span><i></i>Worth, as the plain income boost that saves as much time (log scale)</span>
-    <span><i class="y"></i>Income yardsticks x1.1 to x3</span>
-    <span><i class="w"></i>Worth in the version compared with</span>
-  </div>
+  <section id="rankings" class="view" role="tabpanel" aria-labelledby="tab-rankings">
+    <div class="controls">
+      <label class="control"><span>Compare with</span><select id="compare"></select></label>
+      <label class="control"><span>Show</span>
+        <select id="kind">
+          <option value="">Everything</option>
+          <option value="advisor">Advisors</option>
+          <option value="trait">Heir traits</option>
+          <option value="inherited">Inherited traits</option>
+        </select>
+      </label>
+      <label class="control search"><span>Find</span><input type="search" id="find" placeholder="Name"></label>
+    </div>
 
-  <div class="sheet">
-    <table>
-      <thead>
-        <tr>
-          <th class="num"><button type="button" data-sort="rank">#</button></th>
-          <th><button type="button" data-sort="name">Name</button></th>
-          <th><button type="button" data-sort="kind">Kind</button></th>
-          <th class="num"><button type="button" data-sort="worth" aria-sort="descending">Worth</button></th>
-          <th class="bar" aria-hidden="true"></th>
-          <th class="num"><button type="button" data-sort="saved">Time saved</button></th>
-          <th class="num"><button type="button" data-sort="err">±</button></th>
-          <th class="num"><button type="button" data-sort="change">Change</button></th>
-          <th class="num"><button type="button" data-sort="move">Rank move</button></th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <p class="empty" id="empty" hidden>Nothing matches.</p>
-  </div>
+    <div class="legend">
+      <span><i></i>Worth, as the plain income boost that saves as much time (log scale)</span>
+      <span><i class="y"></i>Income yardsticks x1.1 to x3</span>
+      <span><i class="w"></i>Worth in the version compared with</span>
+    </div>
+
+    <div class="sheet">
+      <table>
+        <thead>
+          <tr>
+            <th class="num"><button type="button" data-sort="rank">#</button></th>
+            <th><button type="button" data-sort="name">Name</button></th>
+            <th><button type="button" data-sort="kind">Kind</button></th>
+            <th class="num"><button type="button" data-sort="worth" aria-sort="descending">Worth</button></th>
+            <th class="bar" aria-hidden="true"></th>
+            <th class="num"><button type="button" data-sort="saved">Time saved</button></th>
+            <th class="num"><button type="button" data-sort="err">±</button></th>
+            <th class="num"><button type="button" data-sort="change">Change</button></th>
+            <th class="num"><button type="button" data-sort="move">Rank move</button></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="empty" id="empty" hidden>Nothing matches.</p>
+    </div>
+  </section>
+
+  <section id="copies" class="view" role="tabpanel" aria-labelledby="tab-copies" hidden>
+    <p class="lede">The office kept at 1, 2, 3 and more of one advisor from the start of every generation. <strong>Stacking</strong> is what the last copy adds against the first: 100% means each copy is worth as much as the first, multiplied in; under it, copies give less each; over it, they feed each other.</p>
+    <div class="controls">
+      <label class="control"><span>Family</span><select id="family"><option value="">Every family</option></select></label>
+      <label class="control"><span>Order by</span>
+        <select id="copy-sort">
+          <option value="family">Family</option>
+          <option value="best">Worth at the most copies</option>
+          <option value="stack">Stacking, highest first</option>
+          <option value="stack-low">Stacking, lowest first</option>
+        </select>
+      </label>
+    </div>
+    <div class="sheet">
+      <table id="copy-table">
+        <thead id="copy-head"></thead>
+        <tbody id="copy-rows"></tbody>
+      </table>
+      <p class="empty" id="copy-empty" hidden>This version has no copies runs played to this length.</p>
+    </div>
+  </section>
 
   <details>
     <summary>How the numbers are made</summary>
@@ -351,6 +403,158 @@ details p, details li { color: var(--ink-soft); }
     els.compare.value = vs[1] ? vs[1].version : ''
   }
 
+  const FAMILY = {
+    clicks: 'Clicks', business: 'Business income', costs: 'Costs', acquisitions: 'Buyers: Businesses', recruiting: 'Buyers: Jobs',
+    windfalls: 'Windfalls', events: 'Opportunities', bossTime: 'Ordeal time', twists: 'Ordeal twists', scandals: 'Scandals',
+    trustFund: 'Trust fund', milestones: 'Milestones', financeTeam: 'Finance team', food: 'Food sector', property: 'Property sector',
+    finance: 'Finance sector', media: 'Media sector', infrastructure: 'Infrastructure sector', services: 'Services sector',
+    interns: 'Interns', offline: 'Away from the desk'
+  }
+  const copyEls = { family: $('family'), sort: $('copy-sort') }
+
+  // What the last copy adds against the first, multiplied in: 1 is "as much"
+  function stacking(w) {
+    const n = w.length - 1
+    if (n < 2 || !w[1] || !w[n] || !w[n - 1]) return null
+    const first = Math.log(w[1])
+    if (Math.abs(first) < 0.02) return null
+    return Math.log(w[n] / w[n - 1]) / first
+  }
+
+  function renderCopies() {
+    const v = ledger.versions.find((x) => x.version === els.version.value)
+    const run = v ? v.runs[`copies-${els.to.value}`] : null
+    const head = $('copy-head')
+    const body = $('copy-rows')
+    head.replaceChildren()
+    body.replaceChildren()
+    $('copy-empty').hidden = !!run
+    if (!run) return
+    const groups = new Map()
+    for (const r of run.rows) {
+      if (!r.of) continue
+      const g = groups.get(r.of) || { of: r.of, name: r.name.replace(/ x\d+$/, ''), family: r.family || '', worth: [], err: [] }
+      g.worth[r.copies] = r.worth
+      g.err[r.copies] = r.err
+      groups.set(r.of, g)
+    }
+    const max = Math.max(...[...groups.values()].map((g) => g.worth.length - 1))
+    const fams = [...new Set([...groups.values()].map((g) => g.family))].sort((a, b) => (FAMILY[a] || a).localeCompare(FAMILY[b] || b))
+    if (copyEls.family.options.length !== fams.length + 1) {
+      const keep = copyEls.family.value
+      copyEls.family.replaceChildren(new Option('Every family', ''), ...fams.map((f) => new Option(FAMILY[f] || f, f)))
+      copyEls.family.value = fams.includes(keep) ? keep : ''
+    }
+    let list = [...groups.values()].map((g) => ({ ...g, stack: stacking(g.worth), best: g.worth[g.worth.length - 1] }))
+    if (copyEls.family.value) list = list.filter((g) => g.family === copyEls.family.value)
+    const order = copyEls.sort.value
+    list.sort((a, b) => {
+      if (order === 'best') return b.best - a.best
+      if (order === 'stack' || order === 'stack-low') {
+        const x = a.stack ?? -Infinity
+        const y = b.stack ?? -Infinity
+        if (order === 'stack-low') return (a.stack ?? Infinity) - (b.stack ?? Infinity)
+        return y - x
+      }
+      const f = (FAMILY[a.family] || a.family).localeCompare(FAMILY[b.family] || b.family)
+      return f || (a.worth[1] || 0) - (b.worth[1] || 0)
+    })
+
+    const hr = document.createElement('tr')
+    const th = (text, cls) => {
+      const el = document.createElement('th')
+      el.textContent = text
+      if (cls) el.className = cls
+      hr.append(el)
+    }
+    th('Family')
+    th('Advisor')
+    for (let k = 1; k <= max; k++) th(`x${k}`, 'num')
+    th('Stacking', 'num')
+    th('', 'spark')
+    head.append(hr)
+
+    const top = Math.max(4, ...list.map((g) => g.best || 1))
+    let lastFamily = null
+    for (const g of list) {
+      const tr = document.createElement('tr')
+      if (order === 'family' && g.family !== lastFamily && lastFamily !== null) tr.className = 'family-start'
+      lastFamily = g.family
+      const td = (text, cls) => {
+        const el = document.createElement('td')
+        el.textContent = text
+        if (cls) el.className = cls
+        tr.append(el)
+        return el
+      }
+      td(FAMILY[g.family] || g.family, 'fam')
+      td(g.name, 'name')
+      for (let k = 1; k <= max; k++) {
+        const w = g.worth[k]
+        const cell = td(w ? times(w) : '', 'heat')
+        if (w) {
+          const share = Math.max(-1, Math.min(1, Math.log(w) / Math.log(top)))
+          cell.style.background = share >= 0
+            ? `color-mix(in srgb, var(--accent) ${Math.round(share * 55)}%, transparent)`
+            : `color-mix(in srgb, var(--bad) ${Math.round(-share * 45)}%, transparent)`
+          cell.title = `±${(100 * (g.err[k] || 0)).toFixed(1)}% time`
+        }
+      }
+      const st = td(g.stack === null ? '' : `${Math.round(100 * g.stack)}%`, 'num')
+      if (g.stack !== null) st.classList.add(g.stack < 0.5 ? 'down' : g.stack > 1.25 ? 'up' : 'flat')
+      // The curve: worth against copies, log scale
+      const sp = td('', 'spark')
+      const W = 120
+      const H = 28
+      const pts = []
+      for (let k = 1; k <= max; k++) {
+        const w = g.worth[k]
+        if (!w) continue
+        const x = 4 + ((k - 1) / Math.max(1, max - 1)) * (W - 8)
+        const y = H - 3 - ((Math.log(Math.max(w, 0.5)) - Math.log(0.5)) / (Math.log(top) - Math.log(0.5))) * (H - 6)
+        pts.push([x, y])
+      }
+      const NS = 'http://www.w3.org/2000/svg'
+      const svg = document.createElementNS(NS, 'svg')
+      svg.setAttribute('width', W)
+      svg.setAttribute('height', H)
+      svg.setAttribute('role', 'img')
+      svg.setAttribute('aria-label', `${g.name}: worth from ${times(g.worth[1] || 1)} with one to ${times(g.best || 1)} with ${max}`)
+      const base = document.createElementNS(NS, 'line')
+      const y1 = H - 3 - ((0 - Math.log(0.5)) / (Math.log(top) - Math.log(0.5))) * (H - 6)
+      base.setAttribute('x1', 0)
+      base.setAttribute('x2', W)
+      base.setAttribute('y1', y1)
+      base.setAttribute('y2', y1)
+      svg.append(base)
+      const line = document.createElementNS(NS, 'polyline')
+      line.setAttribute('points', pts.map((p) => p.join(',')).join(' '))
+      svg.append(line)
+      if (pts.length) {
+        const dot = document.createElementNS(NS, 'circle')
+        dot.setAttribute('cx', pts[pts.length - 1][0])
+        dot.setAttribute('cy', pts[pts.length - 1][1])
+        dot.setAttribute('r', 2.5)
+        svg.append(dot)
+      }
+      sp.append(svg)
+      body.append(tr)
+    }
+  }
+
+  function showView(name) {
+    const view = name === 'copies' ? 'copies' : 'rankings'
+    for (const id of ['rankings', 'copies']) {
+      $(id).hidden = id !== view
+      $(`tab-${id}`).setAttribute('aria-selected', String(id === view))
+    }
+    if (location.hash.slice(1) !== view) history.replaceState(null, '', view === 'rankings' ? location.pathname : '#copies')
+  }
+  $('tab-rankings').addEventListener('click', () => showView('rankings'))
+  $('tab-copies').addEventListener('click', () => showView('copies'))
+  window.addEventListener('hashchange', () => showView(location.hash.slice(1)))
+  for (const el of Object.values(copyEls)) el.addEventListener('change', () => renderCopies())
+
   for (const btn of document.querySelectorAll('th button')) {
     btn.addEventListener('click', () => {
       const key = btn.dataset.sort
@@ -362,6 +566,7 @@ details p, details li { color: var(--ink-soft); }
     el.addEventListener(el === els.find ? 'input' : 'change', () => {
       remember()
       render()
+      renderCopies()
     })
   }
 
@@ -375,6 +580,8 @@ details p, details li { color: var(--ink-soft); }
       recall()
       fillVersions()
       render()
+      renderCopies()
+      showView(location.hash.slice(1))
     })
     .catch((e) => {
       $('lede').textContent = `The ledger didn't load (${e.message}).`

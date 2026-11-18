@@ -13,14 +13,16 @@
 //
 // `npm run sim:solo`. SOLO_SEEDS (default 4) sets the seeds; SOLO_TO=duke
 // plays every run to the dukedom; SOLO_ONLY is a pattern on variant ids.
-// SOLO_SET=copies plays every advisor with the office kept at 1, 2, 3... of
-// them, up to SOLO_MAX_COPIES (6 to class 9, 10 to Duke: a full office in
-// the last line), to see how each family's value scales with copies.
+// SOLO_SET=copies plays every advisor taken from every introduction until
+// the office holds 1, 2, 3... of the family, up to SOLO_MAX_COPIES (6 to
+// class 9, 10 to Duke: a full office in the last line). Introductions come
+// when the game sends them and seats empty at retirement, so a run may
+// never hold that many: each records how many it held on average.
 declare const process: { env: Record<string, string | undefined> }
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { ADVISORS } from '../src/data/advisors'
+import { ADVISORS, ADVISORS_BY_ID } from '../src/data/advisors'
 import { HEIR_TRAITS, INHERITED_TRAITS } from '../src/data/heirs'
 import { FAST_TAPPER, runCampaign, type BotConfig } from './bot'
 
@@ -60,7 +62,7 @@ export const SOLO_VARIANTS: ReadonlyArray<SoloVariant> = [
           of: a.id,
           family: a.family,
           copies: i + 1,
-          solo: { ...NOBODY, office: Array(i + 1).fill(a.id) }
+          solo: { ...NOBODY, advisor: a.id, copies: i + 1 }
         }))
       )
     : [
@@ -73,13 +75,21 @@ export const SOLO_VARIANTS: ReadonlyArray<SoloVariant> = [
 export interface SoloResult {
   id: string
   seed: number
+  // Advisors of the measured family on staff, averaged over the minutes played
+  held: number
   // Active hours to the first class 9, or to Duke; Infinity if not reached
   hours: number
 }
 
 function playOne(v: SoloVariant, seed: number): SoloResult {
   const cfg: BotConfig = { ...FAST_TAPPER, solo: v.solo, incomeMult: v.incomeMult, ...(TO_DUKE ? { elevations: 4 } : {}) }
-  const gens = runCampaign(TO_DUKE ? 16 : 8, cfg, seed)
+  let staffMinutes = 0
+  let minutes = 0
+  const family = v.solo.advisor ? ADVISORS_BY_ID[v.solo.advisor].family : null
+  const gens = runCampaign(TO_DUKE ? 16 : 8, cfg, seed, (store) => {
+    minutes += 1
+    if (family) staffMinutes += [...store.officeSeats, ...store.paChairs].filter((a) => a && ADVISORS_BY_ID[a.advisorId]?.family === family).length
+  })
   let ms = 0
   let reached = false
   let lines = 0
@@ -93,7 +103,7 @@ function playOne(v: SoloVariant, seed: number): SoloResult {
       }
     }
   }
-  return { id: v.id, seed, hours: reached ? ms / 3_600_000 : Infinity }
+  return { id: v.id, seed, hours: reached ? ms / 3_600_000 : Infinity, held: minutes > 0 ? staffMinutes / minutes : 0 }
 }
 
 // One shard of the variants, every seed; the teardown puts the shards together

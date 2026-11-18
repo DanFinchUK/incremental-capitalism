@@ -4,6 +4,7 @@ import { ADVISORS, ADVISORS_BY_ID, type AdvisorDef, type Campaign } from '../dat
 import { pickEventRarity, type EventRarity } from '../data/events'
 import type { Sector } from '../data/items'
 import type { ModifierSource } from './modifiers'
+import { simOffer } from '../utils/simOffer'
 
 export interface AdvisorInstance {
   uid: string
@@ -216,6 +217,9 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>):
 // internsOff: the family's Interns can't work (a Nepo Baby heir, the
 // Hands-On scenario), so the staff who bring them aren't introduced
 export function rollAdvisorOffer(rng: () => number, internsOff = false, skip: (a: AdvisorDef) => boolean = () => false): string[] {
+  // The sim's strength report: only the advisor it is measuring
+  const only = simOffer()
+  if (only) return [only]
   const offer: string[] = []
   for (let guard = 0; offer.length < 3 && guard < 50; guard++) {
     const rarity = pickEventRarity(rng())

@@ -13,6 +13,7 @@ import { SCENARIOS_BY_ID, type ScenarioId } from '../src/data/scenarios'
 import { useGameStore } from '../src/stores/game'
 import { pauseStateWrites } from '../src/utils/stateWrites'
 import { setSimIncomeMult } from '../src/utils/simIncome'
+import { setSimOffer } from '../src/utils/simOffer'
 
 // The sim plays hours in one synchronous loop. jsdom's localStorage queues a
 // storage event (holding the old and new values) for every write, and those
@@ -72,19 +73,12 @@ export interface BotConfig {
   // measuring one advisor at a time)
   noHiring?: boolean
   // A whole run with one thing available (the strength report): every heir
-  // has this trait and inherited trait (none if null), and the headhunter
-  // only ever brings this advisor, one copy at most (nobody if null)
-  solo?: {
-    trait: string | null
-    inherit: string | null
-    advisor: string | null
-    // Instead of waiting for introductions: the office kept topped up, from
-    // the start of every generation, with these advisors (repeats allowed:
-    // three Day Traders is three of the milestone family), each hired as a
-    // player would, fee and all. Counted by family, since a PA promoted with
-    // service, or a PA's child, holds another role in it
-    office?: ReadonlyArray<string>
-  }
+  // has this trait and inherited trait (none if null), and every
+  // introduction offers only this advisor (src/utils/simOffer.ts), whom the
+  // bot takes while the office holds fewer than `copies` of their family
+  // (1 if unset). Counted by family, since a PA promoted with service, or a
+  // PA's child, holds another role in it
+  solo?: { trait: string | null; inherit: string | null; advisor: string | null; copies?: number }
   // All income multiplied by this, for the strength report's yardstick
   incomeMult?: number
 }
@@ -319,33 +313,6 @@ function promoteToChairs(store: Store): void {
   }
 }
 
-// Families that can't hold more than they do (a second buyer replaces the
-// first), per store, so the bot stops paying fees to try
-const cappedFamilies = new WeakMap<Store, Set<string>>()
-
-// Hire whatever the wanted office is short of, by family, while there is room
-function fillOffice(store: Store, wanted: ReadonlyArray<string>): void {
-  const capped = cappedFamilies.get(store) ?? new Set<string>()
-  cappedFamilies.set(store, capped)
-  const familyOf = (id: string) => ADVISORS_BY_ID[id]?.family ?? id
-  const heldBy = (family: string) => [...store.officeSeats, ...store.paChairs].filter((a) => a && familyOf(a.advisorId) === family).length
-  const want = new Map<string, string[]>()
-  for (const id of wanted) want.set(familyOf(id), [...(want.get(familyOf(id)) ?? []), id])
-  for (const [family, ids] of want) {
-    if (capped.has(family)) continue
-    for (let held = heldBy(family); held < ids.length; held = heldBy(family)) {
-      const free = store.officeSeats.some((a) => a === null) || store.paChairs.some((a) => a === null)
-      if (!free) return
-      store.headhunterOffer = [ids[held]]
-      if (!store.hireAdvisor(0) || heldBy(family) <= held) {
-        if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
-        capped.add(family)
-        break
-      }
-    }
-  }
-}
-
 // Hire the rarest candidate while there is a free seat; the first hire
 // becomes the PA so the office has continuity.
 function manageOffice(store: Store, cfg: BotConfig): void {
@@ -353,26 +320,15 @@ function manageOffice(store: Store, cfg: BotConfig): void {
     if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
     return
   }
-  if (cfg.solo?.office) {
-    if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
-    fillOffice(store, cfg.solo.office)
-    promoteToChairs(store)
-    return
-  }
   if (cfg.solo) {
     if (store.headhunterOffer.length === 0 && store.waitingOffers > 0) store.showWaitingOffer()
     if (store.headhunterOffer.length > 0) {
-      const id = cfg.solo.advisor
-      // One of the family at most: after an elevation the PA's child may hold
-      // another role in it (a Day Trader's child can be a Hedge Fund Founder)
-      const family = id ? ADVISORS_BY_ID[id].family : null
-      const held = [...store.officeSeats, ...store.paChairs].some((a) => a && ADVISORS_BY_ID[a.advisorId]?.family === family)
-      if (id && !held && store.officeSeats.some((a) => a === null)) {
-        store.headhunterOffer = [id]
-        store.hireAdvisor(0)
-      } else {
-        store.skipAdvisorOffer()
-      }
+      const id = store.headhunterOffer[0]
+      const family = ADVISORS_BY_ID[id]?.family
+      const held = [...store.officeSeats, ...store.paChairs].filter((a) => a && ADVISORS_BY_ID[a.advisorId]?.family === family).length
+      const room = store.officeSeats.some((a) => a === null) || store.paChairs.some((a) => a === null)
+      if (cfg.solo.advisor && held < (cfg.solo.copies ?? 1) && room) store.hireAdvisor(0)
+      else store.skipAdvisorOffer()
     }
     promoteToChairs(store)
     return
@@ -609,12 +565,14 @@ export function runCampaign(
   // Nothing reads the save back mid-campaign, so don't spend time writing it
   pauseStateWrites(true)
   setSimIncomeMult(cfg.incomeMult ?? 1)
+  setSimOffer(cfg.solo?.advisor ?? null)
   try {
     return playCampaign(hours, cfg, probe, atSuccession)
   } finally {
     Math.random = realRandom
     pauseStateWrites(false)
     setSimIncomeMult(1)
+    setSimOffer(null)
   }
 }
 

@@ -19,6 +19,7 @@ interface Row {
   copies?: number
   seed: number
   hours: number
+  held?: number
 }
 
 export function setup(): void {
@@ -67,6 +68,7 @@ export function teardown(): void {
         of: rs[0].of,
         family: rs[0].family,
         copies: rs[0].copies,
+        held: mean(rs.map((r) => r.held ?? 0)),
         saved: 1 - Math.exp(m),
         err: stdErr(lr),
         income: incomeFor(m, ladder),
@@ -112,6 +114,7 @@ export function teardown(): void {
         kind: t.kind,
         name: t.name,
         ...(t.of ? { of: t.of, family: t.family, copies: t.copies } : {}),
+        ...(t.kind === 'advisor' || t.kind === 'copies' ? { held: Number(t.held.toFixed(2)) } : {}),
         worth: t.income,
         saved: t.saved,
         err: t.err,

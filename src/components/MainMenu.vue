@@ -120,9 +120,17 @@
             <div>
               <strong>Import a family</strong>
               <p>A family's save file, downloaded from here, settled in a seat of its own.</p>
-              <p v-if="importFailed" class="ttl-SaveError" data-testid="import-failed">That file isn't a family's save, or every seat is taken.</p>
+              <p v-if="importProblem === 'invalid'" class="ttl-SaveError" data-testid="import-failed">That file isn't a family's save.</p>
+              <p v-if="importProblem === 'full'" class="ttl-SaveError" data-testid="import-failed">Every seat is taken. Disown a family first.</p>
+              <template v-if="waitingFile">
+                <p data-testid="import-ladder">This save is from before seats, so it doesn't say which ladder the family played on.</p>
+                <div class="ttl-SaveActions">
+                  <button type="button" class="ttl-Toggle" data-testid="import-classic" @click="importOn('classic')">The usual ladder</button>
+                  <button type="button" class="ttl-Toggle" data-testid="import-trial" @click="importOn('trial')">The ladder trial</button>
+                </div>
+              </template>
             </div>
-            <label class="ttl-Toggle ttl-Upload" :class="{ 'ttl-Toggle-disabled': !store.canAddSave }">
+            <label v-if="!waitingFile" class="ttl-Toggle ttl-Upload" :class="{ 'ttl-Toggle-disabled': !store.canAddSave }">
               Choose file
               <input type="file" accept=".json,application/json" data-testid="import-save" :disabled="!store.canAddSave" @change="importFile" />
             </label>
@@ -229,7 +237,7 @@ import { INTRO_PAGES } from '../data/intro'
 import { roomForClass, type RoomId } from '../data/rooms'
 import type { ScenarioId } from '../data/scenarios'
 import { LADDER_TRIAL } from '../data/trial'
-import { MAX_SAVES, type SaveSlot } from '../data/saveSlots'
+import { MAX_SAVES, type SaveSlot, type Tuning } from '../data/saveSlots'
 import { SCENARIOS_BY_ID, readScenarioId } from '../data/scenarios'
 import { armsFor } from '../engine/crest'
 import { bestDynasty, scenariosOpen } from '../engine/hall'
@@ -319,12 +327,15 @@ function openFamilies(): void {
   store.flushSave()
   store.refreshSaves()
   removing.value = null
-  importFailed.value = false
+  importProblem.value = null
+  waitingFile.value = null
   view.value = 'families'
 }
 
 const removing = ref<string | null>(null)
-const importFailed = ref(false)
+// A file that didn't say its ladder, waiting to be asked
+const waitingFile = ref<string | null>(null)
+const importProblem = ref<'invalid' | 'full' | null>(null)
 
 function confirmRemove(id: string): void {
   store.removeSave(id)
@@ -336,7 +347,17 @@ async function importFile(ev: Event): Promise<void> {
   const file = input.files?.[0]
   input.value = ''
   if (!file) return
-  importFailed.value = !store.importSave(await file.text())
+  const text = await file.text()
+  const result = store.importSave(text)
+  importProblem.value = result === 'invalid' || result === 'full' ? result : null
+  waitingFile.value = result === 'ladder' ? text : null
+}
+
+function importOn(tuning: Tuning): void {
+  if (!waitingFile.value) return
+  const result = store.importSave(waitingFile.value, Date.now(), tuning)
+  waitingFile.value = null
+  importProblem.value = result === 'invalid' || result === 'full' ? result : null
 }
 
 function saveName(slot: SaveSlot): string {

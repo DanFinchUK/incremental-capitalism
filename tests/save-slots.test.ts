@@ -81,11 +81,11 @@ describe('save slots in the store', () => {
 
     // A downloaded save keeps its tuning; its play log goes back in its own place
     const exported = JSON.stringify({ schemaVersion: 8, tuning: 'trial', scene: { ...createInitialSceneState(), familySurname: 'Imported', playLog: { sessions: [], minutes: [], events: [] } } })
-    expect(store.importSave(exported, 3000)).toBe(true)
+    expect(store.importSave(exported, 3000)).toBe('ok')
     expect(readIndex().slots.at(-1)).toMatchObject({ id: 'slot-3', tuning: 'trial' })
     expect(JSON.parse(localStorage.getItem('slot-3:state')!).scene.playLog).toBeUndefined()
     expect(localStorage.getItem('slot-3:playLog')).not.toBeNull()
-    expect(store.importSave('not a save')).toBe(false)
+    expect(store.importSave('not a save')).toBe('invalid')
 
     // The family started in slot-2 never began, so it made way
     expect(readIndex().slots.map((s) => s.id)).toEqual(['main', 'slot-3'])
@@ -100,17 +100,39 @@ describe('save slots in the store', () => {
       { id: 'main', tuning: 'classic', createdAt: 0, lastPlayed: 0, summary: null },
       // A run from before seats: no summary yet, a real family in its save
       { id: 'trial', tuning: 'trial', createdAt: 0, lastPlayed: 0, summary: null },
-      // Started and left at the register
-      { id: 'slot-3', tuning: 'trial', createdAt: 0, lastPlayed: 0, summary: null }
+      // Started from the Families page and left at the register
+      { id: 'slot-3', tuning: 'trial', createdAt: 5, lastPlayed: 0, summary: null },
+      // Started there too, and played a little: it stays
+      { id: 'slot-4', tuning: 'classic', createdAt: 6, lastPlayed: 0, summary: null }
     ]
     localStorage.setItem(SAVES_KEY, JSON.stringify({ active: 'main', slots }))
     localStorage.setItem('trial:state', serializeState({ ...createInitialSceneState(), familySurname: 'Carrington-Rees', dynastyMs: 1_049_376 }))
     localStorage.setItem('slot-3:state', serializeState(createInitialSceneState()))
+    localStorage.setItem('slot-4:state', serializeState({ ...createInitialSceneState(), lifetimeEarned: 50 }))
     const store = useGameStore()
     store.hydrateFromStorage(1000)
-    expect(store.saveIndex.slots.map((s) => s.id)).toEqual(['main', 'trial'])
+    expect(store.saveIndex.slots.map((s) => s.id)).toEqual(['main', 'trial', 'slot-4'])
     expect(store.saveIndex.slots[1].summary).toMatchObject({ surname: 'Carrington-Rees', fresh: false })
     expect(localStorage.getItem('slot-3:state')).toBeNull()
+  })
+
+  it('never loses a save from before seats: an unlisted one gets its seat back, and an old file asks its ladder', () => {
+    // A ladder trial save that no seat lists
+    localStorage.setItem(SAVES_KEY, JSON.stringify({ active: 'main', slots: [{ id: 'main', tuning: 'classic', createdAt: 0, lastPlayed: 0, summary: null }] }))
+    localStorage.setItem('trial:state', serializeState({ ...createInitialSceneState(), familySurname: 'Carrington-Rees', dynastyMs: 1_049_376 }))
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    expect(store.saveIndex.slots.map((s) => [s.id, s.tuning])).toEqual([
+      ['main', 'classic'],
+      ['trial', 'trial']
+    ])
+    expect(store.saveIndex.slots[1].summary?.surname).toBe('Carrington-Rees')
+
+    // A file downloaded before seats doesn't say its ladder
+    const old = JSON.stringify({ schemaVersion: 8, scene: { ...createInitialSceneState(), familySurname: 'Old File', lifetimeEarned: 9 } })
+    expect(store.importSave(old, 2000)).toBe('ladder')
+    expect(store.importSave(old, 2000, 'trial')).toBe('ok')
+    expect(readIndex().slots.at(-1)).toMatchObject({ tuning: 'trial' })
   })
 
   it('downloads any family, not only the one in play, with its play log and tuning', () => {
@@ -125,7 +147,7 @@ describe('save slots in the store', () => {
     expect(parsed.scene.familySurname).toBe('Elsewhere')
     expect(parsed.scene.playLog.sessions).toEqual([[1, 2]])
     // and back in, as a family of its own
-    expect(store.importSave(saved.json, 3000)).toBe(true)
+    expect(store.importSave(saved.json, 3000)).toBe('ok')
     expect(readIndex().slots.at(-1)?.tuning).toBe('trial')
     expect(store.exportSlot('nope')).toBeNull()
   })

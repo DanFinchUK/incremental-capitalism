@@ -152,6 +152,20 @@ export function removeSlot(id: string): boolean {
   return true
 }
 
+// A save from before seats that no seat lists (the original game's, or the
+// ladder trial's) gets its seat back, so nothing already played goes missing
+export function adoptOrphans(): void {
+  const store = storage()
+  if (!store) return
+  const index = readIndex()
+  const slots = [...index.slots]
+  for (const [id, tuning] of [['main', 'classic'], ['trial', 'trial']] as const) {
+    if (slots.length >= MAX_SAVES || slots.some((s) => s.id === id)) continue
+    if (store.getItem(slotPrefix(id) + 'state')) slots.push({ id, tuning, createdAt: 0, lastPlayed: 0, summary: null })
+  }
+  if (slots.length !== index.slots.length) writeIndex({ ...index, slots })
+}
+
 // Notes how a family stands, for the menu's list
 export function setSlotSummary(id: string, summary: SaveSummary): void {
   const index = readIndex()

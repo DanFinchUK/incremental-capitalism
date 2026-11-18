@@ -62,7 +62,7 @@ import {
 } from '../engine/migration'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { LADDER_TRIAL } from '../data/trial'
-import { ACTIVE_SLOT, MAX_SAVES, addSlot, noteActiveSummary, readIndex, removeSlot, setActiveSlot, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
+import { ACTIVE_SLOT, MAX_SAVES, addSlot, adoptOrphans, noteActiveSummary, readIndex, removeSlot, setActiveSlot, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
 import { readProfile, writeProfile } from '../engine/profile'
 import { reloadPage } from '../utils/reloadPage'
 import { awardMultiplier, awardsHeld, awardText, type Award } from '../engine/awards'
@@ -765,21 +765,23 @@ export const useGameStore = defineStore('game', () => {
   // its summary began (as saves from before seats) reads its own save; a
   // family that never began isn't worth a seat, so it goes.
   function refreshSaves(): void {
+    adoptOrphans()
     const index = readIndex()
     for (const slot of index.slots) {
       // The family on this page, and the one about to be entered
       if (slot.id === activeSlotId || slot.id === index.active) continue
-      let summary = slot.summary
-      if (!summary) {
-        try {
-          const raw = localStorage.getItem(slotPrefix(slot.id) + 'state')
-          if (raw) summary = summariseSave(parseSavedState(raw))
-        } catch {
-          summary = null
-        }
-        if (summary) setSlotSummary(slot.id, summary)
+      let state: PersistedSceneState | null = null
+      try {
+        const raw = localStorage.getItem(slotPrefix(slot.id) + 'state')
+        state = raw ? parseSavedState(raw) : null
+      } catch {
+        state = null
       }
-      if (!summary || summary.fresh) removeSlot(slot.id)
+      if (state && !slot.summary) setSlotSummary(slot.id, summariseSave(state))
+      // Only a seat started from the Families page and never played makes
+      // way: nothing earned, nothing bought. Seats from before seats stay.
+      const unplayed = !state || (summariseSave(state).fresh && state.lifetimeEarned === 0)
+      if (slot.createdAt > 0 && unplayed) removeSlot(slot.id)
     }
     saveIndex.value = readIndex()
   }
@@ -837,37 +839,41 @@ export const useGameStore = defineStore('game', () => {
   }
 
   // A downloaded save, into a slot of its own. Its tuning comes with it.
-  function importSave(text: string, ts = Date.now()): boolean {
+  // 'ladder': the file doesn't say which ladder it was played on (saves from
+  // before seats), so ask, and call again with it
+  function importSave(text: string, ts = Date.now(), chosen?: Tuning): 'ok' | 'invalid' | 'full' | 'ladder' {
     let tuning: Tuning = 'classic'
     let state = text
     let log: unknown = null
     try {
       const parsed = JSON.parse(text) as { scene?: Record<string, unknown>; tuning?: unknown }
-      if (!parsed || typeof parsed !== 'object' || !parsed.scene || typeof parsed.scene !== 'object') return false
-      if (parsed.tuning === 'trial') tuning = 'trial'
+      if (!parsed || typeof parsed !== 'object' || !parsed.scene || typeof parsed.scene !== 'object') return 'invalid'
+      if (parsed.tuning === 'trial' || parsed.tuning === 'classic') tuning = parsed.tuning
+      else if (chosen) tuning = chosen
+      else return 'ladder'
       // The play log rides along in a downloaded save; it lives apart in play
       log = parsed.scene.playLog ?? null
       delete parsed.scene.playLog
       delete parsed.tuning
       state = JSON.stringify(parsed)
     } catch {
-      return false
+      return 'invalid'
     }
     flushAll(ts)
     const slot = addSlot(tuning, ts)
-    if (!slot) return false
+    if (!slot) return 'full'
     try {
       localStorage.setItem(slotPrefix(slot.id) + 'state', state)
       if (log) localStorage.setItem(slotPrefix(slot.id) + 'playLog', JSON.stringify(log))
     } catch {
       removeSlot(slot.id)
       refreshSaves()
-      return false
+      return 'full'
     }
     setActiveSlot(slot.id)
     refreshSaves()
     reloadPage()
-    return true
+    return 'ok'
   }
 
   function scheduleNextEvent(fromMs: number, rng: () => number = Math.random): void {

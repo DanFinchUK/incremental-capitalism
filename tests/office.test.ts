@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ADVISORS, ADVISORS_BY_ID } from '../src/data/advisors'
 import { combineModifiers } from '../src/engine/modifiers'
-import { childOf, officeModifierSources, paStanding, paTitle, rollAdvisorOffer, type AdvisorInstance } from '../src/engine/office'
+import { childOf, officeModifierSources, officeRoom, paStanding, paTitle, rollAdvisorOffer, type AdvisorInstance } from '../src/engine/office'
 import { gateThreshold } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
 import { mount } from '@vue/test-utils'
@@ -84,18 +84,12 @@ describe('office modifiers', () => {
     expect(childOf(inst('estate-manager', 0), 'kid')?.advisorId).toBe('estate-manager')
   })
 
-  it('Head of Finance pays out per Finance advisor', () => {
-    const m = combineModifiers(officeModifierSources([inst('head-of-finance'), inst('accountant'), inst('stockbroker')]))
-    expect(m.businessMult).toBeCloseTo(1.6)
-    expect(m.clickMult).toBeCloseTo(1.6)
-  })
-
-  it("only the best Finance bonus counts: two Group CFOs don't each count the other", () => {
-    const m = combineModifiers(officeModifierSources([inst('group-cfo'), inst('group-cfo'), inst('stockbroker')]))
-    // One bonus at 35% for three Finance advisors, not two of them multiplied
-    expect(m.businessMult).toBeCloseTo(1 + 0.35 * 3)
-    const mixed = combineModifiers(officeModifierSources([inst('finance-clerk'), inst('group-cfo'), inst('stockbroker')]))
-    expect(mixed.businessMult).toBeCloseTo(1 + 0.35 * 3)
+  it('the finance team brings room in the office, more as PAs with honours', () => {
+    expect(officeRoom([inst('finance-clerk')])).toEqual({ officeSeats: 1, paChairs: 0 })
+    expect(officeRoom([inst('head-of-finance'), inst('group-cfo')])).toEqual({ officeSeats: 3, paChairs: 1 })
+    // A Head of Finance with two generations' service holds the family's top
+    // role (Group CFO) with an MBE: half as much again, rounded down
+    expect(officeRoom([inst('head-of-finance', 2)])).toEqual({ officeSeats: 1, paChairs: 1 })
   })
 
   it('campaigns build with minutes in office and stop at their cap', () => {
@@ -398,4 +392,26 @@ describe('a PA promoted into a campaigner', () => {
     expect(office.paChairs.value[0]!.campaignMs).toBe(5000)
   })
 
+})
+
+describe('room brought by staff', () => {
+  it('counts staff in seats that other staff brought', async () => {
+    const { ref } = await import('vue')
+    const { createOfficeModule } = await import('../src/stores/modules/office')
+    const office = createOfficeModule({ money: ref(0), extraSeats: () => 0, paChairCount: () => 1, announce: () => {}, flushSave: () => {} })
+    const at = (advisorId: string, n: number) => ({ uid: `${advisorId}${n}`, advisorId, servedGenerations: 0, campaignMs: 0 })
+    // Three seats as standard, all filled by Heads of Finance: six more seats,
+    // and a Group CFO in the fourth seat brings a seat and a PA chair of their own
+    office.loadState({
+      seats: [at('head-of-finance', 1), at('head-of-finance', 2), at('head-of-finance', 3), at('group-cfo', 4)],
+      paChairs: [],
+      offer: [],
+      queued: 0,
+      waiting: 0,
+      optional: false,
+      parked: []
+    })
+    expect(office.officeSeats.value).toHaveLength(3 + 6 + 1)
+    expect(office.paChairs.value).toHaveLength(2)
+  })
 })

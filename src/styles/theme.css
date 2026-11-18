@@ -1990,6 +1990,11 @@
   flex-basis: 100%;
 }
 
+/* Choosing which PA swaps out: one full-width button each, like "Let go" */
+.scn-SeatPicker.scn-SwapPicker > .scn-Action {
+  flex-basis: 100%;
+}
+
 /* Family tree */
 .scn-LinkButton {
   margin-left: 8px;

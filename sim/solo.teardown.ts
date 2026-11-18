@@ -14,6 +14,9 @@ interface Row {
   id: string
   kind: string
   name: string
+  of?: string
+  family?: string
+  copies?: number
   seed: number
   hours: number
 }
@@ -61,6 +64,9 @@ export function teardown(): void {
         id: rs[0].id,
         kind: rs[0].kind,
         name: rs[0].name,
+        of: rs[0].of,
+        family: rs[0].family,
+        copies: rs[0].copies,
         saved: 1 - Math.exp(m),
         err: stdErr(lr),
         income: incomeFor(m, ladder),
@@ -69,7 +75,7 @@ export function teardown(): void {
     })
     .sort((a, b) => b.income - a.income)
   const baseHours = mean([...base.values()])
-  const KIND: Record<string, string> = { income: 'Yardstick', trait: 'Heir trait', inherited: 'Inherited', advisor: 'Advisor' }
+  const KIND: Record<string, string> = { income: 'Yardstick', trait: 'Heir trait', inherited: 'Inherited', advisor: 'Advisor', copies: 'Copies' }
   const pct = (x: number) => `${x >= 0 ? '+' : ''}${(100 * x).toFixed(1)}%`
   const lines = [
     `Solo runs: one thing on offer for the whole run, against nothing (${baseHours.toFixed(2)} h on average)`,
@@ -96,9 +102,21 @@ export function teardown(): void {
     join(DIR, 'results.json'),
     JSON.stringify({
       to: process.env.SOLO_TO === 'duke' ? 'duke' : 'class9',
+      // Where the ledger files it: singles under the run's length, the rest
+      // under their set's name as well
+      key: `${process.env.SOLO_SET === 'copies' ? 'copies-' : ''}${process.env.SOLO_TO === 'duke' ? 'duke' : 'class9'}`,
       seeds: Math.max(...rows.map((r) => r.seed)),
       baselineHours: baseHours,
-      rows: table.map((t) => ({ id: t.id, kind: t.kind, name: t.name, worth: t.income, saved: t.saved, err: t.err, unfinished: t.missed }))
+      rows: table.map((t) => ({
+        id: t.id,
+        kind: t.kind,
+        name: t.name,
+        ...(t.of ? { of: t.of, family: t.family, copies: t.copies } : {}),
+        worth: t.income,
+        saved: t.saved,
+        err: t.err,
+        unfinished: t.missed
+      }))
     })
   )
   console.log('\n' + text + `\n\n(also in ${join(DIR, 'report.txt')})`)

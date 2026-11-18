@@ -38,7 +38,7 @@ if (cmd === 'add') {
   entry.commit = execSync('git rev-parse --short HEAD').toString().trim()
   for (const f of files) {
     const run = JSON.parse(readFileSync(f, 'utf8'))
-    entry.runs[run.to] = run
+    entry.runs[run.key ?? run.to] = run
   }
   save(ledger)
   console.log(`${version}: ${Object.keys(entry.runs).join(', ')} filed`)

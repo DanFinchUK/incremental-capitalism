@@ -74,7 +74,17 @@ export interface BotConfig {
   // A whole run with one thing available (the strength report): every heir
   // has this trait and inherited trait (none if null), and the headhunter
   // only ever brings this advisor, one copy at most (nobody if null)
-  solo?: { trait: string | null; inherit: string | null; advisor: string | null }
+  solo?: {
+    trait: string | null
+    inherit: string | null
+    advisor: string | null
+    // Instead of waiting for introductions: the office kept topped up, from
+    // the start of every generation, with these advisors (repeats allowed:
+    // three Day Traders is three of the milestone family), each hired as a
+    // player would, fee and all. Counted by family, since a PA promoted with
+    // service, or a PA's child, holds another role in it
+    office?: ReadonlyArray<string>
+  }
   // All income multiplied by this, for the strength report's yardstick
   incomeMult?: number
 }
@@ -300,11 +310,53 @@ function dominanceToChase(store: Store, cfg: BotConfig, beat: number, priced: Pr
   return best
 }
 
-// Hire the rarest candidate// Hire the rarest candidate while there is a free seat; the first hire
+// Office seats into empty PA chairs, so the staff stay on at retirement
+function promoteToChairs(store: Store): void {
+  for (let guard = 0; guard < 8 && store.paChairs.some((c) => c === null); guard++) {
+    const seat = store.officeSeats.findIndex((a) => a !== null)
+    if (seat < 0) break
+    store.promoteToPA(seat)
+  }
+}
+
+// Families that can't hold more than they do (a second buyer replaces the
+// first), per store, so the bot stops paying fees to try
+const cappedFamilies = new WeakMap<Store, Set<string>>()
+
+// Hire whatever the wanted office is short of, by family, while there is room
+function fillOffice(store: Store, wanted: ReadonlyArray<string>): void {
+  const capped = cappedFamilies.get(store) ?? new Set<string>()
+  cappedFamilies.set(store, capped)
+  const familyOf = (id: string) => ADVISORS_BY_ID[id]?.family ?? id
+  const heldBy = (family: string) => [...store.officeSeats, ...store.paChairs].filter((a) => a && familyOf(a.advisorId) === family).length
+  const want = new Map<string, string[]>()
+  for (const id of wanted) want.set(familyOf(id), [...(want.get(familyOf(id)) ?? []), id])
+  for (const [family, ids] of want) {
+    if (capped.has(family)) continue
+    for (let held = heldBy(family); held < ids.length; held = heldBy(family)) {
+      const free = store.officeSeats.some((a) => a === null) || store.paChairs.some((a) => a === null)
+      if (!free) return
+      store.headhunterOffer = [ids[held]]
+      if (!store.hireAdvisor(0) || heldBy(family) <= held) {
+        if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
+        capped.add(family)
+        break
+      }
+    }
+  }
+}
+
+// Hire the rarest candidate while there is a free seat; the first hire
 // becomes the PA so the office has continuity.
 function manageOffice(store: Store, cfg: BotConfig): void {
   if (cfg.noHiring) {
     if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
+    return
+  }
+  if (cfg.solo?.office) {
+    if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
+    fillOffice(store, cfg.solo.office)
+    promoteToChairs(store)
     return
   }
   if (cfg.solo) {
@@ -322,11 +374,7 @@ function manageOffice(store: Store, cfg: BotConfig): void {
         store.skipAdvisorOffer()
       }
     }
-    for (let guard = 0; guard < 8 && store.paChairs.some((c) => c === null); guard++) {
-      const seat = store.officeSeats.findIndex((a) => a !== null)
-      if (seat < 0) break
-      store.promoteToPA(seat)
-    }
+    promoteToChairs(store)
     return
   }
   // Introductions from ordeals waved through wait to be asked for: a player

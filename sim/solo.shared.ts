@@ -13,6 +13,9 @@
 //
 // `npm run sim:solo`. SOLO_SEEDS (default 4) sets the seeds; SOLO_TO=duke
 // plays every run to the dukedom; SOLO_ONLY is a pattern on variant ids.
+// SOLO_SET=copies plays every advisor with the office kept at 1, 2, 3... of
+// them, up to SOLO_MAX_COPIES (6 to class 9, 10 to Duke: a full office in
+// the last line), to see how each family's value scales with copies.
 declare const process: { env: Record<string, string | undefined> }
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -27,9 +30,13 @@ const TO_DUKE = process.env.SOLO_TO === 'duke'
 export const INCOME_LADDER = [1.1, 1.25, 1.5, 2, 3]
 
 export interface SoloVariant {
-  kind: 'none' | 'income' | 'trait' | 'inherited' | 'advisor'
+  kind: 'none' | 'income' | 'trait' | 'inherited' | 'advisor' | 'copies'
   id: string
   name: string
+  // Copies runs: the advisor, their family and how many
+  of?: string
+  family?: string
+  copies?: number
   // What the bot plays with
   solo: NonNullable<BotConfig['solo']>
   incomeMult?: number
@@ -38,12 +45,29 @@ export interface SoloVariant {
 const NOBODY = { trait: null, inherit: null, advisor: null }
 const ONLY = process.env.SOLO_ONLY ? new RegExp(process.env.SOLO_ONLY) : null
 
+const SET = process.env.SOLO_SET === 'copies' ? 'copies' : 'singles'
+const MAX_COPIES = Number(process.env.SOLO_MAX_COPIES ?? (TO_DUKE ? 10 : 6))
+
 export const SOLO_VARIANTS: ReadonlyArray<SoloVariant> = [
   { kind: 'none' as const, id: 'baseline', name: 'Nothing', solo: NOBODY },
   ...INCOME_LADDER.map((k) => ({ kind: 'income' as const, id: `income-${k}`, name: `All income x${k}`, solo: NOBODY, incomeMult: k })),
-  ...HEIR_TRAITS.map((t) => ({ kind: 'trait' as const, id: t.id, name: t.name, solo: { ...NOBODY, trait: t.id } })),
-  ...INHERITED_TRAITS.map((t) => ({ kind: 'inherited' as const, id: t.id, name: t.name, solo: { ...NOBODY, inherit: t.id } })),
-  ...ADVISORS.map((a) => ({ kind: 'advisor' as const, id: a.id, name: a.name, solo: { ...NOBODY, advisor: a.id } }))
+  ...(SET === 'copies'
+    ? ADVISORS.flatMap((a) =>
+        Array.from({ length: MAX_COPIES }, (_, i) => ({
+          kind: 'copies' as const,
+          id: `${a.id}*${i + 1}`,
+          name: `${a.name} x${i + 1}`,
+          of: a.id,
+          family: a.family,
+          copies: i + 1,
+          solo: { ...NOBODY, office: Array(i + 1).fill(a.id) }
+        }))
+      )
+    : [
+        ...HEIR_TRAITS.map((t) => ({ kind: 'trait' as const, id: t.id, name: t.name, solo: { ...NOBODY, trait: t.id } })),
+        ...INHERITED_TRAITS.map((t) => ({ kind: 'inherited' as const, id: t.id, name: t.name, solo: { ...NOBODY, inherit: t.id } })),
+        ...ADVISORS.map((a) => ({ kind: 'advisor' as const, id: a.id, name: a.name, solo: { ...NOBODY, advisor: a.id } }))
+      ])
 ].filter((v) => v.kind === 'none' || v.kind === 'income' || !ONLY || ONLY.test(v.id))
 
 export interface SoloResult {
@@ -75,9 +99,9 @@ function playOne(v: SoloVariant, seed: number): SoloResult {
 // One shard of the variants, every seed; the teardown puts the shards together
 export async function runSoloShard(shard: number, shards: number): Promise<void> {
   const variants = SOLO_VARIANTS.filter((_, i) => i % shards === shard)
-  const rows: Array<SoloResult & { kind: string; name: string }> = []
+  const rows: Array<SoloResult & { kind: string; name: string; of?: string; family?: string; copies?: number }> = []
   for (const v of variants) {
-    for (const seed of SOLO_SEEDS) rows.push({ ...playOne(v, seed), kind: v.kind, name: v.name })
+    for (const seed of SOLO_SEEDS) rows.push({ ...playOne(v, seed), kind: v.kind, name: v.name, of: v.of, family: v.family, copies: v.copies })
     // Let Vitest's worker answer its runner between variants, or it times out
     await new Promise((resolve) => setTimeout(resolve, 0))
   }

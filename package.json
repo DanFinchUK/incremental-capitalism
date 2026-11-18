@@ -10,6 +10,7 @@
     "test": "vitest run",
     "sim": "vitest run --config vitest.sim.config.ts",
     "sim:reports": "vitest run --config vitest.sim.config.ts",
+    "sim:strength": "vitest run --config vitest.sim.config.ts",
     "e2e": "playwright test"
   },
   "dependencies": {

@@ -66,6 +66,9 @@ export interface BotConfig {
   // Buy an item up to 1,000 for market dominance when finishing it pays back
   // better than the best ordinary purchase (on unless set false)
   chaseDominance?: boolean
+  // Turns down every introduction and leaves the PA chairs alone (for
+  // measuring one advisor at a time)
+  noHiring?: boolean
 }
 
 // The player the pacing targets are set for: taps about five times a second
@@ -171,7 +174,7 @@ export interface GenerationResult {
   rungHandover: Record<ItemKind, (number | null)[]> | null
 }
 
-type Store = ReturnType<typeof useGameStore>
+export type Store = ReturnType<typeof useGameStore>
 
 const DEFAULT_PERK_PRIORITY: ReadonlyArray<PerkId> = ['officeSeats', 'autoClicker', 'hustleCap', 'deregulation']
 
@@ -241,7 +244,11 @@ function dominanceToChase(store: Store, cfg: BotConfig, beat: number): { kind: I
 
 // Hire the rarest candidate while there is a free seat; the first hire
 // becomes the PA so the office has continuity.
-function manageOffice(store: Store): void {
+function manageOffice(store: Store, cfg: BotConfig): void {
+  if (cfg.noHiring) {
+    if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
+    return
+  }
   // Introductions from ordeals waved through wait to be asked for: a player
   // who wants staff asks
   if (store.headhunterOffer.length === 0 && store.waitingOffers > 0) store.showWaitingOffer()
@@ -340,8 +347,8 @@ function callInFavours(store: Store): void {
   store.chooseFavour(best, store.nowMs)
 }
 
-function decide(store: Store, cfg: BotConfig): void {
-  manageOffice(store)
+export function decide(store: Store, cfg: BotConfig): void {
+  manageOffice(store, cfg)
   const ev = store.activeEvent
   if (ev && ev.def.effect.type === 'scandal') {
     // Ignoring a scandal costs something, so the bot pays the first option
@@ -415,7 +422,7 @@ function pickHeir(store: Store): void {
   store.pickHeir(best)
 }
 
-function buyPerks(store: Store, cfg: BotConfig): void {
+export function buyPerks(store: Store, cfg: BotConfig): void {
   for (;;) {
     let bought = false
     for (const id of cfg.perkPriority ?? DEFAULT_PERK_PRIORITY) {
@@ -430,7 +437,7 @@ function buyPerks(store: Store, cfg: BotConfig): void {
 
 // Small seeded generator so campaigns (and their Market Opportunities) are
 // repeatable run to run.
-function seededRandom(seed: number): () => number {
+export function seededRandom(seed: number): () => number {
   let a = seed >>> 0
   return () => {
     a = (a + 0x6d2b79f5) >>> 0
@@ -443,12 +450,21 @@ function seededRandom(seed: number): () => number {
 
 // probe: called once a minute of play, to look at the game without changing it
 export type CampaignProbe = (store: Store, generation: number) => void
+// Called after each retirement, before the heir is picked; return true to
+// stop the campaign there (the store is left as it is, heirs on offer)
+export type SuccessionHook = (store: Store, nextGeneration: number, ts: number) => boolean
 
-export function runCampaign(hours: number, cfg: BotConfig = FAST_TAPPER, seed = 1, probe?: CampaignProbe): GenerationResult[] {
+export function runCampaign(
+  hours: number,
+  cfg: BotConfig = FAST_TAPPER,
+  seed = 1,
+  probe?: CampaignProbe,
+  atSuccession?: SuccessionHook
+): GenerationResult[] {
   const realRandom = Math.random
   Math.random = seededRandom(seed)
   try {
-    return playCampaign(hours, cfg, probe)
+    return playCampaign(hours, cfg, probe, atSuccession)
   } finally {
     Math.random = realRandom
   }
@@ -479,7 +495,7 @@ export function runTapOnly(minutes: number, tapsPerSec = 1): TapOnlyResult {
   return { itemsOwned: count(store.jobsPurchased) + count(store.businessesOwned), netWorth: store.netWorth }
 }
 
-function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe): GenerationResult[] {
+function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSuccession?: SuccessionHook): GenerationResult[] {
   localStorage.clear()
   setActivePinia(createPinia())
   const store = useGameStore()
@@ -620,6 +636,7 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe): Gen
       bloodlineBest = Math.max(bloodlineBest, store.gatesBeaten)
       cumulativeMs += genMs
       store.retire(ts)
+      if (results.at(-1)?.deepestGate !== 9 && atSuccession?.(store, generation + 1, ts)) return results
       pickHeir(store)
       buyPerks(store, cfg)
       generation += 1

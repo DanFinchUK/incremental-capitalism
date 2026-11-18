@@ -9,8 +9,16 @@ export default mergeConfig(
     test: {
       // `npm run sim` runs the checks; `npm run sim:reports` prints the
       // tuning reports, which check nothing
-      include: process.env.npm_lifecycle_event === 'sim:reports' ? ['sim/**/*.report.sim.ts'] : ['sim/**/*.sim.ts'],
-      exclude: process.env.npm_lifecycle_event === 'sim:reports' ? [] : ['sim/**/*.report.sim.ts'],
+      // `npm run sim:strength` plays sim/strength*.strength.ts and ranks
+      // the results in sim/strength.teardown.ts
+      include:
+        process.env.npm_lifecycle_event === 'sim:strength'
+          ? ['sim/**/*.strength.ts']
+          : process.env.npm_lifecycle_event === 'sim:reports'
+            ? ['sim/**/*.report.sim.ts']
+            : ['sim/**/*.sim.ts'],
+      exclude: process.env.npm_lifecycle_event === 'sim:reports' || process.env.npm_lifecycle_event === 'sim:strength' ? [] : ['sim/**/*.report.sim.ts'],
+      globalSetup: process.env.npm_lifecycle_event === 'sim:strength' ? ['sim/strength.teardown.ts'] : [],
       testTimeout: 3_600_000,
       hookTimeout: 3_600_000
     }

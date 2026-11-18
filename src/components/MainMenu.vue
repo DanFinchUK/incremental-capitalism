@@ -88,7 +88,7 @@
               <div class="ttl-SaveActions">
                 <template v-if="slot.id === store.activeSlotId">
                   <span class="ttl-SaveBadge">In residence</span>
-                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Copy the papers</button>
+                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Download</button>
                 </template>
                 <template v-else-if="removing === slot.id">
                   <button type="button" class="ttl-Toggle ttl-Toggle-danger" :data-testid="`remove-confirm-${slot.id}`" @click="confirmRemove(slot.id)">
@@ -97,8 +97,8 @@
                   <button type="button" class="ttl-Toggle" @click="removing = null">Spare them</button>
                 </template>
                 <template v-else>
-                  <button type="button" class="ttl-Toggle ttl-Toggle-on" :data-testid="`play-${slot.id}`" @click="store.playSave(slot.id)">Visit</button>
-                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Copy the papers</button>
+                  <button type="button" class="ttl-Toggle ttl-Toggle-on" :data-testid="`play-${slot.id}`" @click="store.playSave(slot.id)">Play</button>
+                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Download</button>
                   <button type="button" class="ttl-Toggle" :data-testid="`remove-${slot.id}`" @click="removing = slot.id">Disown</button>
                 </template>
               </div>
@@ -118,12 +118,12 @@
           <p v-else class="ttl-SaveNote">All five seats are taken. Disown a family to found another.</p>
           <div class="ttl-Setting">
             <div>
-              <strong>Papers from elsewhere</strong>
-              <p>A family's papers, copied from here as a file, settled in a seat of its own.</p>
-              <p v-if="importFailed" class="ttl-SaveError" data-testid="import-failed">Those aren't a family's papers, or every seat is taken.</p>
+              <strong>Import a family</strong>
+              <p>A family's save file, downloaded from here, settled in a seat of its own.</p>
+              <p v-if="importFailed" class="ttl-SaveError" data-testid="import-failed">That file isn't a family's save, or every seat is taken.</p>
             </div>
             <label class="ttl-Toggle ttl-Upload" :class="{ 'ttl-Toggle-disabled': !store.canAddSave }">
-              Lodge the papers
+              Choose file
               <input type="file" accept=".json,application/json" data-testid="import-save" :disabled="!store.canAddSave" @change="importFile" />
             </label>
           </div>

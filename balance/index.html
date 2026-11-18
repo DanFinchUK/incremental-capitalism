@@ -40,6 +40,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0;
   background: var(--paper);
@@ -202,7 +203,7 @@ details p, details li { color: var(--ink-soft); }
   </section>
 
   <section id="copies" class="view" role="tabpanel" aria-labelledby="tab-copies" hidden>
-    <p class="lede">The office kept at 1, 2, 3 and more of one advisor from the start of every generation. <strong>Stacking</strong> is what the last copy adds against the first: 100% means each copy is worth as much as the first, multiplied in; under it, copies give less each; over it, they feed each other.</p>
+    <p class="lede">The office kept at 1, 2, 3 and more of one advisor from the start of every generation. <strong>Stacking</strong> is what the average copy adds against the first: 100% means each copy is worth as much as the first, multiplied in; under it, copies give less each; over it, they feed each other. It's left blank where one copy is worth under x1.05, as there's too little to compare.</p>
     <div class="controls">
       <label class="control"><span>Family</span><select id="family"><option value="">Every family</option></select></label>
       <label class="control"><span>Order by</span>
@@ -412,13 +413,15 @@ details p, details li { color: var(--ink-soft); }
   }
   const copyEls = { family: $('family'), sort: $('copy-sort') }
 
-  // What the last copy adds against the first, multiplied in: 1 is "as much"
+  // What the average copy adds against the first, multiplied in: 100% means
+  // every copy is worth as much as the first. It reads the whole curve, so
+  // one unlucky count can't swing it
   function stacking(w) {
     const n = w.length - 1
-    if (n < 2 || !w[1] || !w[n] || !w[n - 1]) return null
+    if (n < 2 || !w[1] || !w[n]) return null
     const first = Math.log(w[1])
-    if (Math.abs(first) < 0.02) return null
-    return Math.log(w[n] / w[n - 1]) / first
+    if (Math.abs(first) < 0.05) return null
+    return Math.log(w[n]) / (n * first)
   }
 
   function renderCopies() {

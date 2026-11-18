@@ -152,6 +152,12 @@ export function removeSlot(id: string): boolean {
   return true
 }
 
+// Notes how a family stands, for the menu's list
+export function setSlotSummary(id: string, summary: SaveSummary): void {
+  const index = readIndex()
+  writeIndex({ ...index, slots: index.slots.map((s) => (s.id === id ? { ...s, summary } : s)) })
+}
+
 // Notes how the family in play stands, for the menu's list
 export function noteActiveSummary(summary: SaveSummary, now: number): void {
   const index = readIndex()

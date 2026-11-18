@@ -62,7 +62,7 @@ import {
 } from '../engine/migration'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { LADDER_TRIAL } from '../data/trial'
-import { ACTIVE_SLOT, MAX_SAVES, addSlot, noteActiveSummary, readIndex, removeSlot, setActiveSlot, slotPrefix, type SaveIndex, type Tuning } from '../data/saveSlots'
+import { ACTIVE_SLOT, MAX_SAVES, addSlot, noteActiveSummary, readIndex, removeSlot, setActiveSlot, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
 import { readProfile, writeProfile } from '../engine/profile'
 import { reloadPage } from '../utils/reloadPage'
 import { awardMultiplier, awardsHeld, awardText, type Award } from '../engine/awards'
@@ -761,8 +761,40 @@ export const useGameStore = defineStore('game', () => {
   const activeSlotId = ACTIVE_SLOT.id
   const canAddSave = computed(() => saveIndex.value.slots.length < MAX_SAVES)
 
+  // Every other seat's family as the menu shows it. A seat not played since
+  // its summary began (as saves from before seats) reads its own save; a
+  // family that never began isn't worth a seat, so it goes.
   function refreshSaves(): void {
+    const index = readIndex()
+    for (const slot of index.slots) {
+      // The family on this page, and the one about to be entered
+      if (slot.id === activeSlotId || slot.id === index.active) continue
+      let summary = slot.summary
+      if (!summary) {
+        try {
+          const raw = localStorage.getItem(slotPrefix(slot.id) + 'state')
+          if (raw) summary = summariseSave(parseSavedState(raw))
+        } catch {
+          summary = null
+        }
+        if (summary) setSlotSummary(slot.id, summary)
+      }
+      if (!summary || summary.fresh) removeSlot(slot.id)
+    }
     saveIndex.value = readIndex()
+  }
+
+  function summariseSave(state: PersistedSceneState): SaveSummary {
+    return {
+      surname: state.familySurname,
+      fresh:
+        state.generation === 1 && state.familyTree.length === 0 && state.gatesBeaten === 0 && state.titles === 0 && state.dynastyMs < 1000,
+      generation: state.generation,
+      titles: state.titles,
+      scenario: state.scenario,
+      dynastyMs: state.dynastyMs,
+      dynastyComplete: state.dynastyComplete
+    }
   }
 
   function playSave(id: string, ts = Date.now()): void {
@@ -774,9 +806,9 @@ export const useGameStore = defineStore('game', () => {
   function newSave(tuning: Tuning, ts = Date.now()): boolean {
     flushAll(ts)
     const slot = addSlot(tuning, ts)
+    if (slot) setActiveSlot(slot.id)
     refreshSaves()
     if (!slot) return false
-    setActiveSlot(slot.id)
     reloadPage()
     return true
   }
@@ -823,7 +855,6 @@ export const useGameStore = defineStore('game', () => {
     }
     flushAll(ts)
     const slot = addSlot(tuning, ts)
-    refreshSaves()
     if (!slot) return false
     try {
       localStorage.setItem(slotPrefix(slot.id) + 'state', state)
@@ -834,6 +865,7 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
     setActiveSlot(slot.id)
+    refreshSaves()
     reloadPage()
     return true
   }
@@ -924,6 +956,7 @@ export const useGameStore = defineStore('game', () => {
     const loaded = parseSavedState(raw)
     applyLoadedState(loaded, ts)
     applyProfile()
+    refreshSaves()
     try {
       hall.value = parseHall(localStorage.getItem(HALL_KEY))
       // The ladder trial kept a Hall of its own before the Hall was shared

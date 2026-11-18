@@ -87,10 +87,30 @@ describe('save slots in the store', () => {
     expect(localStorage.getItem('slot-3:playLog')).not.toBeNull()
     expect(store.importSave('not a save')).toBe(false)
 
+    // The family started in slot-2 never began, so it made way
+    expect(readIndex().slots.map((s) => s.id)).toEqual(['main', 'slot-3'])
     // (This page still has 'main' in play, so playing it again does nothing)
-    store.playSave('slot-2')
-    expect(readIndex().active).toBe('slot-2')
+    store.playSave('slot-3')
+    expect(readIndex().active).toBe('slot-3')
     expect(reloadPage).toHaveBeenCalledTimes(3)
+  })
+
+  it('names a seat from its own save, and clears away families that never began', () => {
+    const slots = [
+      { id: 'main', tuning: 'classic', createdAt: 0, lastPlayed: 0, summary: null },
+      // A run from before seats: no summary yet, a real family in its save
+      { id: 'trial', tuning: 'trial', createdAt: 0, lastPlayed: 0, summary: null },
+      // Started and left at the register
+      { id: 'slot-3', tuning: 'trial', createdAt: 0, lastPlayed: 0, summary: null }
+    ]
+    localStorage.setItem(SAVES_KEY, JSON.stringify({ active: 'main', slots }))
+    localStorage.setItem('trial:state', serializeState({ ...createInitialSceneState(), familySurname: 'Carrington-Rees', dynastyMs: 1_049_376 }))
+    localStorage.setItem('slot-3:state', serializeState(createInitialSceneState()))
+    const store = useGameStore()
+    store.hydrateFromStorage(1000)
+    expect(store.saveIndex.slots.map((s) => s.id)).toEqual(['main', 'trial'])
+    expect(store.saveIndex.slots[1].summary).toMatchObject({ surname: 'Carrington-Rees', fresh: false })
+    expect(localStorage.getItem('slot-3:state')).toBeNull()
   })
 
   it('downloads any family, not only the one in play, with its play log and tuning', () => {

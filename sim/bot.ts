@@ -311,7 +311,10 @@ function manageOffice(store: Store, cfg: BotConfig): void {
     if (store.headhunterOffer.length === 0 && store.waitingOffers > 0) store.showWaitingOffer()
     if (store.headhunterOffer.length > 0) {
       const id = cfg.solo.advisor
-      const held = [...store.officeSeats, ...store.paChairs].some((a) => a?.advisorId === id)
+      // One of the family at most: after an elevation the PA's child may hold
+      // another role in it (a Day Trader's child can be a Hedge Fund Founder)
+      const family = id ? ADVISORS_BY_ID[id].family : null
+      const held = [...store.officeSeats, ...store.paChairs].some((a) => a && ADVISORS_BY_ID[a.advisorId]?.family === family)
       if (id && !held && store.officeSeats.some((a) => a === null)) {
         store.headhunterOffer = [id]
         store.hireAdvisor(0)

@@ -65,6 +65,7 @@ import { LADDER_TRIAL } from '../data/trial'
 import { ACTIVE_TUNING, MAX_SAVES, NEXT_SCENARIO_AT_LOAD, activeKey, addSlot, adoptOrphans, claimSeat, noteActiveSummary, readIndex, removeSlot, residentSlot, residentSlotId, setActiveSlot, syncResident, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
 import { readProfile, writeProfile } from '../engine/profile'
 import { stateWritesPaused } from '../utils/stateWrites'
+import { simIncomeSources } from '../utils/simIncome'
 import { reloadPage } from '../utils/reloadPage'
 import { awardMultiplier, awardsHeld, awardText, type Award } from '../engine/awards'
 import { HALL_KEY, MAX_HALL_ENTRIES, addToHall, parseHall, scenariosOpen, type DynastyRecord } from '../engine/hall'
@@ -358,7 +359,8 @@ export const useGameStore = defineStore('game', () => {
       ...office.officeSources.value,
       achievementSource(achievements.value.length),
       titleSource(titles.value),
-      ...dominance
+      ...dominance,
+      ...simIncomeSources()
     ]
   })
   const baseModifiers = computed(() => combineModifiers(lastingSources.value))

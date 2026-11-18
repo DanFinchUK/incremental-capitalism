@@ -108,6 +108,7 @@
       </article>
 
       <div class="fin-Actions">
+        <button type="button" class="reg-Button" data-testid="dukedom-download" @click.stop="downloadSave(store)">Download</button>
         <button type="button" class="reg-Button" data-testid="dukedom-main-menu" @click.stop="shut('menu')">Main menu</button>
         <button type="button" class="reg-Button reg-Button-gold" data-testid="new-dynasty" @click.stop="shut('found')">
           Found a new dynasty
@@ -139,6 +140,7 @@ import type { GenerationRecord } from '../engine/family'
 import { bestDynasty, rollLines, type RollLine } from '../engine/hall'
 import { DUKE_TITLES, peerageRank } from '../engine/peerage'
 import { useGameStore } from '../stores/game'
+import { downloadSave } from '../utils/downloadSave'
 import { formatDuration, pluralSurname } from '../utils/format'
 import { createQuillWriter } from '../utils/quillWriter'
 
@@ -282,9 +284,8 @@ function afterShut(): void {
   if (next === 'found') {
     store.openMenu('found')
   } else if (next === 'menu') {
-    // Nothing is left to continue: the dynasty goes in the Hall and the
-    // next family waits, unnamed, to be written in
-    store.foundNewDynasty(Date.now(), store.scenario, false)
+    // The family keeps its seat, and its save, until the player founds the
+    // next dynasty: going to the menu loses nothing
     store.openMenu()
   }
 }

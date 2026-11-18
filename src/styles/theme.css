@@ -2337,6 +2337,12 @@
   background: var(--color-card-subtle);
 }
 
+.scn-HallActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
 .scn-HallEntry[open] {
   padding-bottom: 12px;
 }

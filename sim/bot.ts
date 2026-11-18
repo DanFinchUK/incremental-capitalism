@@ -4,7 +4,7 @@
 // perks and retiring. Its buying choices are its own return-per-pound
 // arithmetic, not a game feature.
 import { createPinia, setActivePinia } from 'pinia'
-import { BUSINESSES, BUSINESSES_BY_ID, JOBS, JOBS_BY_ID, type ItemKind } from '../src/data/items'
+import { BUSINESSES, BUSINESSES_BY_ID, JOBS, JOBS_BY_ID, SYNERGY_JOB_FOR_BUSINESS, type ItemKind } from '../src/data/items'
 import { DOMINANCE_AT, DOMINANCE_BONUS, dominanceMultiplier } from '../src/engine/economy'
 import type { PerkId } from '../src/data/perks'
 import { TRAITS_BY_ID } from '../src/data/heirs'
@@ -12,6 +12,7 @@ import { ADVISORS_BY_ID } from '../src/data/advisors'
 import { SCENARIOS_BY_ID, type ScenarioId } from '../src/data/scenarios'
 import { useGameStore } from '../src/stores/game'
 import { pauseStateWrites } from '../src/utils/stateWrites'
+import { setSimIncomeMult } from '../src/utils/simIncome'
 
 // The sim plays hours in one synchronous loop. jsdom's localStorage queues a
 // storage event (holding the old and new values) for every write, and those
@@ -70,6 +71,12 @@ export interface BotConfig {
   // Turns down every introduction and leaves the PA chairs alone (for
   // measuring one advisor at a time)
   noHiring?: boolean
+  // A whole run with one thing available (the strength report): every heir
+  // has this trait and inherited trait (none if null), and the headhunter
+  // only ever brings this advisor, one copy at most (nobody if null)
+  solo?: { trait: string | null; inherit: string | null; advisor: string | null }
+  // All income multiplied by this, for the strength report's yardstick
+  incomeMult?: number
 }
 
 // The player the pacing targets are set for: taps about five times a second
@@ -196,13 +203,48 @@ interface Priced {
   perClick: number
 }
 
-function priceItems(store: Store): Priced[] {
+// cache: prices kept from earlier in the same decision. A single unit's cost
+// and gain depend only on what the family owns of that item and its synergy
+// partner, and on the income and cost modifiers; affordability is checked
+// against the cash every time.
+function priceItems(store: Store, cache?: Map<string, Priced>): Priced[] {
   const { itemQuote, itemIncomeDelta } = store.pricing
+  const money = store.money
   return revealedItems(store).map((item) => {
+    const key = `${item.kind}:${item.id}`
+    const kept = cache?.get(key)
+    if (kept) return { ...kept, canAfford: money >= kept.cost }
     const quote = itemQuote(item.kind, item.id, 1)
     const delta = itemIncomeDelta(item.kind, item.id, 1)
-    return { item, cost: quote.cost, canAfford: quote.canAfford, perSec: delta.deltaPerSec, perClick: delta.deltaPerClick }
+    const priced = { item, cost: quote.cost, canAfford: quote.canAfford, perSec: delta.deltaPerSec, perClick: delta.deltaPerClick }
+    cache?.set(key, priced)
+    return priced
   })
+}
+
+// Everything a price depends on besides what's owned
+function sameEconomy(a: Store['economyInput'], b: Store['economyInput']): boolean {
+  return (
+    a.legacyPoints === b.legacyPoints &&
+    a.classLevel === b.classLevel &&
+    a.deregulationRank === b.deregulationRank &&
+    a.autoClickers === b.autoClickers &&
+    a.businessBuffMultiplier === b.businessBuffMultiplier &&
+    a.clickBuffMultiplier === b.clickBuffMultiplier &&
+    a.hustleMultiplier === b.hustleMultiplier &&
+    a.noTap === b.noTap &&
+    a.mods === b.mods
+  )
+}
+
+// Forget the prices a purchase changed: the item and its synergy partner
+function forgetPrices(cache: Map<string, Priced>, kind: ItemKind, id: string): void {
+  cache.delete(`${kind}:${id}`)
+  if (kind === 'jobs') cache.delete(`businesses:${JOBS_BY_ID[id].synergyBusinessId}`)
+  else {
+    const job = SYNERGY_JOB_FOR_BUSINESS[id]
+    if (job) cache.delete(`jobs:${job.id}`)
+  }
 }
 
 // The best affordable single purchase by income gained per pound, counting
@@ -263,6 +305,25 @@ function dominanceToChase(store: Store, cfg: BotConfig, beat: number, priced: Pr
 function manageOffice(store: Store, cfg: BotConfig): void {
   if (cfg.noHiring) {
     if (store.headhunterOffer.length > 0) store.skipAdvisorOffer()
+    return
+  }
+  if (cfg.solo) {
+    if (store.headhunterOffer.length === 0 && store.waitingOffers > 0) store.showWaitingOffer()
+    if (store.headhunterOffer.length > 0) {
+      const id = cfg.solo.advisor
+      const held = [...store.officeSeats, ...store.paChairs].some((a) => a?.advisorId === id)
+      if (id && !held && store.officeSeats.some((a) => a === null)) {
+        store.headhunterOffer = [id]
+        store.hireAdvisor(0)
+      } else {
+        store.skipAdvisorOffer()
+      }
+    }
+    for (let guard = 0; guard < 8 && store.paChairs.some((c) => c === null); guard++) {
+      const seat = store.officeSeats.findIndex((a) => a !== null)
+      if (seat < 0) break
+      store.promoteToPA(seat)
+    }
     return
   }
   // Introductions from ordeals waved through wait to be asked for: a player
@@ -403,19 +464,28 @@ export function decide(store: Store, cfg: BotConfig): void {
   }
   // Spend in a few chunky steps: Max on the best buy while it costs little
   // of the cash, otherwise one at a time.
+  const cache = new Map<string, Priced>()
+  let mods = store.modifiers
+  let economy = store.economyInput
   for (let i = 0; i < 12; i++) {
-    const priced = priceItems(store)
+    // An achievement, award or market dominance can change every price
+    if (store.modifiers !== mods || !sameEconomy(store.economyInput, economy)) cache.clear()
+    mods = store.modifiers
+    economy = store.economyInput
+    const priced = priceItems(store, cache)
     const scored = bestBuyScored(store, cfg, priced)
     const dominance = dominanceToChase(store, cfg, scored.score, priced)
     if (dominance) {
       // Buy as many towards 1,000 as the cash allows
       if (store.buyItem(dominance.kind, dominance.id, 'max').bought === 0) break
+      forgetPrices(cache, dominance.kind, dominance.id)
       continue
     }
     const pick = scored.pick
     if (!pick) break
     const mode = store.itemQuote(pick.kind, pick.id, 1).cost < store.money * 0.02 ? 'max' : 1
     if (store.buyItem(pick.kind, pick.id, mode).bought === 0) break
+    forgetPrices(cache, pick.kind, pick.id)
   }
 }
 
@@ -423,7 +493,12 @@ const RARITY_RANK: Readonly<Record<string, number>> = { legendary: 3, rare: 2, c
 
 // The bot avoids stacking mutually ruinous downsides (e.g. Nepo Baby + click
 // penalties before Silver is cleared), picking the strongest heir otherwise.
-function pickHeir(store: Store): void {
+function pickHeir(store: Store, cfg: BotConfig): void {
+  if (cfg.solo) {
+    store.heirChoices = [{ name: store.heirChoices[0]?.name ?? 'Heir', traitId: cfg.solo.trait, inheritId: cfg.solo.inherit }]
+    store.pickHeir(0)
+    return
+  }
   let best = 0
   let bestScore = -Infinity
   store.heirChoices.forEach((h, i) => {
@@ -482,11 +557,13 @@ export function runCampaign(
   Math.random = seededRandom(seed)
   // Nothing reads the save back mid-campaign, so don't spend time writing it
   pauseStateWrites(true)
+  setSimIncomeMult(cfg.incomeMult ?? 1)
   try {
     return playCampaign(hours, cfg, probe, atSuccession)
   } finally {
     Math.random = realRandom
     pauseStateWrites(false)
+    setSimIncomeMult(1)
   }
 }
 
@@ -634,6 +711,7 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
     // Stuck short of the gate retiring needs: hand over to a sibling, as a
     // player would, and give them a fresh stretch to get going
     if (stalled && !store.canRetire && store.canAbdicate && store.offerAbdication()) {
+      if (cfg.solo) store.siblingChoices = [{ name: store.siblingChoices[0]?.name ?? 'Sibling', traitId: cfg.solo.trait, inheritId: cfg.solo.inherit }]
       store.pickSibling(0)
       lastGateAtMs = genMs
     }
@@ -641,7 +719,7 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
       finishGeneration()
       cumulativeMs += genMs
       store.elevateToLords(ts)
-      pickHeir(store)
+      pickHeir(store, cfg)
       buyPerks(store, cfg)
       elevationsLeft -= 1
       generation += 1
@@ -657,7 +735,7 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
       cumulativeMs += genMs
       store.retire(ts)
       if (results.at(-1)?.deepestGate !== 9 && atSuccession?.(store, generation + 1, ts)) return results
-      pickHeir(store)
+      pickHeir(store, cfg)
       buyPerks(store, cfg)
       generation += 1
       netWorthAt4Min = 0

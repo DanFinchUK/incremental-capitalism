@@ -163,7 +163,7 @@ describe('the finale on screen', () => {
     wrapper.unmount()
   })
 
-  it('going back to the main menu from the finale files the dynasty, leaving nothing to continue', async () => {
+  it('going back to the main menu from the finale keeps the family and its save', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const wrapper = mount(App, { attachTo: document.body, global: { plugins: [pinia] } })
@@ -171,24 +171,18 @@ describe('the finale on screen', () => {
     store.closeIntro(T0)
     store.familyTree = [person(1)]
     store.dynastyComplete = true
-    const duke = store.familySurname
+    store.flushSave(T0)
+    const seat = store.activeSlotId
+    expect(seat).not.toBeNull()
     await wrapper.vm.$nextTick()
     await wrapper.find('[data-testid="dukedom-main-menu"]').trigger('click')
     expect(wrapper.find('[data-testid="dukedom-modal"]').exists()).toBe(false)
-    expect(store.hall.map((d) => d.surname)).toEqual([duke])
-    expect(store.dynastyComplete).toBe(false)
-    // Only a new family to begin, unnamed until it is written in
-    const begin = wrapper.find('[data-testid="menu-continue"]')
-    expect(begin.text()).toContain('A new family')
-    expect(begin.text()).not.toContain('Continue')
-    expect(store.census).toBeNull()
-    // It chooses its scenario first, and the Duke's family is above it in
-    // the register when it is written in
-    await begin.trigger('click')
-    expect(store.census).toBeNull()
-    await wrapper.find('[data-testid="menu-confirm-new-dynasty"]').trigger('click')
-    expect(store.census).toEqual({ previous: duke, departure: 'duke' })
-    expect(wrapper.find('[data-testid="census-earlier"]').text()).toContain('Duke')
+    // Nothing settled yet: still seated, still downloadable
+    expect(store.dynastyComplete).toBe(true)
+    expect(store.hall).toHaveLength(0)
+    expect(store.activeSlotId).toBe(seat)
+    expect(store.saveIndex.slots.map((s) => s.id)).toContain(seat)
+    expect(wrapper.find('[data-testid="menu-new-dynasty"]').text()).toContain('Found a new dynasty')
     wrapper.unmount()
   })
 })

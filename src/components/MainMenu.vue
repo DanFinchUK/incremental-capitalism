@@ -205,7 +205,8 @@
           <div class="ttl-Confirm">
             <p v-if="asking === 'found'">
               The new family starts with nothing: no money, no titles, no staff. The {{ store.familySurname }} record goes in the
-              Hall of Dynasties. Achievements and settings stay.
+              Hall of Dynasties. Achievements and settings stay. The {{ pluralSurname(store.familySurname) }}' save goes with their
+              seat, so use "Download" first to keep a copy.
             </p>
             <p v-else-if="asking === 'begin'">Every family plays by somebody's rules. Choose this one's.</p>
             <p v-else>
@@ -226,6 +227,15 @@
           </div>
           <div class="ttl-ConfirmActions">
             <button type="button" class="ttl-Item ttl-Item-quiet" data-testid="menu-back" @click="view = confirmBack">Back</button>
+            <button
+              v-if="asking === 'found'"
+              type="button"
+              class="ttl-Item ttl-Item-quiet"
+              data-testid="found-download"
+              @click="downloadSave(store)"
+            >
+              Download
+            </button>
             <button
               type="button"
               class="ttl-Item"

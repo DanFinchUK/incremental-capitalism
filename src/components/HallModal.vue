@@ -35,6 +35,9 @@
           <span class="scn-HallIndex">#{{ store.hall.length - i }}</span>
         </summary>
         <DynastyRoll :roll="d.roll" />
+        <div class="scn-HallActions">
+          <button type="button" class="scn-Action scn-Action-outline" data-testid="hall-download" @click="downloadHallEntry(d)">Download</button>
+        </div>
       </details>
     </div>
   </div>
@@ -48,6 +51,7 @@ import { bestDynasty, rollLines, type DynastyRecord } from '../engine/hall'
 import { useGameStore } from '../stores/game'
 import { formatDuration, pluralSurname } from '../utils/format'
 import { useEscapeKey } from '../utils/useEscapeKey'
+import { downloadHallEntry } from '../utils/downloadSave'
 
 const store = useGameStore()
 // Each scenario keeps its own best

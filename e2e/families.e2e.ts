@@ -15,18 +15,20 @@ test('a second family plays apart from the first, and switching back finds the f
   await expect(page.getByTestId('save-main')).toContainText('In residence')
   await Promise.all([page.waitForEvent('load'), page.getByTestId('new-save-trial').click()])
 
-  // A fresh family, on the trial, with the first one's achievement and settings
-  await expect(page.getByTestId('main-menu')).toContainText('A new family')
-  await expect(page.getByTestId('main-menu')).toContainText('Ladder trial')
+  // Straight to the register: a fresh family, on the trial, with the first one's achievement and settings
+  await expect(page.getByTestId('census-begin')).toBeVisible()
   const second = await withStore<{ money: number; achievements: string[]; muted: boolean }>(page, `(s) => ({ money: s.money, achievements: [...s.achievements], muted: s.muted })`)
   expect(second.money).toBe(0)
   expect(second.achievements).toContain('side-hustle')
   expect(second.muted).toBe(true)
 
-  // Back to the first, as it was left
+  // Back to the first, as it was left, and straight into the game
+  await withStore(page, `(s) => { s.closeCensus(); s.openMenu() }`)
+  await expect(page.getByTestId('main-menu')).toContainText('Ladder trial')
   await page.getByTestId('menu-families').click()
   await expect(page.getByTestId('save-main')).toContainText(first.split('-')[0])
   await Promise.all([page.waitForEvent('load'), page.getByTestId('play-main').click()])
+  await expect(page.getByTestId('main-menu')).toHaveCount(0)
   const back = await withStore<{ surname: string; money: number }>(page, `(s) => ({ surname: s.familySurname, money: s.money })`)
   expect(back.surname).toBe(first)
   expect(back.money).toBeGreaterThanOrEqual(12345)

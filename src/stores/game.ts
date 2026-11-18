@@ -276,7 +276,7 @@ export const useGameStore = defineStore('game', () => {
   const menuOpen = ref(false)
   // The page the menu opens on: its front, or straight to founding the next
   // family when a finished dynasty asks for it
-  const menuPage = ref<'main' | 'found'>('main')
+  const menuPage = ref<'main' | 'found' | 'scenario'>('main')
   // A new family being written into the register: who came before it, and
   // how they left. Null when the register isn't open.
   const census = ref<CensusEntry | null>(null)
@@ -2033,7 +2033,7 @@ export const useGameStore = defineStore('game', () => {
     flushSave(ts)
   }
 
-  function openMenu(page: 'main' | 'found' = 'main'): void {
+  function openMenu(page: 'main' | 'found' | 'scenario' = 'main'): void {
     menuPage.value = page
     menuOpen.value = true
   }

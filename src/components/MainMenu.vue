@@ -253,6 +253,8 @@ watch(
     if (open && store.menuPage === 'found' && store.dynastyComplete) {
       next.value = store.scenario
       view.value = 'confirm'
+    } else if (open && store.menuPage === 'scenario' && fresh.value) {
+      newDynasty()
     } else {
       view.value = 'main'
     }

@@ -2,8 +2,13 @@ import type { useGameStore } from '../stores/game'
 
 // Downloads a family's save JSON, play log included, as a file for sharing or
 // backup: the family in play, or another of the save slots
-export function downloadSave(store: ReturnType<typeof useGameStore>, slotId: string = store.activeSlotId): void {
-  const save = store.exportSlot(slotId, Date.now())
+export function downloadSave(store: ReturnType<typeof useGameStore>, slotId?: string): void {
+  // Saving first gives a family that has just begun its seat
+  store.flushSave()
+  const id = slotId ?? store.activeSlotId
+  // No family in residence: nothing to download
+  if (id === null) return
+  const save = store.exportSlot(id, Date.now())
   if (!save) return
   const blob = new Blob([save.json], { type: 'application/json' })
   const url = URL.createObjectURL(blob)

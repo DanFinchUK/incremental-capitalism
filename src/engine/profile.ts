@@ -13,6 +13,9 @@ export type SharedSettings = Pick<
 >
 
 export interface Profile {
+  // All play so far, across every family: a family's time away doesn't count
+  // what was played elsewhere meanwhile
+  playedMs: number
   achievements: string[]
   // Null until a save has written them: the first family loaded supplies them
   settings: SharedSettings | null
@@ -34,15 +37,16 @@ function readSettings(raw: unknown): SharedSettings | null {
 }
 
 export function parseProfile(raw: string | null): Profile {
-  if (!raw) return { achievements: [], settings: null }
+  if (!raw) return { playedMs: 0, achievements: [], settings: null }
   try {
     const v = JSON.parse(raw) as Record<string, unknown>
     const achievements = Array.isArray(v.achievements)
       ? [...new Set(v.achievements.filter((id): id is string => typeof id === 'string' && !!ACHIEVEMENTS_BY_ID[id]))]
       : []
-    return { achievements, settings: readSettings(v.settings) }
+    const playedMs = typeof v.playedMs === 'number' && Number.isFinite(v.playedMs) && v.playedMs > 0 ? v.playedMs : 0
+    return { playedMs, achievements, settings: readSettings(v.settings) }
   } catch {
-    return { achievements: [], settings: null }
+    return { playedMs: 0, achievements: [], settings: null }
   }
 }
 
@@ -50,7 +54,7 @@ export function readProfile(): Profile {
   try {
     return parseProfile(localStorage.getItem(PROFILE_KEY))
   } catch {
-    return { achievements: [], settings: null }
+    return { playedMs: 0, achievements: [], settings: null }
   }
 }
 

@@ -76,9 +76,9 @@ describe('the register', () => {
     wrapper.unmount()
   })
 
-  it('a family nobody had seen is not struck off when another is chosen in its place', () => {
+  it('a first family is written in with nobody struck off above it', () => {
     const { wrapper, store } = app()
-    store.abandonDynasty(T0)
+    store.beginNewFamily('standard', 'classic', T0)
     expect(store.census).toEqual({ previous: null, departure: null })
     wrapper.unmount()
   })

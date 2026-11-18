@@ -54,7 +54,7 @@ import {
   type OfflineCatchUpResult
 } from '../engine/economy'
 import {
-  STORAGE_KEY,
+
   createInitialSceneState,
   parseSavedState,
   serializeState,
@@ -62,12 +62,12 @@ import {
 } from '../engine/migration'
 import { SOCIAL_CLASSES } from '../data/classes'
 import { LADDER_TRIAL } from '../data/trial'
-import { ACTIVE_SLOT, MAX_SAVES, addSlot, adoptOrphans, noteActiveSummary, readIndex, removeSlot, setActiveSlot, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
+import { ACTIVE_TUNING, MAX_SAVES, NEXT_SCENARIO_AT_LOAD, activeKey, addSlot, adoptOrphans, claimSeat, noteActiveSummary, readIndex, removeSlot, residentSlot, residentSlotId, setActiveSlot, syncResident, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
 import { readProfile, writeProfile } from '../engine/profile'
 import { reloadPage } from '../utils/reloadPage'
 import { awardMultiplier, awardsHeld, awardText, type Award } from '../engine/awards'
 import { HALL_KEY, MAX_HALL_ENTRIES, addToHall, parseHall, scenariosOpen, type DynastyRecord } from '../engine/hall'
-import { SCENARIOS_BY_ID, type ScenarioId } from '../data/scenarios'
+import { SCENARIOS_BY_ID, readScenarioId, type ScenarioId } from '../data/scenarios'
 import {
   createTelemetryState,
   currentManualPerSec,
@@ -180,6 +180,7 @@ function achievementSource(count: number): ModifierSource {
 }
 
 export const useGameStore = defineStore('game', () => {
+  syncResident()
   const initial = createInitialSceneState()
 
   const money = ref<number>(initial.money)
@@ -700,25 +701,45 @@ export const useGameStore = defineStore('game', () => {
   function flushSave(ts = nowMs.value): void {
     lastUpdate.value = ts
     lastSavedMs.value = ts
+    // A family takes a seat once it has begun (written into the register, or
+    // anything worth keeping); until then there is nothing of theirs to save
+    if (activeSlotId.value === null && !census.value && familyHasBegun()) claimFamilySeat(ts)
+    const key = activeKey('state')
     try {
-      localStorage.setItem(STORAGE_KEY, serializeState(snapshotPersisted(ts)))
+      if (key) localStorage.setItem(key, serializeState(snapshotPersisted(ts)))
     } catch {
       // Ignore storage quota or private-browsing write errors
     }
-    saveProfile()
-    noteActiveSummary(
-      {
-        surname: familySurname.value,
-        fresh: familyIsFresh.value,
-        generation: generation.value,
-        titles: titles.value,
-        scenario: scenario.value,
-        dynastyMs: dynastyMs.value,
-        dynastyComplete: dynastyComplete.value
-      },
-      ts
+    const playedAt = saveProfile()
+    if (key) {
+      noteActiveSummary(
+        {
+          surname: familySurname.value,
+          fresh: familyIsFresh.value,
+          generation: generation.value,
+          titles: titles.value,
+          scenario: scenario.value,
+          dynastyMs: dynastyMs.value,
+          dynastyComplete: dynastyComplete.value
+        },
+        ts,
+        playedAt
+      )
+    }
+  }
+
+  function familyHasBegun(): boolean {
+    return (
+      !familyIsFresh.value ||
+      lifetimeEarned.value > 0 ||
+      money.value > 0 ||
+      Object.values(jobsPurchased.value).some((n) => n > 0) ||
+      Object.values(businessesOwned.value).some((n) => n > 0)
     )
   }
+
+  // Play time, across every family, not yet added to the profile
+  let unrecordedPlayMs = 0
 
   // Shared with every save slot: achievements earned anywhere, and the
   // settings (engine/profile.ts)
@@ -738,9 +759,13 @@ export const useGameStore = defineStore('game', () => {
     if (scenarioDef.value.noTap === undefined) noTap.value = s.noTap
   }
 
-  function saveProfile(): void {
+  // Returns all play so far, across every family
+  function saveProfile(): number {
     const before = readProfile()
+    const playedMs = before.playedMs + unrecordedPlayMs
+    unrecordedPlayMs = 0
     writeProfile({
+      playedMs,
       achievements: [...new Set([...before.achievements, ...achievements.value])],
       settings: {
         bulkBuyMode: bulkBuyMode.value,
@@ -753,37 +778,41 @@ export const useGameStore = defineStore('game', () => {
         tradingDeskCollapsed: tradingDeskCollapsed.value
       }
     })
+    return playedMs
   }
 
-  // Save slots (data/saveSlots.ts): the menu's list of families. Playing
-  // another, or starting one, saves this one and reloads into it.
+  // Save slots (data/saveSlots.ts): the menu's list of families, at most one
+  // in residence. Playing another, or beginning one with another tuning,
+  // saves this one and reloads into it.
   const saveIndex = ref<SaveIndex>(readIndex())
-  const activeSlotId = ACTIVE_SLOT.id
-  const canAddSave = computed(() => saveIndex.value.slots.length < MAX_SAVES)
+  const activeSlotId = ref<string | null>(residentSlotId())
+  const hasFamily = computed(() => activeSlotId.value !== null)
+  const seatsFull = computed(() => saveIndex.value.slots.length >= MAX_SAVES)
+  const canAddSave = computed(() => !seatsFull.value)
+  const familyTuning = ACTIVE_TUNING
 
-  // Every other seat's family as the menu shows it. A seat not played since
-  // its summary began (as saves from before seats) reads its own save; a
-  // family that never began isn't worth a seat, so it goes.
+  // Every seat's family as the menu shows it: one not played since summaries
+  // began (as saves from before seats) reads its own save
   function refreshSaves(): void {
     adoptOrphans()
-    const index = readIndex()
-    for (const slot of index.slots) {
-      // The family on this page, and the one about to be entered
-      if (slot.id === activeSlotId || slot.id === index.active) continue
-      let state: PersistedSceneState | null = null
+    for (const slot of readIndex().slots) {
+      if (slot.id === activeSlotId.value || slot.summary) continue
       try {
         const raw = localStorage.getItem(slotPrefix(slot.id) + 'state')
-        state = raw ? parseSavedState(raw) : null
+        if (raw) setSlotSummary(slot.id, summariseSave(parseSavedState(raw)))
       } catch {
-        state = null
+        // Left without a summary
       }
-      if (state && !slot.summary) setSlotSummary(slot.id, summariseSave(state))
-      // Only a seat started from the Families page and never played makes
-      // way: nothing earned, nothing bought. Seats from before seats stay.
-      const unplayed = !state || (summariseSave(state).fresh && state.lifetimeEarned === 0)
-      if (slot.createdAt > 0 && unplayed) removeSlot(slot.id)
     }
     saveIndex.value = readIndex()
+  }
+
+  function claimFamilySeat(ts: number): void {
+    const slot = claimSeat(ACTIVE_TUNING, ts)
+    if (!slot) return
+    activeSlotId.value = slot.id
+    saveIndex.value = readIndex()
+    plays.flush(ts)
   }
 
   function summariseSave(state: PersistedSceneState): SaveSummary {
@@ -800,22 +829,28 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function playSave(id: string, ts = Date.now()): void {
-    if (id === activeSlotId) return
+    if (id === activeSlotId.value) return
     flushAll(ts)
     if (setActiveSlot(id)) reloadPage()
   }
 
-  function newSave(tuning: Tuning, ts = Date.now()): boolean {
-    flushAll(ts)
-    const slot = addSlot(tuning, ts)
-    if (slot) setActiveSlot(slot.id)
-    refreshSaves()
-    if (!slot) return false
-    reloadPage()
-    return true
+  // A new family, on the way to the register: no seat until it is written in.
+  // Leaving the family in residence, or a tuning other than this page's,
+  // means a reload; the next family's scenario and tuning wait in the index.
+  function beginNewFamily(next: ScenarioId = 'standard', tuning: Tuning = ACTIVE_TUNING, ts = Date.now()): void {
+    if (activeSlotId.value !== null || tuning !== ACTIVE_TUNING) {
+      flushAll(ts)
+      setActiveSlot(null, { tuning, scenario: next })
+      reloadPage()
+      return
+    }
+    beginDynasty(ts, familySurname.value, next)
+    openCensus()
   }
 
+  // Disowns a family not in residence: its seat and save, for good
   function removeSave(id: string): boolean {
+    if (id === activeSlotId.value) return false
     const removed = removeSlot(id)
     refreshSaves()
     return removed
@@ -824,7 +859,7 @@ export const useGameStore = defineStore('game', () => {
   // A family's save for downloading, play log and tuning included: the one
   // in play as it stands, another as it was last saved
   function exportSlot(id: string, ts = Date.now()): { json: string; surname: string; generation: number } | null {
-    if (id === activeSlotId) return { json: exportSave(ts), surname: familySurname.value, generation: generation.value }
+    if (id === activeSlotId.value) return { json: exportSave(ts), surname: familySurname.value, generation: generation.value }
     const slot = readIndex().slots.find((s) => s.id === id)
     if (!slot) return null
     try {
@@ -953,9 +988,12 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function hydrateFromStorage(ts = Date.now()): void {
+    syncResident()
+    activeSlotId.value = residentSlotId()
     let raw: string | null = null
+    const key = activeKey('state')
     try {
-      raw = localStorage.getItem(STORAGE_KEY)
+      raw = key ? localStorage.getItem(key) : null
     } catch {
       raw = null
     }
@@ -975,6 +1013,8 @@ export const useGameStore = defineStore('game', () => {
     } catch {
       hall.value = []
     }
+    // No family in residence: the next one as chosen before the reload
+    if (key === null && NEXT_SCENARIO_AT_LOAD) beginDynasty(ts, familySurname.value, readScenarioId(NEXT_SCENARIO_AT_LOAD))
 
     // A fight carries on after a reload, but not after time away: as in play,
     // a minute or more away calls it off with no cooldown, before any money
@@ -986,8 +1026,13 @@ export const useGameStore = defineStore('game', () => {
 
     // No catch-up while the succession is undecided: the family is in
     // mourning; nor once the dynasty is over
-    if (loaded.lastUpdate !== null && ts > loaded.lastUpdate && heirChoices.value.length === 0 && !dynastyComplete.value) {
-      const catchUp = computeOfflineCatchUp(ts - loaded.lastUpdate, offlinePerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
+    // Time away is the family's own: play in other families meanwhile
+    // doesn't count (data/saveSlots.ts, playedAt)
+    const seat = residentSlot()
+    const playedElsewhere = seat?.playedAt !== undefined ? Math.max(0, readProfile().playedMs - seat.playedAt) : 0
+    const away = loaded.lastUpdate !== null ? ts - loaded.lastUpdate - playedElsewhere : 0
+    if (loaded.lastUpdate !== null && away > 0 && heirChoices.value.length === 0 && !dynastyComplete.value) {
+      const catchUp = computeOfflineCatchUp(away, offlinePerSecond.value, perks.value.offshore, modifiers.value.offlineEfficiencyAdd)
       if (catchUp) {
         // Through creditMoney, so advisor drain applies offline too
         creditMoney(catchUp.moneyEarned, undefined, ts)
@@ -1393,6 +1438,8 @@ export const useGameStore = defineStore('game', () => {
     }
     const elapsedMs = Math.max(0, ts - lastTickMs.value)
     lastTickMs.value = ts
+    // Time with a family in residence, for every other family's time away
+    if (activeSlotId.value !== null) unrecordedPlayMs += Math.min(elapsedMs, 60_000)
     if (heirChoices.value.length > 0 || disgraceReport.value !== null || dynastyComplete.value || menuOpen.value || census.value) {
       // The game pauses while succession, disgrace, the menu or the register
       // is on screen, and stops once the dynasty is over
@@ -1502,7 +1549,8 @@ export const useGameStore = defineStore('game', () => {
   function exportSave(ts = Date.now()): string {
     flushBuyerTally(ts)
     flushAll(ts)
-    return withPlayLog(localStorage.getItem(STORAGE_KEY) ?? '', plays.playLog.value, ACTIVE_SLOT.tuning)
+    const key = activeKey('state')
+    return key ? withPlayLog(localStorage.getItem(key) ?? '', plays.playLog.value, residentSlot()?.tuning ?? ACTIVE_TUNING) : ''
   }
 
   function hireAdvisor(offerIndex: number, replaceSeat?: HireTarget): boolean {
@@ -1989,6 +2037,8 @@ export const useGameStore = defineStore('game', () => {
     } catch {
       // A full or blocked store: the Hall lives for this visit only
     }
+    // Its seat is given up with it; the next family takes one when written in
+    leaveSeat(ts)
     beginDynasty(ts, record.surname, next)
     const entry: CensusEntry = { previous: record.surname, departure: 'duke' }
     if (register) census.value = entry
@@ -1996,17 +2046,27 @@ export const useGameStore = defineStore('game', () => {
     return true
   }
 
-  // Give up on the dynasty under way: a new family, and nothing in the Hall
-  function abandonDynasty(ts = Date.now(), next: ScenarioId = 'standard'): void {
+  // Give up on the dynasty under way: nothing in the Hall, and its seat and
+  // save given up. No family takes its place until one is begun.
+  function abandonDynasty(ts = Date.now()): void {
+    if (activeSlotId.value === null) return
     const previous = familySurname.value
-    const wasFresh = familyIsFresh.value
-    // Choosing a scenario for a family yet to start gives nothing up
-    if (!wasFresh) plays.log(ts, 'abandon-dynasty', { surname: previous, activeMs: dynastyMs.value })
-    beginDynasty(ts, previous, next)
-    // A family nobody had heard of yet needs no striking off, though whoever
-    // left before it still shows
-    census.value = wasFresh ? (censusPending.value ?? { previous: null, departure: null }) : { previous, departure: 'abandoned' }
-    censusPending.value = null
+    plays.log(ts, 'abandon-dynasty', { surname: previous, activeMs: dynastyMs.value })
+    leaveSeat(ts)
+    beginDynasty(ts, previous, 'standard')
+    // The next family's register shows this one struck off
+    census.value = null
+    censusPending.value = { previous, departure: 'abandoned' }
+  }
+
+  // The family in residence gives up its seat, and its save and play log
+  function leaveSeat(ts: number): void {
+    const id = activeSlotId.value
+    if (id === null) return
+    removeSlot(id)
+    activeSlotId.value = null
+    plays.clear(ts)
+    saveIndex.value = readIndex()
   }
 
   function beginDynasty(ts: number, previousSurname: string, next: ScenarioId): void {
@@ -2021,7 +2081,8 @@ export const useGameStore = defineStore('game', () => {
     fresh.noTap = scenarioDef.value.noTap === undefined ? noTap.value : false
     fresh.scenario = chosen
     fresh.muted = muted.value
-    fresh.introSeen = true
+    // A player's very first family still meets the intro
+    fresh.introSeen = introSeen.value
     fresh.tradingDeskCollapsed = tradingDeskCollapsed.value
     // Rooms the player has reached stay theirs, and so does the one they chose
     fresh.roomsReached = Math.max(roomsReached.value, highestClassReached.value)
@@ -2050,9 +2111,13 @@ export const useGameStore = defineStore('game', () => {
     censusPending.value = null
   }
 
-  // The ink is dry: into the game
+  // The ink is dry: into the game, the family in a seat of its own
   function closeCensus(ts = Date.now()): void {
     census.value = null
+    if (activeSlotId.value === null) {
+      claimFamilySeat(ts)
+      flushSave(ts)
+    }
     if (menuOpen.value) closeMenu(ts)
     else lastTickMs.value = ts
   }
@@ -2296,10 +2361,13 @@ export const useGameStore = defineStore('game', () => {
     awards,
     saveIndex,
     activeSlotId,
+    hasFamily,
+    seatsFull,
+    familyTuning,
     canAddSave,
     refreshSaves,
     playSave,
-    newSave,
+    beginNewFamily,
     removeSave,
     importSave,
     exportSlot,

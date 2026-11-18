@@ -31,14 +31,15 @@ describe('scenarios', () => {
 
   it('stay closed until a family has made Duke', () => {
     const s = store()
-    s.abandonDynasty(T0, 'hands-on')
+    s.beginNewFamily('hands-on', 'classic', T0)
     expect(s.scenario).toBe('standard')
   })
 
   it('Hands-On: no Interns, no buyers, no allowance, and no perks for them', () => {
     const s = store()
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
-    s.abandonDynasty(T0, 'hands-on')
+    s.beginNewFamily('hands-on', 'classic', T0)
+    s.closeCensus(T0)
     expect(s.scenario).toBe('hands-on')
     s.perks.autoClicker = 3
     s.headhunterOffer = ['estate-manager']
@@ -56,7 +57,8 @@ describe('scenarios', () => {
   it('Absent Landlord: no tapping, for the whole dynasty, reload included', () => {
     const s = store()
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
-    s.abandonDynasty(T0, 'absent-landlord')
+    s.beginNewFamily('absent-landlord', 'classic', T0)
+    s.closeCensus(T0)
     expect(s.noTap).toBe(true)
     s.toggleNoTap()
     expect(s.noTap).toBe(true)
@@ -70,7 +72,8 @@ describe('scenarios', () => {
   it('Austerity: the headhunter never calls', () => {
     const s = store()
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
-    s.abandonDynasty(T0, 'austerity')
+    s.beginNewFamily('austerity', 'classic', T0)
+    s.closeCensus(T0)
     s.rollOffer()
     expect(s.headhunterOffer).toHaveLength(0)
     s.legacyPoints = 10
@@ -80,7 +83,8 @@ describe('scenarios', () => {
   it('a new dynasty after a scenario keeps the player\'s own tapping choice, and the Hall keeps a best for each', () => {
     const s = store()
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 9_000, roll: [], scenario: 'standard' }]
-    s.abandonDynasty(T0, 'absent-landlord')
+    s.beginNewFamily('absent-landlord', 'classic', T0)
+    s.closeCensus(T0)
     s.dynastyComplete = true
     s.dynastyMs = 20_000
     s.foundNewDynasty(T0 + 1, 'standard')
@@ -133,14 +137,17 @@ describe('choosing a scenario on screen', () => {
     s.closeIntro(T0)
     s.openMenu()
     await wrapper.vm.$nextTick()
-    // A family yet to start has nothing to abandon, and no scenarios to choose from
+    // No family yet: nothing to abandon, and with no scenarios, Begin goes straight to the register
     expect(wrapper.find('[data-testid="menu-new-dynasty"]').exists()).toBe(false)
-    s.dynastyMs = 60_000
-    await wrapper.vm.$nextTick()
-    await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
+    await wrapper.find('[data-testid="menu-continue"]').trigger('click')
     expect(wrapper.find('[data-testid="scenario-picker"]').exists()).toBe(false)
+    expect(s.census).not.toBeNull()
+    // Once a family has made Duke, beginning asks for a scenario first
+    s.census = null
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
+    s.openMenu()
     await wrapper.vm.$nextTick()
+    await wrapper.find('[data-testid="menu-continue"]').trigger('click')
     expect(wrapper.find('[data-testid="scenario-picker"]').exists()).toBe(true)
     wrapper.unmount()
   })

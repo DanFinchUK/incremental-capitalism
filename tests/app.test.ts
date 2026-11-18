@@ -79,7 +79,8 @@ describe('App UI integration', () => {
     await wrapper.find('[data-testid="intro-next"]').trigger('click')
     expect(intro().exists()).toBe(false)
     expect(store.introSeen).toBe(true)
-    expect(JSON.parse(localStorage.getItem('state')!).scene.introSeen).toBe(true)
+    // A setting of the player's, kept with the others in the shared profile
+    expect(JSON.parse(localStorage.getItem('profile')!).settings.introSeen).toBe(true)
 
     await wrapper.find('[data-testid="open-settings"]').trigger('click')
     await wrapper.find('[data-testid="open-intro"]').trigger('click')

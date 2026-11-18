@@ -58,11 +58,14 @@ describe('the main menu', () => {
     wrapper.unmount()
   })
 
-  it('continues the family, or abandons it for a new one after asking', async () => {
+  it('continues the family, or abandons it after asking, leaving the seat free', async () => {
     const { wrapper, store } = app()
     store.closeIntro(T0)
     store.generation = 4
     store.titles = 2
+    // Saving gives the family under way its seat
+    store.flushSave(T0)
+    expect(store.hasFamily).toBe(true)
     const surname = store.familySurname
     store.openMenu()
     await wrapper.vm.$nextTick()
@@ -70,13 +73,18 @@ describe('the main menu', () => {
     await wrapper.find('[data-testid="menu-new-dynasty"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-confirm-abandon"]').text()).toContain("doesn't go in the Hall")
     await wrapper.find('[data-testid="menu-confirm-new-dynasty"]').trigger('click')
-    // The new family goes into the register, under the old one struck off
+    // No family takes its place: the seat is free and the menu offers a new one
+    expect(store.hasFamily).toBe(false)
+    expect(store.saveIndex.slots).toHaveLength(0)
+    expect(store.hall).toHaveLength(0)
+    expect(wrapper.find('[data-testid="census"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="menu-continue"]').text()).toContain('Begin')
+    // Begun, the new family goes into the register under the old one struck off
+    await wrapper.find('[data-testid="menu-continue"]').trigger('click')
     const census = wrapper.find('[data-testid="census"]')
-    expect(census.exists()).toBe(true)
     expect(census.find('.cen-Entry-struck').text()).toContain(surname)
     expect(store.familySurname).not.toBe(surname)
     expect(store).toMatchObject({ generation: 1, titles: 0 })
-    expect(store.hall).toHaveLength(0)
     wrapper.unmount()
   })
 

@@ -1,10 +1,11 @@
-import { storageKey } from '../data/trial'
+import { activeKey } from '../data/saveSlots'
 // A record of how the game is actually played, for balancing. It lives in
 // localStorage under its own key (so the frequent game saves stay small)
 // and is merged into the save JSON when the save is copied. It never leaves
 // the browser. Every list is capped.
 
-export const PLAY_LOG_KEY = storageKey('playLog')
+// The first seat's log; each family's own is activeKey('playLog') (data/saveSlots.ts)
+export const PLAY_LOG_KEY = 'playLog'
 export const MAX_LOG_EVENTS = 2500
 export const MAX_LOG_MINUTES = 3000
 export const MAX_LOG_SESSIONS = 500
@@ -121,7 +122,8 @@ export function readPlayLog(raw: unknown): PlayLog {
 
 export function loadPlayLog(): PlayLog {
   try {
-    const raw = localStorage.getItem(PLAY_LOG_KEY)
+    const key = activeKey('playLog')
+    const raw = key ? localStorage.getItem(key) : null
     return raw ? readPlayLog(JSON.parse(raw)) : createPlayLog()
   } catch {
     return createPlayLog()
@@ -130,7 +132,9 @@ export function loadPlayLog(): PlayLog {
 
 export function savePlayLog(log: PlayLog): void {
   try {
-    localStorage.setItem(PLAY_LOG_KEY, JSON.stringify(log))
+    // No family in residence, nothing of theirs to keep
+    const key = activeKey('playLog')
+    if (key) localStorage.setItem(key, JSON.stringify(log))
   } catch {
     // Ignore storage quota or private-browsing write errors
   }

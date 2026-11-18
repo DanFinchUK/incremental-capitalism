@@ -33,8 +33,8 @@ describe("King's Awards (the ladder trial)", () => {
     )
   })
 
-  it('keeps the real game in its own storage when the trial is off', () => {
-    expect(storageKey('state')).toBe('state')
+  it('keeps nothing in storage for a family not yet begun', () => {
+    expect(storageKey('state')).toBeNull()
   })
 })
 

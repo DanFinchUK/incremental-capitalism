@@ -26,7 +26,7 @@
         </header>
 
         <template v-if="view === 'main'">
-          <button type="button" class="ttl-Continue" data-testid="menu-continue" @click="carryOn">
+          <button type="button" class="ttl-Continue" data-testid="menu-continue" :disabled="fresh && store.seatsFull" @click="carryOn">
             <span class="ttl-ContinueLabel">{{ fresh ? 'Begin' : 'Continue' }}</span>
             <span class="ttl-ContinueFamily">{{ fresh ? 'A new family' : `The ${pluralSurname(store.familySurname)}` }}</span>
             <span class="ttl-ContinueLine">{{ continueLine }}</span>
@@ -34,8 +34,8 @@
           </button>
 
           <nav class="ttl-Nav" aria-label="Main menu">
-            <button v-if="!fresh" type="button" class="ttl-Item" data-testid="menu-new-dynasty" @click="newDynasty">
-              <span>{{ newDynastyLabel }}</span>
+            <button v-if="!fresh" type="button" class="ttl-Item" data-testid="menu-new-dynasty" @click="ask(store.dynastyComplete ? 'found' : 'abandon')">
+              <span>{{ store.dynastyComplete ? 'Found a new dynasty' : 'Abandon this dynasty' }}</span>
             </button>
             <button type="button" class="ttl-Item" data-testid="menu-families" @click="openFamilies">
               <span>Families</span>
@@ -90,11 +90,11 @@
                   <span class="ttl-SaveBadge">In residence</span>
                   <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Download</button>
                   <button
-                    v-if="!fresh && !store.dynastyComplete"
+                    v-if="!store.dynastyComplete"
                     type="button"
                     class="ttl-Toggle ttl-Toggle-danger"
                     data-testid="families-abandon"
-                    @click="newDynasty"
+                    @click="ask('abandon')"
                   >
                     Abandon
                   </button>
@@ -113,15 +113,14 @@
               </div>
             </li>
           </ul>
+          <p v-if="store.saveIndex.slots.length === 0" class="ttl-SaveNote" data-testid="no-families">No families yet. Every seat is free.</p>
           <div v-if="store.canAddSave" class="ttl-Setting ttl-Setting-stack">
             <div>
-              <strong>Another family</strong>
+              <strong>{{ store.saveIndex.slots.length === 0 ? 'A family' : 'Another family' }}</strong>
               <p>Every great house keeps a spare. Found another family in a seat of its own; the rest carry on without noticing.</p>
-              <p>Its ladder, fixed for good: the usual one, or the ladder trial, where each rung is harder to reach and to keep buying.</p>
             </div>
             <div class="ttl-SaveActions">
-              <button type="button" class="ttl-Toggle" data-testid="new-save-classic" @click="store.newSave('classic')">The usual ladder</button>
-              <button type="button" class="ttl-Toggle" data-testid="new-save-trial" @click="store.newSave('trial')">The ladder trial</button>
+              <button type="button" class="ttl-Toggle ttl-Toggle-on" data-testid="families-begin" @click="beginFromFamilies">Begin a new family</button>
             </div>
           </div>
           <p v-else class="ttl-SaveNote">All five seats are taken. Disown a family to found another.</p>
@@ -132,10 +131,10 @@
               <p v-if="importProblem === 'invalid'" class="ttl-SaveError" data-testid="import-failed">That file isn't a family's save.</p>
               <p v-if="importProblem === 'full'" class="ttl-SaveError" data-testid="import-failed">Every seat is taken. Disown a family first.</p>
               <template v-if="waitingFile">
-                <p data-testid="import-ladder">This save is from before seats, so it doesn't say which ladder the family played on.</p>
+                <p data-testid="import-ladder">Playtest: this save is from before seats, so it doesn't say whether it was on the trial ladder.</p>
                 <div class="ttl-SaveActions">
-                  <button type="button" class="ttl-Toggle" data-testid="import-classic" @click="importOn('classic')">The usual ladder</button>
-                  <button type="button" class="ttl-Toggle" data-testid="import-trial" @click="importOn('trial')">The ladder trial</button>
+                  <button type="button" class="ttl-Toggle" data-testid="import-classic" @click="importOn('classic')">Usual</button>
+                  <button type="button" class="ttl-Toggle" data-testid="import-trial" @click="importOn('trial')">Trial ladder</button>
                 </div>
               </template>
             </div>
@@ -204,23 +203,33 @@
         <section v-else class="ttl-Page" data-testid="menu-confirm-abandon" aria-labelledby="menu-confirm-title">
           <h2 id="menu-confirm-title" class="ttl-PageTitle">{{ confirmTitle }}</h2>
           <div class="ttl-Confirm">
-            <p v-if="store.dynastyComplete">
+            <p v-if="asking === 'found'">
               The new family starts with nothing: no money, no titles, no staff. The {{ store.familySurname }} record goes in the
               Hall of Dynasties. Achievements and settings stay.
             </p>
-            <p v-else-if="fresh">Every family plays by somebody's rules. Choose this one's.</p>
+            <p v-else-if="asking === 'begin'">Every family plays by somebody's rules. Choose this one's.</p>
             <p v-else>
               The {{ pluralSurname(store.familySurname) }} are {{ formatDuration(store.dynastyMs / 1000) }} into their climb.
-              Abandoned, they go back to whatever they were doing before, and an unfinished dynasty doesn't go in the Hall.
+              Abandoned, they go back to whatever they were doing before, an unfinished dynasty doesn't go in the Hall, and their
+              seat is free for another family.
             </p>
           </div>
-          <ScenarioPicker v-if="store.dynastyComplete || scenariosOpen(store.hall)" v-model="next" />
+          <ScenarioPicker v-if="asking === 'found' || (asking === 'begin' && scenariosOpen(store.hall))" v-model="next" />
+          <div v-if="asking !== 'abandon' && PLAYTEST" class="ttl-Setting">
+            <div>
+              <strong>Playtest: trial ladder</strong>
+              <p>The reworked Jobs and Businesses, for this family only.</p>
+            </div>
+            <button type="button" class="ttl-Toggle" :aria-pressed="nextTuning === 'trial'" data-testid="playtest-trial" @click="nextTuning = nextTuning === 'trial' ? 'classic' : 'trial'">
+              {{ nextTuning === 'trial' ? 'On' : 'Off' }}
+            </button>
+          </div>
           <div class="ttl-ConfirmActions">
             <button type="button" class="ttl-Item ttl-Item-quiet" data-testid="menu-back" @click="view = confirmBack">Back</button>
             <button
               type="button"
               class="ttl-Item"
-              :class="{ 'ttl-Item-danger': !fresh && !store.dynastyComplete, 'ttl-Item-gilt': store.dynastyComplete }"
+              :class="{ 'ttl-Item-danger': asking === 'abandon', 'ttl-Item-gilt': asking === 'found' }"
               data-testid="menu-confirm-new-dynasty"
               @click="confirmNew"
             >
@@ -245,7 +254,7 @@ import { ACHIEVEMENTS } from '../data/achievements'
 import { INTRO_PAGES } from '../data/intro'
 import { roomForClass, type RoomId } from '../data/rooms'
 import type { ScenarioId } from '../data/scenarios'
-import { LADDER_TRIAL } from '../data/trial'
+import { PLAYTEST } from '../utils/playtest'
 import { MAX_SAVES, type SaveSlot, type Tuning } from '../data/saveSlots'
 import { SCENARIOS_BY_ID, readScenarioId } from '../data/scenarios'
 import { armsFor } from '../engine/crest'
@@ -268,10 +277,9 @@ watch(
   () => store.menuOpen,
   (open) => {
     if (open && store.menuPage === 'found' && store.dynastyComplete) {
-      next.value = store.scenario
-      view.value = 'confirm'
+      ask('found')
     } else if (open && store.menuPage === 'scenario' && fresh.value) {
-      newDynasty()
+      ask('begin')
     } else {
       view.value = 'main'
     }
@@ -285,55 +293,67 @@ const next = ref<ScenarioId>('standard')
 const best = computed(() => bestDynasty(store.hall))
 const arms = computed(() => armsFor(store.familySurname))
 
-// A family that hasn't started: nothing to carry on, only one to begin, and
-// no name until it is written into the register
-const fresh = computed(() => store.familyIsFresh)
+// No family in residence: nothing to carry on, only one to begin, and no name
+// until it is written into the register
+const fresh = computed(() => !store.hasFamily)
 
-// A new family chooses its scenario first, once there are any, then goes
-// into the register
+// A new family chooses its scenario first, once there are any (and with
+// playtest options, its tuning), then goes into the register
 function carryOn(): void {
-  if (fresh.value && scenariosOpen(store.hall)) newDynasty()
-  else if (fresh.value) store.openCensus()
-  else store.closeMenu()
+  if (!fresh.value) store.closeMenu()
+  else if (store.seatsFull) return
+  else if (scenariosOpen(store.hall) || PLAYTEST) ask('begin')
+  else store.beginNewFamily('standard', 'classic')
 }
 
 const continueLine = computed(() => {
-  const scenario = (LADDER_TRIAL ? 'Ladder trial · ' : '') + (store.scenario !== 'standard' ? `${store.scenarioDef.name} · ` : '')
-  if (fresh.value) return `${scenario}Not yet in the register`
+  const scenario = (PLAYTEST && store.familyTuning === 'trial' ? 'Playtest: trial ladder · ' : '') + (store.scenario !== 'standard' ? `${store.scenarioDef.name} · ` : '')
+  if (fresh.value) return store.seatsFull ? 'All five seats are taken: disown a family first' : 'Not yet in the register'
   if (store.dynastyComplete) return `${scenario}Made Duke in ${formatDuration(store.dynastyMs / 1000)}`
   const rank = store.titles > 0 ? ` · ${peerageRank(store.titles)}` : ''
   return `${scenario}Generation ${store.generation}${rank} · ${formatDuration(store.dynastyMs / 1000)}`
 })
 
-const newDynastyLabel = computed(() => {
-  return store.dynastyComplete ? 'Found a new dynasty' : 'Abandon this dynasty'
-})
-
-// A finished dynasty is founded anew, an unfinished one abandoned, both after
-// asking; either way the next family goes into the register
-// Back from asking returns to wherever the question was asked
+// Asking before a family is begun (its scenario), abandoned, or founded anew
+// after the dukedom; Back returns to wherever the question was asked
+const asking = ref<'begin' | 'abandon' | 'found'>('begin')
 const confirmBack = ref<'main' | 'families'>('main')
+const nextTuning = ref<Tuning>('classic')
 
-function newDynasty(): void {
+function ask(what: 'begin' | 'abandon' | 'found'): void {
+  asking.value = what
   confirmBack.value = view.value === 'families' ? 'families' : 'main'
-  next.value = store.scenario
+  next.value = what === 'found' ? store.scenario : 'standard'
+  nextTuning.value = 'classic'
   view.value = 'confirm'
 }
 
 const confirmTitle = computed(() => {
-  if (store.dynastyComplete) return 'A new dynasty'
-  return fresh.value ? 'Choose a scenario' : 'Abandon this dynasty'
+  if (asking.value === 'found') return 'A new dynasty'
+  return asking.value === 'begin' ? 'A new family' : 'Abandon this dynasty'
 })
 
 const confirmLabel = computed(() => {
-  if (store.dynastyComplete) return 'Found the new dynasty'
-  return fresh.value ? 'Choose' : 'Abandon them'
+  if (asking.value === 'found') return 'Found the new dynasty'
+  return asking.value === 'begin' ? 'Begin' : 'Abandon them'
 })
 
 function confirmNew(): void {
+  const ts = Date.now()
+  const what = asking.value
   view.value = 'main'
-  if (store.dynastyComplete) store.foundNewDynasty(Date.now(), next.value)
-  else store.abandonDynasty(Date.now(), next.value)
+  if (what === 'abandon') store.abandonDynasty(ts)
+  else if (what === 'begin') store.beginNewFamily(next.value, nextTuning.value, ts)
+  else if (nextTuning.value === store.familyTuning) store.foundNewDynasty(ts, next.value)
+  else {
+    store.foundNewDynasty(ts, next.value, false)
+    store.beginNewFamily(next.value, nextTuning.value, ts)
+  }
+}
+
+function beginFromFamilies(): void {
+  if (scenariosOpen(store.hall) || PLAYTEST) ask('begin')
+  else store.beginNewFamily('standard', 'classic')
 }
 
 function openFamilies(): void {
@@ -361,7 +381,9 @@ async function importFile(ev: Event): Promise<void> {
   input.value = ''
   if (!file) return
   const text = await file.text()
-  const result = store.importSave(text)
+  // Only a playtester's old saves could be on the trial ladder: ask them
+  let result = store.importSave(text)
+  if (result === 'ladder' && !PLAYTEST) result = store.importSave(text, Date.now(), 'classic')
   importProblem.value = result === 'invalid' || result === 'full' ? result : null
   waitingFile.value = result === 'ladder' ? text : null
 }
@@ -381,7 +403,7 @@ function saveName(slot: SaveSlot): string {
 function saveLine(slot: SaveSlot): string {
   const sum = slot.summary
   const parts: string[] = []
-  if (slot.tuning === 'trial') parts.push('Ladder trial')
+  if (PLAYTEST && slot.tuning === 'trial') parts.push('Playtest: trial ladder')
   if (sum && sum.scenario !== 'standard') parts.push(SCENARIOS_BY_ID[readScenarioId(sum.scenario)].name)
   if (!sum || sum.fresh) parts.push('Not yet in the register')
   else if (sum.dynastyComplete) parts.push(`Made Duke in ${formatDuration(sum.dynastyMs / 1000)}`)

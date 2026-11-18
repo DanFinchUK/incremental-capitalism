@@ -12,7 +12,7 @@ test('a second family plays apart from the first, and switching back finds the f
   // Families → start another, on the ladder trial
   await withStore(page, `(s) => s.openMenu()`)
   await page.getByTestId('menu-families').click()
-  await expect(page.getByTestId('save-main')).toContainText('In play')
+  await expect(page.getByTestId('save-main')).toContainText('In residence')
   await Promise.all([page.waitForEvent('load'), page.getByTestId('new-save-trial').click()])
 
   // A fresh family, on the trial, with the first one's achievement and settings

@@ -39,7 +39,7 @@
             </button>
             <button type="button" class="ttl-Item" data-testid="menu-families" @click="openFamilies">
               <span>Families</span>
-              <small>{{ store.saveIndex.slots.length }} of {{ MAX_SAVES }}</small>
+              <small>{{ store.saveIndex.slots.length }} of {{ MAX_SAVES }} seats</small>
             </button>
             <button type="button" class="ttl-Item" data-testid="menu-hall" @click="store.hallOpen = true">
               <span>Hall of Dynasties</span>
@@ -87,42 +87,43 @@
               </div>
               <div class="ttl-SaveActions">
                 <template v-if="slot.id === store.activeSlotId">
-                  <span class="ttl-SaveBadge">In play</span>
-                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Download</button>
+                  <span class="ttl-SaveBadge">In residence</span>
+                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Copy the papers</button>
                 </template>
                 <template v-else-if="removing === slot.id">
                   <button type="button" class="ttl-Toggle ttl-Toggle-danger" :data-testid="`remove-confirm-${slot.id}`" @click="confirmRemove(slot.id)">
-                    Remove for good
+                    Disown them
                   </button>
-                  <button type="button" class="ttl-Toggle" @click="removing = null">Keep</button>
+                  <button type="button" class="ttl-Toggle" @click="removing = null">Spare them</button>
                 </template>
                 <template v-else>
-                  <button type="button" class="ttl-Toggle ttl-Toggle-on" :data-testid="`play-${slot.id}`" @click="store.playSave(slot.id)">Play</button>
-                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Download</button>
-                  <button type="button" class="ttl-Toggle" :data-testid="`remove-${slot.id}`" @click="removing = slot.id">Remove</button>
+                  <button type="button" class="ttl-Toggle ttl-Toggle-on" :data-testid="`play-${slot.id}`" @click="store.playSave(slot.id)">Visit</button>
+                  <button type="button" class="ttl-Toggle" :data-testid="`download-${slot.id}`" @click="downloadSave(store, slot.id)">Copy the papers</button>
+                  <button type="button" class="ttl-Toggle" :data-testid="`remove-${slot.id}`" @click="removing = slot.id">Disown</button>
                 </template>
               </div>
             </li>
           </ul>
           <div v-if="store.canAddSave" class="ttl-Setting ttl-Setting-stack">
             <div>
-              <strong>Start another family</strong>
-              <p>A new family in a place of its own; the others wait where they are. Choose its ladder: the usual one, or the ladder trial, where each rung is harder to reach and to keep buying.</p>
+              <strong>Another family</strong>
+              <p>Every great house keeps a spare. Found another family in a seat of its own; the rest carry on without noticing.</p>
+              <p>Its ladder, fixed for good: the usual one, or the ladder trial, where each rung is harder to reach and to keep buying.</p>
             </div>
             <div class="ttl-SaveActions">
               <button type="button" class="ttl-Toggle" data-testid="new-save-classic" @click="store.newSave('classic')">The usual ladder</button>
               <button type="button" class="ttl-Toggle" data-testid="new-save-trial" @click="store.newSave('trial')">The ladder trial</button>
             </div>
           </div>
-          <p v-else class="ttl-SaveNote">All {{ MAX_SAVES }} places are taken. Remove a family to start another.</p>
+          <p v-else class="ttl-SaveNote">All five seats are taken. Disown a family to found another.</p>
           <div class="ttl-Setting">
             <div>
-              <strong>Import a save</strong>
-              <p>A family downloaded from here, into a place of its own.</p>
-              <p v-if="importFailed" class="ttl-SaveError" data-testid="import-failed">That file isn't a save, or every place is taken.</p>
+              <strong>Papers from elsewhere</strong>
+              <p>A family's papers, copied from here as a file, settled in a seat of its own.</p>
+              <p v-if="importFailed" class="ttl-SaveError" data-testid="import-failed">Those aren't a family's papers, or every seat is taken.</p>
             </div>
             <label class="ttl-Toggle ttl-Upload" :class="{ 'ttl-Toggle-disabled': !store.canAddSave }">
-              Choose file
+              Lodge the papers
               <input type="file" accept=".json,application/json" data-testid="import-save" :disabled="!store.canAddSave" @change="importFile" />
             </label>
           </div>

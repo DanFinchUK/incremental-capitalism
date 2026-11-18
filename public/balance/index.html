@@ -153,6 +153,12 @@ details p, details li { color: var(--ink-soft); }
 
   <div class="controls">
     <label class="control"><span>Version</span><select id="version"></select></label>
+    <label class="control"><span>Ladder</span>
+      <select id="ladder">
+        <option value="">Original</option>
+        <option value="trial-">New ladder</option>
+      </select>
+    </label>
     <label class="control"><span>Played to</span>
       <select id="to">
         <option value="duke">Duke</option>
@@ -249,7 +255,7 @@ details p, details li { color: var(--ink-soft); }
 (() => {
   const KIND = { advisor: 'Advisor', trait: 'Heir trait', inherited: 'Inherited', income: 'Yardstick' }
   const $ = (id) => document.getElementById(id)
-  const els = { version: $('version'), compare: $('compare'), to: $('to'), kind: $('kind'), find: $('find') }
+  const els = { version: $('version'), compare: $('compare'), ladder: $('ladder'), to: $('to'), kind: $('kind'), find: $('find') }
   let ledger = null
   let sort = { key: 'worth', dir: -1 }
 
@@ -263,20 +269,22 @@ details p, details li { color: var(--ink-soft); }
 
   function remember() {
     try {
-      localStorage.setItem('balance-ledger', JSON.stringify({ to: els.to.value, kind: els.kind.value }))
+      localStorage.setItem('balance-ledger', JSON.stringify({ ladder: els.ladder.value, to: els.to.value, kind: els.kind.value }))
     } catch {}
   }
   function recall() {
     try {
       const v = JSON.parse(localStorage.getItem('balance-ledger') || '{}')
       if (v.to) els.to.value = v.to
+      if (v.ladder !== undefined) els.ladder.value = v.ladder
       if (v.kind !== undefined) els.kind.value = v.kind
     } catch {}
   }
 
   function runOf(versionId, to) {
     const v = ledger.versions.find((x) => x.version === versionId)
-    return v && v.runs[to] ? v.runs[to] : null
+    const key = els.ladder.value + to
+    return v && v.runs[key] ? v.runs[key] : null
   }
 
   function ranked(run) {
@@ -397,7 +405,7 @@ details p, details li { color: var(--ink-soft); }
         ` the least (${times(bottom.worth)}). ${useless} of ${all.length} are worth under x1.05.`
       )
     } else {
-      $('lede').textContent = 'This version has no run of that length yet.'
+      $('lede').textContent = 'This version has no runs of that length on this ladder yet.'
     }
     for (const btn of document.querySelectorAll('th button')) {
       btn.setAttribute('aria-sort', btn.dataset.sort === sort.key ? (sort.dir < 0 ? 'descending' : 'ascending') : 'none')
@@ -434,7 +442,7 @@ details p, details li { color: var(--ink-soft); }
 
   function renderCopies() {
     const v = ledger.versions.find((x) => x.version === els.version.value)
-    const run = v ? v.runs[`copies-${els.to.value}`] : null
+    const run = v ? v.runs[`${els.ladder.value}copies-${els.to.value}`] : null
     const head = $('copy-head')
     const body = $('copy-rows')
     head.replaceChildren()

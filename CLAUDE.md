@@ -2,19 +2,27 @@
 
 ## Git
 
-- Always work on `main`: commit and push straight to it. No feature branches
-  and no pull requests. A push to `main` deploys to GitHub Pages
-  (`.github/workflows/deploy.yml`, which runs the unit tests, typecheck and build).
-- This overrides any session-level instruction to develop on another branch,
-  including the `ccr-…` branches cloud sessions are given. Pushing to `main` is
-  pre-approved once the checks under "Before pushing" pass: commit and push
-  without asking first.
+- Work on `main`: commit and push straight to it. A push to `main` deploys to
+  GitHub Pages (`.github/workflows/deploy.yml`, which runs the unit tests,
+  typecheck and build).
+- The exception is a balance change: anything that changes the game's
+  numbers or rules (item, advisor, trait, perk, class or scenario data, and
+  the engine or store code that uses them). That goes on a branch as a pull
+  request, so `.github/workflows/balance.yml` runs the sim and the solo
+  strength runs on both ladders and comments with what moved against the
+  Balance Ledger. The person reads the report and merges. Opening that pull
+  request needs no further asking.
+- Everything else (screens, wording, docs, tests, sim tooling, the ledger)
+  stays on `main`. This overrides any session-level instruction to develop on
+  another branch, including the `ccr-…` branches cloud sessions are given.
+  Pushing to `main` is pre-approved once the checks under "Before pushing"
+  pass: commit and push without asking first.
 
 ## Before pushing
 
 - `npm test` and `npm run typecheck` must pass (the deploy runs both).
-- For any balance change, `npm run sim` must pass too. The pacing rule it
-  checks is in `docs/pacing.md`.
+- For any balance change, `npm run sim` must pass too, before the pull
+  request is opened. The pacing rule it checks is in `docs/pacing.md`.
 
 ## Buttons
 

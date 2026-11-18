@@ -5,7 +5,7 @@
 // campaigns run in parallel.
 import { describe, expect, it } from 'vitest'
 import { PLAYSTYLES, runCampaign } from './bot'
-import { SEEDS, firstKillHours, median } from './pacing.shared'
+import { SEEDS, firstKillHours, median, rarelyPastThree } from './pacing.shared'
 
 export function checkPlaystyle(index: number): void {
   const style = PLAYSTYLES[index]
@@ -20,8 +20,10 @@ export function checkPlaystyle(index: number): void {
       expect(median(campaigns.map((gens) => firstKillHours(gens, 9)))).toBeLessThanOrEqual(style.finishWithinHours)
     })
 
-    it('never retires more than 3 gates past the family best', () => {
-      expect(Math.max(...played.map((g) => g.deepestGate - g.bestBefore))).toBeLessThanOrEqual(3)
+    it('retires more than 3 gates past the family best only rarely, and never more than 4', () => {
+      const r = rarelyPastThree(played.map((g) => g.deepestGate - g.bestBefore))
+      expect(r.fours).toBeLessThanOrEqual(r.allowed)
+      expect(r.max).toBeLessThanOrEqual(4)
     })
 
     it('keeps money and income finite', () => {

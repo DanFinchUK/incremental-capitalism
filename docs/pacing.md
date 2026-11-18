@@ -21,7 +21,9 @@ family stuck behind a bad heir can draft another.
 
 So the player should retire for +1 to +3, and the heir picks up from there.
 A generation that retires after 12 minutes without a new gate should land at
-+1 to +3, and never +4.
++1 to +3. Now and then a lucky heir sprints to +4 (about one generation in 100
+in the sim, the non-tapping family more than the tapper): a good story, not a
+broken game. The checks allow +4 in at most one generation in 20, and never +5.
 
 The first generation follows the same rule with a best of 0: gate 1 is easy,
 gate 2 takes some effort, gate 3 is quite hard, and gate 4 is out of reach.

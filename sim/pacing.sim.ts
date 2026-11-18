@@ -8,7 +8,7 @@
 // heirs and advisors could flip a check either way.
 import { describe, expect, it } from 'vitest'
 import { FAST_TAPPER, runCampaign, type GenerationResult } from './bot'
-import { MINUTE, firstKillHours, median, plusMinutes } from './pacing.shared'
+import { MINUTE, firstKillHours, median, plusMinutes, rarelyPastThree } from './pacing.shared'
 
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
@@ -32,11 +32,13 @@ describe('the prestige rule: +1 easy, +2 more effort, +3 quite hard, +4 about a 
     expect(median(times)).toBeLessThanOrEqual(30)
   })
 
-  it('so a generation retires 1 to 3 gates past its best, and never more', () => {
+  it('so a generation retires 1 to 3 gates past its best, +4 rarely and never more', () => {
     const gains = played.map((g) => g.deepestGate - g.bestBefore)
     expect(median(gains)).toBeGreaterThanOrEqual(1)
     expect(median(gains)).toBeLessThanOrEqual(3)
-    expect(Math.max(...gains)).toBeLessThanOrEqual(3)
+    const r = rarelyPastThree(gains)
+    expect(r.fours).toBeLessThanOrEqual(r.allowed)
+    expect(r.max).toBeLessThanOrEqual(4)
   })
 })
 

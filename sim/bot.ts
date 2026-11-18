@@ -9,8 +9,10 @@ import { DOMINANCE_AT, DOMINANCE_BONUS, dominanceMultiplier } from '../src/engin
 import type { PerkId } from '../src/data/perks'
 import { TRAITS_BY_ID } from '../src/data/heirs'
 import { ADVISORS_BY_ID } from '../src/data/advisors'
-import { SCENARIOS_BY_ID, type ScenarioId } from '../src/data/scenarios'
+import { type ScenarioId } from '../src/data/scenarios'
 import { useGameStore } from '../src/stores/game'
+import { HALL_KEY } from '../src/engine/hall'
+import { ACTIVE_TUNING } from '../src/data/saveSlots'
 import { pauseStateWrites } from '../src/utils/stateWrites'
 import { setSimIncomeMult } from '../src/utils/simIncome'
 import { setSimOffer } from '../src/utils/simOffer'
@@ -608,13 +610,16 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
   setActivePinia(createPinia())
   const store = useGameStore()
   let ts = 1_000_000
+  // Scenarios open only once a family has made Duke, so a scenario run
+  // starts from a profile with one in the Hall, and picks it as a player does
+  if (cfg.scenario) localStorage.setItem(HALL_KEY, JSON.stringify([{ surname: 'Earlier', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]))
   store.hydrateFromStorage(ts)
   store.closeIntro(ts)
-  if (cfg.noTap) store.toggleNoTap()
   if (cfg.scenario) {
-    store.scenario = cfg.scenario
-    store.noTap = SCENARIOS_BY_ID[cfg.scenario].noTap ?? store.noTap
+    store.beginNewFamily(cfg.scenario, ACTIVE_TUNING, ts)
+    store.closeCensus(ts)
   }
+  if (cfg.noTap && !store.noTap) store.toggleNoTap()
   // Buyers follow the bulk setting; a player with staff buys to the next milestone
   store.setBulkBuyMode('next')
   store.tick(ts)

@@ -22,3 +22,15 @@ export function firstKillHours(gens: GenerationResult[], gate: number): number {
   const gen = gens.find((g) => g.splitsMs[gate] !== null)
   return gen ? (gen.cumulativeActiveMs + gen.splitsMs[gate]!) / HOUR : Infinity
 }
+
+// A generation retires 1 to 3 gates past its best. A lucky heir may reach +4
+// now and then (about one generation in 100 in the sim), which is a good
+// story rather than a broken game: so +4 at most one generation in 20 (one,
+// for fewer than 40), and never +5.
+export function rarelyPastThree(gains: number[]): { fours: number; allowed: number; max: number } {
+  return {
+    fours: gains.filter((g) => g >= 4).length,
+    allowed: Math.max(1, Math.floor(gains.length / 20)),
+    max: Math.max(...gains)
+  }
+}

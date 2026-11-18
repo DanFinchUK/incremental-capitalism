@@ -86,8 +86,16 @@ describe('office modifiers', () => {
 
   it('Head of Finance pays out per Finance advisor', () => {
     const m = combineModifiers(officeModifierSources([inst('head-of-finance'), inst('accountant'), inst('stockbroker')]))
-    expect(m.businessMult).toBeCloseTo(1.3)
-    expect(m.clickMult).toBeCloseTo(1.3)
+    expect(m.businessMult).toBeCloseTo(1.6)
+    expect(m.clickMult).toBeCloseTo(1.6)
+  })
+
+  it("only the best Finance bonus counts: two Group CFOs don't each count the other", () => {
+    const m = combineModifiers(officeModifierSources([inst('group-cfo'), inst('group-cfo'), inst('stockbroker')]))
+    // One bonus at 35% for three Finance advisors, not two of them multiplied
+    expect(m.businessMult).toBeCloseTo(1 + 0.35 * 3)
+    const mixed = combineModifiers(officeModifierSources([inst('finance-clerk'), inst('group-cfo'), inst('stockbroker')]))
+    expect(mixed.businessMult).toBeCloseTo(1 + 0.35 * 3)
   })
 
   it('campaigns build with minutes in office and stop at their cap', () => {

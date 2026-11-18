@@ -1,6 +1,6 @@
 // Family office rules: advisor effects and upkeep, the Personal Assistants'
 // promotions and honours, lobbying campaigns and role bonuses.
-import { ADVISORS, ADVISORS_BY_ID, type AdvisorDef, type Campaign } from '../data/advisors'
+import { ADVISORS, ADVISORS_BY_ID, type AdvisorDef, type AdvisorRole, type Campaign } from '../data/advisors'
 import { pickEventRarity, type EventRarity } from '../data/events'
 import type { Sector } from '../data/items'
 import type { ModifierSource } from './modifiers'
@@ -189,6 +189,7 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>):
   // Campaigners for the same cause pool their time: the cap is shared, so
   // duplicates reach it sooner rather than doubling it.
   const campaignTime = new Map<string, { campaign: Campaign; ms: number }>()
+  const bestRoleBonus = new Map<AdvisorRole, number>()
   for (const inst of advisors) {
     const def = ADVISORS_BY_ID[inst.advisorId]
     if (!def) continue
@@ -200,10 +201,16 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>):
       campaignTime.set(role.id, pooled)
     }
     if (role.roleBonus) {
-      const count = advisors.filter((a) => advisorRole(a)?.roles.includes(role.roleBonus!.role)).length
-      const mult = 1 + role.roleBonus.incomePerAdvisor * count
-      sources.push({ businessMult: mult, clickMult: mult })
+      const best = bestRoleBonus.get(role.roleBonus.role) ?? 0
+      bestRoleBonus.set(role.roleBonus.role, Math.max(best, role.roleBonus.incomePerAdvisor))
     }
+  }
+  // A role bonus counts everyone in that role, but only the best one in the
+  // office applies: two Group CFOs don't each count the other
+  for (const [roleName, perAdvisor] of bestRoleBonus) {
+    const count = advisors.filter((a) => advisorRole(a)?.roles.includes(roleName)).length
+    const mult = 1 + perAdvisor * count
+    sources.push({ businessMult: mult, clickMult: mult })
   }
   for (const { campaign, ms } of campaignTime.values()) {
     sources.push(campaignSource(campaign, ms))

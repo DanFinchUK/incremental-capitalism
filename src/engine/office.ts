@@ -180,8 +180,15 @@ function sourcesFor(def: AdvisorDef, inst: AdvisorInstance): ModifierSource[] {
 // Who an advisor is now: a PA promoted up their family holds the role above
 // (a PFI Consultant becomes the Privatisation Campaigner), and runs its
 // campaign and its role bonus
+// Kept by who they are and how long they've served, all a role depends on:
+// the office asks for every advisor's role every second
+const roles = new Map<string, AdvisorDef | undefined>()
 export function advisorRole(inst: AdvisorInstance): AdvisorDef | undefined {
-  return paStanding(inst)?.def ?? ADVISORS_BY_ID[inst.advisorId]
+  const key = `${inst.advisorId}/${inst.servedGenerations}`
+  if (roles.has(key)) return roles.get(key)
+  const role = paStanding(inst)?.def ?? ADVISORS_BY_ID[inst.advisorId]
+  roles.set(key, role)
+  return role
 }
 
 export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>): ModifierSource[] {

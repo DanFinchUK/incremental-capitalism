@@ -2,25 +2,13 @@
 // line should take about two-thirds as long as the one before it
 // (docs/pacing.md). Plays a fast tapper's dynasty from Commoner to Duke.
 import { describe, expect, it } from 'vitest'
-import { FAST_TAPPER, runCampaign } from './bot'
+import { allLines } from './lines.shared'
 import { median } from './pacing.shared'
 
-// Fifteen seeds: one line's length swings a lot with the heirs drawn
-const SEEDS = Array.from({ length: 15 }, (_, i) => i + 1)
-
-// Active minutes each line took, Commoner first
-function lineMinutes(seed: number): number[] {
-  const gens = runCampaign(12, { ...FAST_TAPPER, elevations: 4 }, seed)
-  const lines: number[] = [0]
-  for (const g of gens) {
-    lines[lines.length - 1] += g.activeMinutes
-    if (g.deepestGate === 9) lines.push(0)
-  }
-  return lines.filter((m) => m > 0)
-}
+// Played with the help of sim/pacing.lines.help*.sim.ts (sim/lines.shared.ts)
+const runs = await allLines()
 
 describe('lines after elevation', () => {
-  const runs = SEEDS.map(lineMinutes)
   const medians = [0, 1, 2, 3, 4].map((i) => median(runs.map((r) => r[i] ?? Infinity)))
   // Each run's own line-to-line ratio, averaged geometrically across runs.
   // Two lines in one run share that run's heirs and advisors, so comparing

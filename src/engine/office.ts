@@ -177,6 +177,22 @@ function sourcesFor(def: AdvisorDef, inst: AdvisorInstance): ModifierSource[] {
 }
 
 // Every modifier source the office contributes, PAs and open seats alike
+// The extra office seats and PA chairs a set of staff bring, each scaled by
+// a PA's standing like any effect, rounded down
+export function officeRoom(staff: ReadonlyArray<AdvisorInstance>): { officeSeats: number; paChairs: number } {
+  let officeSeats = 0
+  let paChairs = 0
+  for (const inst of staff) {
+    const standing = paStanding(inst)
+    const role = standing?.def ?? ADVISORS_BY_ID[inst.advisorId]
+    if (!role?.room) continue
+    const scale = standing?.scale ?? 1
+    officeSeats += (role.room.officeSeats ?? 0) * scale
+    paChairs += (role.room.paChairs ?? 0) * scale
+  }
+  return { officeSeats: Math.floor(officeSeats + 1e-9), paChairs: Math.floor(paChairs + 1e-9) }
+}
+
 // Who an advisor is now: a PA promoted up their family holds the role above
 // (a PFI Consultant becomes the Privatisation Campaigner), and runs its
 // campaign and its role bonus

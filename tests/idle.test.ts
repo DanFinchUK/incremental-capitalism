@@ -176,8 +176,15 @@ describe('advisor tiers', () => {
       if (ADVISORS.find((a) => a.family === f)?.buyer) continue
       const tier = (r: string) => ADVISORS.find((a) => a.family === f && a.rarity === r)!
       const [c, r, l] = ['common', 'rare', 'legendary'].map(tier)
+      // Room in the office: a PA chair outlasts retirement, so it counts double
       const score = (a: (typeof ADVISORS)[number]) =>
-        a.roleBonus ? a.roleBonus.incomePerAdvisor : a.campaign ? Infinity : strength(combineModifiers([a.mods]))
+        a.room
+          ? (a.room.officeSeats ?? 0) + 2 * (a.room.paChairs ?? 0)
+          : a.roleBonus
+            ? a.roleBonus.incomePerAdvisor
+            : a.campaign
+              ? Infinity
+              : strength(combineModifiers([a.mods]))
       expect(score(r), `${f}: rare beats common`).toBeGreaterThan(score(c))
       expect(score(l), `${f}: legendary beats rare`).toBeGreaterThan(score(r))
     }

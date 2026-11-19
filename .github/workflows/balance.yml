@@ -1,0 +1,102 @@
+name: Balance report
+
+# Every pull request runs the sim's checks and the solo strength runs, then
+# comments with how the numbers moved against the latest version in the
+# Balance Ledger (scripts/balance-report.mjs). Each solo run has its own
+# runner; the longest take around half an hour.
+#
+# The solo sets (sim/solo.shared.ts):
+# - singles: one advisor, heir trait or inherited trait on offer at a time
+# - copies: one advisor family, held 1, 2, 3... at once
+# - favour: the real game, the bot favouring one advisor family whenever it's
+#   offered, against the same bot favouring none: what chasing a family is
+#   worth in a real office
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: balance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - name: npm run sim
+        run: |
+          set -o pipefail
+          npm run sim 2>&1 | tee sim.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sim-output
+          path: sim.txt
+
+  solo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        run:
+          - { name: singles-class9, set: singles, to: class9, seeds: 16 }
+          - { name: singles-duke, set: singles, to: duke, seeds: 12 }
+          - { name: copies-class9, set: copies, to: class9, seeds: 8 }
+          - { name: favour-class9, set: favour, to: class9, seeds: 24 }
+          - { name: favour-duke, set: favour, to: duke, seeds: 16 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: npm run sim:solo
+        env:
+          SOLO_SET: ${{ matrix.run.set }}
+          SOLO_TO: ${{ matrix.run.to }}
+          SOLO_SEEDS: ${{ matrix.run.seeds }}
+        run: |
+          npm run sim:solo
+          mkdir -p solo
+          cp "$(node -e "console.log(require('os').tmpdir())")/ic-solo/results.json" "solo/${{ matrix.run.name }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: solo-${{ matrix.run.name }}
+          path: solo/
+
+  report:
+    needs: [checks, solo]
+    if: always() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Write the report
+        run: |
+          node scripts/balance-report.mjs artifacts/sim-output/sim.txt $(ls artifacts/solo-*/*.json 2>/dev/null | sort) > comment.md
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment on the pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --body-file comment.md

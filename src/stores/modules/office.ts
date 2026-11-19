@@ -10,6 +10,7 @@ import {
   paTitle,
   advisorRole,
   advisorSector,
+  officeRoom,
   rarityTier,
   rollAdvisorOffer,
   type AdvisorInstance
@@ -106,16 +107,31 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     if (wasOptional) showWaitingOffer()
   }
 
-  // Seat count follows the perk; extra stored seats beyond it are kept but hidden.
-  const officeSeats = computed(() => {
-    const count = BASE_OFFICE_SEATS + deps.extraSeats()
-    return Array.from({ length: count }, (_, i) => seatStore.value[i] ?? null)
+  // Seat count follows the perk, chair count the titles, and staff who bring
+  // room (the finance team) add to both. Staff in a seat or chair that is
+  // there only because of other staff count too, so the room is worked out
+  // until it settles; it only grows, so that is a step or two. Extra stored
+  // seats and PAs beyond it are kept but stand aside.
+  const room = computed(() => {
+    const baseSeats = BASE_OFFICE_SEATS + deps.extraSeats()
+    const baseChairs = Math.max(1, deps.paChairCount())
+    let seats = baseSeats
+    let chairs = baseChairs
+    for (let guard = 0; guard < 16; guard++) {
+      const staff = [...seatStore.value.slice(0, seats), ...paStore.value.slice(0, chairs)].filter((a): a is AdvisorInstance => a !== null)
+      const extra = officeRoom(staff)
+      const nextSeats = baseSeats + extra.officeSeats
+      const nextChairs = baseChairs + extra.paChairs
+      if (nextSeats === seats && nextChairs === chairs) break
+      seats = nextSeats
+      chairs = nextChairs
+    }
+    return { seats, chairs }
   })
 
-  // Chair count follows the titles; PAs beyond it are kept but stand aside
-  const paChairs = computed(() =>
-    Array.from({ length: Math.max(1, deps.paChairCount()) }, (_, i) => paStore.value[i] ?? null)
-  )
+  const officeSeats = computed(() => Array.from({ length: room.value.seats }, (_, i) => seatStore.value[i] ?? null))
+
+  const paChairs = computed(() => Array.from({ length: room.value.chairs }, (_, i) => paStore.value[i] ?? null))
 
   const officeStaff = computed(() => [
     ...officeSeats.value.filter((s): s is AdvisorInstance => s !== null),

@@ -56,6 +56,9 @@ export interface AdvisorDef {
   buyer?: 'jobs' | 'businesses'
   // Extra income per advisor in the office who has this role
   roleBonus?: { role: AdvisorRole; incomePerAdvisor: number }
+  // More room in the family office while they're on staff: office seats and
+  // PA chairs (scaled by a PA's standing, like any effect)
+  room?: { officeSeats?: number; paChairs?: number }
   campaign?: Campaign
 }
 
@@ -508,12 +511,12 @@ export const ADVISORS: ReadonlyArray<AdvisorDef> = [
     family: 'financeTeam',
     rarity: 'common',
     roles: ['finance'],
-    effectText: '+10% income for each Finance advisor in the office, themselves included. Only the best Finance bonus counts.',
+    effectText: 'Clears a desk in the back office: one more office seat.',
     costText: 'Takes 1% of all income.',
     hireFeeShare: FEE.common,
     mods: {},
     upkeep: { incomeDrain: 0.01 },
-    roleBonus: { role: 'finance', incomePerAdvisor: 0.1 }
+    room: { officeSeats: 1 }
   },
   {
     id: 'head-of-finance',
@@ -521,12 +524,12 @@ export const ADVISORS: ReadonlyArray<AdvisorDef> = [
     family: 'financeTeam',
     rarity: 'rare',
     roles: ['finance'],
-    effectText: '+20% income for each Finance advisor in the office, themselves included. Only the best Finance bonus counts.',
+    effectText: 'Redraws the floor plan: two more office seats.',
     costText: 'Takes 1% of all income.',
     hireFeeShare: FEE.rare,
     mods: {},
     upkeep: { incomeDrain: 0.01 },
-    roleBonus: { role: 'finance', incomePerAdvisor: 0.2 }
+    room: { officeSeats: 2 }
   },
   {
     id: 'group-cfo',
@@ -534,12 +537,12 @@ export const ADVISORS: ReadonlyArray<AdvisorDef> = [
     family: 'financeTeam',
     rarity: 'legendary',
     roles: ['finance'],
-    effectText: '+35% income for each Finance advisor in the office, themselves included. Only the best Finance bonus counts.',
+    effectText: 'Restructures the whole operation: one more office seat and one more PA chair.',
     costText: 'Takes 2% of all income.',
     hireFeeShare: FEE.legendary,
     mods: {},
     upkeep: { incomeDrain: 0.02 },
-    roleBonus: { role: 'finance', incomePerAdvisor: 0.35 }
+    room: { officeSeats: 1, paChairs: 1 }
   },
   {
     id: 'sommelier',

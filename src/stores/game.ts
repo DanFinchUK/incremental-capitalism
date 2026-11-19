@@ -34,7 +34,8 @@ import {
   ALLOWANCE_TAPS_PER_SEC,
   bulkBuyQuote,
   computeClickIncome,
-  computeIncomeBreakdown,
+  breakdownFromCore,
+  computeIncomeCore,
   heirInheritance,
   computeOfflineCatchUp,
   steadyHustle,
@@ -331,13 +332,18 @@ export const useGameStore = defineStore('game', () => {
   // Everything lasting: traits, the office, achievements and titles
   // Jobs and Businesses held at 1,000 (market dominance): each adds a quarter
   // to all income
+  // What's owned, as plain copies taken once per purchase: income and the
+  // counts below read every item, and reading the store's own lists through
+  // Vue costs several times as much
+  const ownedJobs = computed(() => ({ ...jobsPurchased.value }))
+  const ownedBusinesses = computed(() => ({ ...businessesOwned.value }))
   const dominanceHeld = computed(
     () =>
-      Object.values(jobsPurchased.value).filter((n) => n >= DOMINANCE_AT).length +
-      Object.values(businessesOwned.value).filter((n) => n >= DOMINANCE_AT).length
+      Object.values(ownedJobs.value).filter((n) => n >= DOMINANCE_AT).length +
+      Object.values(ownedBusinesses.value).filter((n) => n >= DOMINANCE_AT).length
   )
   // King's Awards, on the ladder trial only
-  const awards = computed(() => (LADDER_TRIAL ? awardsHeld(jobsPurchased.value, businessesOwned.value) : []))
+  const awards = computed(() => (LADDER_TRIAL ? awardsHeld(ownedJobs.value, ownedBusinesses.value) : []))
   let awardKeys = new Set<string>()
   // Announces an award newly earned (quiet: just take note, as on loading)
   function noteAwards(quiet = false): void {
@@ -525,19 +531,27 @@ export const useGameStore = defineStore('game', () => {
     Math.max(0, Math.ceil((autoBuyFrozenUntil.value - nowMs.value) / 1000))
   )
 
-  const economyInput = computed<EconomySnapshotInput>(() => ({
-    jobsPurchased: jobsPurchased.value,
-    businessesOwned: businessesOwned.value,
+  // Read through these, so income isn't worked out again every time net
+  // worth or the clock moves: only when the class or a buff's size does
+  const classLevel = computed(() => classStatus.value.current.level)
+  const businessBuffMult = computed(() => activeBusinessBuff.value?.mult ?? 1)
+  const clickBuffMult = computed(() => (activeClickBuff.value?.mult ?? 1) * twist.value.clickPayMult)
+  // Everything income depends on but Hustle, which moves with every tap
+  const economyBase = computed<Omit<EconomySnapshotInput, 'hustleMultiplier'>>(() => ({
+    jobsPurchased: ownedJobs.value,
+    businessesOwned: ownedBusinesses.value,
     legacyPoints: legacyPoints.value,
-    classLevel: classStatus.value.current.level,
+    classLevel: classLevel.value,
     deregulationRank: perks.value.deregulation,
     autoClickers: autoClickers.value,
-    businessBuffMultiplier: activeBusinessBuff.value?.mult ?? 1,
-    clickBuffMultiplier: (activeClickBuff.value?.mult ?? 1) * twist.value.clickPayMult,
-    hustleMultiplier: hustleMultiplier.value,
+    businessBuffMultiplier: businessBuffMult.value,
+    clickBuffMultiplier: clickBuffMult.value,
     noTap: noTap.value,
     mods: modifiers.value
   }))
+  const economyInput = computed<EconomySnapshotInput>(() => ({ ...economyBase.value, hustleMultiplier: hustleMultiplier.value }))
+  const incomeCore = computed(() => computeIncomeCore({ ...economyBase.value, hustleMultiplier: 1 }))
+  const incomeBreakdown = computed(() => breakdownFromCore(incomeCore.value, economyInput.value))
 
   // Buyers: a Recruiter for Jobs and Acquisitions for Businesses, or the
   // family's own staff on a Landed Gentry heir (engine/buyers.ts)
@@ -560,15 +574,18 @@ export const useGameStore = defineStore('game', () => {
     return buyers.value[kind] !== null && !buyersPaused.value[kind] && !isAutoBuyFrozen.value && !twist.value.automationPaused
   }
 
-  const moneyPerClick = computed(() => computeClickIncome(economyInput.value, true))
-  const baseMoneyPerClick = computed(() => computeClickIncome(economyInput.value, false))
+  const moneyPerClick = computed(() => incomeCore.value.baseClick * hustleMultiplier.value)
+  const baseMoneyPerClick = computed(() => incomeCore.value.baseClick)
   // Job cards show base rates: no Hustle and no Market Opportunity click buff
   const jobBaseEconomyInput = computed<EconomySnapshotInput>(() => ({
     ...economyInput.value,
     clickBuffMultiplier: twist.value.clickPayMult
   }))
   const jobBaseMoneyPerClick = computed(() => computeClickIncome(jobBaseEconomyInput.value, false))
-  const moneyPerSecond = computed(() => computePassivePerSecond(economyInput.value))
+  const moneyPerSecond = computed(() => {
+    const { business, interns, allowance } = incomeBreakdown.value
+    return business + interns + allowance
+  })
   // Favours help while you play; time away earns nothing from them
   const offlinePerSecond = computed(() => computePassivePerSecond({ ...economyInput.value, mods: baseModifiers.value }))
 
@@ -599,7 +616,7 @@ export const useGameStore = defineStore('game', () => {
   const manualRealisedPerSecond = computed(() => currentManualPerSec(telemetry.value, nowMs.value))
   // The founder scrapes by on the state; heirs, born rich, get an allowance
   const allowanceLabel = computed(() => (heir.value.traitId === null ? 'Universal Credit' : 'Allowance from Granny'))
-  const allowancePerSecond = computed(() => computeIncomeBreakdown(economyInput.value).allowance)
+  const allowancePerSecond = computed(() => incomeBreakdown.value.allowance)
   // Playing without tapping, a Job's click pay reaches you through the
   // allowance: this many taps' worth a second, at the steady Hustle
   const allowanceTapRate = computed(() =>
@@ -716,9 +733,11 @@ export const useGameStore = defineStore('game', () => {
     // A family takes a seat once it has begun (written into the register, or
     // anything worth keeping); until then there is nothing of theirs to save
     if (activeSlotId.value === null && !census.value && familyHasBegun()) claimFamilySeat(ts)
+    // The sim never reads the save, profile or menu back mid-campaign
+    if (stateWritesPaused()) return
     const key = activeKey('state')
     try {
-      if (key && !stateWritesPaused()) localStorage.setItem(key, serializeState(snapshotPersisted(ts)))
+      if (key) localStorage.setItem(key, serializeState(snapshotPersisted(ts)))
     } catch {
       // Ignore storage quota or private-browsing write errors
     }
@@ -1501,7 +1520,7 @@ export const useGameStore = defineStore('game', () => {
       activeGenerationMs.value += Math.min(elapsedMs, 5000)
       dynastyMs.value += Math.min(elapsedMs, 5000)
       office.addCampaignTime(Math.min(elapsedMs, 5000))
-      const { business, interns, allowance } = computeIncomeBreakdown(economyInput.value)
+      const { business, interns, allowance } = incomeBreakdown.value
       creditMoney(business * deltaSec, 'passive', ts)
       creditClicks((interns + allowance) * deltaSec, 'passive', ts)
       endFinishedFavours(ts)
@@ -2014,11 +2033,12 @@ export const useGameStore = defineStore('game', () => {
 
   // Achievements that follow from the state of play, checked each tick
   function checkStateAchievements(): void {
-    if (Object.values(jobsPurchased.value).some((n) => n > 0)) unlockAchievement('side-hustle')
-    if (Object.values(businessesOwned.value).some((n) => n > 0)) unlockAchievement('entrepreneur')
+    const jobs = ownedJobs.value
+    if (Object.values(jobs).some((n) => n > 0)) unlockAchievement('side-hustle')
+    if (Object.values(ownedBusinesses.value).some((n) => n > 0)) unlockAchievement('entrepreneur')
     if (netWorth.value >= 1e6) unlockAchievement('comfortably-off')
     if (netWorth.value >= 1e9) unlockAchievement('billionaire')
-    if (JOBS.every((j) => (jobsPurchased.value[j.id] ?? 0) > 0)) unlockAchievement('portfolio-career')
+    if (JOBS.every((j) => (jobs[j.id] ?? 0) > 0)) unlockAchievement('portfolio-career')
     if (office.officeSeats.value.every((s) => s !== null)) unlockAchievement('full-house')
     if (office.paChairs.value.some((pa) => (pa?.servedGenerations ?? 0) >= 3)) unlockAchievement('long-service')
     if (generation.value >= 5) unlockAchievement('dynasty')

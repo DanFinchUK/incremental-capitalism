@@ -1,9 +1,16 @@
 name: Balance report
 
-# Every pull request runs the sim's checks and the solo strength runs on both
-# ladders, then comments with how the numbers moved against the latest
-# version in the Balance Ledger (scripts/balance-report.mjs). The solo runs
-# take up to an hour; each has its own runner.
+# Every pull request runs the sim's checks and the solo strength runs, then
+# comments with how the numbers moved against the latest version in the
+# Balance Ledger (scripts/balance-report.mjs). Each solo run has its own
+# runner; the longest take around half an hour.
+#
+# The solo sets (sim/solo.shared.ts):
+# - singles: one advisor, heir trait or inherited trait on offer at a time
+# - copies: one advisor family, held 1, 2, 3... at once
+# - favour: the real game, the bot favouring one advisor family whenever it's
+#   offered, against the same bot favouring none: what chasing a family is
+#   worth in a real office
 
 on:
   pull_request:
@@ -42,15 +49,16 @@ jobs:
 
   solo:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        ladder: [classic, trial]
         run:
-          - { name: singles-class9, set: singles, to: class9, seeds: 8 }
-          - { name: singles-duke, set: singles, to: duke, seeds: 6 }
-          - { name: copies-class9, set: copies, to: class9, seeds: 4 }
+          - { name: singles-class9, set: singles, to: class9, seeds: 16 }
+          - { name: singles-duke, set: singles, to: duke, seeds: 12 }
+          - { name: copies-class9, set: copies, to: class9, seeds: 8 }
+          - { name: favour-class9, set: favour, to: class9, seeds: 24 }
+          - { name: favour-duke, set: favour, to: duke, seeds: 16 }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -60,17 +68,16 @@ jobs:
       - run: npm ci
       - name: npm run sim:solo
         env:
-          LADDER: ${{ matrix.ladder }}
           SOLO_SET: ${{ matrix.run.set }}
           SOLO_TO: ${{ matrix.run.to }}
           SOLO_SEEDS: ${{ matrix.run.seeds }}
         run: |
           npm run sim:solo
           mkdir -p solo
-          cp "$(node -e "console.log(require('os').tmpdir())")/ic-solo/results.json" "solo/${{ matrix.ladder }}-${{ matrix.run.name }}.json"
+          cp "$(node -e "console.log(require('os').tmpdir())")/ic-solo/results.json" "solo/${{ matrix.run.name }}.json"
       - uses: actions/upload-artifact@v4
         with:
-          name: solo-${{ matrix.ladder }}-${{ matrix.run.name }}
+          name: solo-${{ matrix.run.name }}
           path: solo/
 
   report:

@@ -3,7 +3,8 @@ import { ADVISORS_BY_ID, type AdvisorDef } from '../../data/advisors'
 import {
   BASE_OFFICE_SEATS,
   childOf,
-  officeModifierSources,
+  officeStaffSources,
+  officeCampaignSources,
   buyerTierOf,
   paStanding,
   paTitle,
@@ -116,10 +117,18 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
     Array.from({ length: Math.max(1, deps.paChairCount()) }, (_, i) => paStore.value[i] ?? null)
   )
 
+  const officeStaff = computed(() => [
+    ...officeSeats.value.filter((s): s is AdvisorInstance => s !== null),
+    ...paChairs.value.filter((s): s is AdvisorInstance => s !== null)
+  ])
+  // Campaign time changes every second; who is on staff doesn't. Kept apart,
+  // so the rest of the office isn't worked out again each second.
+  let staffFrom: { key: string; sources: ModifierSource[] } = { key: '', sources: [] }
   const officeSources = computed(() => {
-    const pas = paChairs.value.filter((s): s is AdvisorInstance => s !== null)
-    const everyone = [...officeSeats.value.filter((s): s is AdvisorInstance => s !== null), ...pas]
-    return officeModifierSources(everyone)
+    const everyone = officeStaff.value
+    const key = everyone.map((a) => `${a.advisorId}/${a.servedGenerations}`).join(',')
+    if (key !== staffFrom.key || staffFrom.sources.length === 0) staffFrom = { key, sources: officeStaffSources(everyone) }
+    return [...staffFrom.sources, ...officeCampaignSources(everyone)]
   })
 
   function setChair(index: number, inst: AdvisorInstance | null): void {
@@ -291,13 +300,20 @@ export function createOfficeModule(deps: OfficeModuleDeps): OfficeModule {
   function addCampaignTime(ms: number): void {
     // A PA promoted into a campaigner's role campaigns too
     const campaigning = (a: AdvisorInstance | null) => !!a && !!advisorRole(a)?.campaign
-    const grow = (a: AdvisorInstance | null) => (a && campaigning(a) ? { ...a, campaignMs: a.campaignMs + ms } : a)
-    if (officeSeats.value.some(campaigning)) {
-      seatStore.value = officeSeats.value.map(grow)
+    // One pass a list: this runs every second
+    const grown = (list: (AdvisorInstance | null)[]) => {
+      let changed = false
+      const next = list.map((a) => {
+        if (!a || !campaigning(a)) return a
+        changed = true
+        return { ...a, campaignMs: a.campaignMs + ms }
+      })
+      return changed ? next : null
     }
-    if (paChairs.value.some(campaigning)) {
-      paStore.value = paChairs.value.map(grow)
-    }
+    const seats = grown(officeSeats.value)
+    if (seats) seatStore.value = seats
+    const chairs = grown(paChairs.value)
+    if (chairs) paStore.value = chairs
   }
 
   function loadState(state: OfficeState): void {

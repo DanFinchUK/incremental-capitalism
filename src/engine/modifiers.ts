@@ -122,3 +122,22 @@ export function combineModifiers(sources: ReadonlyArray<ModifierSource>): Modifi
   m.incomeDrain = Math.min(MAX_INCOME_DRAIN, Math.max(0, m.incomeDrain))
   return m
 }
+
+// Whether two bags hold the same values. The store hands back the bag it
+// already had when nothing changed, so income isn't worked out again for
+// a new object with the same numbers (an advisor's campaign rebuilds the
+// office every second, long after its effect has stopped growing).
+export function sameModifiers(a: Readonly<Modifiers>, b: Readonly<Modifiers>): boolean {
+  for (const key of Object.keys(b) as Array<keyof Modifiers>) {
+    const x = a[key]
+    const y = b[key]
+    if (Object.is(x, y)) continue
+    if (typeof x !== 'object' || typeof y !== 'object' || x === null || y === null) return false
+    const xs = x as Record<string, number>
+    const ys = y as Record<string, number>
+    const xk = Object.keys(xs)
+    if (xk.length !== Object.keys(ys).length) return false
+    for (const k of xk) if (!Object.is(xs[k], ys[k])) return false
+  }
+  return Object.keys(a).length === Object.keys(b).length
+}

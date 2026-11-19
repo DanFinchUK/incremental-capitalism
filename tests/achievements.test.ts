@@ -48,7 +48,7 @@ describe('achievements', () => {
     expect(store.achievements).toContain('side-hustle')
     store.gatesBeaten = 9
     store.addDebugMoney(2e9, T0 + 1000)
-    for (const j of JOBS) store.jobsPurchased[j.id] = 1
+    for (const j of JOBS) store.jobsPurchased = { ...store.jobsPurchased, [j.id]: 1 }
     store.tick(T0 + 2000)
     expect(store.achievements).toEqual(expect.arrayContaining(['comfortably-off', 'billionaire', 'portfolio-career']))
   })

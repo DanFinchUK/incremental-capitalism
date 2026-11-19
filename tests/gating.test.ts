@@ -49,8 +49,8 @@ describe('class gates in the store', () => {
     store.hydrateFromStorage(1000)
     store.money = 1e12
     // Own one of everything, so only the ceiling limits what is shown
-    for (const j of JOBS) store.jobsPurchased[j.id] = 1
-    for (const b of BUSINESSES) store.businessesOwned[b.id] = 1
+    for (const j of JOBS) store.jobsPurchased = { ...store.jobsPurchased, [j.id]: 1 }
+    for (const b of BUSINESSES) store.businessesOwned = { ...store.businessesOwned, [b.id]: 1 }
     store.tick(1000)
     store.tick(2000)
     for (const list of [store.visibleJobs, store.visibleBusinesses]) {

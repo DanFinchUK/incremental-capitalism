@@ -12,7 +12,7 @@ const T0 = 1_000_000
 // Wins gate 1 the way a player would: unlock it, start the fight, tap
 function winGate1(store: ReturnType<typeof useGameStore>, t: number): number {
   store.addDebugMoney(gateThreshold(1) * 1.1, t)
-  store.jobsPurchased['21'] = 3
+  store.jobsPurchased = { ...store.jobsPurchased, '21': 3 }
   store.tick(t)
   store.startBossAttempt()
   for (let i = 0; i < 60; i++) store.manualClick(t + 10 + i * 20)

@@ -97,7 +97,7 @@ describe('useGameStore', () => {
   it('resolves Golden Opportunities and 50/50 Shady Deals without ever taking player cash', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
-    store.businessesOwned['1'] = 2
+    store.businessesOwned = { ...store.businessesOwned, '1': 2 }
     store.money = 10_000
 
     store.spawnSpecificEvent('quantitativeEasing', 2000)
@@ -117,7 +117,7 @@ describe('useGameStore', () => {
   it('pays windfalls from unbuffed income and never downgrades a stronger running buff', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
-    store.businessesOwned['1'] = 1
+    store.businessesOwned = { ...store.businessesOwned, '1': 1 }
     store.money = 0
     const etsy = BUSINESSES_BY_ID['1'].moneyPerSecond
 
@@ -149,7 +149,7 @@ describe('useGameStore', () => {
   it('credits offline catch-up when returning after >=60s and throttles tick saves', () => {
     const store1 = useGameStore()
     store1.hydrateFromStorage(10_000)
-    store1.businessesOwned['1'] = 1
+    store1.businessesOwned = { ...store1.businessesOwned, '1': 1 }
     store1.flushSave(10_000)
 
     setActivePinia(createPinia())

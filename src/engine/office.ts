@@ -185,21 +185,19 @@ export function advisorRole(inst: AdvisorInstance): AdvisorDef | undefined {
 }
 
 export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>): ModifierSource[] {
+  return [...officeStaffSources(advisors), ...officeCampaignSources(advisors)]
+}
+
+// Everything the office brings but its campaigns: this depends only on who
+// sits where and how long they've served, not on campaign time
+export function officeStaffSources(advisors: ReadonlyArray<AdvisorInstance>): ModifierSource[] {
   const sources: ModifierSource[] = []
-  // Campaigners for the same cause pool their time: the cap is shared, so
-  // duplicates reach it sooner rather than doubling it.
-  const campaignTime = new Map<string, { campaign: Campaign; ms: number }>()
   const bestRoleBonus = new Map<AdvisorRole, number>()
   for (const inst of advisors) {
     const def = ADVISORS_BY_ID[inst.advisorId]
     if (!def) continue
     sources.push(...sourcesFor(def, inst))
     const role = advisorRole(inst) ?? def
-    if (role.campaign) {
-      const pooled = campaignTime.get(role.id) ?? { campaign: role.campaign, ms: 0 }
-      pooled.ms += inst.campaignMs
-      campaignTime.set(role.id, pooled)
-    }
     if (role.roleBonus) {
       const best = bestRoleBonus.get(role.roleBonus.role) ?? 0
       bestRoleBonus.set(role.roleBonus.role, Math.max(best, role.roleBonus.incomePerAdvisor))
@@ -212,10 +210,24 @@ export function officeModifierSources(advisors: ReadonlyArray<AdvisorInstance>):
     const mult = 1 + perAdvisor * count
     sources.push({ businessMult: mult, clickMult: mult })
   }
-  for (const { campaign, ms } of campaignTime.values()) {
-    sources.push(campaignSource(campaign, ms))
-  }
   return sources
+}
+
+// Campaigners for the same cause pool their time: the cap is shared, so
+// duplicates reach it sooner rather than doubling it.
+export function officeCampaignSources(advisors: ReadonlyArray<AdvisorInstance>): ModifierSource[] {
+  const campaignTime = new Map<string, { campaign: Campaign; ms: number }>()
+  for (const inst of advisors) {
+    const def = ADVISORS_BY_ID[inst.advisorId]
+    if (!def) continue
+    const role = advisorRole(inst) ?? def
+    if (role.campaign) {
+      const pooled = campaignTime.get(role.id) ?? { campaign: role.campaign, ms: 0 }
+      pooled.ms += inst.campaignMs
+      campaignTime.set(role.id, pooled)
+    }
+  }
+  return [...campaignTime.values()].map(({ campaign, ms }) => campaignSource(campaign, ms))
 }
 
 // The allowance family only does anything while playing without tapping, so

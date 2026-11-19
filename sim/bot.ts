@@ -195,10 +195,21 @@ export type Store = ReturnType<typeof useGameStore>
 
 const DEFAULT_PERK_PRIORITY: ReadonlyArray<PerkId> = ['officeSeats', 'autoClicker', 'hustleCap', 'deregulation']
 
-function revealedItems(store: Store): Array<{ kind: ItemKind; id: string }> {
-  const items: Array<{ kind: ItemKind; id: string }> = []
-  for (const r of store.visibleJobs) if (r.mode === 'revealed') items.push({ kind: 'jobs', id: r.item.id })
-  for (const r of store.visibleBusinesses) if (r.mode === 'revealed') items.push({ kind: 'businesses', id: r.item.id })
+// Kept while the store's lists are the same lists (they only change when
+// something new is owned or revealed); key is the price cache's
+let revealedFrom: { jobs: unknown; businesses: unknown; items: Array<{ kind: ItemKind; id: string; key: string }> } = {
+  jobs: null,
+  businesses: null,
+  items: []
+}
+function revealedItems(store: Store): ReadonlyArray<{ kind: ItemKind; id: string; key: string }> {
+  const jobs = store.visibleJobs
+  const businesses = store.visibleBusinesses
+  if (revealedFrom.jobs === jobs && revealedFrom.businesses === businesses) return revealedFrom.items
+  const items: Array<{ kind: ItemKind; id: string; key: string }> = []
+  for (const r of jobs) if (r.mode === 'revealed') items.push({ kind: 'jobs', id: r.item.id, key: `jobs:${r.item.id}` })
+  for (const r of businesses) if (r.mode === 'revealed') items.push({ kind: 'businesses', id: r.item.id, key: `businesses:${r.item.id}` })
+  revealedFrom = { jobs, businesses, items }
   return items
 }
 
@@ -210,6 +221,8 @@ interface Priced {
   canAfford: boolean
   perSec: number
   perClick: number
+  // What every unit still needed for market dominance costs, once asked
+  toDominance?: number
 }
 
 // cache: prices kept from earlier in the same decision. A single unit's cost
@@ -217,12 +230,15 @@ interface Priced {
 // partner, and on the income and cost modifiers; affordability is checked
 // against the cash every time.
 function priceItems(store: Store, cache?: Map<string, Priced>): Priced[] {
-  const { itemQuote, itemIncomeDelta } = store.pricing
+  const { itemQuote, itemIncomeDelta } = store.unwrapped
   const money = store.money
   return revealedItems(store).map((item) => {
-    const key = `${item.kind}:${item.id}`
+    const key = item.key
     const kept = cache?.get(key)
-    if (kept) return { ...kept, canAfford: money >= kept.cost }
+    if (kept) {
+      kept.canAfford = money >= kept.cost
+      return kept
+    }
     const quote = itemQuote(item.kind, item.id, 1)
     const delta = itemIncomeDelta(item.kind, item.id, 1)
     const priced = { item, cost: quote.cost, canAfford: quote.canAfford, perSec: delta.deltaPerSec, perClick: delta.deltaPerClick }
@@ -297,13 +313,20 @@ function dominanceToChase(store: Store, cfg: BotConfig, beat: number, priced: Pr
   // Read straight, not through Vue: nothing here needs to watch them
   const jobs = toRaw(store.jobsPurchased)
   const businesses = toRaw(store.businessesOwned)
-  for (const { item, cost: next } of priced) {
-    const owned = (item.kind === 'jobs' ? jobs[item.id] : businesses[item.id]) ?? 0
-    if (owned < 1 || owned >= DOMINANCE_AT) continue
-    const def = item.kind === 'jobs' ? JOBS_BY_ID[item.id] : BUSINESSES_BY_ID[item.id]
-    const left = DOMINANCE_AT - owned
-    const cost = (next * (Math.pow(def.scaleFactor, left) - 1)) / (def.scaleFactor - 1)
-    const score = gain / cost
+  for (const p of priced) {
+    const { item, cost: next } = p
+    // Kept with the price: both change only when this item is bought
+    if (p.toDominance === undefined) {
+      const owned = (item.kind === 'jobs' ? jobs[item.id] : businesses[item.id]) ?? 0
+      if (owned < 1 || owned >= DOMINANCE_AT) p.toDominance = NaN
+      else {
+        const def = item.kind === 'jobs' ? JOBS_BY_ID[item.id] : BUSINESSES_BY_ID[item.id]
+        const left = DOMINANCE_AT - owned
+        p.toDominance = (next * (Math.pow(def.scaleFactor, left) - 1)) / (def.scaleFactor - 1)
+      }
+    }
+    if (Number.isNaN(p.toDominance)) continue
+    const score = gain / p.toDominance
     if (Number.isFinite(score) && score > bestScore) {
       bestScore = score
       best = item
@@ -404,7 +427,7 @@ function readyToChallengeBoss(store: Store, cfg: BotConfig): boolean {
       let missingCost = 0
       for (const item of revealedItems(store)) {
         const owned = item.kind === 'jobs' ? store.jobsPurchased[item.id] : store.businessesOwned[item.id]
-        if (!owned) missingCost += store.itemQuote(item.kind, item.id, 1).cost
+        if (!owned) missingCost += store.unwrapped.itemQuote(item.kind, item.id, 1).cost
       }
       if (store.money < missingCost * 1.1) return false
       const gap = store.bossCountsGain(boss.def.gate) ? target : Math.max(0, target - store.netWorth)
@@ -463,7 +486,7 @@ export function decide(store: Store, cfg: BotConfig): void {
     let missing = false
     for (const item of revealedItems(store)) {
       const owned = item.kind === 'jobs' ? store.jobsPurchased[item.id] : store.businessesOwned[item.id]
-      if (!owned && store.buyItem(item.kind, item.id, 1).bought === 0) missing = true
+      if (!owned && store.unwrapped.buyItem(item.kind, item.id, 1).bought === 0) missing = true
     }
     if (missing) return
   }
@@ -471,7 +494,7 @@ export function decide(store: Store, cfg: BotConfig): void {
     // Make each stroke count: one Max purchase per decision, within par
     if (attempt.purchases < condition.par - 1) {
       const pick = bestBuy(store, cfg)
-      if (pick) store.buyItem(pick.kind, pick.id, 'max')
+      if (pick) store.unwrapped.buyItem(pick.kind, pick.id, 'max')
     }
     return
   }
@@ -490,14 +513,14 @@ export function decide(store: Store, cfg: BotConfig): void {
     const dominance = dominanceToChase(store, cfg, scored.score, priced)
     if (dominance) {
       // Buy as many towards 1,000 as the cash allows
-      if (store.buyItem(dominance.kind, dominance.id, 'max').bought === 0) break
+      if (store.unwrapped.buyItem(dominance.kind, dominance.id, 'max').bought === 0) break
       forgetPrices(cache, dominance.kind, dominance.id)
       continue
     }
     const pick = scored.pick
     if (!pick) break
-    const mode = store.itemQuote(pick.kind, pick.id, 1).cost < store.money * 0.02 ? 'max' : 1
-    if (store.buyItem(pick.kind, pick.id, mode).bought === 0) break
+    const mode = store.unwrapped.itemQuote(pick.kind, pick.id, 1).cost < store.money * 0.02 ? 'max' : 1
+    if (store.unwrapped.buyItem(pick.kind, pick.id, mode).bought === 0) break
     forgetPrices(cache, pick.kind, pick.id)
   }
 }
@@ -599,11 +622,11 @@ export function runTapOnly(minutes: number, tapsPerSec = 1): TapOnlyResult {
   let ts = 1_000_000
   store.hydrateFromStorage(ts)
   store.closeIntro(ts)
-  store.tick(ts)
+  store.unwrapped.tick(ts)
   for (let sec = 0; sec < minutes * 60; sec++) {
-    for (let c = 0; c < tapsPerSec; c++) store.manualClick(ts + Math.floor((c * 1000) / tapsPerSec))
+    for (let c = 0; c < tapsPerSec; c++) store.unwrapped.manualClick(ts + Math.floor((c * 1000) / tapsPerSec))
     ts += 1000
-    store.tick(ts)
+    store.unwrapped.tick(ts)
   }
   const count = (m: Record<string, number>) => Object.values(m).reduce((a, b) => a + b, 0)
   return { itemsOwned: count(store.jobsPurchased) + count(store.businessesOwned), netWorth: store.netWorth }
@@ -626,7 +649,7 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
   if (cfg.noTap && !store.noTap) store.toggleNoTap()
   // Buyers follow the bulk setting; a player with staff buys to the next milestone
   store.setBulkBuyMode('next')
-  store.tick(ts)
+  store.unwrapped.tick(ts)
 
   const results: GenerationResult[] = []
   const limitMs = hours * 3600 * 1000
@@ -685,10 +708,10 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
     const clicks = Math.floor(clickCredit)
     clickCredit -= clicks
     for (let c = 0; c < clicks; c++) {
-      store.manualClick(ts + Math.floor((c * 1000) / clicks))
+      store.unwrapped.manualClick(ts + Math.floor((c * 1000) / clicks))
     }
     ts += 1000
-    store.tick(ts)
+    store.unwrapped.tick(ts)
 
     const genMs = store.activeGenerationMs
     if (!Number.isFinite(store.money) || !Number.isFinite(store.moneyPerSecond)) {

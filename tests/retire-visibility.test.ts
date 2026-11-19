@@ -55,7 +55,7 @@ describe('retiring is visible on a phone', () => {
   it('the victory screen compares retiring now with the next gate', () => {
     const store = fresh()
     store.addDebugMoney(gateThreshold(1) * 2, T0)
-    store.jobsPurchased['21'] = 50
+    store.jobsPurchased = { ...store.jobsPurchased, '21': 50 }
     store.tick(T0)
     store.startBossAttempt()
     for (let i = 0; i < 200; i++) store.manualClick(T0 + 10 + i * 20)

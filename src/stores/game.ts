@@ -1,6 +1,6 @@
 import { forPlaystyle } from '../utils/playstyle'
 import type { SfxKind, SfxOptions } from '../engine/audio'
-import { computed, markRaw, ref } from 'vue'
+import { computed, markRaw, ref, shallowRef, triggerRef } from 'vue'
 import { defineStore } from 'pinia'
 import {
   BUSINESSES,
@@ -86,7 +86,7 @@ import {
 } from '../engine/telemetry'
 import { formatClock, formatCurrency, formatDuration, formatMultiplier } from '../utils/format'
 import { bossForGate, conditionTarget, conditionTextFor, itemCostCeiling, legacyForRetiring } from '../engine/bosses'
-import { combineModifiers, type ModifierSource } from '../engine/modifiers'
+import { combineModifiers, sameModifiers, type ModifierSource, type Modifiers } from '../engine/modifiers'
 import { generateSurname, heirName, rollHeirChoices, type Heir } from '../data/heirs'
 import { createPlayLogModule } from './modules/playLog'
 import { loadPlayLog, readPlayLog, withPlayLog } from '../engine/playLog'
@@ -188,8 +188,12 @@ export const useGameStore = defineStore('game', () => {
 
   const money = ref<number>(initial.money)
   const spentThisRun = ref<number>(initial.spentThisRun)
-  const jobsPurchased = ref<Record<string, number>>(initial.jobsPurchased)
-  const businessesOwned = ref<Record<string, number>>(initial.businessesOwned)
+  // What's owned. Plain objects, replaced whole on every purchase rather than
+  // changed in place: income, the item lists and the bot read every entry
+  // after each purchase, and reading them through Vue cost several times as
+  // much. Change them only by assigning a new object.
+  const jobsPurchased = shallowRef<Record<string, number>>(initial.jobsPurchased)
+  const businessesOwned = shallowRef<Record<string, number>>(initial.businessesOwned)
   const legacyPoints = ref<number>(initial.legacyPoints)
   const legacySpent = ref<number>(initial.legacySpent)
   const perks = ref<PerkRanks>(initial.perks)
@@ -234,7 +238,10 @@ export const useGameStore = defineStore('game', () => {
 
   // Runtime state
   const nowMs = ref<number>(Date.now())
-  const telemetry = ref<TelemetryState>(createTelemetryState(nowMs.value, initial.money))
+  // Plain, not deep-reactive: it changes with every pound credited, and going
+  // through Vue for each of those writes was a sixth of the sim's time. Vue
+  // hears of each change once, through triggerRef
+  const telemetry = shallowRef<TelemetryState>(markRaw(createTelemetryState(nowMs.value, initial.money)))
   const lastTickMs = ref<number | null>(null)
   const lastSavedMs = ref<number>(0)
   const lastAutoBuyAt = ref<number>(0)
@@ -332,18 +339,13 @@ export const useGameStore = defineStore('game', () => {
   // Everything lasting: traits, the office, achievements and titles
   // Jobs and Businesses held at 1,000 (market dominance): each adds a quarter
   // to all income
-  // What's owned, as plain copies taken once per purchase: income and the
-  // counts below read every item, and reading the store's own lists through
-  // Vue costs several times as much
-  const ownedJobs = computed(() => ({ ...jobsPurchased.value }))
-  const ownedBusinesses = computed(() => ({ ...businessesOwned.value }))
   const dominanceHeld = computed(
     () =>
-      Object.values(ownedJobs.value).filter((n) => n >= DOMINANCE_AT).length +
-      Object.values(ownedBusinesses.value).filter((n) => n >= DOMINANCE_AT).length
+      Object.values(jobsPurchased.value).filter((n) => n >= DOMINANCE_AT).length +
+      Object.values(businessesOwned.value).filter((n) => n >= DOMINANCE_AT).length
   )
   // King's Awards, on the ladder trial only
-  const awards = computed(() => (LADDER_TRIAL ? awardsHeld(ownedJobs.value, ownedBusinesses.value) : []))
+  const awards = computed(() => (LADDER_TRIAL ? awardsHeld(jobsPurchased.value, businessesOwned.value) : []))
   let awardKeys = new Set<string>()
   // Announces an award newly earned (quiet: just take note, as on loading)
   function noteAwards(quiet = false): void {
@@ -354,6 +356,9 @@ export const useGameStore = defineStore('game', () => {
     awardKeys = new Set(now.map(key))
     if (!quiet && fresh.length > 0) announce(awardText(fresh[fresh.length - 1]))
   }
+  // Apart from the rest: these change only at a succession, the rest (the
+  // office's campaigns) every second
+  const bloodlineSources = computed(() => bloodlineTraitSources(familyTree.value, heir.value))
   const lastingSources = computed(() => {
     const held = dominanceHeld.value
     const dominance = held > 0 ? [{ businessMult: dominanceMultiplier(held), clickMult: dominanceMultiplier(held) }] : []
@@ -361,7 +366,7 @@ export const useGameStore = defineStore('game', () => {
     const awarded = won > 0 ? [{ businessMult: awardMultiplier(won), clickMult: awardMultiplier(won) }] : []
     return [
       ...awarded,
-      ...bloodlineTraitSources(familyTree.value, heir.value),
+      ...bloodlineSources.value,
       ...office.officeSources.value,
       achievementSource(achievements.value.length),
       titleSource(titles.value),
@@ -369,10 +374,15 @@ export const useGameStore = defineStore('game', () => {
       ...simIncomeSources()
     ]
   })
-  const baseModifiers = computed(() => combineModifiers(lastingSources.value))
-  const modifiers = computed(() =>
-    favourSources.value.length > 0 ? combineModifiers([...lastingSources.value, ...favourSources.value]) : baseModifiers.value
-  )
+  const baseModifiers = computed((last?: Modifiers) => {
+    const next = combineModifiers(lastingSources.value)
+    return last && sameModifiers(last, next) ? last : next
+  })
+  const modifiers = computed((last?: Modifiers) => {
+    const next =
+      favourSources.value.length > 0 ? combineModifiers([...lastingSources.value, ...favourSources.value]) : baseModifiers.value
+    return last && sameModifiers(last, next) ? last : next
+  })
   const bloodlineDeepestGate = computed(() =>
     currentBloodlineRecords(familyTree.value).reduce((max, r) => Math.max(max, r.deepestGate), 0)
   )
@@ -538,8 +548,8 @@ export const useGameStore = defineStore('game', () => {
   const clickBuffMult = computed(() => (activeClickBuff.value?.mult ?? 1) * twist.value.clickPayMult)
   // Everything income depends on but Hustle, which moves with every tap
   const economyBase = computed<Omit<EconomySnapshotInput, 'hustleMultiplier'>>(() => ({
-    jobsPurchased: ownedJobs.value,
-    businessesOwned: ownedBusinesses.value,
+    jobsPurchased: jobsPurchased.value,
+    businessesOwned: businessesOwned.value,
     legacyPoints: legacyPoints.value,
     classLevel: classLevel.value,
     deregulationRank: perks.value.deregulation,
@@ -649,14 +659,15 @@ export const useGameStore = defineStore('game', () => {
 
   function buildVisibleList<T extends { id: string; baseCost: number }>(
     items: ReadonlyArray<T>,
-    owned: Readonly<Record<string, number>>,
+    // '1' for each item owned at all, in order (heldOf)
+    held: string,
     seen: Readonly<Record<string, boolean>>,
     prefix: string
   ): VisibleRow<T>[] {
     const rows: VisibleRow<T>[] = []
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
-      const unlocked = i === 0 || Boolean(seen[item.id]) || (owned[items[i - 1].id] ?? 0) > 0 || (owned[item.id] ?? 0) > 0
+      const unlocked = i === 0 || Boolean(seen[item.id]) || held[i - 1] === '1' || held[i] === '1'
       if (unlocked && item.baseCost <= costCeiling.value) {
         rows.push({ mode: 'revealed', item })
         continue
@@ -671,12 +682,37 @@ export const useGameStore = defineStore('game', () => {
     return rows
   }
 
-  const visibleJobs = computed<VisibleRow<JobDef>[]>(() =>
-    buildVisibleList(JOBS, jobsPurchased.value, seenItems.value.jobs, 'job')
-  )
-  const visibleBusinesses = computed<VisibleRow<BusinessDef>[]>(() =>
-    buildVisibleList(BUSINESSES, businessesOwned.value, seenItems.value.businesses, 'biz')
-  )
+  // The same rows as last time come back as the same list, so what reads
+  // them (the cards, the seen record) isn't worked out again after every
+  // purchase
+  function sameRows<T>(a: VisibleRow<T>[] | undefined, b: VisibleRow<T>[]): boolean {
+    if (!a || a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i]
+      const y = b[i]
+      if (x.mode !== y.mode || x.item !== y.item) return false
+      if (x.mode === 'gated' && y.mode === 'gated' && (x.key !== y.key || x.bossTitle !== y.bossTitle)) return false
+      if (x.mode === 'teaser' && y.mode === 'teaser' && x.key !== y.key) return false
+    }
+    return true
+  }
+  // Which items are owned at all: the lists only change when one of these
+  // does, not with every unit bought
+  const heldOf = (items: ReadonlyArray<{ id: string }>, owned: Readonly<Record<string, number>>) => {
+    let held = ''
+    for (const item of items) held += (owned[item.id] ?? 0) > 0 ? '1' : '0'
+    return held
+  }
+  const jobsHeld = computed(() => heldOf(JOBS, jobsPurchased.value))
+  const businessesHeld = computed(() => heldOf(BUSINESSES, businessesOwned.value))
+  const visibleJobs = computed<VisibleRow<JobDef>[]>((last) => {
+    const rows = buildVisibleList(JOBS, jobsHeld.value, seenItems.value.jobs, 'job')
+    return sameRows(last, rows) ? last! : rows
+  })
+  const visibleBusinesses = computed<VisibleRow<BusinessDef>[]>((last) => {
+    const rows = buildVisibleList(BUSINESSES, businessesHeld.value, seenItems.value.businesses, 'biz')
+    return sameRows(last, rows) ? last! : rows
+  })
 
   function snapshotPersisted(ts: number): PersistedSceneState {
     return {
@@ -1012,6 +1048,7 @@ export const useGameStore = defineStore('game', () => {
     classModalOpen.value = false
     celebratedClassLevel.value = null
     resetTelemetry(telemetry.value, ts, loaded.money)
+    triggerRef(telemetry)
     refreshSeenItems()
     scheduleNextEvent(ts)
     // Awards already held on loading aren't news
@@ -1073,6 +1110,7 @@ export const useGameStore = defineStore('game', () => {
         offlineReport.value = catchUp
         cue('welcomeBack')
         resetTelemetry(telemetry.value, ts, money.value)
+        triggerRef(telemetry)
         refreshSeenItems()
       }
     }
@@ -1094,6 +1132,7 @@ export const useGameStore = defineStore('game', () => {
       recordIncome(telemetry.value, ts, amount, source)
     }
     observeBalance(telemetry.value, ts, money.value)
+    triggerRef(telemetry)
   }
 
   function addDebugMoney(amount: number, ts = nowMs.value): void {
@@ -1113,6 +1152,7 @@ export const useGameStore = defineStore('game', () => {
       return false
     }
     markTelemetryEvent(telemetry.value, 'Class')
+    triggerRef(telemetry)
     if (newClass > highestClassReached.value) {
       highestClassReached.value = newClass
       celebratedClassLevel.value = newClass
@@ -1168,9 +1208,11 @@ export const useGameStore = defineStore('game', () => {
       bosses.bossAttempt.value.purchases += 1
       if (!byBuyer) bosses.bossAttempt.value.ownPurchases = (bosses.bossAttempt.value.ownPurchases ?? 0) + 1
     }
-    map[id] = nextOwned
+    if (kind === 'jobs') jobsPurchased.value = { ...map, [id]: nextOwned }
+    else businessesOwned.value = { ...map, [id]: nextOwned }
     lifeMap[id] = (lifeMap[id] ?? 0) + quote.count
     observeBalance(telemetry.value, nowMs.value, money.value)
+    triggerRef(telemetry)
 
     refreshSeenItems()
 
@@ -1179,6 +1221,7 @@ export const useGameStore = defineStore('game', () => {
     // Automation crosses milestones quietly; only your own purchases get a banner
     if (crossedMilestone !== null && save) {
       markTelemetryEvent(telemetry.value, 'Milestone')
+      triggerRef(telemetry)
       const step = (MILESTONE_BASE_STEP + MILESTONE_STEP_PER_DEREGULATION_RANK * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned: output x${step}!`)
     }
@@ -1258,6 +1301,7 @@ export const useGameStore = defineStore('game', () => {
       buyerTally[kind === 'jobs' ? 'jobsCost' : 'businessesCost'] += result.cost
       const def = kind === 'jobs' ? JOBS_BY_ID[itemId] : BUSINESSES_BY_ID[itemId]
       noteCandlePurchase(telemetry.value, `${buyers.value[kind]!.name} bought ${result.bought} × ${def.label}`)
+      triggerRef(telemetry)
     }
     if (bought) lastAutoBuyAt.value = ts
   }
@@ -1436,6 +1480,7 @@ export const useGameStore = defineStore('game', () => {
       const current = buffView(slot.value)
       const target = effect.type === 'clickBuff' ? 'Click' : 'Business'
       markTelemetryEvent(telemetry.value, 'Opportunity')
+      triggerRef(telemetry)
       if (current && current.mult > effect.mult) {
         // Never downgrade a stronger buff that is still running
         announce(`${name}: your ${current.label} x${current.mult} is stronger, so it keeps running.`)
@@ -1449,6 +1494,7 @@ export const useGameStore = defineStore('game', () => {
     if (effect.type === 'windfall') {
       const windfall = Math.max(500, unbuffedMoneyPerSecond.value * effect.seconds) * modifiers.value.windfallMult
       markTelemetryEvent(telemetry.value, 'Opportunity')
+      triggerRef(telemetry)
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       announce(`${rarityPrefix}${name}: ${formatDuration(effect.seconds)} of passive income wired offshore!`)
@@ -1462,6 +1508,7 @@ export const useGameStore = defineStore('game', () => {
     if (rng() < 0.5) {
       const windfall = Math.max(1500, unbuffedMoneyPerSecond.value * effect.winSeconds) * modifiers.value.windfallMult
       markTelemetryEvent(telemetry.value, 'Opportunity')
+      triggerRef(telemetry)
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       announce(`VIP-Lane Contract Approved! ${formatDuration(effect.winSeconds)} passive windfall!`)
@@ -1510,6 +1557,7 @@ export const useGameStore = defineStore('game', () => {
         offlineReport.value = catchUp
         cue('welcomeBack')
         resetTelemetry(telemetry.value, ts, money.value)
+        triggerRef(telemetry)
       }
     } else {
       const deltaSec = Math.min(5, elapsedMs / 1000)
@@ -1530,8 +1578,10 @@ export const useGameStore = defineStore('game', () => {
     // Before and after: restocking is what pushes an item back over the line
     runBuyers(ts)
     observeBalance(telemetry.value, ts, money.value)
+    triggerRef(telemetry)
     if (ts - telemetry.value.lastSampleTs >= 250) {
       sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value, undefined, favourPerSecond.value, passiveSources.value)
+      triggerRef(telemetry)
     }
     maybeSpawnRandomEvent(ts)
     bosses.evaluateAttempt()
@@ -1795,6 +1845,7 @@ export const useGameStore = defineStore('game', () => {
     achievementProgress.value = { ...EMPTY_PROGRESS }
     plays.resetGateWatch(0)
     resetTelemetry(telemetry.value, ts, 0)
+    triggerRef(telemetry)
     refreshSeenItems()
     scheduleNextEvent(ts)
     flushSave(ts)
@@ -1893,6 +1944,7 @@ export const useGameStore = defineStore('game', () => {
     lastAutoBuyAt.value = 0
     activeEvent.value = null
     resetTelemetry(telemetry.value, ts, money.value)
+    triggerRef(telemetry)
     refreshSeenItems()
     return inheritance
   }
@@ -2033,9 +2085,9 @@ export const useGameStore = defineStore('game', () => {
 
   // Achievements that follow from the state of play, checked each tick
   function checkStateAchievements(): void {
-    const jobs = ownedJobs.value
+    const jobs = jobsPurchased.value
     if (Object.values(jobs).some((n) => n > 0)) unlockAchievement('side-hustle')
-    if (Object.values(ownedBusinesses.value).some((n) => n > 0)) unlockAchievement('entrepreneur')
+    if (Object.values(businessesOwned.value).some((n) => n > 0)) unlockAchievement('entrepreneur')
     if (netWorth.value >= 1e6) unlockAchievement('comfortably-off')
     if (netWorth.value >= 1e9) unlockAchievement('billionaire')
     if (JOBS.every((j) => (jobs[j.id] ?? 0) > 0)) unlockAchievement('portfolio-career')
@@ -2431,9 +2483,10 @@ export const useGameStore = defineStore('game', () => {
     addDebugMoney,
     itemQuote,
     itemIncomeDelta,
-    // The same two, without Pinia's action wrapper: for loops that price
-    // every item many times a second (the pacing bot)
-    pricing: markRaw({ itemQuote, itemIncomeDelta }),
+    // The busiest actions without Pinia's action wrapper, which costs more
+    // than some of them do: for the pacing bot, which calls them many times
+    // a simulated second. Nothing in the game listens for actions.
+    unwrapped: markRaw({ itemQuote, itemIncomeDelta, buyItem, manualClick, tick }),
     buyItem,
     manualClick,
     spawnSpecificEvent,

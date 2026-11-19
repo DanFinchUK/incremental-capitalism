@@ -19,7 +19,7 @@ describe('item card without automation', () => {
     const store = useGameStore()
     store.hydrateFromStorage(1000)
     store.closeIntro(1000)
-    store.jobsPurchased['1'] = 3
+    store.jobsPurchased = { ...store.jobsPurchased, '1': 3 }
     const wrapper = mount(ItemCard, {
       props: { kind: 'jobs', row: { mode: 'revealed', item: JOBS_BY_ID['1'] } as never },
       global: { plugins: [pinia] }

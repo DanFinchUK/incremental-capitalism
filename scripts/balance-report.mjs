@@ -24,7 +24,8 @@ say()
 
 // The sim's checks
 if (simFile && existsSync(simFile)) {
-  const sim = readFileSync(simFile, 'utf8')
+  // Without the terminal's colour codes
+  const sim = readFileSync(simFile, 'utf8').replace(/\x1b\[[0-9;]*m/g, '')
   const tests = sim.match(/Tests\s+(.*)/)?.[1]?.trim() ?? 'no result'
   const failed = [...sim.matchAll(/ FAIL (.*)\n(AssertionError: .*)?/g)].map((m) => `- ${m[1].trim()}${m[2] ? `: ${m[2].replace('AssertionError: ', '')}` : ''}`)
   const lines = sim.match(/line minutes \(median\): (.*)/)?.[1]

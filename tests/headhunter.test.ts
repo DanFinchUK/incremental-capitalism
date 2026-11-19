@@ -13,7 +13,7 @@ const T0 = 1_000_000
 
 function winGate(store: ReturnType<typeof useGameStore>, gate: number, t: number): number {
   store.addDebugMoney(gateThreshold(gate) * 2, t)
-  store.jobsPurchased['21'] = 50
+  store.jobsPurchased = { ...store.jobsPurchased, '21': 50 }
   store.tick(t)
   store.startBossAttempt()
   for (let i = 0; i < 200; i++) store.manualClick(t + 10 + i * 20)
@@ -74,7 +74,7 @@ describe('headhunter offers', () => {
     const store = fresh()
     const wrapper = mount(HireModal, { global: { plugins: [pinia] } })
     store.addDebugMoney(gateThreshold(1) * 2, T0)
-    store.jobsPurchased['21'] = 50
+    store.jobsPurchased = { ...store.jobsPurchased, '21': 50 }
     store.tick(T0)
     store.startBossAttempt()
     for (let i = 0; i < 200; i++) store.manualClick(T0 + 10 + i * 20)

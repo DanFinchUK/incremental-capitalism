@@ -101,7 +101,7 @@ describe('boss attempts', () => {
 
   it("Landlord's rent applies to every income credit, including windfalls and clicks", () => {
     const store = readyFor(2)
-    store.businessesOwned['1'] = 1
+    store.businessesOwned = { ...store.businessesOwned, '1': 1 }
     store.startBossAttempt()
     // Gate cash is astronomical; clear it so small credits stay exact
     store.money = 0
@@ -118,8 +118,8 @@ describe('boss attempts', () => {
 
   it('Silver diverts click income, manual and Interns, into polish', () => {
     const store = readyFor(6)
-    store.businessesOwned['1'] = 2
-    store.jobsPurchased['1'] = 5
+    store.businessesOwned = { ...store.businessesOwned, '1': 2 }
+    store.jobsPurchased = { ...store.jobsPurchased, '1': 5 }
     store.perks.autoClicker = 2
     store.buyersPaused = { jobs: true, businesses: true } // keep the buyers' spending out of the sums
     store.startBossAttempt()
@@ -158,8 +158,8 @@ describe('boss attempts', () => {
 
   it('a win promotes, opens the class modal on first reach, and clears the twist', () => {
     const store = readyFor(1)
-    store.jobsPurchased['1'] = 400
-    store.jobsPurchased['21'] = 3 // enough pay per click to clear the raised gate 1 target in 60 clicks
+    store.jobsPurchased = { ...store.jobsPurchased, '1': 400 }
+    store.jobsPurchased = { ...store.jobsPurchased, '21': 3 } // enough pay per click to clear the raised gate 1 target in 60 clicks
     store.startBossAttempt()
     const halfClick = store.moneyPerClick
     for (let i = 0; i < 60; i++) store.manualClick(T0 + 10 + i * 20)
@@ -259,7 +259,7 @@ describe('boss attempts', () => {
 
   it('time away mid-attempt abandons the fight before crediting offline income', () => {
     const store = readyFor(2)
-    store.businessesOwned['1'] = 50
+    store.businessesOwned = { ...store.businessesOwned, '1': 50 }
     store.startBossAttempt()
     store.tick(T0 + 3600 * 1000)
     expect(store.offlineReport).not.toBeNull()
@@ -322,7 +322,7 @@ describe('boss attempts', () => {
 
   it('good tastings during the Champagne fight pay a fine-vintage bonus', () => {
     const store = readyFor(5)
-    store.businessesOwned['1'] = 10
+    store.businessesOwned = { ...store.businessesOwned, '1': 10 }
     store.startBossAttempt()
     // Gate cash is astronomical; clear it so the bonus stays exact
     store.money = 0

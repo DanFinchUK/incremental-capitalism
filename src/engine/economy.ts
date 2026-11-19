@@ -118,16 +118,26 @@ export function milestoneProgress(owned: number, scaleFactor: number): Milestone
   return { reachedCount, prevMilestone, nextMilestone, progress }
 }
 
+// The step's powers, kept for the last step asked about: one step holds for
+// a whole generation, and this runs for every item whenever income is worked
+// out
+let powersOf = NaN
+let powers: number[] = []
+
 export function milestoneMultiplier(owned: number, scaleFactor: number, deregulationRank: number, stepBonus = 0): number {
-  // Counted here rather than through milestoneProgress: this runs for every
-  // item whenever income is worked out
+  // Counted here rather than through milestoneProgress, for speed
+  const milestones = itemMilestones(scaleFactor)
   let reachedCount = 0
-  for (const m of itemMilestones(scaleFactor)) if (owned >= m) reachedCount += 1
+  while (reachedCount < milestones.length && owned >= milestones[reachedCount]) reachedCount += 1
   if (reachedCount === 0) {
     return 1
   }
   const step = MILESTONE_BASE_STEP + MILESTONE_STEP_PER_DEREGULATION_RANK * deregulationRank + stepBonus
-  return Math.pow(step, reachedCount)
+  if (!Object.is(step, powersOf)) {
+    powersOf = step
+    powers = []
+  }
+  return (powers[reachedCount] ??= Math.pow(step, reachedCount))
 }
 
 export function seriesCost(

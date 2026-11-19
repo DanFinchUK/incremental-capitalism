@@ -9,7 +9,7 @@ function fresh() {
   const store = useGameStore()
   store.hydrateFromStorage(T0)
   store.closeIntro(T0)
-  store.businessesOwned['1'] = 2
+  store.businessesOwned = { ...store.businessesOwned, '1': 2 }
   store.money = 10_000
   return store
 }

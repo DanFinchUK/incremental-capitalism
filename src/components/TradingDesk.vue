@@ -442,7 +442,9 @@ const flowTip = computed(() => {
 })
 
 // OHLC Candlestick computations
-const candles = computed<OhlcCandle[]>(() => store.telemetry.candles)
+// Copies: the store changes the newest candle in place and only tells Vue
+// that something changed, so a fresh list is what makes the chart redraw
+const candles = computed<OhlcCandle[]>(() => store.telemetry.candles.map((c) => ({ ...c })))
 
 const inspectedCandle = computed<OhlcCandle>(() => {
   const list = candles.value

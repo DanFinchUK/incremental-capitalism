@@ -5,7 +5,6 @@
 // minutes and +4 not before 2 hours, and "never reached" passes the second.
 import { describe, expect, it } from 'vitest'
 import { JOBS } from '../src/data/items'
-import { LADDER_TRIAL } from '../src/data/trial'
 import { FAST_TAPPER, runCampaign, type BotConfig } from './bot'
 import { SEEDS, median, plusMinutes } from './pacing.shared'
 
@@ -34,10 +33,9 @@ describe('the prestige rule for a player who never gives up', () => {
 
 // A tuning guide rather than a hard rule: on a fresh climb, a rung should
 // carry you until you own about 50 of it before the next one is in reach.
-// The ladder trial's rungs are harder to reach, so a few hours' climb sees
-// only its first few.
-const RUNGS = LADDER_TRIAL ? 4 : 8
-const ENOUGH = LADDER_TRIAL ? 10 : 15
+// Rungs are hard to reach, so a few hours' climb sees only the first few.
+const RUNGS = 4
+const ENOUGH = 10
 describe('the job and business ladders', () => {
   const handovers = (kind: 'jobs' | 'businesses', rungs: number) =>
     firstGenProbes.flatMap((g) => g.rungHandover![kind].slice(1, rungs + 1)).filter((n): n is number => n !== null)

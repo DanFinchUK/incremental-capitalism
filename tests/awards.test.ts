@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { BUSINESSES, JOBS } from '../src/data/items'
-import { storageKey } from '../src/data/trial'
+import { GATE_NET_WORTH } from '../src/data/classes'
+import { MILESTONE_BASE_STEP } from '../src/data/perks'
+import { activeKey } from '../src/data/saveSlots'
+import { jobCostAt } from '../src/data/items'
 import { AWARD_MULT, awardMultiplier, awardsHeld, awardText } from '../src/engine/awards'
 
 const owning = (list: ReadonlyArray<{ id: string }>, counts: number[]) =>
   Object.fromEntries(list.map((item, i) => [item.id, counts[i] ?? 0]))
 
-describe("King's Awards (the ladder trial)", () => {
+describe("King's Awards", () => {
   it('waits on the weakest item in a block of five rungs', () => {
     // The first five Jobs at 120, 300, 100, 99, 500: the weakest has 99, so only the award at 25
     const held = awardsHeld(owning(JOBS, [120, 300, 100, 99, 500]), {})
@@ -34,36 +37,23 @@ describe("King's Awards (the ladder trial)", () => {
   })
 
   it('keeps nothing in storage for a family not yet begun', () => {
-    expect(storageKey('state')).toBeNull()
+    expect(activeKey('state')).toBeNull()
   })
 })
 
-describe('the ladder trial', () => {
-  it('swaps in its own ladder, classes and milestones when a family plays it', async () => {
-    const { vi } = await import('vitest')
-    vi.resetModules()
-    vi.stubEnv('LADDER', 'trial')
-    try {
-      const items = await import('../src/data/items')
-      const classes = await import('../src/data/classes')
-      const perks = await import('../src/data/perks')
-      const trial = await import('../src/data/trial')
-      expect(trial.LADDER_TRIAL).toBe(true)
-      expect(perks.MILESTONE_BASE_STEP).toBe(4)
-      // Dearer each rung, each unit's step falling up the ladder
-      for (let k = 1; k < items.JOBS.length; k++) {
-        expect(items.JOBS[k].baseCost).toBeGreaterThan(items.JOBS[k - 1].baseCost)
-        expect(items.JOBS[k].scaleFactor).toBeLessThan(items.JOBS[k - 1].scaleFactor)
-      }
-      // The Garden Party a rung from the 10th Job's price; classes a rung apart
-      const g = classes.GATE_NET_WORTH
-      expect(g[9]).toBeCloseTo(items.trialJobCostAt(10.4), -Math.floor(Math.log10(g[9])) + 6)
-      expect(g[9]).toBeGreaterThan(items.JOBS[10].baseCost)
-      expect(g[9]).toBeLessThan(items.JOBS[11].baseCost)
-    } finally {
-      vi.unstubAllEnvs()
-      vi.resetModules()
+describe('the ladder', () => {
+  it('builds its rungs, classes and milestones by its rule', () => {
+    expect(MILESTONE_BASE_STEP).toBe(4)
+    // Dearer each rung, each unit's step falling up the ladder
+    for (let k = 1; k < JOBS.length; k++) {
+      expect(JOBS[k].baseCost).toBeGreaterThan(JOBS[k - 1].baseCost)
+      expect(JOBS[k].scaleFactor).toBeLessThan(JOBS[k - 1].scaleFactor)
     }
+    // The Garden Party a rung from the 10th Job's price; classes a rung apart
+    const g = GATE_NET_WORTH
+    expect(g[9]).toBeCloseTo(jobCostAt(10.4), -Math.floor(Math.log10(g[9])) + 6)
+    expect(g[9]).toBeGreaterThan(JOBS[10].baseCost)
+    expect(g[9]).toBeLessThan(JOBS[11].baseCost)
   })
 })
 

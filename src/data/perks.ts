@@ -1,4 +1,3 @@
-import { LADDER_TRIAL } from './trial'
 
 export type PerkId =
   | 'autoClicker'
@@ -39,8 +38,8 @@ export const INTERNS_PER_RANK = 2
 // Already strong: it compounds at every milestone of every item, and the
 // sim's +4 rule breaks at 0.5
 // What each milestone multiplies an item's output by, before Light-Touch
-// Regulation: x2, or x4 on the ladder trial (data/trial.ts)
-export const MILESTONE_BASE_STEP = LADDER_TRIAL ? 4 : 2
+// Regulation
+export const MILESTONE_BASE_STEP = 4
 export const MILESTONE_STEP_PER_DEREGULATION_RANK = 0.25
 export const OFFLINE_RATE_PER_OFFSHORE_RANK = 0.2
 export const OFFLINE_HOURS_PER_OFFSHORE_RANK = 24

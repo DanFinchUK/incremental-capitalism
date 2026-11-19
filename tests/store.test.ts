@@ -59,7 +59,8 @@ describe('useGameStore', () => {
     // Cannot claim free 0-cost Intern before earning at least 1 Legacy
     expect(store.buyPerk('autoClicker')).toBe(false)
 
-    store.addDebugMoney(1e12, 1000)
+    // Exactly at the gate 2 threshold, so not yet pushing on towards gate 3
+    store.addDebugMoney(GATE_NET_WORTH[2], 1000)
     store.gatesBeaten = 2 // two gates past a fresh bloodline's best of 0: +2
     expect(store.legacyOnRetire).toBe(2)
     const estate = store.netWorth
@@ -67,11 +68,11 @@ describe('useGameStore', () => {
     // The trust fund is 5% of the estate, but a deep estate is capped so the
     // heir lands one gate short of the parent: here, at the gate 1 threshold
     expect(estate * 0.05).toBeGreaterThan(GATE_NET_WORTH[1])
-    expect(store.heirInheritancePreview).toBe(GATE_NET_WORTH[1])
+    expect(store.heirInheritancePreview).toBe(Math.floor(GATE_NET_WORTH[1]))
     store.retire(2000)
     expect(store.legacyPoints).toBe(2)
     // The trust fund isn't counted as earned
-    expect(store.money).toBe(GATE_NET_WORTH[1])
+    expect(store.money).toBe(Math.floor(GATE_NET_WORTH[1]))
     expect(store.lifetimeEarned).toBe(lifetimeBefore)
     expect(store.legacyAvailable).toBe(2)
 

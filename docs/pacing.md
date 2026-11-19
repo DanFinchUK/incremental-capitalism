@@ -57,12 +57,12 @@ The rule needs two things to match:
 
 1. **Each gate is about 4 to 5 times harder than the one before**, for a
    player of a given strength. The gates sit at evenly spaced rungs of the
-   item ladder (every 2.3 rungs, `GATE_NET_WORTH` in `src/data/classes.ts`),
-   and each rung pays back about twice as slowly as the one below it (the
-   ladder rule at the top of `src/data/items.ts`). Beating a gate also raises
-   the cap on what you can buy, so the next gate is always a real climb.
+   item ladder (a rung apart from rung 2.4, `GATE_NET_WORTH` in
+   `src/data/classes.ts`), and each rung pays back more slowly than the one
+   below it (the ladder, below). Beating a gate also raises the cap on what
+   you can buy, so the next gate is always a real climb.
 2. **Each new gate makes the bloodline about as much stronger.** Each Legacy
-   point multiplies income by 4.5 (`legacyMultiplier` in
+   point multiplies income by 3.4 (`legacyMultiplier` in
    `src/engine/economy.ts`), and a bloodline holds one point per gate it has
    reached, so its strength tracks its depth. Perks, advisors and inherited
    heir traits add a little more.
@@ -101,11 +101,11 @@ Duke. `sim/pacing.lines.sim.ts` checks each line takes 50% to 90% as long as
 the one before (each run's own ratio, averaged over fifteen seeds: two lines in one run share its luck, so this is far steadier than comparing medians); `sim/elevation.report.sim.ts` shows the climb after an
 elevation.
 
-## The ladder trial
+## The ladder
 
-Settings has a "Ladder trial" switch: a playtest of reworked Jobs and
-Businesses, in a save of its own (`src/data/trial.ts`; the sim plays it with
-`LADDER=trial npm run sim`). It aims for this shape:
+Jobs and Businesses climb one ladder. It began as a playtest (the trial
+ladder) beside an original one, and replaced it; families begun on the
+original carry on, on this one. It aims for this shape:
 
 - Rung 2 is first bought around 50 of Rung 1, and every rung's first unit,
   and its second, takes longer than the last rung's did.
@@ -115,7 +115,7 @@ Businesses, in a save of its own (`src/data/trial.ts`; the sim plays it with
 - A family without titles gets to about the 10th rung (the Garden Party), and
   each title is worth about two rungs further.
 
-How: the ladder is built by a rule (`TRIAL_LADDER` in `src/data/items.ts`)
+How: the ladder is built by a rule (`LADDER` in `src/data/items.ts`)
 fitted with a quick model of a player climbing it. Units get dearer by a step
 that falls up the ladder (9.5% to 3.2%), so deep rungs are bought in
 hundreds; the gap to the next rung grows from about 58 to about 279 units;
@@ -126,10 +126,9 @@ five rungs reaching 25, 100, 250, 500 and 1,000, each x1.25 to all income,
 so the oldest rungs stay worth buying. The classes sit a rung apart from rung
 2.4, Legacy is x3.4 a point and a title x2.5.
 
-On the trial the sim passes all but two checks, both near misses that swing
-from run to run: the fast tapper's first gate 9 lands around 75 to 85
-minutes (the floor is 75), and one later line can come out a little longer
-than the one before it.
+The sim passes every check on it; the closest are the fast tapper's first
+gate 9 (the floor is 75 minutes) and the later lines' ratios, which swing a
+little from run to run.
 
 ## Other targets
 

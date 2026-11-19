@@ -31,14 +31,14 @@ describe('scenarios', () => {
 
   it('stay closed until a family has made Duke', () => {
     const s = store()
-    s.beginNewFamily('hands-on', 'classic', T0)
+    s.beginNewFamily('hands-on', T0)
     expect(s.scenario).toBe('standard')
   })
 
   it('Hands-On: no Interns, no buyers, no allowance, and no perks for them', () => {
     const s = store()
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
-    s.beginNewFamily('hands-on', 'classic', T0)
+    s.beginNewFamily('hands-on', T0)
     s.closeCensus(T0)
     expect(s.scenario).toBe('hands-on')
     s.perks.autoClicker = 3
@@ -57,7 +57,7 @@ describe('scenarios', () => {
   it('Absent Landlord: no tapping, for the whole dynasty, reload included', () => {
     const s = store()
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
-    s.beginNewFamily('absent-landlord', 'classic', T0)
+    s.beginNewFamily('absent-landlord', T0)
     s.closeCensus(T0)
     expect(s.noTap).toBe(true)
     s.toggleNoTap()
@@ -72,7 +72,7 @@ describe('scenarios', () => {
   it('Austerity: the headhunter never calls', () => {
     const s = store()
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 1, roll: [], scenario: 'standard' }]
-    s.beginNewFamily('austerity', 'classic', T0)
+    s.beginNewFamily('austerity', T0)
     s.closeCensus(T0)
     s.rollOffer()
     expect(s.headhunterOffer).toHaveLength(0)
@@ -83,7 +83,7 @@ describe('scenarios', () => {
   it('a new dynasty after a scenario keeps the player\'s own tapping choice, and the Hall keeps a best for each', () => {
     const s = store()
     s.hall = [{ surname: 'Old', finishedAt: 1, activeMs: 9_000, roll: [], scenario: 'standard' }]
-    s.beginNewFamily('absent-landlord', 'classic', T0)
+    s.beginNewFamily('absent-landlord', T0)
     s.closeCensus(T0)
     s.dynastyComplete = true
     s.dynastyMs = 20_000

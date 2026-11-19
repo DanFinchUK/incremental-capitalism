@@ -1,4 +1,3 @@
-import { LADDER_TRIAL } from './trial'
 
 export interface IntroPage {
   kicker: string
@@ -24,11 +23,7 @@ export const INTRO_PAGES: ReadonlyArray<IntroPage> = [
       'Businesses pay out every second, and at a reduced rate while you are away.',
       'Ownership milestones multiply an item\'s output. Use "x1", "x10", "Next" and "Max" to buy in bulk.',
       'Own 1,000 of any Job or Business for market dominance: there\'s none left to buy, and each one held adds 25% to all income.',
-      ...(LADDER_TRIAL
-        ? [
-            'King\'s Awards: Jobs come in groups of five (the first five, the next five, and so on), and so do Businesses. When every item in a group reaches 25 owned, the family wins a King\'s Award for Enterprise; more follow at 100, 250, 500 and 1,000. Each award multiplies all income by 1.25. Tap the King\'s Awards pill to see what the next one needs.'
-          ]
-        : []),
+      'King\'s Awards: Jobs come in groups of five (the first five, the next five, and so on), and so do Businesses. When every item in a group reaches 25 owned, the family wins a King\'s Award for Enterprise; more follow at 100, 250, 500 and 1,000. Each award multiplies all income by 1.25. Tap the King\'s Awards pill to see what the next one needs.',
       'Opportunities on the Market Wire last a few seconds. A freeze stops automation, or halves income if nothing is automated.'
     ]
   },

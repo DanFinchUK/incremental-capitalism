@@ -1,5 +1,4 @@
-import { trialJobCostAt } from './items'
-import { LADDER_TRIAL } from './trial'
+import { jobCostAt } from './items'
 export interface SocialClassDef {
   level: number
   threshold: number
@@ -10,16 +9,15 @@ export interface SocialClassDef {
 }
 
 // Net worth that unlocks each class gate's boss (index = class level). Each
-// sits at the price of a Job rung (see data/items.ts): gate 1 at rung 2.4,
-// then every 2.3 rungs to gate 9 at 20.8. Even spacing keeps every gate the
-// same step harder than the last (docs/pacing.md). A gate also caps what you
-// can buy before you beat it. Checked by the pacing simulator (npm run sim).
-// The ladder trial puts the classes on its own ladder: the first at Job rung
-// TRIAL_GATES.first, then one a rung, so the Garden Party sits around rung 10
-export const TRIAL_GATES = { first: 2.4, every: 1.0 }
-export const GATE_NET_WORTH: ReadonlyArray<number> = LADDER_TRIAL
-  ? [0, ...Array.from({ length: 9 }, (_, i) => trialJobCostAt(TRIAL_GATES.first + TRIAL_GATES.every * i))]
-  : [0, 2.4e08, 2.6e14, 2.8e20, 3.1e26, 3.6e32, 4.1e38, 5e44, 6.1e50, 7.6e56]
+// sits at the price of a Job rung (see data/items.ts): the first at rung
+// GATES.first, then one every GATES.every rungs, so the Garden Party sits
+// around rung 10. A gate also caps what you can buy before you beat it.
+// Checked by the pacing simulator (npm run sim).
+export const GATES = { first: 2.4, every: 1.0 }
+export const GATE_NET_WORTH: ReadonlyArray<number> = [
+  0,
+  ...Array.from({ length: 9 }, (_, i) => jobCostAt(GATES.first + GATES.every * i))
+]
 
 export const SOCIAL_CLASSES: ReadonlyArray<SocialClassDef> = [
   {

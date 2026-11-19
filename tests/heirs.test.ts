@@ -129,7 +129,7 @@ describe('heirs in the store', () => {
     const store = retiredStore()
     store.heir = { name: 'Hugo Test', traitId: 'old-etonian' }
     expect(store.modifiers.twistStrength).toBeCloseTo(0.6)
-    expect(store.bossTarget(3)).toBeCloseTo(gateThreshold(3) * 0.5)
+    expect(store.bossTarget(3) / (gateThreshold(3) * 0.5)).toBeCloseTo(1, 9)
   })
 
   it('keeps the family, heir and pending choices through a reload', () => {

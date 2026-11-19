@@ -78,7 +78,7 @@ describe('the register', () => {
 
   it('a first family is written in with nobody struck off above it', () => {
     const { wrapper, store } = app()
-    store.beginNewFamily('standard', 'classic', T0)
+    store.beginNewFamily('standard', T0)
     expect(store.census).toEqual({ previous: null, departure: null })
     wrapper.unmount()
   })

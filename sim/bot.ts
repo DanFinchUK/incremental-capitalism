@@ -13,7 +13,6 @@ import { ADVISORS_BY_ID } from '../src/data/advisors'
 import { type ScenarioId } from '../src/data/scenarios'
 import { useGameStore } from '../src/stores/game'
 import { HALL_KEY } from '../src/engine/hall'
-import { ACTIVE_TUNING } from '../src/data/saveSlots'
 import { setHeadless } from '../src/utils/headless'
 import { setSimIncomeMult } from '../src/utils/simIncome'
 import { setSimOffer } from '../src/utils/simOffer'
@@ -643,7 +642,7 @@ function playCampaign(hours: number, cfg: BotConfig, probe?: CampaignProbe, atSu
   store.hydrateFromStorage(ts)
   store.closeIntro(ts)
   if (cfg.scenario) {
-    store.beginNewFamily(cfg.scenario, ACTIVE_TUNING, ts)
+    store.beginNewFamily(cfg.scenario, ts)
     store.closeCensus(ts)
   }
   if (cfg.noTap && !store.noTap) store.toggleNoTap()

@@ -62,8 +62,7 @@ import {
   type PersistedSceneState
 } from '../engine/migration'
 import { SOCIAL_CLASSES } from '../data/classes'
-import { LADDER_TRIAL } from '../data/trial'
-import { ACTIVE_TUNING, MAX_SAVES, NEXT_SCENARIO_AT_LOAD, activeKey, addSlot, adoptOrphans, claimSeat, noteActiveSummary, readIndex, removeSlot, residentSlot, residentSlotId, setActiveSlot, syncResident, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
+import { MAX_SAVES, NEXT_SCENARIO_AT_LOAD, activeKey, addSlot, adoptOrphans, claimSeat, noteActiveSummary, readIndex, removeSlot, residentSlot, residentSlotId, setActiveSlot, syncResident, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary } from '../data/saveSlots'
 import { readProfile, writeProfile } from '../engine/profile'
 import { headless } from '../utils/headless'
 import { simIncomeSources } from '../utils/simIncome'
@@ -344,8 +343,8 @@ export const useGameStore = defineStore('game', () => {
       Object.values(jobsPurchased.value).filter((n) => n >= DOMINANCE_AT).length +
       Object.values(businessesOwned.value).filter((n) => n >= DOMINANCE_AT).length
   )
-  // King's Awards, on the ladder trial only
-  const awards = computed(() => (LADDER_TRIAL ? awardsHeld(jobsPurchased.value, businessesOwned.value) : []))
+  // King's Awards
+  const awards = computed(() => awardsHeld(jobsPurchased.value, businessesOwned.value))
   let awardKeys = new Set<string>()
   // Announces an award newly earned (quiet: just take note, as on loading)
   function noteAwards(quiet = false): void {
@@ -849,14 +848,12 @@ export const useGameStore = defineStore('game', () => {
   }
 
   // Save slots (data/saveSlots.ts): the menu's list of families, at most one
-  // in residence. Playing another, or beginning one with another tuning,
-  // saves this one and reloads into it.
+  // in residence. Playing another saves this one and reloads into it.
   const saveIndex = ref<SaveIndex>(readIndex())
   const activeSlotId = ref<string | null>(residentSlotId())
   const hasFamily = computed(() => activeSlotId.value !== null)
   const seatsFull = computed(() => saveIndex.value.slots.length >= MAX_SAVES)
   const canAddSave = computed(() => !seatsFull.value)
-  const familyTuning = ACTIVE_TUNING
 
   // Every seat's family as the menu shows it: one not played since summaries
   // began (as saves from before seats) reads its own save
@@ -875,7 +872,7 @@ export const useGameStore = defineStore('game', () => {
   }
 
   function claimFamilySeat(ts: number): void {
-    const slot = claimSeat(ACTIVE_TUNING, ts)
+    const slot = claimSeat(ts)
     if (!slot) return
     activeSlotId.value = slot.id
     saveIndex.value = readIndex()
@@ -902,12 +899,12 @@ export const useGameStore = defineStore('game', () => {
   }
 
   // A new family, on the way to the register: no seat until it is written in.
-  // Leaving the family in residence, or a tuning other than this page's,
-  // means a reload; the next family's scenario and tuning wait in the index.
-  function beginNewFamily(next: ScenarioId = 'standard', tuning: Tuning = ACTIVE_TUNING, ts = Date.now()): void {
-    if (activeSlotId.value !== null || tuning !== ACTIVE_TUNING) {
+  // Leaving the family in residence means a reload; the next family's
+  // scenario waits in the index.
+  function beginNewFamily(next: ScenarioId = 'standard', ts = Date.now()): void {
+    if (activeSlotId.value !== null) {
       flushAll(ts)
-      setActiveSlot(null, { tuning, scenario: next })
+      setActiveSlot(null, { scenario: next })
       reloadPage()
       return
     }
@@ -923,7 +920,7 @@ export const useGameStore = defineStore('game', () => {
     return removed
   }
 
-  // A family's save for downloading, play log and tuning included: the one
+  // A family's save for downloading, play log included: the one
   // in play as it stands, another as it was last saved
   function exportSlot(id: string, ts = Date.now()): { json: string; surname: string; generation: number } | null {
     if (id === activeSlotId.value) return { json: exportSave(ts), surname: familySurname.value, generation: generation.value }
@@ -934,35 +931,31 @@ export const useGameStore = defineStore('game', () => {
       if (!state) return null
       const rawLog = localStorage.getItem(slotPrefix(id) + 'playLog')
       const log = readPlayLog(rawLog ? JSON.parse(rawLog) : null)
-      return { json: withPlayLog(state, log, slot.tuning), surname: slot.summary?.surname ?? '', generation: slot.summary?.generation ?? 1 }
+      return { json: withPlayLog(state, log), surname: slot.summary?.surname ?? '', generation: slot.summary?.generation ?? 1 }
     } catch {
       return null
     }
   }
 
-  // A downloaded save, into a slot of its own. Its tuning comes with it.
-  // 'ladder': the file doesn't say which ladder it was played on (saves from
-  // before seats), so ask, and call again with it
-  function importSave(text: string, ts = Date.now(), chosen?: Tuning): 'ok' | 'invalid' | 'full' | 'ladder' {
-    let tuning: Tuning = 'classic'
+  // A downloaded save, into a slot of its own. One from either of the old
+  // ladders carries on, on this one.
+  function importSave(text: string, ts = Date.now()): 'ok' | 'invalid' | 'full' {
     let state = text
     let log: unknown = null
     try {
       const parsed = JSON.parse(text) as { scene?: Record<string, unknown>; tuning?: unknown }
       if (!parsed || typeof parsed !== 'object' || !parsed.scene || typeof parsed.scene !== 'object') return 'invalid'
-      if (parsed.tuning === 'trial' || parsed.tuning === 'classic') tuning = parsed.tuning
-      else if (chosen) tuning = chosen
-      else return 'ladder'
       // The play log rides along in a downloaded save; it lives apart in play
       log = parsed.scene.playLog ?? null
       delete parsed.scene.playLog
+      // Which ladder it was played on, from when there were two
       delete parsed.tuning
       state = JSON.stringify(parsed)
     } catch {
       return 'invalid'
     }
     flushAll(ts)
-    const slot = addSlot(tuning, ts)
+    const slot = addSlot(ts)
     if (!slot) return 'full'
     try {
       localStorage.setItem(slotPrefix(slot.id) + 'state', state)
@@ -1664,7 +1657,7 @@ export const useGameStore = defineStore('game', () => {
     flushBuyerTally(ts)
     flushAll(ts)
     const key = activeKey('state')
-    return key ? withPlayLog(localStorage.getItem(key) ?? '', plays.playLog.value, residentSlot()?.tuning ?? ACTIVE_TUNING) : ''
+    return key ? withPlayLog(localStorage.getItem(key) ?? '', plays.playLog.value) : ''
   }
 
   function hireAdvisor(offerIndex: number, replaceSeat?: HireTarget): boolean {
@@ -2480,7 +2473,6 @@ export const useGameStore = defineStore('game', () => {
     activeSlotId,
     hasFamily,
     seatsFull,
-    familyTuning,
     canAddSave,
     refreshSaves,
     playSave,

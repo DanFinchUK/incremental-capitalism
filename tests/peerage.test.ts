@@ -3,7 +3,7 @@ import { VICTORY_LOCK_MS } from '../src/components/victoryLock'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
-import { peerageRank, titlePaChairs, titlesFor, titleSource } from '../src/engine/peerage'
+import { INCOME_PER_TITLE, peerageRank, titlePaChairs, titlesFor, titleSource } from '../src/engine/peerage'
 import { useGameStore } from '../src/stores/game'
 import { gateThreshold } from '../src/engine/bosses'
 
@@ -23,9 +23,10 @@ describe('peerage rules', () => {
     expect(peerageRank(9)).toBe('Duke')
   })
 
-  it('titles triple income each, compounding, and bring a PA chair', () => {
-    expect(titleSource(1)).toMatchObject({ clickMult: 3, businessMult: 3 })
-    expect(titleSource(2)).toMatchObject({ clickMult: 9, businessMult: 9 })
+  it('titles multiply income x2.5 each, compounding, and bring a PA chair', () => {
+    expect(INCOME_PER_TITLE).toBe(2.5)
+    expect(titleSource(1)).toMatchObject({ clickMult: 2.5, businessMult: 2.5 })
+    expect(titleSource(2)).toMatchObject({ clickMult: 6.25, businessMult: 6.25 })
     expect(titleSource(3)).not.toHaveProperty('legacyScale')
     expect(titleSource(5)).not.toHaveProperty('buyerItemTypes')
     expect(titlePaChairs(0)).toBe(1)
@@ -163,7 +164,7 @@ describe('elevation in the store', () => {
     store.businessesOwned = { '1': 5 }
     const withTitles = store.moneyPerSecond
     store.titles = 0
-    expect(withTitles / store.moneyPerSecond).toBeCloseTo(81) // 3 x 3 x 3 x 3
+    expect(withTitles / store.moneyPerSecond).toBeCloseTo(INCOME_PER_TITLE ** 4)
     store.titles = 4
     store.flushSave(T0 + 10)
     setActivePinia(createPinia())

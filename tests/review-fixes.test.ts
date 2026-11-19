@@ -42,7 +42,7 @@ describe('review fixes', () => {
     }
     const store = fresh()
     store.heir = { name: 'Hugo Test', traitId: 'old-etonian' }
-    expect(store.bossTarget(3)).toBeCloseTo(gateThreshold(3) * 0.5)
+    expect(store.bossTarget(3) / (gateThreshold(3) * 0.5)).toBeCloseTo(1, 9)
   })
 
   it('a fight keeps the time limit it started with', () => {

@@ -36,7 +36,7 @@ describe('boss attempts', () => {
     // The founder has never beaten gate 3: banked wealth doesn't win it
     store.addDebugMoney(gateThreshold(3) * 100, T0)
     expect(store.bossCountsGain(3)).toBe(true)
-    expect(store.bossTarget(3)).toBeCloseTo(gateThreshold(3) * 0.5)
+    expect(store.bossTarget(3) / (gateThreshold(3) * 0.5)).toBeCloseTo(1, 9)
     expect(store.bossConditionText(3)).toContain('New ground')
     store.startBossAttempt()
     store.tick(T0 + 50)
@@ -49,7 +49,7 @@ describe('boss attempts', () => {
     // A family that has been past gate 3 meets the total instead
     store.familyTree = [{ ...store.familyTree[0], generation: 1, name: 'Old Test', traitId: null, inheritId: null, deepestGate: 5, legacyEarned: 5, activeMs: 1, advisors: [], splits: [] }]
     expect(store.bossCountsGain(3)).toBe(false)
-    expect(store.bossTarget(3)).toBeCloseTo(gateThreshold(3) * 1.5)
+    expect(store.bossTarget(3) / (gateThreshold(3) * 1.5)).toBeCloseTo(1, 9)
     expect(store.bossConditionText(3)).toBe('Reach the target net worth.')
   })
 

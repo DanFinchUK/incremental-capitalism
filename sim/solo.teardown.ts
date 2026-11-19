@@ -106,9 +106,10 @@ export function teardown(): void {
       to: process.env.SOLO_TO === 'duke' ? 'duke' : 'class9',
       // Where the ledger files it: singles under the run's length, the rest
       // under their set's name as well
-      // The new ladder's runs are filed apart from the original ladder's
-      ladder: process.env.LADDER === 'trial' ? 'trial' : 'classic',
-      key: `${process.env.LADDER === 'trial' ? 'trial-' : ''}${process.env.SOLO_SET === 'copies' || process.env.SOLO_SET === 'favour' ? `${process.env.SOLO_SET}-` : ''}${process.env.SOLO_TO === 'duke' ? 'duke' : 'class9'}`,
+      // Filed as the trial ladder's, as they were while it ran beside the
+      // original one, so the ledger's history for it lines up
+      ladder: 'trial',
+      key: `trial-${process.env.SOLO_SET === 'copies' || process.env.SOLO_SET === 'favour' ? `${process.env.SOLO_SET}-` : ''}${process.env.SOLO_TO === 'duke' ? 'duke' : 'class9'}`,
       seeds: Math.max(...rows.map((r) => r.seed)),
       baselineHours: baseHours,
       rows: table.map((t) => ({

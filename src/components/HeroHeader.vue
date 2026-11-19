@@ -71,12 +71,10 @@
 
       <!-- The family's lasting effects; the temporary ones sit with Hustle -->
       <div
-        v-if="store.bloodlineTraitPills.length > 0 || store.allowancePill || store.dominanceHeld > 0 || awardsShown"
         class="scn-TraitPillRow"
         data-testid="header-bloodline-pills"
       >
         <button
-          v-if="awardsShown"
           type="button"
           class="scn-TraitPill scn-TraitPill-button"
           :aria-expanded="awardsOpen"
@@ -105,7 +103,7 @@
           {{ store.wording(pill.label) }}
         </span>
       </div>
-      <div v-if="awardsShown && awardsOpen" class="scn-AwardsPanel" data-testid="awards-panel">
+      <div v-if="awardsOpen" class="scn-AwardsPanel" data-testid="awards-panel">
         <p class="scn-AwardsRule">
           When every Job in a group of five reaches 25 owned, the family wins a King's Award, and again at 100, 250, 500 and
           1,000. Businesses are grouped the same way. Each award multiplies all income by 1.25.
@@ -189,8 +187,7 @@ const retireBlockedTitle = computed(() =>
 
 defineExpose({ payButtonRef })
 
-// King's Awards (the trial ladder): the pill opens how each group stands
-const awardsShown = computed(() => store.familyTuning === 'trial')
+// King's Awards: the pill opens how each group stands
 const awardsOpen = ref(false)
 const awardRows = computed(() =>
   awardProgress(store.jobsPurchased, store.businessesOwned, store.seenItems).map((block) => {

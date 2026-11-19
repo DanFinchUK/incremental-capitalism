@@ -14,8 +14,7 @@ const latest = ledger.versions.at(-1)
 const out = []
 const say = (line = '') => out.push(line)
 
-const LADDER = { classic: 'original ladder', trial: 'new ladder' }
-const RUN = (r) => `${LADDER[r.ladder ?? 'classic']}, ${r.key.includes('copies') ? 'copies' : 'one of each'}, played to ${r.to === 'duke' ? 'Duke' : 'the first class 9'}`
+const RUN = (r) => `${r.key.includes('copies') ? 'Copies' : 'One of each'}, played to ${r.to === 'duke' ? 'Duke' : 'the first class 9'}`
 const pct = (x) => `${x >= 0 ? '+' : ''}${(100 * x).toFixed(1)}%`
 const times = (x) => `x${x.toFixed(2)}`
 
@@ -38,9 +37,16 @@ if (simFile && existsSync(simFile)) {
 say(`Compared with **${latest.version}** (${latest.label}, ${latest.date}), where it has a matching run.`)
 say()
 
+// One run a key: a workflow still asking for both of the old ladders plays
+// the one ladder twice
+const runs = new Map()
 for (const f of resultFiles) {
   if (!existsSync(f)) continue
   const run = JSON.parse(readFileSync(f, 'utf8'))
+  runs.set(run.key, run)
+}
+
+for (const run of runs.values()) {
   const base = latest.runs[run.key]
   say(`### ${RUN(run)}`)
   say()

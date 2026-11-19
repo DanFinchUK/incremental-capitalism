@@ -130,15 +130,8 @@
               <p>A family's save file, downloaded from here, settled in a seat of its own.</p>
               <p v-if="importProblem === 'invalid'" class="ttl-SaveError" data-testid="import-failed">That file isn't a family's save.</p>
               <p v-if="importProblem === 'full'" class="ttl-SaveError" data-testid="import-failed">Every seat is taken. Disown a family first.</p>
-              <template v-if="waitingFile">
-                <p data-testid="import-ladder">Playtest: this save is from before seats, so it doesn't say whether it was on the trial ladder.</p>
-                <div class="ttl-SaveActions">
-                  <button type="button" class="ttl-Toggle" data-testid="import-classic" @click="importOn('classic')">Usual</button>
-                  <button type="button" class="ttl-Toggle" data-testid="import-trial" @click="importOn('trial')">Trial ladder</button>
-                </div>
-              </template>
             </div>
-            <label v-if="!waitingFile" class="ttl-Toggle ttl-Upload" :class="{ 'ttl-Toggle-disabled': !store.canAddSave }">
+            <label class="ttl-Toggle ttl-Upload" :class="{ 'ttl-Toggle-disabled': !store.canAddSave }">
               Choose file
               <input type="file" accept=".json,application/json" data-testid="import-save" :disabled="!store.canAddSave" @change="importFile" />
             </label>
@@ -216,15 +209,6 @@
             </p>
           </div>
           <ScenarioPicker v-if="asking === 'found' || (asking === 'begin' && scenariosOpen(store.hall))" v-model="next" />
-          <div v-if="asking !== 'abandon' && PLAYTEST" class="ttl-Setting">
-            <div>
-              <strong>Playtest: trial ladder</strong>
-              <p>The reworked Jobs and Businesses, for this family only.</p>
-            </div>
-            <button type="button" class="ttl-Toggle" :aria-pressed="nextTuning === 'trial'" data-testid="playtest-trial" @click="nextTuning = nextTuning === 'trial' ? 'classic' : 'trial'">
-              {{ nextTuning === 'trial' ? 'On' : 'Off' }}
-            </button>
-          </div>
           <div class="ttl-ConfirmActions">
             <button type="button" class="ttl-Item ttl-Item-quiet" data-testid="menu-back" @click="view = confirmBack">Back</button>
             <button
@@ -264,8 +248,7 @@ import { ACHIEVEMENTS } from '../data/achievements'
 import { INTRO_PAGES } from '../data/intro'
 import { roomForClass, type RoomId } from '../data/rooms'
 import type { ScenarioId } from '../data/scenarios'
-import { PLAYTEST } from '../utils/playtest'
-import { MAX_SAVES, type SaveSlot, type Tuning } from '../data/saveSlots'
+import { MAX_SAVES, type SaveSlot } from '../data/saveSlots'
 import { SCENARIOS_BY_ID, readScenarioId } from '../data/scenarios'
 import { armsFor } from '../engine/crest'
 import { bestDynasty, scenariosOpen } from '../engine/hall'
@@ -307,17 +290,17 @@ const arms = computed(() => armsFor(store.familySurname))
 // until it is written into the register
 const fresh = computed(() => !store.hasFamily)
 
-// A new family chooses its scenario first, once there are any (and with
-// playtest options, its tuning), then goes into the register
+// A new family chooses its scenario first, once there are any, then goes
+// into the register
 function carryOn(): void {
   if (!fresh.value) store.closeMenu()
   else if (store.seatsFull) return
-  else if (scenariosOpen(store.hall) || PLAYTEST) ask('begin')
-  else store.beginNewFamily('standard', 'classic')
+  else if (scenariosOpen(store.hall)) ask('begin')
+  else store.beginNewFamily('standard')
 }
 
 const continueLine = computed(() => {
-  const scenario = (PLAYTEST && store.familyTuning === 'trial' ? 'Playtest: trial ladder · ' : '') + (store.scenario !== 'standard' ? `${store.scenarioDef.name} · ` : '')
+  const scenario = store.scenario !== 'standard' ? `${store.scenarioDef.name} · ` : ''
   if (fresh.value) return store.seatsFull ? 'All five seats are taken: disown a family first' : 'Not yet in the register'
   if (store.dynastyComplete) return `${scenario}Made Duke in ${formatDuration(store.dynastyMs / 1000)}`
   const rank = store.titles > 0 ? ` · ${peerageRank(store.titles)}` : ''
@@ -328,13 +311,11 @@ const continueLine = computed(() => {
 // after the dukedom; Back returns to wherever the question was asked
 const asking = ref<'begin' | 'abandon' | 'found'>('begin')
 const confirmBack = ref<'main' | 'families'>('main')
-const nextTuning = ref<Tuning>('classic')
 
 function ask(what: 'begin' | 'abandon' | 'found'): void {
   asking.value = what
   confirmBack.value = view.value === 'families' ? 'families' : 'main'
   next.value = what === 'found' ? store.scenario : 'standard'
-  nextTuning.value = 'classic'
   view.value = 'confirm'
 }
 
@@ -353,17 +334,13 @@ function confirmNew(): void {
   const what = asking.value
   view.value = 'main'
   if (what === 'abandon') store.abandonDynasty(ts)
-  else if (what === 'begin') store.beginNewFamily(next.value, nextTuning.value, ts)
-  else if (nextTuning.value === store.familyTuning) store.foundNewDynasty(ts, next.value)
-  else {
-    store.foundNewDynasty(ts, next.value, false)
-    store.beginNewFamily(next.value, nextTuning.value, ts)
-  }
+  else if (what === 'begin') store.beginNewFamily(next.value, ts)
+  else store.foundNewDynasty(ts, next.value)
 }
 
 function beginFromFamilies(): void {
-  if (scenariosOpen(store.hall) || PLAYTEST) ask('begin')
-  else store.beginNewFamily('standard', 'classic')
+  if (scenariosOpen(store.hall)) ask('begin')
+  else store.beginNewFamily('standard')
 }
 
 function openFamilies(): void {
@@ -371,13 +348,10 @@ function openFamilies(): void {
   store.refreshSaves()
   removing.value = null
   importProblem.value = null
-  waitingFile.value = null
   view.value = 'families'
 }
 
 const removing = ref<string | null>(null)
-// A file that didn't say its ladder, waiting to be asked
-const waitingFile = ref<string | null>(null)
 const importProblem = ref<'invalid' | 'full' | null>(null)
 
 function confirmRemove(id: string): void {
@@ -391,17 +365,7 @@ async function importFile(ev: Event): Promise<void> {
   input.value = ''
   if (!file) return
   const text = await file.text()
-  // Only a playtester's old saves could be on the trial ladder: ask them
-  let result = store.importSave(text)
-  if (result === 'ladder' && !PLAYTEST) result = store.importSave(text, Date.now(), 'classic')
-  importProblem.value = result === 'invalid' || result === 'full' ? result : null
-  waitingFile.value = result === 'ladder' ? text : null
-}
-
-function importOn(tuning: Tuning): void {
-  if (!waitingFile.value) return
-  const result = store.importSave(waitingFile.value, Date.now(), tuning)
-  waitingFile.value = null
+  const result = store.importSave(text)
   importProblem.value = result === 'invalid' || result === 'full' ? result : null
 }
 
@@ -413,7 +377,6 @@ function saveName(slot: SaveSlot): string {
 function saveLine(slot: SaveSlot): string {
   const sum = slot.summary
   const parts: string[] = []
-  if (PLAYTEST && slot.tuning === 'trial') parts.push('Playtest: trial ladder')
   if (sum && sum.scenario !== 'standard') parts.push(SCENARIOS_BY_ID[readScenarioId(sum.scenario)].name)
   if (!sum || sum.fresh) parts.push('Not yet in the register')
   else if (sum.dynastyComplete) parts.push(`Made Duke in ${formatDuration(sum.dynastyMs / 1000)}`)

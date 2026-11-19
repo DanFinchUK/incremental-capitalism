@@ -9,7 +9,7 @@
   numbers or rules (item, advisor, trait, perk, class or scenario data, and
   the engine or store code that uses them). That goes on a branch as a pull
   request, so `.github/workflows/balance.yml` runs the sim and the solo
-  strength runs on both ladders and comments with what moved against the
+  strength runs and comments with what moved against the
   Balance Ledger. The person reads the report and merges. Opening that pull
   request needs no further asking.
 - Everything else (screens, wording, docs, tests, sim tooling, the ledger)

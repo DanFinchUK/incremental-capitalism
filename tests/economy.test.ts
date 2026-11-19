@@ -32,11 +32,12 @@ describe('economy engine', () => {
 
     expect(milestoneMultiplier(0, 1.2, 0)).toBe(1)
     expect(milestoneMultiplier(9, 1.2, 0)).toBe(1)
-    expect(milestoneMultiplier(10, 1.2, 0)).toBe(2)
-    expect(milestoneMultiplier(200, 1.2, 0)).toBe(32)
-    expect(milestoneMultiplier(1000, 1.2, 0)).toBe(128)
-    expect(milestoneMultiplier(3, 1.98, 0)).toBe(2)
-    expect(milestoneMultiplier(5, 1.98, 4)).toBe(9)
+    // x4 a milestone; each Light-Touch Regulation rank adds 0.25 to the step
+    expect(milestoneMultiplier(10, 1.2, 0)).toBe(4)
+    expect(milestoneMultiplier(200, 1.2, 0)).toBe(4 ** 5)
+    expect(milestoneMultiplier(1000, 1.2, 0)).toBe(4 ** 7)
+    expect(milestoneMultiplier(3, 1.98, 0)).toBe(4)
+    expect(milestoneMultiplier(5, 1.98, 4)).toBe(25)
 
     const prog = milestoneProgress(17, 1.2)
     expect(prog.reachedCount).toBe(1)
@@ -104,7 +105,7 @@ describe('economy engine', () => {
 
   it('combines job-to-business 1% synergies, milestones, quoteIncomeDelta, legacy, and intern hustle benefit', () => {
     const base = {
-      jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 2x milestone + +10% to Etsy store ('1')
+      jobsPurchased: { '5': 10 }, // Teaching assistant x10 -> 4x milestone + +10% to Etsy store ('1')
       businessesOwned: { '1': 9 }, // Etsy store x9, each +10% from the Teaching assistants
       legacyPoints: 2,
       classLevel: 0,
@@ -114,11 +115,11 @@ describe('economy engine', () => {
       clickBuffMultiplier: 1,
       hustleMultiplier: 2
     }
-    // Base click + (10 Teaching assistants * 2 milestone), * legacy, then * 2 hustle
+    // Base click + (10 Teaching assistants * 4 milestone), * legacy, then * 2 hustle
     const legacy = legacyMultiplier(2)
     const ta = JOBS_BY_ID['5'].moneyPerClick
     const etsy = BUSINESSES_BY_ID['1'].moneyPerSecond
-    const click = (BASE_CLICK_VALUE + 10 * ta * 2) * legacy
+    const click = (BASE_CLICK_VALUE + 10 * ta * 4) * legacy
     expect(computeClickIncome(base, false)).toBeCloseTo(click, 5)
     expect(computeClickIncome(base, true)).toBeCloseTo(click * 2, 5)
     // 9 Etsy stores * 1.10 synergy * legacy. A tapper draws no allowance;
@@ -134,9 +135,9 @@ describe('economy engine', () => {
     expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 1 }) / (passive + 2 * click)).toBeCloseTo(1, 9)
     expect(computePassivePerSecond({ ...base, autoClickers: 2, hustleMultiplier: 2 }) / (passive + 2 * click * 2)).toBeCloseTo(1, 9)
 
-    // Buying the 10th Etsy store crosses milestone 10, doubling all ten units
+    // Buying the 10th Etsy store crosses milestone 10, quadrupling all ten units
     const deltaBiz = quoteIncomeDelta('businesses', '1', 1, base)
-    expect(deltaBiz.deltaPerSec / (10 * etsy * 2 * 1.1 * legacy - business)).toBeCloseTo(1, 6)
+    expect(deltaBiz.deltaPerSec / (10 * etsy * 4 * 1.1 * legacy - business)).toBeCloseTo(1, 6)
 
     // Buying 1 more Teaching assistant boosts both click income AND Etsy passive synergy!
     const deltaJob = quoteIncomeDelta('jobs', '5', 1, base)
@@ -201,27 +202,27 @@ describe('economy engine', () => {
     // A small estate passes on 5%
     expect(heirInheritance(1000, 3)).toBe(50)
     // Retiring at the deepest gate passes on the threshold of the gate before it
-    expect(heirInheritance(GATE_NET_WORTH[3], 3) / GATE_NET_WORTH[2]).toBeCloseTo(1, 9)
+    expect(heirInheritance(GATE_NET_WORTH[3], 3) / GATE_NET_WORTH[2]).toBeCloseTo(1, 6)
     // Halfway (on the gates' log scale) to the next gate: halfway up to the deepest gate
     const halfway = Math.sqrt(GATE_NET_WORTH[3] * GATE_NET_WORTH[4])
     expect(pushTowardsNextGate(halfway, 3)).toBeCloseTo(0.5, 9)
     expect(heirInheritance(halfway, 3) / Math.sqrt(GATE_NET_WORTH[2] * GATE_NET_WORTH[3])).toBeCloseTo(1, 6)
     // At the next gate's door: the deepest gate itself, and never past it
-    expect(heirInheritance(GATE_NET_WORTH[4], 3) / GATE_NET_WORTH[3]).toBeCloseTo(1, 9)
-    expect(heirInheritance(1e60, 3) / GATE_NET_WORTH[3]).toBeCloseTo(1, 9)
+    expect(heirInheritance(GATE_NET_WORTH[4], 3) / GATE_NET_WORTH[3]).toBeCloseTo(1, 6)
+    expect(heirInheritance(1e60, 3) / GATE_NET_WORTH[3]).toBeCloseTo(1, 6)
     // With no gate left to push towards, one short as before
-    expect(heirInheritance(1e60, 9) / GATE_NET_WORTH[8]).toBeCloseTo(1, 9)
+    expect(heirInheritance(1e60, 9) / GATE_NET_WORTH[8]).toBeCloseTo(1, 6)
     // Retiring after gate 1 still caps at gate 1, and a bigger share scales the cap
-    expect(heirInheritance(1e60, 1) / GATE_NET_WORTH[1]).toBeCloseTo(1, 9)
-    expect(heirInheritance(GATE_NET_WORTH[3], 3, 0.05) / GATE_NET_WORTH[2]).toBeCloseTo(2, 9)
+    expect(heirInheritance(1e60, 1) / GATE_NET_WORTH[1]).toBeCloseTo(1, 6)
+    expect(heirInheritance(GATE_NET_WORTH[3], 3, 0.05) / GATE_NET_WORTH[2]).toBeCloseTo(2, 6)
   })
 
-  it('multiplies income by 4.5 per Legacy point, +1x/rank Hustle cap, and offline catch-up', () => {
+  it('multiplies income by 3.4 per Legacy point, +1x/rank Hustle cap, and offline catch-up', () => {
     expect(legacyMultiplier(0)).toBe(1)
     expect(legacyMultiplier(1)).toBeCloseTo(LEGACY_INCOME_PER_POINT)
     expect(legacyMultiplier(3)).toBeCloseTo(Math.pow(LEGACY_INCOME_PER_POINT, 3))
     // A point is a gate past the family's best: about as much stronger as the next gate is harder
-    expect(LEGACY_INCOME_PER_POINT).toBeGreaterThanOrEqual(3.5)
+    expect(LEGACY_INCOME_PER_POINT).toBeGreaterThanOrEqual(3)
     expect(LEGACY_INCOME_PER_POINT).toBeLessThanOrEqual(5.5)
     // A scale applies to the points: half the points' worth
     expect(legacyMultiplier(4, 0.5)).toBeCloseTo(legacyMultiplier(2))

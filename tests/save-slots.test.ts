@@ -35,10 +35,7 @@ describe('save slots', () => {
     localStorage.setItem('trial:state', played())
     localStorage.setItem('ladderTrial', '1')
     const index = readIndex()
-    expect(index.slots.map((s) => [s.id, s.tuning])).toEqual([
-      ['main', 'classic'],
-      ['trial', 'trial']
-    ])
+    expect(index.slots.map((s) => s.id)).toEqual(['main', 'trial'])
     expect(index.active).toBe('trial')
     expect(slotPrefix('main')).toBe('')
     expect(slotPrefix('trial')).toBe('trial:')
@@ -57,8 +54,8 @@ describe('save slots', () => {
   })
 
   it('holds five families at most, and freeing the one in residence leaves none', () => {
-    for (let i = 0; i < MAX_SAVES; i++) expect(claimSeat('classic', i)).not.toBeNull()
-    expect(claimSeat('trial')).toBeNull()
+    for (let i = 0; i < MAX_SAVES; i++) expect(claimSeat(i)).not.toBeNull()
+    expect(claimSeat()).toBeNull()
     const resident = residentSlotId()!
     expect(removeSlot(resident)).toBe(true)
     expect(residentSlotId()).toBeNull()
@@ -93,7 +90,7 @@ describe('save slots in the store', () => {
     expect(store.hasFamily).toBe(false)
     store.flushSave(1500)
     expect(localStorage.getItem('state')).toBeNull()
-    store.beginNewFamily('standard', 'classic', 2000)
+    store.beginNewFamily('standard', 2000)
     expect(store.census).not.toBeNull()
     expect(store.saveIndex.slots).toHaveLength(0)
     store.closeCensus(3000)
@@ -106,7 +103,7 @@ describe('save slots in the store', () => {
     expect(store.saveIndex.slots).toHaveLength(0)
     expect(localStorage.getItem('state')).toBeNull()
     // The next family's register strikes this one off
-    store.beginNewFamily('standard', 'classic', 5000)
+    store.beginNewFamily('standard', 5000)
     expect(store.census).toEqual({ previous: surname, departure: 'abandoned' })
   })
 
@@ -114,9 +111,9 @@ describe('save slots in the store', () => {
     localStorage.setItem('state', played())
     const store = fresh()
     expect(store.hasFamily).toBe(true)
-    store.beginNewFamily('standard', 'trial', 2000)
+    store.beginNewFamily('austerity', 2000)
     expect(reloadPage).toHaveBeenCalledTimes(1)
-    expect(readIndex()).toMatchObject({ active: null, next: { tuning: 'trial', scenario: 'standard' } })
+    expect(readIndex()).toMatchObject({ active: null, next: { scenario: 'austerity' } })
     // The family it left keeps its seat
     expect(readIndex().slots.map((s) => s.id)).toEqual(['main'])
   })
@@ -142,7 +139,7 @@ describe('save slots in the store', () => {
 
     const exported = JSON.stringify({ schemaVersion: 8, tuning: 'trial', scene: { ...createInitialSceneState(), familySurname: 'Imported', playLog: { sessions: [], minutes: [], events: [] } } })
     expect(store.importSave(exported, 3000)).toBe('ok')
-    expect(readIndex().slots.at(-1)).toMatchObject({ id: 'slot-3', tuning: 'trial' })
+    expect(readIndex().slots.at(-1)).toMatchObject({ id: 'slot-3' })
     expect(JSON.parse(localStorage.getItem('slot-3:state')!).scene.playLog).toBeUndefined()
     expect(localStorage.getItem('slot-3:playLog')).not.toBeNull()
     expect(store.importSave('not a save')).toBe('invalid')
@@ -156,17 +153,16 @@ describe('save slots in the store', () => {
     expect(store.saveIndex.slots[1].summary).toMatchObject({ surname: 'Carrington-Rees', fresh: false })
   })
 
-  it('never loses a save from before seats: an unlisted one gets its seat back, and an old file asks its tuning', () => {
+  it('never loses a save from before seats: an unlisted one gets its seat back, and an old file comes in', () => {
     localStorage.setItem(SAVES_KEY, JSON.stringify({ version: 2, active: null, slots: [] }))
     localStorage.setItem('trial:state', played({ familySurname: 'Carrington-Rees', dynastyMs: 1_049_376 }))
     const store = fresh()
-    expect(store.saveIndex.slots.map((s) => [s.id, s.tuning])).toEqual([['trial', 'trial']])
+    expect(store.saveIndex.slots.map((s) => s.id)).toEqual(['trial'])
     expect(store.saveIndex.slots[0].summary?.surname).toBe('Carrington-Rees')
 
     const old = JSON.stringify({ schemaVersion: 8, scene: { ...createInitialSceneState(), familySurname: 'Old File', lifetimeEarned: 9 } })
-    expect(store.importSave(old, 2000)).toBe('ladder')
-    expect(store.importSave(old, 2000, 'trial')).toBe('ok')
-    expect(readIndex().slots.at(-1)).toMatchObject({ tuning: 'trial' })
+    expect(store.importSave(old, 2000)).toBe('ok')
+    expect(readIndex().slots.at(-1)?.summary).toMatchObject({ surname: 'Old File' })
   })
 
   it('counts a family\'s time away without what was played in other families meanwhile', () => {
@@ -184,14 +180,14 @@ describe('save slots in the store', () => {
     expect(store.offlineReport?.secondsCredited).toBeCloseTo(20 * 60, 0)
   })
 
-  it('downloads any family, not only the one in residence, with its play log and tuning', () => {
+  it('downloads any family, not only the one in residence, with its play log', () => {
     localStorage.setItem('state', played())
     localStorage.setItem('trial:state', played({ familySurname: 'Elsewhere', generation: 4 }))
     localStorage.setItem('trial:playLog', JSON.stringify({ sessions: [[1, 2]], minutes: [], events: [] }))
     const store = fresh()
     const saved = store.exportSlot('trial')!
     const parsed = JSON.parse(saved.json)
-    expect(parsed.tuning).toBe('trial')
+    expect(parsed.tuning).toBeUndefined()
     expect(parsed.scene.familySurname).toBe('Elsewhere')
     expect(parsed.scene.playLog.sessions).toEqual([[1, 2]])
     expect(store.exportSlot('nope')).toBeNull()

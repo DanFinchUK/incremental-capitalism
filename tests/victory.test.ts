@@ -57,7 +57,7 @@ describe('beating a boss', () => {
     expect(wrapper.find('h2').text()).toContain(boss.title)
     expect(text).toContain(boss.victoryText)
     expect(text.indexOf(boss.victoryText)).toBeLessThan(text.indexOf('Class pyramid'))
-    expect(wrapper.find('[data-testid="victory-unlocks"]').text()).toMatch(/new (jobs|businesses)/i)
+    expect(wrapper.find('[data-testid="victory-unlocks"]').text()).toMatch(/new (jobs?|business(es)?)\b/i)
     const pyramid = wrapper.find('details[data-testid="class-pyramid"]')
     expect(pyramid.exists()).toBe(true)
     expect(pyramid.attributes('open')).toBeUndefined()

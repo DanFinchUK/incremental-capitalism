@@ -7,17 +7,13 @@
 // Hall, achievements and settings are shared (engine/profile.ts).
 //
 // The seat 'main' uses the game's original keys and 'trial' the keys the
-// ladder trial used, so saves from before seats carry on where they were.
-declare const process: { env: Record<string, string | undefined> } | undefined
+// ladder trial used (when it was a playtest beside the original ladder), so
+// saves from before seats carry on where they were. There is one ladder now:
+// a family begun on the original one carries on, on this one.
 
 export const SAVES_KEY = 'saves'
 export const MAX_SAVES = 5
 const INDEX_VERSION = 2
-
-// How the game is tuned for a family, fixed when it begins. A playtest option
-// for now (the trial ladder); difficulty settings later.
-export type Tuning = 'classic' | 'trial'
-export const TUNINGS: ReadonlyArray<Tuning> = ['classic', 'trial']
 
 export interface SaveSummary {
   surname: string
@@ -32,7 +28,6 @@ export interface SaveSummary {
 
 export interface SaveSlot {
   id: string
-  tuning: Tuning
   createdAt: number
   lastPlayed: number
   summary: SaveSummary | null
@@ -42,9 +37,8 @@ export interface SaveSlot {
 }
 
 // What the next family will be, when none is in residence: chosen on the way
-// to the register, and kept across the reload a different tuning needs
+// to the register, and kept across the reload that leaving a family needs
 export interface NextFamily {
-  tuning: Tuning
   scenario: string
 }
 
@@ -65,10 +59,6 @@ function storage(): Storage | null {
   } catch {
     return null
   }
-}
-
-function readTuning(raw: unknown): Tuning {
-  return raw === 'trial' ? 'trial' : 'classic'
 }
 
 // Whether a seat's save shows any play at all, read lightly
@@ -98,7 +88,6 @@ function parseIndex(raw: string | null): SaveIndex | null {
       .slice(0, MAX_SAVES)
       .map((s) => ({
         id: s.id,
-        tuning: readTuning(s.tuning),
         createdAt: Number(s.createdAt) || 0,
         lastPlayed: Number(s.lastPlayed) || 0,
         summary: s.summary && typeof s.summary === 'object' ? s.summary : null,
@@ -106,7 +95,7 @@ function parseIndex(raw: string | null): SaveIndex | null {
       }))
     const active = typeof v.active === 'string' && slots.some((s) => s.id === v.active) ? v.active : null
     const next =
-      v.next && typeof v.next === 'object' ? { tuning: readTuning(v.next.tuning), scenario: String(v.next.scenario ?? 'standard') } : null
+      v.next && typeof v.next === 'object' ? { scenario: String(v.next.scenario ?? 'standard') } : null
     return { version: Number(v.version) || 1, active, slots, next }
   } catch {
     return null
@@ -137,8 +126,8 @@ export function readIndex(): SaveIndex {
     return index
   }
   const slots: SaveSlot[] = []
-  if (store?.getItem('state')) slots.push({ id: 'main', tuning: 'classic', createdAt: 0, lastPlayed: 0, summary: null })
-  if (played(store?.getItem('trial:state') ?? null)) slots.push({ id: 'trial', tuning: 'trial', createdAt: 0, lastPlayed: 0, summary: null })
+  if (store?.getItem('state')) slots.push({ id: 'main', createdAt: 0, lastPlayed: 0, summary: null })
+  if (played(store?.getItem('trial:state') ?? null)) slots.push({ id: 'trial', createdAt: 0, lastPlayed: 0, summary: null })
   const preferTrial = store?.getItem('ladderTrial') === '1' && slots.some((s) => s.id === 'trial')
   return { version: INDEX_VERSION, active: preferTrial ? 'trial' : (slots[0]?.id ?? null), slots, next: null }
 }
@@ -152,23 +141,15 @@ export function writeIndex(index: SaveIndex): void {
   }
 }
 
-// The family in residence when the page loaded, and the tuning the page plays
-// (fixed for its life: a family with another tuning needs a reload)
+// The family in residence when the page loaded
 const AT_LOAD = readIndex()
 let residentId: string | null = AT_LOAD.active
 const residentAtLoad = AT_LOAD.slots.find((s) => s.id === AT_LOAD.active) ?? null
 
-// The sim picks its tuning with LADDER=trial
-export const ACTIVE_TUNING: Tuning =
-  typeof process !== 'undefined' && process.env?.LADDER
-    ? readTuning(process.env.LADDER)
-    : (residentAtLoad?.tuning ?? AT_LOAD.next?.tuning ?? 'classic')
-
 // The next family's scenario, when it was chosen before a reload
 export const NEXT_SCENARIO_AT_LOAD: string | null = residentAtLoad ? null : (AT_LOAD.next?.scenario ?? null)
 
-// The family the index says is in residence (the page's tuning stays as it
-// loaded): when the game loads its save
+// The family the index says is in residence: when the game loads its save
 export function syncResident(): void {
   residentId = readIndex().active
 }
@@ -192,10 +173,10 @@ function newId(index: SaveIndex): string {
 
 // A seat for a family being written into the register, made the one in
 // residence. Null when all the seats are taken.
-export function claimSeat(tuning: Tuning, now = Date.now()): SaveSlot | null {
+export function claimSeat(now = Date.now()): SaveSlot | null {
   const index = readIndex()
   if (index.slots.length >= MAX_SAVES) return null
-  const slot: SaveSlot = { id: newId(index), tuning, createdAt: now, lastPlayed: now, summary: null }
+  const slot: SaveSlot = { id: newId(index), createdAt: now, lastPlayed: now, summary: null }
   writeIndex({ ...index, active: slot.id, slots: [...index.slots, slot], next: null })
   residentId = slot.id
   return slot
@@ -203,10 +184,10 @@ export function claimSeat(tuning: Tuning, now = Date.now()): SaveSlot | null {
 
 // A seat holding a save brought in from a file (made the one in residence
 // once its save is written, by setActiveSlot)
-export function addSlot(tuning: Tuning, now = Date.now()): SaveSlot | null {
+export function addSlot(now = Date.now()): SaveSlot | null {
   const index = readIndex()
   if (index.slots.length >= MAX_SAVES) return null
-  const slot: SaveSlot = { id: newId(index), tuning, createdAt: now, lastPlayed: now, summary: null }
+  const slot: SaveSlot = { id: newId(index), createdAt: now, lastPlayed: now, summary: null }
   writeIndex({ ...index, slots: [...index.slots, slot] })
   return slot
 }
@@ -238,9 +219,9 @@ export function adoptOrphans(): void {
   if (!store) return
   const index = readIndex()
   const slots = [...index.slots]
-  for (const [id, tuning] of [['main', 'classic'], ['trial', 'trial']] as const) {
+  for (const id of ['main', 'trial']) {
     if (slots.length >= MAX_SAVES || slots.some((s) => s.id === id) || id === residentId) continue
-    if (played(store.getItem(slotPrefix(id) + 'state'))) slots.push({ id, tuning, createdAt: 0, lastPlayed: 0, summary: null })
+    if (played(store.getItem(slotPrefix(id) + 'state'))) slots.push({ id, createdAt: 0, lastPlayed: 0, summary: null })
   }
   if (slots.length !== index.slots.length) writeIndex({ ...index, slots })
 }

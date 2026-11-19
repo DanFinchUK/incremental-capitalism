@@ -4,6 +4,7 @@
 // perks and retiring. Its buying choices are its own return-per-pound
 // arithmetic, not a game feature.
 import { createPinia, setActivePinia } from 'pinia'
+import { toRaw } from 'vue'
 import { BUSINESSES, BUSINESSES_BY_ID, JOBS, JOBS_BY_ID, SYNERGY_JOB_FOR_BUSINESS, type ItemKind } from '../src/data/items'
 import { DOMINANCE_AT, DOMINANCE_BONUS, dominanceMultiplier } from '../src/engine/economy'
 import type { PerkId } from '../src/data/perks'
@@ -293,8 +294,11 @@ function dominanceToChase(store: Store, cfg: BotConfig, beat: number, priced: Pr
   }
   let best: { kind: ItemKind; id: string } | null = null
   let bestScore = beat
+  // Read straight, not through Vue: nothing here needs to watch them
+  const jobs = toRaw(store.jobsPurchased)
+  const businesses = toRaw(store.businessesOwned)
   for (const { item, cost: next } of priced) {
-    const owned = (item.kind === 'jobs' ? store.jobsPurchased[item.id] : store.businessesOwned[item.id]) ?? 0
+    const owned = (item.kind === 'jobs' ? jobs[item.id] : businesses[item.id]) ?? 0
     if (owned < 1 || owned >= DOMINANCE_AT) continue
     const def = item.kind === 'jobs' ? JOBS_BY_ID[item.id] : BUSINESSES_BY_ID[item.id]
     const left = DOMINANCE_AT - owned

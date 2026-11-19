@@ -3,6 +3,7 @@
 import { markRaw, shallowRef, type ShallowRef } from 'vue'
 import { countTap, createPlayLog, logEvent, noteNetWorth, savePlayLog, touchSession, type PlayLog } from '../../engine/playLog'
 import type { AttemptEnded } from './bosses'
+import { stateWritesPaused } from '../../utils/stateWrites'
 
 // Seconds between samples during a boss fight
 export const BOSS_SAMPLE_SEC = 5
@@ -34,6 +35,7 @@ export function createPlayLogModule(initial: PlayLog, deps: PlayLogDeps) {
 
   function flush(ts: number): void {
     lastWrittenMs = ts
+    if (stateWritesPaused()) return
     savePlayLog(playLog.value)
   }
 
@@ -44,6 +46,7 @@ export function createPlayLogModule(initial: PlayLog, deps: PlayLogDeps) {
   }
 
   function log(ts: number, e: string, fields: Fields = {}): void {
+    if (stateWritesPaused()) return
     logEvent(playLog.value, { t: ts, g: deps.generation(), a: Math.round(deps.activeMs()), e, ...fields })
   }
 

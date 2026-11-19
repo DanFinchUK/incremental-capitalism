@@ -119,7 +119,10 @@ export function milestoneProgress(owned: number, scaleFactor: number): Milestone
 }
 
 export function milestoneMultiplier(owned: number, scaleFactor: number, deregulationRank: number, stepBonus = 0): number {
-  const { reachedCount } = milestoneProgress(owned, scaleFactor)
+  // Counted here rather than through milestoneProgress: this runs for every
+  // item whenever income is worked out
+  let reachedCount = 0
+  for (const m of itemMilestones(scaleFactor)) if (owned >= m) reachedCount += 1
   if (reachedCount === 0) {
     return 1
   }
@@ -313,7 +316,15 @@ export function computePassivePerSecond(input: EconomySnapshotInput): number {
   return business + interns + allowance
 }
 
-export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreakdown {
+// The part of income Hustle doesn't touch: Businesses, and one tap's pay
+// before Hustle. Hustle moves with every tap, so the store keeps this apart
+// and only multiplies by Hustle when it changes.
+export interface IncomeCore {
+  business: number
+  baseClick: number
+}
+
+export function computeIncomeCore(input: EconomySnapshotInput): IncomeCore {
   const mods = modsOf(input)
   let rawBusinesses = 0
   for (const biz of BUSINESSES) {
@@ -332,9 +343,19 @@ export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreak
   const classMult = 1 + 0.15 * input.classLevel
   const bizIncome =
     rawBusinesses * classMult * legacyMultiplier(input.legacyPoints, mods.legacyScale) * input.businessBuffMultiplier * mods.businessMult
-  const autoClickIncome = input.autoClickers * computeClickIncome(input, true) * mods.internMult
-  const allowance = input.noTap ? ALLOWANCE_TAPS_PER_SEC * computeClickIncome(input, true) : 0
-  return { business: bizIncome, interns: autoClickIncome, allowance }
+  return { business: bizIncome, baseClick: computeClickIncome(input, false) }
+}
+
+// Income a second from a core worked out earlier, at the input's Hustle
+export function breakdownFromCore(core: IncomeCore, input: EconomySnapshotInput): IncomeBreakdown {
+  const click = core.baseClick * input.hustleMultiplier
+  const autoClickIncome = input.autoClickers * click * modsOf(input).internMult
+  const allowance = input.noTap ? ALLOWANCE_TAPS_PER_SEC * click : 0
+  return { business: core.business, interns: autoClickIncome, allowance }
+}
+
+export function computeIncomeBreakdown(input: EconomySnapshotInput): IncomeBreakdown {
+  return breakdownFromCore(computeIncomeCore(input), input)
 }
 
 export interface IncomeDeltaQuote {

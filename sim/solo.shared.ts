@@ -125,9 +125,13 @@ export async function runSoloShard(shard: number, shards: number): Promise<void>
   const variants = SOLO_VARIANTS.filter((_, i) => i % shards === shard)
   const rows: Array<SoloResult & { kind: string; name: string; of?: string; family?: string; copies?: number }> = []
   for (const v of variants) {
-    for (const seed of SOLO_SEEDS) rows.push({ ...playOne(v, seed), kind: v.kind, name: v.name, of: v.of, family: v.family, copies: v.copies })
-    // Let Vitest's worker answer its runner between variants, or it times out
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    for (const seed of SOLO_SEEDS) {
+      rows.push({ ...playOne(v, seed), kind: v.kind, name: v.name, of: v.of, family: v.family, copies: v.copies })
+      // Let Vitest's worker answer its runner after every campaign: it gives
+      // up after a minute without a reply, and a few Duke campaigns on a
+      // slow machine take longer than that
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
   }
   mkdirSync(SOLO_DIR, { recursive: true })
   writeFileSync(join(SOLO_DIR, `shard-${shard}.json`), JSON.stringify(rows))

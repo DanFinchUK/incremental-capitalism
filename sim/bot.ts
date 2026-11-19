@@ -14,7 +14,7 @@ import { type ScenarioId } from '../src/data/scenarios'
 import { useGameStore } from '../src/stores/game'
 import { HALL_KEY } from '../src/engine/hall'
 import { ACTIVE_TUNING } from '../src/data/saveSlots'
-import { pauseStateWrites } from '../src/utils/stateWrites'
+import { setHeadless } from '../src/utils/headless'
 import { setSimIncomeMult } from '../src/utils/simIncome'
 import { setSimOffer } from '../src/utils/simOffer'
 import { setSimHeirs } from '../src/utils/simHeirs'
@@ -591,8 +591,8 @@ export function runCampaign(
 ): GenerationResult[] {
   const realRandom = Math.random
   Math.random = seededRandom(seed)
-  // Nothing reads the save back mid-campaign, so don't spend time writing it
-  pauseStateWrites(true)
+  // Nobody is watching: no saves, charts or play log (src/utils/headless.ts)
+  setHeadless(true)
   setSimIncomeMult(cfg.incomeMult ?? 1)
   setSimOffer(cfg.solo?.advisor ?? null)
   setSimHeirs(cfg.solo ? { trait: cfg.solo.trait, inherit: cfg.solo.inherit } : null)
@@ -600,7 +600,7 @@ export function runCampaign(
     return playCampaign(hours, cfg, probe, atSuccession)
   } finally {
     Math.random = realRandom
-    pauseStateWrites(false)
+    setHeadless(false)
     setSimIncomeMult(1)
     setSimOffer(null)
     setSimHeirs(null)

@@ -3,7 +3,7 @@
 import { markRaw, shallowRef, type ShallowRef } from 'vue'
 import { countTap, createPlayLog, logEvent, noteNetWorth, savePlayLog, touchSession, type PlayLog } from '../../engine/playLog'
 import type { AttemptEnded } from './bosses'
-import { stateWritesPaused } from '../../utils/stateWrites'
+import { headless } from '../../utils/headless'
 
 // Seconds between samples during a boss fight
 export const BOSS_SAMPLE_SEC = 5
@@ -35,7 +35,7 @@ export function createPlayLogModule(initial: PlayLog, deps: PlayLogDeps) {
 
   function flush(ts: number): void {
     lastWrittenMs = ts
-    if (stateWritesPaused()) return
+    if (headless()) return
     savePlayLog(playLog.value)
   }
 
@@ -46,25 +46,30 @@ export function createPlayLogModule(initial: PlayLog, deps: PlayLogDeps) {
   }
 
   function log(ts: number, e: string, fields: Fields = {}): void {
-    if (stateWritesPaused()) return
+    if (headless()) return
     logEvent(playLog.value, { t: ts, g: deps.generation(), a: Math.round(deps.activeMs()), e, ...fields })
   }
 
   function onTap(fullHustle: boolean): void {
+    if (headless()) return
     countTap(playLog.value, deps.generation(), deps.activeMs(), fullHustle)
     tapsSinceSample += 1
   }
 
   function onTick(ts: number): void {
-    touchSession(playLog.value, ts)
-    if (ts - lastWrittenMs >= PLAY_LOG_SAVE_MS) flush(ts)
-    noteNetWorth(playLog.value, deps.generation(), deps.activeMs(), deps.netWorth())
+    const quiet = headless()
+    if (!quiet) {
+      touchSession(playLog.value, ts)
+      if (ts - lastWrittenMs >= PLAY_LOG_SAVE_MS) flush(ts)
+      noteNetWorth(playLog.value, deps.generation(), deps.activeMs(), deps.netWorth())
+    }
     const open = deps.openGate()
     if (open !== null && open > lastOpenGate) {
       lastOpenGate = open
       log(ts, 'gate-open', { gate: open })
       deps.onGateOpen?.(open)
     }
+    if (quiet) return
     const attempt = deps.attempt()
     if (attempt) {
       const sec = (deps.activeMs() - attempt.startedActiveMs) / 1000

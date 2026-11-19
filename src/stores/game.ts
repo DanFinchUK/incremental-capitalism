@@ -65,7 +65,7 @@ import { SOCIAL_CLASSES } from '../data/classes'
 import { LADDER_TRIAL } from '../data/trial'
 import { ACTIVE_TUNING, MAX_SAVES, NEXT_SCENARIO_AT_LOAD, activeKey, addSlot, adoptOrphans, claimSeat, noteActiveSummary, readIndex, removeSlot, residentSlot, residentSlotId, setActiveSlot, syncResident, setSlotSummary, slotPrefix, type SaveIndex, type SaveSummary, type Tuning } from '../data/saveSlots'
 import { readProfile, writeProfile } from '../engine/profile'
-import { stateWritesPaused } from '../utils/stateWrites'
+import { headless } from '../utils/headless'
 import { simIncomeSources } from '../utils/simIncome'
 import { reloadPage } from '../utils/reloadPage'
 import { awardMultiplier, awardsHeld, awardText, type Award } from '../engine/awards'
@@ -770,7 +770,7 @@ export const useGameStore = defineStore('game', () => {
     // anything worth keeping); until then there is nothing of theirs to save
     if (activeSlotId.value === null && !census.value && familyHasBegun()) claimFamilySeat(ts)
     // The sim never reads the save, profile or menu back mid-campaign
-    if (stateWritesPaused()) return
+    if (headless()) return
     const key = activeKey('state')
     try {
       if (key) localStorage.setItem(key, serializeState(snapshotPersisted(ts)))
@@ -1131,7 +1131,7 @@ export const useGameStore = defineStore('game', () => {
     if (source) {
       recordIncome(telemetry.value, ts, amount, source)
     }
-    observeBalance(telemetry.value, ts, money.value)
+    if (!headless()) observeBalance(telemetry.value, ts, money.value)
     triggerRef(telemetry)
   }
 
@@ -1151,8 +1151,10 @@ export const useGameStore = defineStore('game', () => {
     if (newClass <= prevClass) {
       return false
     }
-    markTelemetryEvent(telemetry.value, 'Class')
-    triggerRef(telemetry)
+    if (!headless()) {
+      markTelemetryEvent(telemetry.value, 'Class')
+      triggerRef(telemetry)
+    }
     if (newClass > highestClassReached.value) {
       highestClassReached.value = newClass
       celebratedClassLevel.value = newClass
@@ -1211,8 +1213,10 @@ export const useGameStore = defineStore('game', () => {
     if (kind === 'jobs') jobsPurchased.value = { ...map, [id]: nextOwned }
     else businessesOwned.value = { ...map, [id]: nextOwned }
     lifeMap[id] = (lifeMap[id] ?? 0) + quote.count
-    observeBalance(telemetry.value, nowMs.value, money.value)
-    triggerRef(telemetry)
+    if (!headless()) {
+      observeBalance(telemetry.value, nowMs.value, money.value)
+      triggerRef(telemetry)
+    }
 
     refreshSeenItems()
 
@@ -1220,8 +1224,10 @@ export const useGameStore = defineStore('game', () => {
     const promoted = false
     // Automation crosses milestones quietly; only your own purchases get a banner
     if (crossedMilestone !== null && save) {
-      markTelemetryEvent(telemetry.value, 'Milestone')
-      triggerRef(telemetry)
+      if (!headless()) {
+        markTelemetryEvent(telemetry.value, 'Milestone')
+        triggerRef(telemetry)
+      }
       const step = (MILESTONE_BASE_STEP + MILESTONE_STEP_PER_DEREGULATION_RANK * perks.value.deregulation + modifiers.value.milestoneStepBonus).toFixed(2).replace(/\.00$/, '')
       announce(`${def.label} hit ${crossedMilestone} owned: output x${step}!`)
     }
@@ -1300,8 +1306,10 @@ export const useGameStore = defineStore('game', () => {
       buyerTally[kind] += result.bought
       buyerTally[kind === 'jobs' ? 'jobsCost' : 'businessesCost'] += result.cost
       const def = kind === 'jobs' ? JOBS_BY_ID[itemId] : BUSINESSES_BY_ID[itemId]
-      noteCandlePurchase(telemetry.value, `${buyers.value[kind]!.name} bought ${result.bought} × ${def.label}`)
-      triggerRef(telemetry)
+      if (!headless()) {
+        noteCandlePurchase(telemetry.value, `${buyers.value[kind]!.name} bought ${result.bought} × ${def.label}`)
+        triggerRef(telemetry)
+      }
     }
     if (bought) lastAutoBuyAt.value = ts
   }
@@ -1479,8 +1487,10 @@ export const useGameStore = defineStore('game', () => {
       const slot = effect.type === 'clickBuff' ? clickBuff : businessBuff
       const current = buffView(slot.value)
       const target = effect.type === 'clickBuff' ? 'Click' : 'Business'
-      markTelemetryEvent(telemetry.value, 'Opportunity')
-      triggerRef(telemetry)
+      if (!headless()) {
+        markTelemetryEvent(telemetry.value, 'Opportunity')
+        triggerRef(telemetry)
+      }
       if (current && current.mult > effect.mult) {
         // Never downgrade a stronger buff that is still running
         announce(`${name}: your ${current.label} x${current.mult} is stronger, so it keeps running.`)
@@ -1493,8 +1503,10 @@ export const useGameStore = defineStore('game', () => {
     }
     if (effect.type === 'windfall') {
       const windfall = Math.max(500, unbuffedMoneyPerSecond.value * effect.seconds) * modifiers.value.windfallMult
-      markTelemetryEvent(telemetry.value, 'Opportunity')
-      triggerRef(telemetry)
+      if (!headless()) {
+        markTelemetryEvent(telemetry.value, 'Opportunity')
+        triggerRef(telemetry)
+      }
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       announce(`${rarityPrefix}${name}: ${formatDuration(effect.seconds)} of passive income wired offshore!`)
@@ -1507,8 +1519,10 @@ export const useGameStore = defineStore('game', () => {
     // Shady Deal: 50/50 windfall vs a freeze
     if (rng() < 0.5) {
       const windfall = Math.max(1500, unbuffedMoneyPerSecond.value * effect.winSeconds) * modifiers.value.windfallMult
-      markTelemetryEvent(telemetry.value, 'Opportunity')
-      triggerRef(telemetry)
+      if (!headless()) {
+        markTelemetryEvent(telemetry.value, 'Opportunity')
+        triggerRef(telemetry)
+      }
       creditMoney(windfall, 'windfall', ts)
       refreshSeenItems()
       announce(`VIP-Lane Contract Approved! ${formatDuration(effect.winSeconds)} passive windfall!`)
@@ -1577,9 +1591,11 @@ export const useGameStore = defineStore('game', () => {
     refreshSeenItems()
     // Before and after: restocking is what pushes an item back over the line
     runBuyers(ts)
-    observeBalance(telemetry.value, ts, money.value)
-    triggerRef(telemetry)
-    if (ts - telemetry.value.lastSampleTs >= 250) {
+    if (!headless()) {
+      observeBalance(telemetry.value, ts, money.value)
+      triggerRef(telemetry)
+    }
+    if (!headless() && ts - telemetry.value.lastSampleTs >= 250) {
       sampleTelemetry(telemetry.value, ts, moneyPerSecond.value, money.value, undefined, favourPerSecond.value, passiveSources.value)
       triggerRef(telemetry)
     }

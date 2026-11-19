@@ -14,7 +14,12 @@ const latest = ledger.versions.at(-1)
 const out = []
 const say = (line = '') => out.push(line)
 
-const RUN = (r) => `${r.key.includes('copies') ? 'Copies' : 'One of each'}, played to ${r.to === 'duke' ? 'Duke' : 'the first class 9'}`
+// singles: one advisor, trait or inherited trait on offer at a time.
+// copies: one advisor family, held 1, 2, 3... at once.
+// favour: the real game, favouring one advisor family whenever it's offered.
+const SET = (key) =>
+  key.includes('favour') ? 'Favouring one family, in a real office' : key.includes('copies') ? 'Copies of one advisor' : 'One of each'
+const RUN = (r) => `${SET(r.key)}, played to ${r.to === 'duke' ? 'Duke' : 'the first class 9'}`
 const pct = (x) => `${x >= 0 ? '+' : ''}${(100 * x).toFixed(1)}%`
 const times = (x) => `x${x.toFixed(2)}`
 

@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
 import { useGameStore } from '../src/stores/game'
-import { hireFree } from './helpers'
+import { hireFree, showEveryPart } from './helpers'
 
 describe('City Trading Desk & Legacy bracket progress UI', () => {
   let pinia: ReturnType<typeof createPinia>
@@ -16,6 +16,8 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
 
   it('renders LON:FLOW and LON:CASH SVG charts without NaN coordinates and updates on clicks/purchases', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
+    showEveryPart(useGameStore())
+    await wrapper.vm.$nextTick()
     const store = useGameStore()
 
     expect(wrapper.text()).toContain('LON:FLOW')
@@ -40,6 +42,8 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
 
   it('marks the candle where a buyer bought something, in words', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
+    showEveryPart(useGameStore())
+    await wrapper.vm.$nextTick()
     const store = useGameStore()
     store.closeIntro()
     if (store.tradingDeskCollapsed) store.toggleTradingDesk()
@@ -59,6 +63,8 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
 
   it('collapses and expands the City Trading Desk', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
+    showEveryPart(useGameStore())
+    await wrapper.vm.$nextTick()
     expect(wrapper.findAll('.scn-DeskMonitor')).toHaveLength(2)
 
     await wrapper.find('[data-testid="toggle-trading-desk"]').trigger('click')
@@ -69,8 +75,10 @@ describe('City Trading Desk & Legacy bracket progress UI', () => {
     wrapper.unmount()
   })
 
-  it('says which gate opens retiring before it is allowed', () => {
+  it('says which gate opens retiring before it is allowed', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
+    showEveryPart(useGameStore())
+    await wrapper.vm.$nextTick()
     expect(wrapper.find('.scn-Help').exists()).toBe(false)
     expect(wrapper.find('[data-testid="hero-legacy"]').text()).toContain('Retire at class 1')
     expect(wrapper.find('[data-testid="hero-retire"]').exists()).toBe(false)

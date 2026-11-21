@@ -54,6 +54,7 @@ import {
   type IncomeDeltaQuote,
   type OfflineCatchUpResult
 } from '../engine/economy'
+import { UI_PARTS, mergeUiParts, partDue, type UiPart, type UiRevealState } from '../engine/uiParts'
 import {
 
   createInitialSceneState,
@@ -233,6 +234,8 @@ export const useGameStore = defineStore('game', () => {
   const introSeen = ref<boolean>(initial.introSeen)
   const introOpen = ref<boolean>(!initial.introSeen)
   const tradingDeskCollapsed = ref<boolean>(initial.tradingDeskCollapsed)
+  // Parts of the screen shown so far: a brand new player meets each once it has a use
+  const uiShown = ref<UiPart[]>(initial.uiShown)
   const lastUpdate = ref<number | null>(initial.lastUpdate)
 
   // Runtime state
@@ -752,6 +755,7 @@ export const useGameStore = defineStore('game', () => {
       muted: muted.value,
       introSeen: introSeen.value,
       tradingDeskCollapsed: tradingDeskCollapsed.value,
+      uiShown: mergeUiParts(uiShown.value, uiDue.value),
       favours: favours.value,
       dynastyMs: dynastyMs.value,
       dynastyComplete: dynastyComplete.value,
@@ -821,6 +825,7 @@ export const useGameStore = defineStore('game', () => {
     muted.value = s.muted
     introSeen.value = introSeen.value || s.introSeen
     tradingDeskCollapsed.value = s.tradingDeskCollapsed
+    uiShown.value = mergeUiParts(uiShown.value, s.uiShown)
     // A scenario that settles tapping for the dynasty keeps its rule
     if (scenarioDef.value.noTap === undefined) noTap.value = s.noTap
   }
@@ -841,7 +846,8 @@ export const useGameStore = defineStore('game', () => {
         noTap: scenarioDef.value.noTap === undefined ? noTap.value : (before.settings?.noTap ?? false),
         muted: muted.value,
         introSeen: introSeen.value,
-        tradingDeskCollapsed: tradingDeskCollapsed.value
+        tradingDeskCollapsed: tradingDeskCollapsed.value,
+        uiShown: mergeUiParts(uiShown.value, uiDue.value, before.settings?.uiShown ?? [])
       }
     })
     return playedMs
@@ -1026,6 +1032,7 @@ export const useGameStore = defineStore('game', () => {
     introSeen.value = loaded.introSeen
     introOpen.value = !loaded.introSeen
     tradingDeskCollapsed.value = loaded.tradingDeskCollapsed
+    uiShown.value = loaded.uiShown
     favours.value = loaded.favours
     lastUpdate.value = loaded.lastUpdate
     plays.resetGateWatch(loaded.gatesBeaten, true)
@@ -1532,6 +1539,36 @@ export const useGameStore = defineStore('game', () => {
     return 'shadyFreeze'
   }
 
+  // Parts with a use now, from where the family stands
+  const uiDue = computed(() => {
+    const state: UiRevealState = {
+      generation: generation.value,
+      legacyPoints: legacyPoints.value,
+      gatesBeaten: gatesBeaten.value,
+      minRetireGate: minRetireGate.value,
+      officeFilled:
+        office.officeSeats.value.some((a) => a !== null) || office.paChairs.value.some((a) => a !== null) || office.waitingOffers.value > 0,
+      awardsHeld: awards.value.length,
+      seenJobs: Object.keys(seenItems.value.jobs).length,
+      seenBusinesses: Object.keys(seenItems.value.businesses).length,
+      anyOwned:
+        Object.values(jobsPurchased.value).some((n) => n > 0) || Object.values(businessesOwned.value).some((n) => n > 0),
+      moneyPerSecond: moneyPerSecond.value
+    }
+    return UI_PARTS.filter((p) => !uiShown.value.includes(p) && partDue(p, state))
+  })
+
+  function shows(part: UiPart): boolean {
+    return uiShown.value.includes(part) || uiDue.value.includes(part)
+  }
+
+  // Once shown, a part stays: a new generation or bloodline doesn't hide it again
+  function noteUiParts(): void {
+    if (uiShown.value.length === UI_PARTS.length) return
+    const due = uiDue.value
+    if (due.length > 0) uiShown.value = mergeUiParts(uiShown.value, due)
+  }
+
   function tick(ts = Date.now()): void {
     nowMs.value = ts
     if (lastTickMs.value === null) {
@@ -1548,6 +1585,7 @@ export const useGameStore = defineStore('game', () => {
       return
     }
     noteAwards()
+    noteUiParts()
 
     if (elapsedMs >= 60_000) {
       // Time away abandons a boss fight (no cooldown), so offline income
@@ -2194,6 +2232,7 @@ export const useGameStore = defineStore('game', () => {
     // A player's very first family still meets the intro
     fresh.introSeen = introSeen.value
     fresh.tradingDeskCollapsed = tradingDeskCollapsed.value
+    fresh.uiShown = mergeUiParts(uiShown.value, uiDue.value)
     // Rooms the player has reached stay theirs, and so does the one they chose
     fresh.roomsReached = Math.max(roomsReached.value, highestClassReached.value)
     fresh.decor = decor.value
@@ -2336,6 +2375,8 @@ export const useGameStore = defineStore('game', () => {
     openIntro,
     closeIntro,
     tradingDeskCollapsed,
+    uiShown,
+    shows,
     lastUpdate,
     nowMs,
     telemetry,

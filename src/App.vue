@@ -49,19 +49,19 @@
             <BossCard />
             <FamilyOffice />
             <SplitsPanel />
-            <TradingDesk v-if="phone" />
+            <TradingDesk v-if="phone && store.shows('tradingDesk')" />
           </aside>
 
           <!-- v-show keeps both lists alive, so switching tabs doesn't reload them -->
           <div v-show="!phone || phoneTab !== 'family'" class="lyt-MarketPane">
-            <TradingDesk v-if="!phone" />
+            <TradingDesk v-if="!phone && store.shows('tradingDesk')" />
             <div class="lyt-Columns">
               <section v-show="!phone || phoneTab === 'jobs'" class="lyt-Column" aria-label="Jobs">
                 <div class="lyt-Items">
                   <div class="lyt-ListHead">
                     <h2 class="scn-ColumnTitle">Jobs</h2>
                     <BuyerControl kind="jobs" />
-                    <BulkPicker v-if="phone" />
+                    <BulkPicker v-if="phone && store.shows('bulk')" />
                   </div>
                   <ItemCard
                     v-for="row in store.visibleJobs"
@@ -78,7 +78,7 @@
                   <div class="lyt-ListHead">
                     <h2 class="scn-ColumnTitle">Businesses</h2>
                     <BuyerControl kind="businesses" />
-                    <BulkPicker v-if="phone" />
+                    <BulkPicker v-if="phone && store.shows('bulk')" />
                   </div>
                   <ItemCard
                     v-for="row in store.visibleBusinesses"

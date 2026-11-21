@@ -1,5 +1,5 @@
 <template>
-  <section class="scn-FamilyOffice" data-testid="family-office" aria-label="Family office">
+  <section v-if="store.shows('office')" class="scn-FamilyOffice" data-testid="family-office" aria-label="Family office">
     <div class="scn-OfficeHeader">
       <h2 class="scn-ColumnTitle">The family office</h2>
       <span class="scn-StatHint">Drain: {{ drainPct }}%</span>

@@ -4,12 +4,13 @@
 import { ACHIEVEMENTS_BY_ID } from '../data/achievements'
 import { ROOMS, type RoomId } from '../data/rooms'
 import { parseBulkMode, type PersistedSceneState } from './migration'
+import { readUiParts } from './uiParts'
 
 export const PROFILE_KEY = 'profile'
 
 export type SharedSettings = Pick<
   PersistedSceneState,
-  'bulkBuyMode' | 'compactAutoBuy' | 'decor' | 'roomsReached' | 'noTap' | 'muted' | 'introSeen' | 'tradingDeskCollapsed'
+  'bulkBuyMode' | 'compactAutoBuy' | 'decor' | 'roomsReached' | 'noTap' | 'muted' | 'introSeen' | 'tradingDeskCollapsed' | 'uiShown'
 >
 
 export interface Profile {
@@ -32,7 +33,8 @@ function readSettings(raw: unknown): SharedSettings | null {
     noTap: s.noTap === true,
     muted: s.muted === true,
     introSeen: s.introSeen === true,
-    tradingDeskCollapsed: s.tradingDeskCollapsed === true
+    tradingDeskCollapsed: s.tradingDeskCollapsed === true,
+    uiShown: readUiParts(s.uiShown)
   }
 }
 

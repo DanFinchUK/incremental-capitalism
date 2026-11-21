@@ -329,6 +329,11 @@
   gap: 8px;
 }
 
+/* Money alone, before retiring means anything */
+.scn-CompactStats-single {
+  grid-template-columns: 1fr;
+}
+
 @media (max-width: 460px) {
   .scn-CompactStats {
     grid-template-columns: 1fr;

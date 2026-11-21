@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
-import { hireEstateManager } from './helpers'
+import { hireEstateManager, showEveryPart } from './helpers'
 import { useGameStore } from '../src/stores/game'
 import { legacyMultiplier } from '../src/engine/economy'
 import { formatMultiplier } from '../src/utils/format'
@@ -41,6 +41,8 @@ describe('App UI integration', () => {
   it('switches bulk-buy modes and opens the 8-perk Old Boys Network drawer', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
+    showEveryPart(store)
+    await wrapper.vm.$nextTick()
 
     const x10Btn = wrapper.findAll('.scn-BulkBtn').find((b) => b.text() === 'x10')
     expect(x10Btn).toBeDefined()

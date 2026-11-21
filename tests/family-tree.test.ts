@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
 import { legacyForRetiring } from '../src/engine/bosses'
 import { useGameStore } from '../src/stores/game'
+import { showEveryPart } from './helpers'
 
 const T0 = 1_000_000
 
@@ -56,6 +57,8 @@ describe('family tree', () => {
     setActivePinia(pinia)
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
+    showEveryPart(store)
+    await wrapper.vm.$nextTick()
     store.closeIntro()
     store.perks.autoClicker = 3
     store.familyTree = [

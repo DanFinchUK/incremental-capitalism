@@ -13,6 +13,7 @@ import { ROOMS, type RoomId } from '../data/rooms'
 import { readScenarioId, type ScenarioId } from '../data/scenarios'
 import { FAVOUR_EVENTS_BY_ID, emptyFavours, type FavourState } from '../data/favours'
 import type { BossTracker } from './bosses'
+import { readUiParts, type UiPart } from './uiParts'
 
 // The first seat's save; each family's own is activeKey('state') (data/saveSlots.ts)
 export const STORAGE_KEY = 'state'
@@ -74,6 +75,8 @@ export interface PersistedSceneState {
   muted: boolean
   introSeen: boolean
   tradingDeskCollapsed: boolean
+  // Parts of the screen shown so far (engine/uiParts.ts)
+  uiShown: UiPart[]
   // Old School Tie: favours this generation
   favours: FavourState
   // Active play time since the dynasty began, every line and generation
@@ -134,6 +137,7 @@ export function createInitialSceneState(): PersistedSceneState {
     muted: false,
     introSeen: false,
     tradingDeskCollapsed: false,
+    uiShown: [],
     favours: emptyFavours(),
     dynastyMs: 0,
     dynastyComplete: false,
@@ -454,6 +458,7 @@ export function parseSavedState(raw: string | null): PersistedSceneState {
     muted: Boolean(s.muted),
     introSeen: Boolean(s.introSeen),
     tradingDeskCollapsed: Boolean(s.tradingDeskCollapsed),
+    uiShown: readUiParts(s.uiShown),
     favours: readFavours(s.favours),
     // Older saves: every generation recorded, plus the one under way
     dynastyMs: typeof s.dynastyMs === 'number' && Number.isFinite(s.dynastyMs) && s.dynastyMs >= 0

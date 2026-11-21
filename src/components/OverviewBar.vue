@@ -8,9 +8,10 @@
     </div>
 
     <div class="scn-OverviewControls">
-      <BulkPicker />
+      <BulkPicker v-if="store.shows('bulk')" />
 
       <button
+        v-if="store.shows('network')"
         type="button"
         class="scn-Action scn-Action-outline"
         data-testid="toggle-legacy-shop"
@@ -22,7 +23,7 @@
 
       <!-- Wider, the command deck's Retire box does this -->
       <button
-        v-if="phone"
+        v-if="phone && store.shows('retire')"
         type="button"
         class="scn-Action"
         :disabled="!store.canRetire"

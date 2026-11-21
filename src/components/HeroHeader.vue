@@ -54,7 +54,7 @@
         <span v-if="currentInherit" class="scn-StatHint"> · passes down {{ currentInherit.name }}</span>
         <span v-if="store.titles > 0"> · {{ peerageRank(store.titles) }} ({{ store.titles }})</span>
         <span class="scn-StatHint"> · Gen {{ store.generation }}</span>
-        <button type="button" class="scn-LinkButton" data-testid="open-family-tree" @click="store.familyTreeOpen = true">
+        <button v-if="store.shows('familyTree')" type="button" class="scn-LinkButton" data-testid="open-family-tree" @click="store.familyTreeOpen = true">
           Family tree
         </button>
         <button
@@ -75,6 +75,7 @@
         data-testid="header-bloodline-pills"
       >
         <button
+          v-if="store.shows('awards')"
           type="button"
           class="scn-TraitPill scn-TraitPill-button"
           :aria-expanded="awardsOpen"
@@ -103,7 +104,7 @@
           {{ store.wording(pill.label) }}
         </span>
       </div>
-      <div v-if="awardsOpen" class="scn-AwardsPanel" data-testid="awards-panel">
+      <div v-if="awardsOpen && store.shows('awards')" class="scn-AwardsPanel" data-testid="awards-panel">
         <p class="scn-AwardsRule">
           When every Job in a group of five reaches 25 owned, the family wins a King's Award, and again at 100, 250, 500 and
           1,000. Businesses are grouped the same way. Each award multiplies all income by 1.25.
@@ -117,7 +118,7 @@
         <p v-else class="scn-AwardsRule">A group shows here once every item in it is on offer.</p>
       </div>
 
-      <div v-if="!phone" class="scn-CompactStats">
+      <div v-if="!phone" class="scn-CompactStats" :class="{ 'scn-CompactStats-single': !store.shows('retire') }">
         <div class="scn-StatBox" data-testid="hero-money">
           <div class="scn-DataTitle">Money</div>
           <div class="scn-DataValue">{{ formatCurrency(store.money) }}</div>
@@ -141,7 +142,7 @@
           </div>
           <div v-else class="scn-DataValue">x{{ legacyMultLabel }}</div>
         </button>
-        <div v-else class="scn-StatBox" data-testid="hero-legacy">
+        <div v-else-if="store.shows('retire')" class="scn-StatBox" data-testid="hero-legacy">
           <div class="scn-DataTitle">{{ retireBlockedTitle }}</div>
           <div class="scn-StatHint">Income multiplier</div>
           <div class="scn-DataValue">x{{ legacyMultLabel }}</div>

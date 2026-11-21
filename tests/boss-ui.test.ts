@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { mount } from '@vue/test-utils'
 import App from '../src/App.vue'
 import { useGameStore } from '../src/stores/game'
+import { showEveryPart } from './helpers'
 import { gateThreshold, legacyForRetiring } from '../src/engine/bosses'
 import { BOSSES } from '../src/data/bosses'
 import { formatClock, formatMultiplier } from '../src/utils/format'
@@ -69,6 +70,8 @@ describe('boss and splits UI', () => {
   it('retire box pays by depth and only becomes a button after the first gate', async () => {
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
+    showEveryPart(store)
+    await wrapper.vm.$nextTick()
     store.closeIntro()
     await wrapper.vm.$nextTick()
     const retire = () => wrapper.find('[data-testid="hero-retire"]')
@@ -143,6 +146,8 @@ describe('family office UI', () => {
     setActivePinia(pinia)
     const wrapper = mount(App, { global: { plugins: [pinia] } })
     const store = useGameStore()
+    showEveryPart(store)
+    await wrapper.vm.$nextTick()
     store.closeIntro()
     store.headhunterOffer = ['sommelier', 'planning-lobby', 'proxy']
     await wrapper.vm.$nextTick()
